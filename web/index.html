@@ -253,7 +253,7 @@ select option{background:#14141f}
 #pbody{overflow:auto;padding:28px 34px 34px;display:flex;flex-direction:column;gap:14px;scrollbar-gutter:stable}
 #phead{margin:0 0 4px;font-size:24px;font-weight:800;letter-spacing:-.03em}
 .ppage{display:flex;flex-direction:column;gap:14px}.ppage[hidden]{display:none}
-.ppage>h4:first-child.same{display:none}
+.ppage>h4.same{display:none}
 .psh{display:none;margin:6px 0 -2px;font-size:15px;font-weight:800;color:#fff}#pbody.searching .psh{display:block}#pbody.searching .ppage h4{display:none!important}
 #pclose{position:absolute;top:14px;right:14px;z-index:2}
 #pnone{color:var(--faint);font-size:13px}
@@ -431,7 +431,9 @@ body.low .ll{transition:opacity .25s}
 /* big panes */
 .glass,#pwin,#setup .sw,#cappanel,#netpanel{background:var(--g-grad),var(--g-tint);border:1px solid var(--g-bd);box-shadow:var(--g-sh),var(--g-hi);backdrop-filter:var(--g-blur);-webkit-backdrop-filter:var(--g-blur)}
 #pwin{border-radius:26px}#setup .sw{border-radius:26px}
-#panel{background:rgba(4,4,12,.22)}#setup{background:rgba(4,4,12,.3);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+/* Settings and the setup guide: heavier frost so the text reads clearly over a busy background */
+#pwin,#setup .sw{background:var(--g-grad),rgba(14,14,26,.62);backdrop-filter:blur(48px) saturate(170%);-webkit-backdrop-filter:blur(48px) saturate(170%)}
+#panel{background:rgba(4,4,12,.4);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}#setup{background:rgba(4,4,12,.3);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
 #pnav{background:rgba(255,255,255,.04);border-right-color:rgba(255,255,255,.12)}
 #pnav .pn.on{background:rgba(255,255,255,.16);box-shadow:var(--g-hi)}
 /* controls */
