@@ -16,7 +16,7 @@ port forwarding or domain is needed.
   (a "Monitor of …" input on Linux, or tab/screen audio sharing).
 - **Live background:** the cover art, blurred, drifting at the speed and tempo of the music and pulsing with the bass.
   Or, as in Spicy Lyrics: the artist's photo, the still cover art, a color from the cover, or none.
-- **Cover** with and a smooth layout change when a Canvas video starts or stops.
+- **Smooth layout change** when a Canvas video starts or stops.
 - **Synced lyrics** animated like Spicy Lyrics (its animation code, ported): each word fills, swells, lifts and glows on springs as it's
   sung, long held words wave letter by letter, and lines further away blur. Background vocals are animated on their own timing too. Also duet alignment,
   and Spicy Lyrics' instrumental-break dots, which
