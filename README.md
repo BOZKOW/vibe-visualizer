@@ -22,6 +22,7 @@ domain is needed.
 - [How it fits together](#how-it-fits-together)
 - [Setup](#setup)
 - [Updating](#updating)
+- [Using it on Linux](#using-it-on-linux)
 - [Using it on Windows](#using-it-on-windows)
 - [Third-party services](#third-party-services)
 - [Privacy](#privacy)
@@ -125,7 +126,9 @@ your devices ──Tailscale HTTPS──▶ tailscale serve ──▶ 127.0.0.1:
 ## Setup
 
 You need a computer that stays on, with Docker and Tailscale, and your devices on the same tailnet. The steps below
-are for Linux; see [Running the server on Windows](#running-the-server-on-windows) for Windows.
+are for Linux and assume Docker and Tailscale are already installed; if they aren't, follow
+[Running the server on Linux, step by step](#running-the-server-on-linux-step-by-step). For Windows, see
+[Running the server on Windows](#running-the-server-on-windows).
 
 1. **Clone and start**
    ```sh
@@ -155,6 +158,40 @@ are for Linux; see [Running the server on Windows](#running-the-server-on-window
    its own icon. On Android use Chrome's *Add to Home screen*; on iPhone, Safari's *Share → Add to Home Screen*.
 
 Everything else is in the app's Settings window.
+
+### Running the server on Linux, step by step
+
+These commands are for Ubuntu and Debian; other distributions are noted where they differ.
+
+1. **Install Docker** with Docker's official script, then let your user run it without `sudo`:
+   ```sh
+   curl -fsSL https://get.docker.com | sh
+   sudo usermod -aG docker $USER
+   sudo systemctl enable --now docker
+   ```
+   Log out and back in (or reboot) so the `docker` group applies. On Fedora use `sudo dnf install docker`, on Arch
+   `sudo pacman -S docker docker-compose`, then the last two commands above.
+   ([Docker's install guide](https://docs.docker.com/engine/install/))
+2. **Install Tailscale** with Tailscale's official script and sign in:
+   ```sh
+   curl -fsSL https://tailscale.com/install.sh | sh
+   sudo tailscale up
+   ```
+   Open the link it prints and sign in with the same account as your other devices.
+   ([Tailscale's Linux guide](https://tailscale.com/kb/1031/install-linux))
+3. **Install git** if it's missing: `sudo apt install git` (Fedora: `sudo dnf install git`, Arch: `sudo pacman -S git`).
+4. **Follow the [Setup](#setup) steps above**: clone, `docker compose up -d --build`, `tailscale serve`, then
+   Spotify and Spicy Lyrics.
+5. **Check that it's running:**
+   ```sh
+   docker compose ps                # both services should say "running"
+   docker compose logs -f helper    # the helper's log; Ctrl+C to stop watching
+   ```
+6. **Keep the server awake.** On a laptop or desktop used as a server, stop it from sleeping:
+   ```sh
+   sudo systemctl mask sleep.target suspend.target hibernate.target hybrid-sleep.target
+   ```
+   Docker starts Vibe Visualizer again by itself after a reboot.
 
 ### Running the server on Windows
 
@@ -199,6 +236,28 @@ already does. Changes to the helper itself still need `git pull && docker compos
 **Error log.** Errors the app runs into show up as a notification and are saved on your server in
 `prefs/errors.jsonl` (the last 300, never sent anywhere else), so they can be looked at and fixed.
 *Settings → Help & about → Error log* shows and clears them.
+
+## Using it on Linux
+
+- **Install as an app:** open your `https://…ts.net/` address in Chrome, Chromium, Edge or Brave and choose
+  *Install Vibe Visualizer* (the install icon in the address bar, or *⋮ → Cast, save and share → Install page as app*).
+  It appears in your app menu with its own icon. Firefox can't install web apps; use it as a normal tab instead.
+- **Bars for the Spotify app:** press the microphone button and pick a **🔊 Monitor of …** device for the speakers or
+  headphones you listen on, then **Start**. A monitor carries everything your computer plays, the Spotify desktop app
+  included (also the Snap and Flatpak versions). Allow microphone access when asked; that's only how browsers list
+  these devices.
+- **No "Monitor of …" device in the list?** Check that your system runs PipeWire (most current distributions) or
+  PulseAudio, and that monitors exist:
+  ```sh
+  pactl list short sources | grep monitor
+  ```
+  If that prints nothing, install the PipeWire PulseAudio layer (`sudo apt install pipewire-pulse`, Fedora:
+  `pipewire-pulseaudio`, Arch: `pipewire-pulse`), log out and back in, and try again.
+- **Firefox** can't share sound this way, so the bars only imitate the music there. Use a Chromium-based browser for
+  the real thing.
+- **Media keys** control local files; with Spotify, your keys go to the Spotify app as usual.
+- **The bars stay flat:** make sure something is playing on the output whose monitor you picked; if you switched
+  headphones or speakers, pick the matching monitor again.
 
 ## Using it on Windows
 
