@@ -183,7 +183,8 @@ body.hl #lmsg,body[data-view=viz] #lmsg{display:none}
 
 /* ---------- top bar ---------- */
 #top{position:fixed;top:0;left:0;right:0;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:calc(12px + env(safe-area-inset-top,0px)) 16px 22px;z-index:5;background:linear-gradient(rgba(0,0,0,.4),transparent);transition:opacity .35s,transform .35s}
-.brand{font-weight:800;letter-spacing:-.02em;font-size:17px;display:flex;align-items:center;gap:8px}
+.brand{font-weight:800;letter-spacing:-.02em;font-size:17px;display:flex;align-items:center;gap:8px;cursor:pointer;border-radius:12px;padding:4px 8px;margin:-4px -8px;transition:background .2s,transform .4s cubic-bezier(.34,1.56,.64,1)}
+.brand:hover{background:rgba(255,255,255,.08)}.brand:active{transform:scale(.95)}
 .brand i{width:10px;height:10px;border-radius:50%;background:var(--acc);box-shadow:0 0 14px var(--acc)}
 .grp{display:flex;align-items:center;gap:8px}
 #seg{position:relative;display:flex;padding:3px;border-radius:999px;background:rgba(20,20,30,.45);border:1px solid var(--line);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
@@ -492,7 +493,7 @@ body.low #cappanel,body.low #netpanel,body.low #setup .sw{background:rgba(20,20,
 </div>
 
 <header id="top">
-  <div class="brand"><img class="logo" src="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22 role=%22img%22 aria-label=%22Vibe Visualizer%22%3E%3Cdefs%3E%3ClinearGradient id=%22vv-bg%22 x1=%220%22 y1=%220%22 x2=%221%22 y2=%221%22%3E%3Cstop offset=%220%22 stop-color=%22%238b7cff%22/%3E%3Cstop offset=%22.55%22 stop-color=%22%23ff5fa2%22/%3E%3Cstop offset=%221%22 stop-color=%22%2336c9ff%22/%3E%3C/linearGradient%3E%3ClinearGradient id=%22vv-shine%22 x1=%220%22 y1=%220%22 x2=%220%22 y2=%221%22%3E%3Cstop offset=%220%22 stop-color=%22%23fff%22 stop-opacity=%22.28%22/%3E%3Cstop offset=%22.5%22 stop-color=%22%23fff%22 stop-opacity=%220%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width=%2264%22 height=%2264%22 rx=%2216%22 fill=%22url(%23vv-bg)%22/%3E%3Crect width=%2264%22 height=%2264%22 rx=%2216%22 fill=%22url(%23vv-shine)%22/%3E%3Cg fill=%22%23fff%22%3E%3Crect x=%229.5%22 y=%2213%22 width=%226.5%22 height=%2220%22 rx=%223.25%22 opacity=%22.78%22/%3E%3Crect x=%2219%22 y=%2219%22 width=%226.5%22 height=%2222%22 rx=%223.25%22 opacity=%22.9%22/%3E%3Crect x=%2228.75%22 y=%2225%22 width=%226.5%22 height=%2226%22 rx=%223.25%22/%3E%3Crect x=%2238.5%22 y=%2219%22 width=%226.5%22 height=%2222%22 rx=%223.25%22 opacity=%22.9%22/%3E%3Crect x=%2248%22 y=%2213%22 width=%226.5%22 height=%2220%22 rx=%223.25%22 opacity=%22.78%22/%3E%3C/g%3E%3C/svg%3E" alt=""><span>Vibe Visualizer</span></div>
+  <div class="brand" id="brand" role="button" tabindex="0" title="Welcome page" aria-label="Vibe Visualizer: open the welcome page"><img class="logo" src="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22 role=%22img%22 aria-label=%22Vibe Visualizer%22%3E%3Cdefs%3E%3ClinearGradient id=%22vv-bg%22 x1=%220%22 y1=%220%22 x2=%221%22 y2=%221%22%3E%3Cstop offset=%220%22 stop-color=%22%238b7cff%22/%3E%3Cstop offset=%22.55%22 stop-color=%22%23ff5fa2%22/%3E%3Cstop offset=%221%22 stop-color=%22%2336c9ff%22/%3E%3C/linearGradient%3E%3ClinearGradient id=%22vv-shine%22 x1=%220%22 y1=%220%22 x2=%220%22 y2=%221%22%3E%3Cstop offset=%220%22 stop-color=%22%23fff%22 stop-opacity=%22.28%22/%3E%3Cstop offset=%22.5%22 stop-color=%22%23fff%22 stop-opacity=%220%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width=%2264%22 height=%2264%22 rx=%2216%22 fill=%22url(%23vv-bg)%22/%3E%3Crect width=%2264%22 height=%2264%22 rx=%2216%22 fill=%22url(%23vv-shine)%22/%3E%3Cg fill=%22%23fff%22%3E%3Crect x=%229.5%22 y=%2213%22 width=%226.5%22 height=%2220%22 rx=%223.25%22 opacity=%22.78%22/%3E%3Crect x=%2219%22 y=%2219%22 width=%226.5%22 height=%2222%22 rx=%223.25%22 opacity=%22.9%22/%3E%3Crect x=%2228.75%22 y=%2225%22 width=%226.5%22 height=%2226%22 rx=%223.25%22/%3E%3Crect x=%2238.5%22 y=%2219%22 width=%226.5%22 height=%2222%22 rx=%223.25%22 opacity=%22.9%22/%3E%3Crect x=%2248%22 y=%2213%22 width=%226.5%22 height=%2220%22 rx=%223.25%22 opacity=%22.78%22/%3E%3C/g%3E%3C/svg%3E" alt=""><span>Vibe Visualizer</span></div>
   <div id="seg" role="tablist" aria-label="View"><span id="segpill"></span>
     <button data-v="viz">Visualizer</button><button data-v="lyrics">Lyrics</button><button data-v="both">Both</button>
   </div>
@@ -2503,6 +2504,8 @@ $('wzlow').onchange=()=>{S.low=$('wzlow').checked;applyLow();save();refreshReset
 $('wzpick').onclick=()=>{wzDone();$('file').click()};
 $('wzsp').onclick=()=>{wzDone();setSource('spotify')};
 $('rerun').onclick=wzOpen;
+$('brand').onclick=wzOpen;   // the logo opens the welcome page
+$('brand').onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();wzOpen()}};
 
 function applyRemote(p){
   for(const k in DEF)if(p.S&&k in p.S&&typeof p.S[k]===typeof DEF[k])S[k]=p.S[k];
