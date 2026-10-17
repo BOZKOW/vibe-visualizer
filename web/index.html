@@ -302,7 +302,7 @@ body.xfocus #lyr:not(.st) .ll.fu{opacity:0;transform:translateY(-34vh);filter:bl
 body.xfocus #lyr:not(.st) .ll.dots{opacity:0!important;visibility:hidden}   /* breaks show nothing, no dots */
 /* in "Both" the lyrics reach down behind the bars, which are drawn on top */
 body.xfocus[data-view=both] #viz{z-index:2}body.xfocus[data-view=both] #lyr{z-index:1}
-body.xfocus[data-view=both]:is(.hl,.lm) #lyr{bottom:0;-webkit-mask-image:linear-gradient(transparent,#000 12%,#000 70%,rgba(0,0,0,.35));mask-image:linear-gradient(transparent,#000 12%,#000 70%,rgba(0,0,0,.35))}
+body.xfocus[data-view=both]:is(.hl,.lm) #lyr{bottom:0;-webkit-mask-image:linear-gradient(transparent,#000 12%,#000 58%,transparent 74%);mask-image:linear-gradient(transparent,#000 12%,#000 58%,transparent 74%)}   /* lines fade in from where the bars are, nothing shows between them */
 body.novol #volwrap{display:none}
 .crow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-top:1px solid var(--line);font-size:13px;font-weight:600}
 .crow small{display:block;font-size:11.5px;font-weight:500;color:var(--faint);margin-top:2px;line-height:1.4}.crow .btn{flex:none}
@@ -472,10 +472,7 @@ body.low .ll{transition:opacity .25s}
 .note .nact{display:flex;gap:8px;margin-top:10px;justify-content:flex-end}
 .relnotes{display:flex;flex-direction:column;gap:10px;font-size:12.5px;color:var(--dim)}
 .relnotes .rn b{color:#fff;font-size:13px}.relnotes .rn small{color:var(--faint);margin-left:6px}.relnotes ul{margin:4px 0 0;padding-left:18px;line-height:1.45}
-/* Focus mode in Both: the lines behind the bars melt into a frosted blur, as in Spicy Lyrics, instead of showing between them */
-body.xfocus[data-view=both] #viz::before{content:"";position:absolute;inset:-30% 0 0;pointer-events:none;
-  backdrop-filter:blur(22px) saturate(140%);-webkit-backdrop-filter:blur(22px) saturate(140%);
-  -webkit-mask-image:linear-gradient(transparent,#000 45%);mask-image:linear-gradient(transparent,#000 45%)}
+/* Focus mode in Both: no box behind the bars; the lyrics fade out before them (see the #lyr mask) */
 /* ===== Liquid Glass behaviour: controls swell under the pointer, squish when pressed and spring back,
    and a highlight follows the pointer across the glass ===== */
 .lq{position:relative;transition:transform .5s cubic-bezier(.34,1.56,.64,1),background .25s,box-shadow .3s}
