@@ -304,6 +304,13 @@ body.xfocus #lyr .ll.fn.fs{opacity:1;filter:none}   /* sung right after the midd
 body.xfocus #lyr .ll.fv{opacity:1;transform:none;filter:none;pointer-events:auto;transition:opacity .5s ease,transform .8s cubic-bezier(.2,.8,.2,1),filter .6s ease}
 body.xfocus #lyr .ll.fu{opacity:0;transform:translateY(-34vh);filter:blur(14px);transition:opacity .45s ease,transform .6s cubic-bezier(.5,0,.75,.4),filter .45s ease}
 body.xfocus #lyr .ll.dots{opacity:0!important;visibility:hidden}   /* breaks show nothing, no dots */
+/* duets in Focus mode: each singer's lines come in and leave on their own side, and stay on that side, so two
+   voices read as two columns even when they overlap */
+body.xfocus #ly.duet .ll:not(.fv):not(.fn):not(.fu){transform:translate(-6vw,60vh)}
+body.xfocus #ly.duet .ll.opp:not(.fv):not(.fn):not(.fu){transform:translate(6vw,60vh)}
+body.xfocus #ly.duet .ll.fu{transform:translate(-6vw,-34vh)}body.xfocus #ly.duet .ll.opp.fu{transform:translate(6vw,-34vh)}
+body.xfocus #ly.duet .ll:not(.opp):not(.dots){padding-right:22%}body.xfocus #ly.duet .ll.opp{padding-left:22%}
+body.xfocus #ly.duet .ll.opp .sub{margin-left:auto}
 body.xfocus #lyr.st{overflow:hidden}   /* untimed lyrics in Focus mode are moved by the song, not scrolled */
 /* in "Both" the lyrics reach down behind the bars, which are drawn on top */
 body.xfocus[data-view=both] #viz{z-index:2}body.xfocus[data-view=both] #lyr{z-index:1}
