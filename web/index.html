@@ -1448,10 +1448,10 @@ function renderLyrics(label,quiet){
       d.appendChild(main);
       const sub=(c,t)=>{const s=document.createElement('span');s.className='sub '+c;s.textContent=t;d.appendChild(s);return s};
       if(l.bg)l.bg.forEach(b=>{   // background vocals: their own smaller line, sung word by word on their own timing
-        const romB=S.romMode==='replace'&&l.rom&&b.rom;
+        const romW=S.romMode==='replace'&&!!l.rom&&!!(b.words&&b.words.some(w=>w.rom)),romB=S.romMode==='replace'&&l.rom&&b.rom&&!romW;
         if(lsync&&b.words&&b.words.length&&!romB){
           const s=sub('bgv bw',''),bts=b.words.map((w,k)=>({t:w.t,end:w.end!=null?w.end:k+1<b.words.length?b.words[k+1].t:w.t+1}));
-          b.words.forEach(w=>{const x=document.createElement('span');x.className='w';x.textContent=w.text+(w.sp?' ':'');s.appendChild(x)});
+          b.words.forEach(w=>{const x=document.createElement('span');x.className='w';x.textContent=(romW&&w.rom?w.rom:w.text)+(w.sp?' ':'');s.appendChild(x)});
           splitLetters(s,bts);(d._bg=d._bg||[]).push({el:s,ts:bts});
         }else sub('bgv',romB?b.rom:b.text);
       });
@@ -1462,12 +1462,12 @@ function renderLyrics(label,quiet){
         if(!lsync||l.t==null){sub(c,text);return}
         const s=sub(c+' tm',''),ts=[];
         if(words&&l.words&&words.length===l.words.length){
-          words.forEach((x,k)=>{const w=l.words[k],y=document.createElement('span');y.className='w';y.textContent=x+(k<words.length-1?' ':'');s.appendChild(y);
+          words.forEach((x,k)=>{const w=l.words[k],y=document.createElement('span');y.className='w';y.textContent=typeof x==='string'?x+(k<words.length-1?' ':''):x.text+(x.sp?' ':'');s.appendChild(y);
             ts.push({t:w.t,end:w.end!=null?w.end:k+1<l.words.length?l.words[k+1].t:Math.min(w.t+1.5,lEnd)})});
         }else{const y=document.createElement('span');y.className='w one';y.textContent=text;s.appendChild(y);ts.push({t:l.t,end:Math.max(l.t+.3,lEnd)})}
         (d._bg=d._bg||[]).push({el:s,ts});
       };
-      if(l.rom&&S.romMode==='below')timed('rom',l.rom,l.rom.split(/\s+/).filter(Boolean));
+      if(l.rom&&S.romMode==='below')timed('rom',l.rom,l.romSyl&&l.words?l.words.map(w=>({text:w.rom||w.text,sp:w.sp})):l.rom.split(/\s+/).filter(Boolean));
       if(l.tr)timed('tr',l.tr);
     }
     d.dataset.b=d.className;
@@ -1611,6 +1611,56 @@ async function gtAll(lines,tl){
   }
   return out;
 }
+/* ---- romanization the way Spicy Lyrics does it (src/utils/Lyrics/ProcessLyrics.ts, AGPL-3.0) ----
+   Every syllable is romanized on its own, so the romanized text stays timed with the singing. Romanization the
+   lyrics already came with wins; the gaps are filled per script with the same libraries Spicy Lyrics uses
+   (kuroshiro + kuromoji, pinyin, aromanize, cyrillic-romanization), loaded from the jsDelivr npm CDN on demand. */
+const JA=/[぀-ヿㇰ-ㇿｦ-ﾟ]/,HAN=/[㐀-鿿豈-﫿]/,KO=/[가-힯ᄀ-ᇿ㄰-㆏]/,CYR=/[Ѐ-ԯⷠ-ⷿꙀ-ꚟ]/,CYR2=/[Ѐ-ԯⷠ-ⷿꙀ-ꚟ]{2,}/,GR=/[Ͱ-Ͽἀ-῿]/;
+const romLibs={};
+const loadScript=src=>new Promise((ok,no)=>{const x=document.createElement('script');x.src=src;x.onload=ok;x.onerror=()=>no(new Error('could not load '+src));document.head.appendChild(x)});
+const romLib=(name,make)=>romLibs[name]||(romLibs[name]=make().catch(e=>{delete romLibs[name];throw e}));
+const libJa=()=>romLib('ja',async()=>{
+  await loadScript('https://cdn.jsdelivr.net/npm/kuroshiro@1.2.0/dist/kuroshiro.min.js');
+  await loadScript('https://cdn.jsdelivr.net/npm/kuroshiro-analyzer-kuromoji@1.1.0/dist/kuroshiro-analyzer-kuromoji.min.js');
+  const K=window.Kuroshiro.default||window.Kuroshiro,A=window.KuromojiAnalyzer.default||window.KuromojiAnalyzer,k=new K();
+  await k.init(new A({dictPath:'https://cdn.jsdelivr.net/npm/kuromoji@0.1.2/dict/'}));return k});
+const libZh=()=>romLib('zh',async()=>{const m=await import('https://cdn.jsdelivr.net/npm/pinyin@4.0.0/+esm');return m.pinyin||m.default.pinyin||m.default});
+const libKo=()=>romLib('ko',async()=>{await loadScript('https://cdn.jsdelivr.net/npm/aromanize@0.1.5/aromanize.js?base');return window.Aromanize});
+const libRu=()=>romLib('ru',async()=>{const m=await import('https://cdn.jsdelivr.net/npm/cyrillic-romanization@1.2.1/+esm');return m.default||m});
+const GREEK={α:'a',β:'v',γ:'g',δ:'d',ε:'e',ζ:'z',η:'i',θ:'th',ι:'i',κ:'k',λ:'l',μ:'m',ν:'n',ξ:'x',ο:'o',π:'p',ρ:'r',σ:'s',ς:'s',τ:'t',υ:'y',φ:'f',χ:'ch',ψ:'ps',ω:'o'};
+function romGreek(t){   // ELOT 743 style, with the common two-letter sounds
+  t=t.normalize('NFD').replace(/[̀-ͯ]/g,'').normalize('NFC');
+  const pairs=[['ου','ou'],['αι','ai'],['ει','ei'],['οι','oi'],['μπ','b'],['ντ','nt'],['γκ','gk'],['γγ','ng'],['αυ','av'],['ευ','ev']];
+  let out='';for(let i=0;i<t.length;){
+    const two=t.slice(i,i+2),lo=two.toLowerCase(),pr=pairs.find(p=>p[0]===lo);
+    if(pr){out+=two[0]!==lo[0]?pr[1][0].toUpperCase()+pr[1].slice(1):pr[1];i+=2;continue}
+    const c=t[i],l=c.toLowerCase(),r=GREEK[l];out+=r==null?c:c!==l?r[0].toUpperCase()+r.slice(1):r;i++}
+  return out;
+}
+async function romanizeLyrics(lines){
+  const all=lines.map(l=>l.text+' '+(l.bg||[]).map(b=>b.text).join(' ')).join('\n');
+  const has={ja:JA.test(all),zh:!JA.test(all)&&HAN.test(all),ko:KO.test(all),ru:CYR2.test(all),gr:GR.test(all)};
+  if(!Object.values(has).some(Boolean))return;
+  const lib={};
+  await Promise.all([has.ja&&libJa().then(x=>lib.ja=x),has.zh&&libZh().then(x=>lib.zh=x),has.ko&&libKo().then(x=>lib.ko=x),has.ru&&libRu().then(x=>lib.ru=x)].map(p=>p&&p.catch(e=>console.warn('romanization:',e.message))));
+  const one=async t=>{   // pass the text through every converter whose script it contains, in Spicy's order
+    let x=t,ch=false;
+    if(lib.ja&&(JA.test(x)||HAN.test(x))){x=await lib.ja.convert(x,{to:'romaji',mode:'spaced'});ch=true}
+    if(lib.zh&&HAN.test(x)){x=lib.zh(x,{segment:false,group:true}).join('-');ch=true}
+    if(lib.ko&&KO.test(x)){x=lib.ko.hangulToLatin(x,'rr-translit');ch=true}
+    if(lib.ru&&CYR.test(x)){const r=lib.ru(x);if(r!=null){x=r;ch=true}}
+    if(has.gr&&GR.test(x)){x=romGreek(x);ch=true}
+    return ch?x.replace(/\s+/g,' ').trim():null;
+  };
+  const words=async ws=>{let any=false;for(const w of ws){if(!w.rom&&nonLatin(w.text)){const r=await one(w.text);if(r){w.rom=r;any=true}}else if(w.rom)any=true}return any};
+  const join=ws=>ws.map(w=>(w.rom||w.text)+(w.sp?' ':'')).join('').replace(/\s+/g,' ').trim();
+  for(const l of lines){
+    if(!nonLatin(l.text))continue;
+    if(l.words&&l.words.length){if(await words(l.words)){l.sylRom=join(l.words)}}
+    else if(!l.apiRom){const r=await one(l.text);if(r)l.lineRom=r}
+    for(const b of l.bg||[])if(b.words&&b.words.length&&nonLatin(b.text)){if(await words(b.words))b.rom=b.rom||join(b.words)}else if(!b.rom&&nonLatin(b.text)){const r=await one(b.text);if(r)b.rom=r}
+  }
+}
 async function decorate(){
   const tok=++trTok,lines=L.filter(l=>!l.dots&&l.text);
   L.forEach(l=>{l.tr=l.rom=null});
@@ -1620,9 +1670,13 @@ async function decorate(){
   // The API's translations are assumed to be English, so they're only used when translating into English.
   const skip0=new Set(S.trSkip.split(',').filter(Boolean));skip0.add(S.trTo.split('-')[0]);
   const trOk=l=>!!l.apiTr&&S.trTo.split('-')[0]===(l.apiTrLang||'en');
+  if(wantRom&&!L._romDone){try{await romanizeLyrics(lines)}catch(e){console.warn(e)}L._romDone=true;if(tok!==trTok)return}
   lines.forEach(l=>{
     l.romSyl=false;
-    if(wantRom&&nonLatin(l.text)&&l.apiRom){l.rom=l.apiRom;l.romSyl=!!(l.words&&l.words.some(w=>w.rom))}
+    if(wantRom&&nonLatin(l.text)){
+      if(l.sylRom){l.rom=l.sylRom;l.romSyl=true}   // per syllable, timed with the singing
+      else if(l.apiRom){l.rom=l.apiRom;l.romSyl=!!(l.words&&l.words.some(w=>w.rom))}
+      else if(l.lineRom)l.rom=l.lineRom}
     if(wantTr&&trOk(l)&&!skip0.has(lineLang(l.text,null)))l.tr=l.apiTr;
   });
   const needG=lines.some(l=>(wantRom&&nonLatin(l.text)&&!l.rom)||(wantTr&&!l.tr&&!trOk(l)));

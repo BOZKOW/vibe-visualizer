@@ -147,7 +147,12 @@ settings, and set Windows not to sleep while you use it.
 Some features rely on services that do not offer an official API for this purpose. They are optional,
 may stop working at any time, and you are responsible for whether using them is acceptable to you:
 
-- **Translation and romanization** use Google Translate's free web endpoint (unofficial). Lyric lines are sent to Google.
+- **Romanization** works like Spicy Lyrics: romanization that comes with the lyrics is used first, and the rest is romanized
+  syllable by syllable in your browser with [kuroshiro](https://github.com/hexenq/kuroshiro) + kuromoji (Japanese),
+  [pinyin](https://github.com/hotoo/pinyin) (Chinese), [aromanize](https://github.com/fujaru/aromanize-js) (Korean) and
+  [cyrillic-romanization](https://www.npmjs.com/package/cyrillic-romanization) (Russian and other Cyrillic), all MIT and
+  loaded on demand from the jsDelivr CDN (the Japanese dictionary is about 17 MB, downloaded once). Google is the fallback.
+- **Translation** uses Google Translate's free web endpoint (unofficial). Lyric lines are sent to Google.
 - **Spotify Canvas videos and Spotify's lyrics** are looked up by a headless Chromium that opens the Spotify web
   player with *your own* `sp_dc` cookie (`config/sp_dc`). This is not an official Spotify API and is against
   Spotify's terms of use. Leave `config/sp_dc` absent to keep it disabled.
