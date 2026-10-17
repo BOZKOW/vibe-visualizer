@@ -125,6 +125,10 @@ may stop working at any time, and you are responsible for whether using them is 
 `Space` play/pause · `←`/`→` seek · `↑`/`↓` volume · `M` mute · `F` fullscreen ·
 `1`/`2`/`3` visualizer / lyrics / both · `T` translate · `R` romanize · click a lyric line to jump to it
 
+## Credits
+
+Made by [BOZKOW](https://github.com/BOZKOW), built together with [Claude Code](https://claude.com/claude-code) (Anthropic's Claude Opus).
+
 ## License
 
 [MIT](LICENSE)
