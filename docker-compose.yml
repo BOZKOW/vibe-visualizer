@@ -1,0 +1,24 @@
+# Vibe Visualizer: web app (nginx) + server helper.
+# The web port is bound to 127.0.0.1 on purpose: put it behind `tailscale serve` (see README),
+# so only your own devices can reach it and the helper can trust the forwarded Tailscale IP.
+services:
+  web:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8095:80"
+    volumes:
+      - ./web:/usr/share/nginx/html:ro
+      - ./server/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - helper
+
+  helper:
+    build: ./server
+    restart: unless-stopped
+    init: true
+    ipc: host            # recommended by Playwright for Chromium
+    mem_limit: 1500m
+    volumes:
+      - ./config:/config:ro   # secrets: spicy_key (Spicy Lyrics secret key), optional sp_dc. Never commit this folder.
+      - ./prefs:/prefs        # per-device saved settings
