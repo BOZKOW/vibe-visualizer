@@ -1967,15 +1967,15 @@ function lineEnd(l){
   let e=l.end!=null?l.end:null;const up=ws=>ws&&ws.forEach(w=>{const x=w.end!=null?w.end:w.t;if(e==null||x>e)e=x});
   up(l.words);(l.bg||[]).forEach(b=>up(b.words));return e;   // null when the source doesn't say (LRC): the line stays lit
 }
-// untimed lyrics (just text) scroll slowly by themselves, following the song: the top at its start, the end near
-// its end, so skipping around keeps them in the right place. Scrolling by hand pauses this for a few seconds.
+// untimed lyrics (just text) scroll slowly by themselves, following the song: the top as it starts, the end as it
+// ends, so skipping around keeps them in the right place. Scrolling by hand pauses this for a few seconds.
 let stPos=null,stUser=0,stLast=0;
 ['wheel','touchmove','pointerdown','keydown'].forEach(ev=>lyr.addEventListener(ev,()=>{stUser=performance.now();stPos=null},{passive:true}));
 function staticScroll(){
   const now=performance.now(),dt=Math.min(.1,(now-(stLast||now))/1000);stLast=now;
   if(!lyr.classList.contains('st')||now-stUser<4000)return;
   const d=curDur(),max=lyr.scrollHeight-lyr.clientHeight;if(!d||max<=0)return;
-  const target=Math.max(0,Math.min(1,(curTime()-d*.05)/(d*.85)))*max;
+  const target=Math.max(0,Math.min(1,curTime()/d))*max;   // top when the song starts, the end when it ends
   if(stPos==null)stPos=lyr.scrollTop;
   stPos+=(target-stPos)*Math.min(1,dt*1.5);   // glide toward where the song is
   if(Math.abs(Math.round(stPos)-lyr.scrollTop)>=1)lyr.scrollTop=Math.round(stPos);
