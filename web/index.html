@@ -1478,6 +1478,7 @@ function cvFrame(){
 }
 
 /* ================= lyrics ================= */
+let lAct=new Set(),lActKey='';   // all lines being sung right now (duets can overlap)
 let L=[],lsync=false,li=-2,lsi=-2,lfi=-2,lfo=false,lfn=-1,lfs=false,lEls=[];   // lfi: the line on screen in Focus mode   // lsi: the line the view is scrolled to (the next one early, with Early scroll)
 const lcache=new Map();
 // lyrics saved on this device (IndexedDB), so a song's lyrics aren't fetched again every time: found lyrics for 7 days,
@@ -1602,7 +1603,7 @@ function findIdx(t){let a=0,b=L.length-1,r=-1;while(a<=b){const m=(a+b)>>1;if(L[
 let lLabel='';
 function renderLyrics(label,quiet){
   if(!quiet)lLabel=label||'';
-  ly.textContent='';lEls=[];li=-2;lsi=-2;lfi=-2;lfo=false;lfn=-1;lfs=false;moving.clear();ly.classList.toggle('duet',L.some(l=>l.opp));stPos=null;if(!quiet)lyr.scrollTop=0;lyr.classList.toggle('st',!lsync&&L.length>0);
+  ly.textContent='';lEls=[];lAct=new Set();lActKey='';li=-2;lsi=-2;lfi=-2;lfo=false;lfn=-1;lfs=false;moving.clear();ly.classList.toggle('duet',L.some(l=>l.opp));stPos=null;if(!quiet)lyr.scrollTop=0;lyr.classList.toggle('st',!lsync&&L.length>0);
   L.forEach((l,idx)=>{
     const d=document.createElement('div');d.className=l.dots?'ll dots':l.opp?'ll opp':'ll';
     if(l.dots){d.innerHTML='<div class="dg"><span class="dot">•</span><span class="dot">•</span><span class="dot">•</span></div>';d._w=d.firstChild}
@@ -1901,7 +1902,7 @@ async function decorate(){
 function setActive(i){
   li=i;
   for(let j=0;j<lEls.length;j++){
-    const d=Math.abs(j-i),c=lEls[j].dataset.b+(lfi!==-2?(j===lfi&&!lfo?' fv':'')+(j===lfn?' fn'+(lfs?' fs':''):'')+(j<lfi||(j===lfi&&lfo)?' fu':''):'')+(j===i?(lOut?' p dp':' a'):j<i?' p':'')+(d===1?' d1':d===2?' d2':d===3?' d3':d===4?' d4':d===5?' d5':d>5?' dx':'');
+    const d=Math.abs(j-i),c=lEls[j].dataset.b+(lfi!==-2?(j===lfi&&!lfo?' fv':'')+(j===lfn?' fn'+(lfs?' fs':''):'')+(j<lfi||(j===lfi&&lfo)?' fu':''):'')+(lAct.has(j)?' a':j===i?(lOut?' p dp':' a'):j<i?' p':'')+(lAct.has(j)?'':d===1?' d1':d===2?' d2':d===3?' d3':d===4?' d4':d===5?' d5':d>5?' dx':'');
     if(lEls[j].className!==c)lEls[j].className=c;
   }
   place();
@@ -2055,6 +2056,7 @@ const groups=d=>{const g=[];if(d._ts)g.push([d._w.children,d._ts]);(d._bg||[]).f
 function wordsTick(pos){
   const now=performance.now(),dt=Math.min(.1,Math.max(0,(now-(lastWT||now))/1000));lastWT=now;
   if(li>=0&&lEls[li])moving.add(li);
+  lAct.forEach(k=>{if(lEls[k])moving.add(k)});   // overlapping duet lines keep animating too
   moving.forEach(k=>{
     const d=lEls[k];if(!d){moving.delete(k);return}
     if(L[k].dots){
@@ -2072,7 +2074,7 @@ function wordsTick(pos){
       if(d._ts||d._bg)groups(d).forEach(([sp,ts])=>{for(let j=0;j<sp.length&&j<ts.length;j++)m=animateWord(sp[j],ts[j],pos,dt)||m});
       if(!d._ts&&d._w)m=animateLineGlow(d,L[k],pos,dt)||m;   // line-synced: the line itself fills, also when it has a translation under it
     }
-    if(!m&&k!==li)moving.delete(k);   // settled; the words keep their final pose, as in Spicy Lyrics
+    if(!m&&k!==li&&!lAct.has(k))moving.delete(k);   // settled; the words keep their final pose, as in Spicy Lyrics
   });
 }
 // when a line has been sung to its end and the next hasn't started (a pause), it dims back like the other sung lines,
@@ -2110,7 +2112,11 @@ function lyricsTick(){
     // the line underneath shows up 200 ms before it's sung, and turns sharp if it starts while the middle line still holds
     fn=n>=0&&t>=L[n].t-.2?n:-1;fs=fn>=0&&t>=L[fn].t;
   }
-  if(i!==li||out!==lOut||fi!==lfi||fo!==lfo||fn!==lfn||fs!==lfs){lOut=out;lsi=si;lfi=fi;lfo=fo;lfn=fn;lfs=fs;setActive(i)}else if(si!==lsi){lsi=si;place()}
+  // every line still being sung is active, not just the newest: a duet line can start while another is going
+  const act=new Set();if(i>=0&&!out)act.add(i);
+  for(let k=i-1;k>=0&&k>=i-6;k--){const l=L[k];if(l.dots)continue;const ek=lineEnd(l);if(ek!=null&&t>=l.t&&t<ek)act.add(k)}
+  const ak=[...act].join();
+  if(i!==li||out!==lOut||fi!==lfi||fo!==lfo||fn!==lfn||fs!==lfs||ak!==lActKey){lOut=out;lsi=si;lfi=fi;lfo=fo;lfn=fn;lfs=fs;lAct=act;lActKey=ak;setActive(i)}else if(si!==lsi){lsi=si;place()}
   wordsTick(t);
 }
 // lyrics sources, tried in the order set in Settings
