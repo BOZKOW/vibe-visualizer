@@ -127,6 +127,7 @@ body.low .ll .w,body.low .ll .w .c{scale:1;transform:none}
 .ll .sub.tr{font-weight:600;color:rgba(255,255,255,.58)}
 .ll.a .sub{animation:up .5s cubic-bezier(.2,.8,.2,1) backwards}.ll.a .sub.tr{animation-delay:.06s}
 .ll.a .sub.rom{color:#fff}
+#syncbtn.spin svg{animation:spin1 .6s cubic-bezier(.3,.7,.3,1)}@keyframes spin1{to{transform:rotate(-360deg)}}
 /* timed romanization / translation: transparent text filled by the same gradient as the lyrics */
 .ll .sub.tm{width:fit-content;max-width:100%}.ll.opp .sub.tm{margin-left:auto}
 .ll.a .sub.tm .w{-webkit-text-fill-color:transparent}
@@ -423,6 +424,7 @@ body.low .ll{transition:opacity .25s}
     <button class="ib" id="capbtn" aria-label="Audio for the visualizer" title="Make the bars react to your computer’s sound (Spotify app, browser tab…)"><svg viewBox="0 0 24 24"><path d="M12 14a3 3 0 003-3V5a3 3 0 00-6 0v6a3 3 0 003 3zm5-3a5 5 0 01-10 0H5a7 7 0 006 6.9V21h2v-3.1A7 7 0 0019 11h-2z"/></svg></button>
     <button class="ib" id="trbtn" aria-label="Translate lyrics" title="Translate lyrics (T)"><svg viewBox="0 0 24 24"><path d="M12.87 15.07l-2.54-2.51.03-.03A17.52 17.52 0 0014.07 6H17V4h-7V2H8v2H1v2h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11.76-2.04zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z"/></svg></button>
     <button class="ib" id="rombtn" aria-label="Romanize lyrics" title="Romanize lyrics (R)"><svg viewBox="0 0 24 24"><text x="1" y="15" font-size="13" font-weight="800" font-family="system-ui,sans-serif">あ</text><text x="14" y="21" font-size="11" font-weight="800" font-family="system-ui,sans-serif">a</text></svg></button>
+    <button class="ib gone" id="syncbtn" aria-label="Resync lyrics" title="Resync lyrics now"><svg viewBox="0 0 24 24"><path d="M12 4V1L8 5l4 4V6a6 6 0 016 6 6 6 0 01-.7 2.8l1.46 1.46A8 8 0 0020 12a8 8 0 00-8-8zm0 14a6 6 0 01-6-6c0-1 .25-1.97.7-2.8L5.24 7.74A8 8 0 004 12a8 8 0 008 8v3l4-4-4-4v3z"/></svg></button>
     <button class="ib" id="lowbtn" aria-label="Low performance mode" title="Low performance mode"><svg viewBox="0 0 24 24"><path d="M13 2L4 14h6l-1 8 9-12h-6l1-8z"/></svg></button>
     <button class="chip" id="netbtn" aria-label="Connection status" title="Ping meter: server and services"><i class="dot"></i><span id="netms">– ms</span></button>
     <button class="ib" id="gear" aria-label="Settings" title="Settings"><svg viewBox="0 0 24 24"><path d="M4 7h10v2H4zm12 0h4v2h-4zM4 15h4v2H4zm6 0h10v2H10zM14 5h2v6h-2zM8 13h2v6H8z"/></svg></button>
@@ -974,7 +976,14 @@ const filePlaying=()=>loaded&&!audio.paused&&!audio.ended;
 const spPlaying=()=>!!(spState&&spState.playing);
 const playing=()=>src==='file'?filePlaying():src==='spotify'?spPlaying():false;
 const liveAudio=()=>!!capStream||(src==='file'&&filePlaying());
-let spSlew=null;
+let spSlew=null,spSnap=false;
+async function resyncNow(){   // manual resync: fresh position from Spotify, snapped (no gliding), lyrics re-placed
+  const b=$('syncbtn');b.classList.remove('spin');void b.offsetWidth;b.classList.add('spin');
+  if(src==='spotify'){spSlew=null;spSnap=true;try{await spPoll()}finally{spSnap=false}}
+  moving.forEach(k=>{const d=lEls[k];if(d&&k!==li){d.querySelectorAll('.w,.c').forEach(idle);if(d._w)idle(d._w)}});
+  if(lsync&&L.length){li=-2;setActive(findIdx(curTime()*lPace+S.loff/1000))}
+  toast('Lyrics re-synced'+(src==='spotify'?' with Spotify':'')+'.','ok',1800);
+}
 function curMs(){   // Spotify position in ms, with any resync correction still gliding in
   const now=performance.now();let t=spState.progress+(spState.playing?now-spFetched:0);
   if(spSlew){const k=(now-spSlew.at)/600;if(k>=1)spSlew=null;else t+=spSlew.e*(1-k*k*(3-2*k))}
@@ -1178,7 +1187,7 @@ async function spPoll(){
     spState={playing:!!d.is_playing,progress:d.progress_ms||0,duration:it.duration_ms};
     // small differences glide in over ~0.6 s instead of jumping the lyrics; big ones (seek, skip) snap
     const after=spState.progress+(spState.playing?t1-spFetched:0),err=before==null?null:before+(t1-t0)-after;
-    spSlew=err!=null&&it.id===oldId&&spState.playing&&Math.abs(err)<1500&&Math.abs(err)>15?{e:err,at:t1}:null;
+    spSlew=!spSnap&&err!=null&&it.id===oldId&&spState.playing&&Math.abs(err)<1500&&Math.abs(err)>15?{e:err,at:t1}:null;
     if(m.id!==spId){spId=m.id;onSpTrack(m)}
     updChips();syncCanvasPlay();updPlayIcon();
   }catch(e){
@@ -1585,7 +1594,7 @@ function updNeed(){
   const skip=new Set(S.trSkip.split(',').filter(Boolean));skip.add(S.trTo.split('-')[0]);
   const needRom=lines.some(l=>nonLatin(l.text));
   const needTr=lines.some(l=>!skip.has(nonLatin(l.text)?lineLang(l.text,null):song));
-  $('rombtn').classList.toggle('gone',!needRom);$('trbtn').classList.toggle('gone',!needTr);
+  $('rombtn').classList.toggle('gone',!needRom);$('trbtn').classList.toggle('gone',!needTr);$('syncbtn').classList.toggle('gone',!(lsync&&lines.length));
 }
 async function gtChunk(lines,tl){
   const r=await timed('google',()=>fetch(GT+encodeURIComponent(tl)+'&q='+encodeURIComponent(lines.join('\n|\n'))));
@@ -1619,12 +1628,26 @@ const JA=/[぀-ヿㇰ-ㇿｦ-ﾟ]/,HAN=/[㐀-鿿豈-﫿]/,KO=/[가-힯ᄀ-ᇿ㄰
 const romLibs={};
 const loadScript=src=>new Promise((ok,no)=>{const x=document.createElement('script');x.src=src;x.onload=ok;x.onerror=()=>no(new Error('could not load '+src));document.head.appendChild(x)});
 const romLib=(name,make)=>romLibs[name]||(romLibs[name]=make().catch(e=>{delete romLibs[name];throw e}));
-const libJa=()=>romLib('ja',async()=>{
-  await loadScript('https://cdn.jsdelivr.net/npm/kuroshiro@1.2.0/dist/kuroshiro.min.js');
-  await loadScript('https://cdn.jsdelivr.net/npm/kuroshiro-analyzer-kuromoji@1.1.0/dist/kuroshiro-analyzer-kuromoji.min.js');
-  const K=window.Kuroshiro.default||window.Kuroshiro,A=window.KuromojiAnalyzer.default||window.KuromojiAnalyzer,k=new K();
-  await k.init(new A({dictPath:'https://cdn.jsdelivr.net/npm/kuromoji@0.1.2/dict/'}));return k});
-const libZh=()=>romLib('zh',async()=>{const m=await import('https://cdn.jsdelivr.net/npm/pinyin@4.0.0/+esm');return m.pinyin||m.default.pinyin||m.default});
+// Japanese (kuromoji's 17 MB dictionary) and Chinese (pinyin's large dictionary) run in a background worker, so building
+// the dictionaries and converting never freezes the app
+const ROM_WORKER=`let ja,zh;
+const loadJa=()=>ja||(ja=(async()=>{importScripts('https://cdn.jsdelivr.net/npm/kuroshiro@1.2.0/dist/kuroshiro.min.js','https://cdn.jsdelivr.net/npm/kuroshiro-analyzer-kuromoji@1.1.0/dist/kuroshiro-analyzer-kuromoji.min.js');
+  const K=self.Kuroshiro.default||self.Kuroshiro,A=self.KuromojiAnalyzer.default||self.KuromojiAnalyzer,k=new K();
+  await k.init(new A({dictPath:'https://cdn.jsdelivr.net/npm/kuromoji@0.1.2/dict/'}));return k})());
+const loadZh=()=>zh||(zh=import('https://cdn.jsdelivr.net/npm/pinyin@4.0.0/+esm').then(m=>m.pinyin||m.default.pinyin||m.default));
+onmessage=async e=>{const {id,lang,texts}=e.data;
+  try{const out=[];
+    if(lang==='ja'){const k=await loadJa();for(const t of texts)out.push(await k.convert(t,{to:'romaji',mode:'spaced'}))}
+    else{const p=await loadZh();for(const t of texts)out.push(p(t,{segment:false,group:true}).join('-'))}
+    postMessage({id,out})}catch(err){postMessage({id,err:String(err&&err.message||err)})}};`;
+let romW=null,romWid=0;const romWait=new Map();
+function romWorker(lang,texts,ms){   // resolves to an array of romanized texts, or rejects (failed, or too slow)
+  if(!romW){romW=new Worker(URL.createObjectURL(new Blob([ROM_WORKER],{type:'text/javascript'})));
+    romW.onmessage=e=>{const w=romWait.get(e.data.id);if(!w)return;romWait.delete(e.data.id);e.data.err?w.no(new Error(e.data.err)):w.ok(e.data.out)};
+    romW.onerror=e=>{romWait.forEach(w=>w.no(new Error(e.message||'romanization worker failed')));romWait.clear();romW.terminate();romW=null}}
+  return new Promise((ok,no)=>{const id=++romWid;romWait.set(id,{ok,no});romW.postMessage({id,lang,texts});
+    setTimeout(()=>{if(romWait.delete(id))no(new Error('romanization took too long'))},ms)});
+}
 const libKo=()=>romLib('ko',async()=>{await loadScript('https://cdn.jsdelivr.net/npm/aromanize@0.1.5/aromanize.js?base');return window.Aromanize});
 const libRu=()=>romLib('ru',async()=>{const m=await import('https://cdn.jsdelivr.net/npm/cyrillic-romanization@1.2.1/+esm');return m.default||m});
 const GREEK={α:'a',β:'v',γ:'g',δ:'d',ε:'e',ζ:'z',η:'i',θ:'th',ι:'i',κ:'k',λ:'l',μ:'m',ν:'n',ξ:'x',ο:'o',π:'p',ρ:'r',σ:'s',ς:'s',τ:'t',υ:'y',φ:'f',χ:'ch',ψ:'ps',ω:'o'};
@@ -1638,27 +1661,31 @@ function romGreek(t){   // ELOT 743 style, with the common two-letter sounds
   return out;
 }
 async function romanizeLyrics(lines){
-  const all=lines.map(l=>l.text+' '+(l.bg||[]).map(b=>b.text).join(' ')).join('\n');
-  const has={ja:JA.test(all),zh:!JA.test(all)&&HAN.test(all),ko:KO.test(all),ru:CYR2.test(all),gr:GR.test(all)};
-  if(!Object.values(has).some(Boolean))return;
-  const lib={};
-  await Promise.all([has.ja&&libJa().then(x=>lib.ja=x),has.zh&&libZh().then(x=>lib.zh=x),has.ko&&libKo().then(x=>lib.ko=x),has.ru&&libRu().then(x=>lib.ru=x)].map(p=>p&&p.catch(e=>console.warn('romanization:',e.message))));
-  const one=async t=>{   // pass the text through every converter whose script it contains, in Spicy's order
-    let x=t,ch=false;
-    if(lib.ja&&(JA.test(x)||HAN.test(x))){x=await lib.ja.convert(x,{to:'romaji',mode:'spaced'});ch=true}
-    if(lib.zh&&HAN.test(x)){x=lib.zh(x,{segment:false,group:true}).join('-');ch=true}
-    if(lib.ko&&KO.test(x)){x=lib.ko.hangulToLatin(x,'rr-translit');ch=true}
-    if(lib.ru&&CYR.test(x)){const r=lib.ru(x);if(r!=null){x=r;ch=true}}
-    if(has.gr&&GR.test(x)){x=romGreek(x);ch=true}
-    return ch?x.replace(/\s+/g,' ').trim():null;
-  };
-  const words=async ws=>{let any=false;for(const w of ws){if(!w.rom&&nonLatin(w.text)){const r=await one(w.text);if(r){w.rom=r;any=true}}else if(w.rom)any=true}return any};
-  const join=ws=>ws.map(w=>(w.rom||w.text)+(w.sp?' ':'')).join('').replace(/\s+/g,' ').trim();
+  // what still needs romanizing: syllables (or whole lines without syllables) the lyrics didn't come romanized
+  const jobs=[],add=(o,text)=>{if(!o.rom&&nonLatin(text))jobs.push({o,text})};
   for(const l of lines){
     if(!nonLatin(l.text))continue;
-    if(l.words&&l.words.length){if(await words(l.words)){l.sylRom=join(l.words)}}
-    else if(!l.apiRom){const r=await one(l.text);if(r)l.lineRom=r}
-    for(const b of l.bg||[])if(b.words&&b.words.length&&nonLatin(b.text)){if(await words(b.words))b.rom=b.rom||join(b.words)}else if(!b.rom&&nonLatin(b.text)){const r=await one(b.text);if(r)b.rom=r}
+    if(l.words&&l.words.length)l.words.forEach(w=>add(w,w.text));else if(!l.apiRom)jobs.push({o:l,text:l.text,line:true});
+    for(const b of l.bg||[])if(b.words&&b.words.length)b.words.forEach(w=>add(w,w.text));else if(!b.rom&&nonLatin(b.text))jobs.push({o:b,text:b.text});
+  }
+  if(jobs.length){
+    const all=lines.map(l=>l.text).join('\n'),isJa=JA.test(all);
+    const put=(j,r)=>{if(r&&r.trim()){r=r.replace(/\s+/g,' ').trim();if(j.line)j.o.lineRom=r;else j.o.rom=r}};
+    // Han characters are Japanese in a song with kana, Chinese otherwise (as Spicy Lyrics decides it)
+    const heavy=jobs.filter(j=>JA.test(j.text)||HAN.test(j.text));
+    if(heavy.length){
+      try{const out=await romWorker(isJa?'ja':'zh',heavy.map(j=>j.text),isJa?60000:30000);heavy.forEach((j,k)=>put(j,out[k]))}
+      catch(e){console.warn('romanization:',e.message)}   // leaves them for Google
+    }
+    const rest=jobs.filter(j=>!heavy.includes(j));
+    if(rest.some(j=>KO.test(j.text))){try{const A=await libKo();rest.forEach(j=>{if(KO.test(j.text))put(j,A.hangulToLatin(j.text,'rr-translit'))})}catch(e){console.warn(e.message)}}
+    if(rest.some(j=>CYR.test(j.text))){try{const R=await libRu();rest.forEach(j=>{if(CYR.test(j.text)&&!j.o.rom&&!j.o.lineRom)put(j,R(j.text))})}catch(e){console.warn(e.message)}}
+    rest.forEach(j=>{if(GR.test(j.text)&&!j.o.rom&&!j.o.lineRom)put(j,romGreek(j.text))});
+  }
+  const join=ws=>ws.map(w=>(w.rom||w.text)+(w.sp?' ':'')).join('').replace(/\s+/g,' ').trim();
+  for(const l of lines){
+    if(l.words&&l.words.length&&nonLatin(l.text)&&l.words.some(w=>w.rom)&&!l.words.some(w=>nonLatin(w.text)&&!w.rom))l.sylRom=join(l.words);
+    for(const b of l.bg||[])if(b.words&&b.words.some(w=>w.rom)&&!b.rom)b.rom=join(b.words);
   }
 }
 async function decorate(){
@@ -1670,7 +1697,10 @@ async function decorate(){
   // The API's translations are assumed to be English, so they're only used when translating into English.
   const skip0=new Set(S.trSkip.split(',').filter(Boolean));skip0.add(S.trTo.split('-')[0]);
   const trOk=l=>!!l.apiTr&&S.trTo.split('-')[0]===(l.apiTrLang||'en');
-  if(wantRom&&!L._romDone){try{await romanizeLyrics(lines)}catch(e){console.warn(e)}L._romDone=true;if(tok!==trTok)return}
+  if(wantRom&&!L._romDone){
+    if(!L._romP){const LL=L;L._romP=romanizeLyrics(lines).catch(e=>console.warn(e)).then(()=>{LL._romDone=true})}
+    renderLyrics(null,true);   // show the lyrics right away; the romanization follows
+    await L._romP;if(tok!==trTok)return}
   lines.forEach(l=>{
     l.romSyl=false;
     if(wantRom&&nonLatin(l.text)){
@@ -2308,6 +2338,7 @@ let netT=0;
 function netLoop(){clearTimeout(netT);netPing();netT=setTimeout(netLoop,$('netpanel').hidden?30000:3000)}
 $('netbtn').onclick=e=>{e.stopPropagation();const p=$('netpanel');p.hidden=!p.hidden;$('netbtn').classList.toggle('on',!p.hidden);if(!p.hidden){netRender();netLoop()}};
 document.addEventListener('click',e=>{const p=$('netpanel');if(!p.hidden&&!p.contains(e.target)&&e.target!==$('netbtn')){p.hidden=true;$('netbtn').classList.remove('on')}});
+$('syncbtn').onclick=resyncNow;
 addEventListener('keydown',e=>{if(e.key==='Escape'){$('netpanel').hidden=true;$('cappanel').hidden=true;$('netbtn').classList.remove('on')}});
 netLoop();
 
