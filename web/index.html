@@ -57,7 +57,7 @@ body.cvmode #left{justify-content:center}
 body.cvmode.cvnoart #artw{display:none}   /* setting: hide the cover while a Canvas plays (comes back when there's none) */
 body.cvmode.cvnoart #left{justify-content:flex-end}   /* no cover: the text drops to the bottom of the video */
 #info{display:flex;flex-direction:column;gap:18px;min-width:0}
-#artw{position:relative;width:100%;aspect-ratio:1;border-radius:clamp(16px,2vw,28px);overflow:hidden;background:rgba(255,255,255,.1);transition:transform .09s linear,box-shadow .12s linear;
+#artw{position:relative;width:100%;aspect-ratio:1;border-radius:clamp(16px,2vw,28px);overflow:hidden;background:rgba(255,255,255,.1);transition:box-shadow .12s linear;
   box-shadow:0 30px 80px rgba(0,0,0,.55),0 0 calc(var(--beat,0)*70px) calc(var(--beat,0)*5px) var(--acc)}   /* --beat: the cover glows on the bass */
 body.cvmode #ttl{transform-origin:center}
 body.flip #stage,body.flip #artw,body.flip #ttl{transition:none!important}
@@ -255,6 +255,17 @@ input[type=color]{width:100%;height:28px;padding:0;border:1px solid var(--line);
 .hint b{color:var(--dim)}
 .stat{margin:0;font-size:12px;color:var(--dim)}
 .row2{display:flex;gap:8px;flex-wrap:wrap}
+.sub-h{margin:16px 0 4px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--faint)}
+.f.chk label small{display:block;margin:2px 0 0 26px;font-size:11.5px;font-weight:500;color:var(--faint);line-height:1.4}
+/* Spicy Lyrics style options */
+body.lsimple .ll .w,body.lsimple .ll .w .c{scale:1;transform:none}
+body.lminimal #lyr:not(.st) .ll.p:not(.dp){opacity:0;pointer-events:none}
+.ll{position:relative}
+body.lhover #lyr:not(.st) .ll:not(.dots):not(.a):hover::before{content:"";position:absolute;inset:0 -.3em;border-radius:.35em;background:rgba(255,255,255,.08);pointer-events:none}
+body.lduet #ly.duet .ll:not(.opp):not(.dots){padding-right:14%}body.lduet #ly.duet .ll.opp{padding-left:14%}
+body.credly.credr #lcredit{left:auto;right:0;align-items:flex-end;text-align:right}
+body.nosmooth #ly{transition:none}
+body.novol #volwrap{display:none}
 .crow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-top:1px solid var(--line);font-size:13px;font-weight:600}
 .crow small{display:block;font-size:11.5px;font-weight:500;color:var(--faint);margin-top:2px;line-height:1.4}.crow .btn{flex:none}
 
@@ -501,6 +512,21 @@ body.low .ll{transition:opacity .25s}
   <div class="f" data-k="lsize"><span class="lb">Text size</span><input type="range" id="lsize" min="70" max="150"></div>
   <div class="f chk" data-k="lblur"><label><input type="checkbox" id="lblur"> Blur inactive lines</label></div>
   <div class="f" data-k="credPos"><span class="lb">Lyrics credits</span><select id="credPos"><option value="corner">Bottom-left corner</option><option value="lyrics">Under the lyrics</option></select><small class="hint">The provider, maker and uploader are always shown while lyrics are on screen (required by Spicy Lyrics).</small></div>
+  <p class="sub-h">Style</p>
+  <div class="f chk" data-k="lsimple"><label><input type="checkbox" id="lsimple"> Simple lyrics mode<small>Drop the extra effects: words only fill, without growing, lifting or glowing.</small></label></div>
+  <div class="f chk" data-k="lminimal"><label><input type="checkbox" id="lminimal"> Minimal lyrics mode<small>Hide lines that have already been sung.</small></label></div>
+  <div class="f chk" data-k="lhover"><label><input type="checkbox" id="lhover"> Highlight on hover<small>Show a soft box behind a line when you point at it.</small></label></div>
+  <div class="f chk" data-k="lduet"><label><input type="checkbox" id="lduet"> Duet line padding<small>Indent each singer’s lines toward their side, so duets read as two columns.</small></label></div>
+  <div class="f chk" data-k="lcredLast"><label><input type="checkbox" id="lcredLast"> Credits follow the last singer<small>With credits under the lyrics: when a song ends on a line sung from the right, the credits move to the right too.</small></label></div>
+  <p class="sub-h">Scrolling</p>
+  <div class="f chk" data-k="lsmooth"><label><input type="checkbox" id="lsmooth"> Smooth scrolling<small>Glide from line to line instead of jumping.</small></label></div>
+  <div class="f chk" data-k="learly"><label><input type="checkbox" id="learly"> Early scroll<small>Start scrolling to the next line just before it’s sung.</small></label></div>
+  <div class="f" data-k="learlyMs"><span class="lb">Early scroll time (ms)</span><input type="range" id="learlyMs" min="0" max="800" step="10"><small class="hint">How far ahead of the line the scroll starts.</small></div>
+  <div class="f chk" data-k="lseekFade"><label><input type="checkbox" id="lseekFade"> Seek fade-in compensation<small>Clicking a line starts Spotify 300 ms before it, so its fade-in doesn’t clip the first word. Best for rap and fast songs.</small></label></div>
+  <p class="sub-h">Interface</p>
+  <div class="f chk" data-k="lnotice"><label><input type="checkbox" id="lnotice"> No lyrics notice<small>Say so when a song has no lyrics.</small></label></div>
+  <div class="f chk" data-k="volshow"><label><input type="checkbox" id="volshow"> Volume slider</label></div>
+  <div class="f" data-k="fpscap"><span class="lb">Limit frame rate</span><select id="fpscap"><option value="0">Off</option><option value="30">30 fps</option><option value="60">60 fps</option><option value="120">120 fps</option></select><small class="hint">Caps how often the animations redraw, to save power.</small></div>
 
   <h4>Translation &amp; romanization</h4>
   <div class="f" data-k="romMode"><span class="lb">Romanization (Japanese, Korean, Chinese, Russian…)</span><select id="romMode"><option value="replace">Instead of the original line</option><option value="below">Below the original line</option><option value="off">Off</option></select></div>
@@ -696,7 +722,7 @@ addEventListener('unhandledrejection',e=>toast('Something failed: '+((e.reason&&
 /* ================= settings (one store) ================= */
 const LANGS=[['en','English'],['cs','Czech'],['sk','Slovak'],['de','German'],['es','Spanish'],['fr','French'],['it','Italian'],['pt','Portuguese'],['pl','Polish'],['nl','Dutch'],['sv','Swedish'],['da','Danish'],['no','Norwegian'],['fi','Finnish'],['hu','Hungarian'],['ro','Romanian'],['el','Greek'],['tr','Turkish'],['uk','Ukrainian'],['ru','Russian'],['ar','Arabic'],['he','Hebrew'],['hi','Hindi'],['th','Thai'],['vi','Vietnamese'],['id','Indonesian'],['tl','Filipino'],['ja','Japanese'],['ko','Korean'],['zh-CN','Chinese (Simplified)'],['zh-TW','Chinese (Traditional)']];
 const navLang=(()=>{const l=(navigator.language||'en').toLowerCase(),m=LANGS.find(x=>x[0].toLowerCase()===l)||LANGS.find(x=>x[0].split('-')[0]===l.split('-')[0]);return m?m[0]:'en'})();
-const DEF={credPos:'corner',cvNoArt:false,capDev:'',romMode:'replace',tr:false,trTo:navLang,trSkip:'',theme:'cover',c1:'#ff5a5f',c2:'#4f8cff',auto:true,boost:100,resp:25,blur:0,bars:72,gap:28,glow:false,round:true,scale:'1',fps:false,bgblur:60,bri:70,sat:170,bgspeed:100,online:true,volume:100,view:'both',lprov:'spicy:1,spotify:1,lrclib:1,netease:1',loff:0,lsize:100,lblur:true,canvasOn:true,low:false};
+const DEF={lsimple:false,lminimal:false,lhover:true,lduet:true,lcredLast:false,lsmooth:true,learly:false,learlyMs:250,lseekFade:true,lnotice:true,volshow:true,fpscap:'0',credPos:'corner',cvNoArt:false,capDev:'',romMode:'replace',tr:false,trTo:navLang,trSkip:'',theme:'cover',c1:'#ff5a5f',c2:'#4f8cff',auto:true,boost:100,resp:25,blur:0,bars:72,gap:28,glow:false,round:true,scale:'1',fps:false,bgblur:60,bri:70,sat:170,bgspeed:100,online:true,volume:100,view:'both',lprov:'spicy:1,spotify:1,lrclib:1,netease:1',loff:0,lsize:100,lblur:true,canvasOn:true,low:false};
 const CFGD={spotId:'',canvasUrl:''},OLDCFG=['spicyUrl','spicyHdr','spicyPfx','spicyKey'];   // old fields that kept a key in the browser: always removed
 // Everything (settings, API keys, Spotify login, setup progress) lives in sessionStorage:
 // it survives a reload and the Spotify login redirect, and the browser deletes it when the tab is closed.
@@ -774,6 +800,8 @@ function onSetting(k){
   else if(k==='canvasOn')applyCanvasMode();
   else if(k==='view')applyView();
   else if(k==='credPos')applyCredPos();
+  else if(/^(lsimple|lminimal|lhover|lduet|lcredLast|lsmooth|volshow)$/.test(k))applyLyrOpts();
+  else if(k==='lnotice'&&!S.lnotice&&lmsg.className==='none')lyrMsg('');
   else if(k==='cvNoArt')flipLayout(()=>body.classList.toggle('cvnoart',!!S.cvNoArt));
   else if(k==='lprov'){renderProv();lcache.clear()}
   else if(k==='tr'||k==='trTo'||k==='trSkip'||k==='romMode'){decorate();updQuick()}
@@ -876,17 +904,21 @@ let bgFade=1,bgT=0,lastBgF=0,bgPulse=0,bgEnergy=0,bgKick=0,bassSlow=0,lastOnset=
 const BGL=[{sp:1,dir:1,ox:.06,oy:.05,sc:1.25,a:1},{sp:.7,dir:-1,ox:.22,oy:.18,sc:.95,a:.7},{sp:1.25,dir:1,ox:.24,oy:.22,sc:.8,a:.55}];
 function sizeBgl(){const w=160,h=Math.max(60,Math.min(400,Math.round(w*innerHeight/Math.max(innerWidth,1))));bgl.width=bgPrev.width=w;bgl.height=bgPrev.height=h}
 function bgFadeFrom(){bgPx.clearRect(0,0,bgPrev.width,bgPrev.height);bgPx.drawImage(bgl,0,0);bgFade=0}
-function drawLiveBg(now,dt){
-  if(S.low||document.hidden||body.classList.contains('cvlive'))return;
-  // the background moves at the music's pace: faster when it's loud and busy, a push on every bass hit,
-  // and the overall speed follows the tempo estimated from those hits
+// beats: a bass hit clearly above the recent bass level; drives the background push and the cover jump
+let beatAt=0;
+function beatTick(now,dt){
   bgEnergy+=(mxv-bgEnergy)*(1-Math.exp(-dt/500));
   bassSlow+=(bass-bassSlow)*(1-Math.exp(-dt/350));
   if(bass-bassSlow>.07&&now-lastOnset>240){
     if(lastOnset&&now-lastOnset<1500){onsetGaps.push(now-lastOnset);if(onsetGaps.length>16)onsetGaps.shift()}
-    lastOnset=now;bgKick=1;
+    lastOnset=now;bgKick=1;beatAt=now;
   }
   bgKick*=Math.exp(-dt/260);
+}
+function drawLiveBg(now,dt){
+  if(S.low||document.hidden||body.classList.contains('cvlive'))return;
+  // the background moves at the music's pace: faster when it's loud and busy, a push on every bass hit,
+  // and the overall speed follows the tempo estimated from those hits
   let tempo=1;
   if(onsetGaps.length>5){const g=[...onsetGaps].sort((a,b)=>a-b),med=g[g.length>>1];tempo=Math.max(.6,Math.min(1.7,(60000/med)/120))}   // 120 BPM = normal speed
   if(now-lastOnset>4000)onsetGaps.length=0;
@@ -955,7 +987,7 @@ const isAudio=f=>(f.type||'').startsWith('audio/')||/\.(mp3|wav|ogg|m4a|flac|aac
 let N=0,vals,raw,edges,pal=[],gradB=null,gradBW=0,palDirty=true;
 function setupBands(){
   N=S.low?Math.min(S.bars,48):S.bars;vals=new Float32Array(N);raw=new Float32Array(N);edges=new Array(N+1);
-  const lo=2,hi=Math.floor(1024*.62);
+  const lo=2,hi=Math.min(1023,Math.round(11000/((ac?ac.sampleRate:48000)/2048)));   // up to ~11 kHz: above that most music is nearly silent
   for(let i=0;i<=N;i++)edges[i]=Math.floor(lo*Math.pow(hi/lo,i/N));
   gradB=null;
 }
@@ -973,7 +1005,7 @@ function buildPal(){
 /* ================= state + sources ================= */
 let ac,analyser,gainNode,data=new Uint8Array(1024),url=null,muted=false,capStream=null,capNode=null,capFull=null,capHeard=false;
 let loaded=false,src='none',spState=null,spFetched=0,spTimer=0,spId=null,backoff=0,spErrAt=0;
-let W=0,H=0,dpr=1,bass=0,mxv=0,peak=.3,dirty=true,wasActive=false,lastSc=0;
+let W=0,H=0,dpr=1,bass=0,mxv=0,peak=.3,dirty=true,wasActive=false,lastSc=0,jumpY=0,jumpV=0,jumpSeen=0;
 const filePlaying=()=>loaded&&!audio.paused&&!audio.ended;
 const spPlaying=()=>!!(spState&&spState.playing);
 const playing=()=>src==='file'?filePlaying():src==='spotify'?spPlaying():false;
@@ -1038,6 +1070,7 @@ function setupAudio(){
   if(!AC)throw new Error('This browser has no Web Audio support.');
   ac=new AC();
   analyser=ac.createAnalyser();analyser.fftSize=2048;analyser.smoothingTimeConstant=.35;
+  setupBands();   // the bar frequencies depend on the real sample rate
   gainNode=ac.createGain();
   const ms=ac.createMediaElementSource(audio);
   ms.connect(gainNode);gainNode.connect(ac.destination);   // what you hear (volume applies here)
@@ -1298,7 +1331,7 @@ function cvFrame(){
 }
 
 /* ================= lyrics ================= */
-let L=[],lsync=false,li=-2,lEls=[];
+let L=[],lsync=false,li=-2,lsi=-2,lEls=[];   // lsi: the line the view is scrolled to (the next one early, with Early scroll)
 const lcache=new Map();
 // lyrics saved on this device (IndexedDB), so a song's lyrics aren't fetched again every time: found lyrics for 7 days,
 // "no lyrics" for 1 day. Spicy Lyrics allows keeping its responses for up to 30 days; expired entries are deleted.
@@ -1422,7 +1455,7 @@ function findIdx(t){let a=0,b=L.length-1,r=-1;while(a<=b){const m=(a+b)>>1;if(L[
 let lLabel='';
 function renderLyrics(label,quiet){
   if(!quiet)lLabel=label||'';
-  ly.textContent='';lEls=[];li=-2;moving.clear();stPos=null;if(!quiet)lyr.scrollTop=0;lyr.classList.toggle('st',!lsync&&L.length>0);
+  ly.textContent='';lEls=[];li=-2;lsi=-2;moving.clear();ly.classList.toggle('duet',L.some(l=>l.opp));stPos=null;if(!quiet)lyr.scrollTop=0;lyr.classList.toggle('st',!lsync&&L.length>0);
   L.forEach((l,idx)=>{
     const d=document.createElement('div');d.className=l.dots?'ll dots':l.opp?'ll opp':'ll';
     if(l.dots){d.innerHTML='<div class="dg"><span class="dot">•</span><span class="dot">•</span><span class="dot">•</span></div>';d._w=d.firstChild}
@@ -1467,13 +1500,13 @@ function renderLyrics(label,quiet){
       if(l.tr)timed('tr',l.tr);
     }
     d.dataset.b=d.className;
-    d.onclick=()=>{if(lsync&&l.t!=null&&seekTo((l.t-S.loff/1000)/lPace)&&d.animate)d.animate([{transform:'scale(.97)'},{transform:'none'}],{duration:260,easing:'ease-out'})};   // click a line to jump there
+    d.onclick=()=>{if(lsync&&l.t!=null&&seekTo((l.t-S.loff/1000)/lPace-(S.lseekFade&&src==='spotify'?.3:0))&&d.animate)d.animate([{transform:'scale(.97)'},{transform:'none'}],{duration:260,easing:'ease-out'})};   // click a line to jump there
     ly.appendChild(d);lEls.push(d);
   });
   body.classList.toggle('hl',L.length>0);lyrMsg('');
   if(L.length&&!quiet&&ly.animate)ly.animate([{opacity:0},{opacity:1}],{duration:600,easing:'ease-out'});
   lstat.textContent='';   // the credit line under the cover names the source; no second lyrics line
-  renderCredit();updNeed();
+  renderCredit();updNeed();applyLyrOpts();
   if(lsync&&L.length)setActive(findIdx(curTime()*lPace+S.loff/1000));
   dirty=true;
 }
@@ -1509,6 +1542,10 @@ function renderCredit(){
   el.appendChild(creditNodes(c,false));el.hidden=false;
 }
 // Settings → Lyrics credits: in the bottom-left corner, or pinned right under the lyrics. Never off.
+function applyLyrOpts(){   // Spicy Lyrics style options
+  [['lsimple',S.lsimple],['lminimal',S.lminimal],['lhover',S.lhover],['lduet',S.lduet],['nosmooth',!S.lsmooth],['novol',!S.volshow]].forEach(([c,on])=>body.classList.toggle(c,!!on));
+  const last=L.filter(l=>!l.dots).pop();body.classList.toggle('credr',!!(S.lcredLast&&last&&last.opp));
+}
 function applyCredPos(){
   const under=S.credPos==='lyrics',el=$('lcredit');body.classList.toggle('credly',under);
   if(under&&el.parentNode!==$('right'))$('right').appendChild(el);
@@ -1520,7 +1557,7 @@ function lyrMsg(msg,sub,kind){
     if(sub){const s=document.createElement('small');s.textContent=sub;lmsg.appendChild(s)}}
   body.classList.toggle('lm',!!msg);
 }
-function clearLyrics(msg,sub,kind){L=[];lsync=false;lCredit=null;renderLyrics();lyrMsg(msg,sub,kind)}
+function clearLyrics(msg,sub,kind){L=[];lsync=false;lCredit=null;renderLyrics();if(kind==='none'&&!S.lnotice)lyrMsg('');else lyrMsg(msg,sub,kind)}
 // add "• • •" lines for the intro and for long instrumental gaps; drop short or trailing ones
 function interludes(ls){
   const out=[],real=ls.filter(l=>!l.dots);if(!real.length)return real;
@@ -1724,7 +1761,7 @@ function setActive(i){
 }
 function place(){
   if(!lEls.length||lyr.classList.contains('st'))return;
-  const el=lEls[Math.max(li,0)];if(!el)return;
+  const el=lEls[Math.max(lsi>=0?lsi:li,0)];if(!el)return;
   ly.style.transform='translateY('+(lyr.clientHeight*.38-(el.offsetTop+el.offsetHeight/2))+'px)';
 }
 /* ==== Lyrics animation, ported from Spicy Lyrics ====
@@ -1879,7 +1916,9 @@ function wordsTick(pos){
     }
     if(k>li){restLine(d);moving.delete(k);return}   // seeking back: lines ahead go back to rest
     let m=false;
-    if(S.low){groups(d).forEach(([sp,ts])=>{for(let j=0;j<sp.length&&j<ts.length;j++)sp[j].style.setProperty('--gradient-position',fillAt(pos,ts[j]).toFixed(1)+'%')})}
+    if(S.low||S.lsimple){groups(d).forEach(([sp,ts])=>{for(let j=0;j<sp.length&&j<ts.length;j++){const el=sp[j];
+      if(el._sp){idle(el);if(el._lt)el._lt.forEach(lt=>{idle(lt.el);lt._sp=null})}   // switched to simple mid-song: drop the spring pose
+      if(el._lt)el._lt.forEach(lt=>lt.el.style.setProperty('--gradient-position',fillAt(pos,lt).toFixed(1)+'%'));else el.style.setProperty('--gradient-position',fillAt(pos,ts[j]).toFixed(1)+'%')}})}
     else if(d._ts||d._bg)groups(d).forEach(([sp,ts])=>{for(let j=0;j<sp.length&&j<ts.length;j++)m=animateWord(sp[j],ts[j],pos,dt)||m});
     else if(d._w)m=animateLineGlow(d,L[k],pos,dt);
     if(!m&&k!==li)moving.delete(k);   // settled; the words keep their final pose, as in Spicy Lyrics
@@ -1910,7 +1949,8 @@ function lyricsTick(){
   if(!L.length||S.view==='viz')return;
   if(!lsync){staticScroll();return}
   const t=curTime()*lPace+S.loff/1000,i=findIdx(t),e=i>=0?lineEnd(L[i]):null,out=e!=null&&t>=e;
-  if(i!==li||out!==lOut){lOut=out;setActive(i)}
+  const nx=L[i+1],si=S.learly&&nx&&nx.t!=null&&t>=nx.t-S.learlyMs/1000?i+1:i;
+  if(i!==li||out!==lOut){lOut=out;lsi=si;setActive(i)}else if(si!==lsi){lsi=si;place()}
   wordsTick(t);
 }
 // lyrics sources, tried in the order set in Settings
@@ -2172,7 +2212,7 @@ function sample(dt,now){
     for(let i=0;i<N;i++){
       let s=0;const e0=edges[i],e1=Math.max(edges[i+1],e0+1);
       for(let k=e0;k<e1;k++)s+=data[k];
-      const r=Math.pow(s/(e1-e0)/255,1.5)*(1+i/N*.8);raw[i]=r;if(r>mx)mx=r;
+      const r=Math.pow(s/(e1-e0)/255,1.5)*(1+Math.pow(i/N,1.4)*2.2);raw[i]=r;if(r>mx)mx=r;   // treble lifted, it's much quieter
     }
     let gain=1.3;
     if(S.auto){peak+=(mx-peak)*(1-Math.exp(-dt/(mx>peak?50:2500)));gain=Math.min(8,.8/Math.max(peak,.1))}
@@ -2209,15 +2249,19 @@ let last=performance.now(),fc=0,ft=last;
 function frame(now){
   requestAnimationFrame(frame);
   if(S.low&&now-last<30)return;
+  const cap=+S.fpscap;if(cap&&now-last<1000/cap-1)return;   // Limit frame rate
   const dt=Math.min(now-last,50);last=now;
-  const pl=playing();sample(dt,now);drawLiveBg(now,dt);
+  const pl=playing();sample(dt,now);beatTick(now,dt);drawLiveBg(now,dt);
   lyricsTick();uiTick(now);
   if(body.classList.contains('cvlive')&&now-lastCv>90&&cvv.readyState>=2&&!document.hidden){lastCv=now;cvFrame()}
   const active=pl||mxv>.003||!!capStream;
   if(active&&!S.low&&!flipping&&!body.classList.contains('cvmode')){
-    const b=Math.min(1,bass*1.25),sc=1+Math.round(b*55)/1000;   // up to ~5.5% bigger on the beat
-    if(sc!==lastSc){lastSc=sc;artw.style.transform='scale('+sc+')';artw.style.setProperty('--beat',b.toFixed(2));ttl.style.transform='scale('+(1+(sc-1)*.3).toFixed(4)+')'}
-  }else if(lastSc){lastSc=0;artw.style.transform='';artw.style.removeProperty('--beat');ttl.style.transform=''}
+    if(beatAt>jumpSeen){jumpSeen=beatAt;jumpV-=200+300*Math.min(1,bass*1.4)}   // jump on the beat, harder on a big hit
+    const w=2*Math.PI*3.2,h=dt/1000;jumpV+=(-w*w*jumpY-2*.38*w*jumpV)*h;jumpY+=jumpV*h;   // springs back with a small bounce
+    if(Math.abs(jumpY)<.05&&Math.abs(jumpV)<1){jumpY=0;jumpV=0}
+    const b=Math.min(1,bass*1.25),sc=1+Math.round(b*55)/1000+Math.max(0,-jumpY)*.0025,key=sc.toFixed(4)+jumpY.toFixed(1);   // up to ~5.5% bigger with the bass
+    if(key!==lastSc){lastSc=key;artw.style.transform='translateY('+jumpY.toFixed(1)+'px) scale('+sc.toFixed(4)+')';artw.style.setProperty('--beat',b.toFixed(2));ttl.style.transform='scale('+(1+(sc-1)*.3).toFixed(4)+')'}
+  }else if(lastSc){lastSc=0;jumpY=jumpV=0;artw.style.transform='';artw.style.removeProperty('--beat');ttl.style.transform=''}
   if(!active&&!wasActive&&!dirty)return;
   wasActive=active;dirty=false;
   if(!W||!H)return;
@@ -2370,7 +2414,7 @@ netLoop();
 syncInputs();refreshReset();volIcon();
 root.style.setProperty('--ls',S.lsize/100);
 $('fpsEl').style.display=S.fps?'block':'none';
-body.classList.toggle('cvnoart',!!S.cvNoArt);applyCredPos();setupBands();applyView();applyLow();resize();renderBg();updChips();updPlayIcon();updQuick();updNeed();
+body.classList.toggle('cvnoart',!!S.cvNoArt);applyCredPos();applyLyrOpts();setupBands();applyView();applyLow();resize();renderBg();updChips();updPlayIcon();updQuick();updNeed();
 requestAnimationFrame(frame);
 poke();
 (async()=>{
