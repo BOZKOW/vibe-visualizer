@@ -290,13 +290,16 @@ body.lhover #lyr:not(.st) .ll:not(.dots):not(.a):hover::before{content:"";positi
 body.lduet #ly.duet .ll:not(.opp):not(.dots){padding-right:14%}body.lduet #ly.duet .ll.opp{padding-left:14%}
 body.credly.credr #lcredit{left:auto;right:0;align-items:flex-end;text-align:right}
 body.nosmooth #ly{transition:none}
-/* Experiment: Focus mode: only the line on screen (.fv) is visible, in the middle. The next one rises in from below
-   200 ms before it's sung, the old one goes up and disappears; both are blurred while they move */
-body.xfocus #lyr:not(.st) .ll:not(.fv){opacity:0;transform:translateY(1.1em);filter:blur(12px);pointer-events:none}
-body.xfocus #lyr:not(.st) .ll.fu:not(.fv){transform:translateY(-1.1em)}
+/* Experiment: Focus mode: upcoming lines rise from the bottom, out from behind the bars, blurred like normal
+   inactive lyrics; the line on screen (.fv) is sharp in the middle (the next one 200 ms early); finished lines (.fu)
+   go up and disappear, blurred as they move */
+body.xfocus #lyr:not(.st) .ll.fu:not(.fv){opacity:0;transform:translateY(-1.1em);filter:blur(12px);pointer-events:none}
 body.xfocus #lyr:not(.st) .ll.fv{opacity:1;transform:none;filter:none}
 body.xfocus #lyr:not(.st) .ll{transition:opacity .45s ease,transform .6s cubic-bezier(.2,.8,.2,1),filter .6s ease}
 body.xfocus #lyr:not(.st) .ll.dots{opacity:0!important;visibility:hidden}   /* breaks show nothing, no dots */
+/* in "Both" the lyrics reach down behind the bars, which are drawn on top */
+body.xfocus[data-view=both] #viz{z-index:2}body.xfocus[data-view=both] #lyr{z-index:1}
+body.xfocus[data-view=both]:is(.hl,.lm) #lyr{bottom:0;-webkit-mask-image:linear-gradient(transparent,#000 12%,#000 70%,rgba(0,0,0,.35));mask-image:linear-gradient(transparent,#000 12%,#000 70%,rgba(0,0,0,.35))}
 body.novol #volwrap{display:none}
 .crow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-top:1px solid var(--line);font-size:13px;font-weight:600}
 .crow small{display:block;font-size:11.5px;font-weight:500;color:var(--faint);margin-top:2px;line-height:1.4}.crow .btn{flex:none}
@@ -641,7 +644,7 @@ body.low #cappanel,body.low #netpanel,body.low #setup .sw{background:rgba(20,20,
 
   <h4>Experiments</h4>
   <p class="hint">Ideas being tried out. They may change, or go away, in a later version.</p>
-  <div class="f chk" data-k="xFocus"><label><input type="checkbox" id="xFocus"> Focus mode<small>Only the line being sung is on screen, in the middle. The next one rises in from below 200 ms before it’s sung while the old one goes up and disappears, both blurred while they move. Instrumental breaks stay empty. Instrumental breaks stay empty, without the dots.</small></label></div>
+  <div class="f chk" data-k="xFocus"><label><input type="checkbox" id="xFocus"> Focus mode<small>The next lines rise from the bottom, out from behind the bars, blurred like normal lyrics. The line being sung is sharp in the middle (the next one comes 200 ms early), and sung lines go up and disappear. Instrumental breaks stay empty. Instrumental breaks stay empty, without the dots.</small></label></div>
 
   <h4>Help</h4>
   <div class="row2"><button class="btn sm" id="rerun">Open setup guide</button><button class="btn sm" id="forget">Forget this device</button></div>
@@ -879,7 +882,7 @@ function onSetting(k){
   else if(k==='canvasOn')applyCanvasMode();
   else if(k==='view')applyView();
   else if(k==='credPos')applyCredPos();
-  else if(/^(xFocus|lsimple|lminimal|lhover|lduet|lcredLast|lsmooth|volshow)$/.test(k))applyLyrOpts();
+  else if(/^(xFocus|lsimple|lminimal|lhover|lduet|lcredLast|lsmooth|volshow)$/.test(k)){applyLyrOpts();if(k==='xFocus')setTimeout(place,60)}
   else if(k==='lnotice'&&!S.lnotice&&lmsg.className==='none')lyrMsg('');
   else if(k==='cvNoArt')flipLayout(()=>body.classList.toggle('cvnoart',!!S.cvNoArt));
   else if(k==='lprov'){renderProv();lcache.clear()}
@@ -1863,7 +1866,8 @@ function setActive(i){
 function place(){
   if(!lEls.length||lyr.classList.contains('st'))return;
   const el=lEls[Math.max(lsi>=0?lsi:li,0)];if(!el)return;
-  ly.style.transform='translateY('+(lyr.clientHeight*.38-(el.offsetTop+el.offsetHeight/2))+'px)';
+  const hh=S.xFocus&&S.view==='both'?lyr.clientHeight*.74-24:lyr.clientHeight;   // Focus mode in Both: same middle as before
+  ly.style.transform='translateY('+(hh*.38-(el.offsetTop+el.offsetHeight/2))+'px)';
 }
 /* ==== Lyrics animation, ported from Spicy Lyrics ====
    Source: https://github.com/Spikerko/spicy-lyrics (src/utils/Lyrics/Animator/Lyrics/LyricsAnimator.ts,
