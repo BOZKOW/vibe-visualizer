@@ -489,7 +489,7 @@ body.low .ll{transition:opacity .25s}
 
   <h4>Lyrics</h4>
   <div class="f" data-k="lprov"><span class="lb">Sources, in priority order</span><div id="provlist"></div><small class="hint">The first source that has the song is used. ▲▼ to reorder, the switch to turn a source off.</small></div>
-  <div class="f" data-k="loff"><span class="lb">Timing offset (ms)</span><input type="range" id="loff" min="-3000" max="3000" step="50"></div>
+  <div class="f" data-k="loff"><span class="lb">Timing offset (ms)</span><input type="range" id="loff" min="-3000" max="3000" step="50"><small class="hint">Lyrics behind the music? Raise it. While a song plays, <b>]</b> moves the lyrics 100 ms earlier and <b>[</b> 100 ms later.</small></div>
   <div class="f" data-k="lsize"><span class="lb">Text size</span><input type="range" id="lsize" min="70" max="150"></div>
   <div class="f chk" data-k="lblur"><label><input type="checkbox" id="lblur"> Blur inactive lines</label></div>
   <div class="f" data-k="credPos"><span class="lb">Lyrics credits</span><select id="credPos"><option value="corner">Bottom-left corner</option><option value="lyrics">Under the lyrics</option></select><small class="hint">The provider, maker and uploader are always shown while lyrics are on screen (required by Spicy Lyrics).</small></div>
@@ -585,7 +585,7 @@ body.low .ll{transition:opacity .25s}
           <div id="wzseg"><button data-v="viz">Visualizer</button><button data-v="lyrics">Lyrics</button><button data-v="both">Both</button></div></div>
         <label class="wzrow" style="cursor:pointer"><span>Low performance mode<small>Turns off blur and glow effects. Useful on older laptops.</small></span><input type="checkbox" id="wzlow"></label>
         <div class="wzrow" style="display:block"><span>Shortcuts</span>
-          <div class="keys"><kbd>Space</kbd><span>Play / pause</span><kbd>← →</kbd><span>Seek 5 seconds</span><kbd>↑ ↓</kbd><span>Volume</span><kbd>N / P</kbd><span>Next / previous</span><kbd>M</kbd><span>Mute</span><kbd>T</kbd><span>Translate lyrics</span><kbd>R</kbd><span>Romanize lyrics</span><kbd>F</kbd><span>Fullscreen</span></div></div>
+          <div class="keys"><kbd>Space</kbd><span>Play / pause</span><kbd>← →</kbd><span>Seek 5 seconds</span><kbd>↑ ↓</kbd><span>Volume</span><kbd>N / P</kbd><span>Next / previous</span><kbd>M</kbd><span>Mute</span><kbd>T</kbd><span>Translate lyrics</span><kbd>R</kbd><span>Romanize lyrics</span><kbd>] / [</kbd><span>Lyrics earlier / later</span><kbd>F</kbd><span>Fullscreen</span></div></div>
       </section>
 
     </div>
@@ -1932,6 +1932,9 @@ addEventListener('keydown',e=>{
   else if(e.key==='m'){muted=!muted;applyVolume()}
   else if(e.key==='t')toggleTr();
   else if(e.key==='r')toggleRom();
+  else if(e.key===']'||e.key==='['){   // nudge the lyrics timing while listening: ] earlier, [ later
+    const v=Math.max(-3000,Math.min(3000,S.loff+(e.key===']'?100:-100)));
+    quickSet('loff',v,'Lyrics timing '+(v>0?'+':'')+v+' ms'+(v>0?' (earlier)':v<0?' (later)':''))}
   else if(e.key==='1'||e.key==='2'||e.key==='3'){S.view=['viz','lyrics','both'][+e.key-1];applyView();save()}
   else if(tg!=='INPUT'){
     if(e.key==='ArrowUp'){e.preventDefault();nudgeVol(5)}

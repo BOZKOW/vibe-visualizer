@@ -164,7 +164,7 @@ may stop working at any time, and you are responsible for whether using them is 
 ## Keyboard shortcuts
 
 `Space` play/pause · `←`/`→` seek · `↑`/`↓` volume · `M` mute · `F` fullscreen ·
-`1`/`2`/`3` visualizer / lyrics / both · `T` translate · `R` romanize · click a lyric line to jump to it
+`1`/`2`/`3` visualizer / lyrics / both · `T` translate · `R` romanize · `]`/`[` lyrics earlier / later · click a lyric line to jump to it
 
 ## Credits
 
