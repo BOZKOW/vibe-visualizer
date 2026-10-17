@@ -296,6 +296,7 @@ body.nosmooth #ly{transition:none}
 body.xfocus #lyr:not(.st) .ll:not(.fv){opacity:0;transform:translateY(60vh);filter:blur(14px);pointer-events:none;
   transition:opacity .5s ease,transform .8s cubic-bezier(.2,.8,.2,1),filter .6s ease}
 body.xfocus #lyr:not(.st) .ll.fn{opacity:.5;transform:none;filter:blur(5px)}
+body.xfocus #lyr:not(.st) .ll.fn.fs{opacity:1;filter:none}   /* sung right after the middle line: sharp while it waits */
 body.xfocus #lyr:not(.st) .ll.fv{opacity:1;transform:none;filter:none;pointer-events:auto;transition:opacity .5s ease,transform .8s cubic-bezier(.2,.8,.2,1),filter .6s ease}
 body.xfocus #lyr:not(.st) .ll.fu{opacity:0;transform:translateY(-34vh);filter:blur(14px);transition:opacity .45s ease,transform .6s cubic-bezier(.5,0,.75,.4),filter .45s ease}
 body.xfocus #lyr:not(.st) .ll.dots{opacity:0!important;visibility:hidden}   /* breaks show nothing, no dots */
@@ -646,7 +647,7 @@ body.low #cappanel,body.low #netpanel,body.low #setup .sw{background:rgba(20,20,
 
   <h4>Experiments</h4>
   <p class="hint">Ideas being tried out. They may change, or go away, in a later version.</p>
-  <div class="f chk" data-k="xFocus"><label><input type="checkbox" id="xFocus"> Focus mode<small>The line being sung is sharp in the middle and stays until it’s sung to the end. The next line waits right under it, blurred, and the ones after fly in from the bottom of the screen. Finished lines fly up and disappear. Instrumental breaks stay empty. Instrumental breaks stay empty, without the dots.</small></label></div>
+  <div class="f chk" data-k="xFocus"><label><input type="checkbox" id="xFocus"> Focus mode<small>The line being sung is sharp in the middle and stays until it’s sung to the end. The next line flies in from the bottom 200 ms before it’s sung; if it starts while the middle line is still going, it waits right under it, sharp. Finished lines fly up and disappear. Instrumental breaks stay empty. Instrumental breaks stay empty, without the dots.</small></label></div>
 
   <h4>Help</h4>
   <p class="sub-h">Updates</p>
@@ -1013,14 +1014,13 @@ let bgFade=1,bgT=0,lastBgF=0,bgPulse=0,bgEnergy=0,bgKick=0,bassSlow=0,lastOnset=
 const BGL=[{sp:1,dir:1,ox:.06,oy:.05,sc:1.25,a:1},{sp:.7,dir:-1,ox:.22,oy:.18,sc:.95,a:.7},{sp:1.25,dir:1,ox:.24,oy:.22,sc:.8,a:.55}];
 function sizeBgl(){const w=160,h=Math.max(60,Math.min(400,Math.round(w*innerHeight/Math.max(innerWidth,1))));bgl.width=bgPrev.width=w;bgl.height=bgPrev.height=h}
 function bgFadeFrom(){bgPx.clearRect(0,0,bgPrev.width,bgPrev.height);bgPx.drawImage(bgl,0,0);bgFade=0}
-// beats: a bass hit clearly above the recent bass level; drives the background push and the cover jump
-let beatAt=0;
+// beats: a bass hit clearly above the recent bass level; drives the background push
 function beatTick(now,dt){
   bgEnergy+=(mxv-bgEnergy)*(1-Math.exp(-dt/500));
   bassSlow+=(bass-bassSlow)*(1-Math.exp(-dt/350));
   if(bass-bassSlow>.07&&now-lastOnset>240){
     if(lastOnset&&now-lastOnset<1500){onsetGaps.push(now-lastOnset);if(onsetGaps.length>16)onsetGaps.shift()}
-    lastOnset=now;bgKick=1;beatAt=now;
+    lastOnset=now;bgKick=1;
   }
   bgKick*=Math.exp(-dt/260);
 }
@@ -1114,7 +1114,7 @@ function buildPal(){
 /* ================= state + sources ================= */
 let ac,analyser,gainNode,data=new Uint8Array(1024),url=null,muted=false,capStream=null,capNode=null,capFull=null,capHeard=false;
 let loaded=false,src='none',spState=null,spFetched=0,spTimer=0,spId=null,backoff=0,spErrAt=0;
-let W=0,H=0,dpr=1,bass=0,mxv=0,peak=.3,dirty=true,wasActive=false,lastSc=0,pulse=0,pulseSeen=0;
+let W=0,H=0,dpr=1,bass=0,mxv=0,peak=.3,dirty=true,wasActive=false,lastSc=0;
 const filePlaying=()=>loaded&&!audio.paused&&!audio.ended;
 const spPlaying=()=>!!(spState&&spState.playing);
 const playing=()=>src==='file'?filePlaying():src==='spotify'?spPlaying():false;
@@ -1441,7 +1441,7 @@ function cvFrame(){
 }
 
 /* ================= lyrics ================= */
-let L=[],lsync=false,li=-2,lsi=-2,lfi=-2,lfo=false,lEls=[];   // lfi: the line on screen in Focus mode   // lsi: the line the view is scrolled to (the next one early, with Early scroll)
+let L=[],lsync=false,li=-2,lsi=-2,lfi=-2,lfo=false,lfn=-1,lfs=false,lEls=[];   // lfi: the line on screen in Focus mode   // lsi: the line the view is scrolled to (the next one early, with Early scroll)
 const lcache=new Map();
 // lyrics saved on this device (IndexedDB), so a song's lyrics aren't fetched again every time: found lyrics for 7 days,
 // "no lyrics" for 1 day. Spicy Lyrics allows keeping its responses for up to 30 days; expired entries are deleted.
@@ -1565,7 +1565,7 @@ function findIdx(t){let a=0,b=L.length-1,r=-1;while(a<=b){const m=(a+b)>>1;if(L[
 let lLabel='';
 function renderLyrics(label,quiet){
   if(!quiet)lLabel=label||'';
-  ly.textContent='';lEls=[];li=-2;lsi=-2;lfi=-2;lfo=false;moving.clear();ly.classList.toggle('duet',L.some(l=>l.opp));stPos=null;if(!quiet)lyr.scrollTop=0;lyr.classList.toggle('st',!lsync&&L.length>0);
+  ly.textContent='';lEls=[];li=-2;lsi=-2;lfi=-2;lfo=false;lfn=-1;lfs=false;moving.clear();ly.classList.toggle('duet',L.some(l=>l.opp));stPos=null;if(!quiet)lyr.scrollTop=0;lyr.classList.toggle('st',!lsync&&L.length>0);
   L.forEach((l,idx)=>{
     const d=document.createElement('div');d.className=l.dots?'ll dots':l.opp?'ll opp':'ll';
     if(l.dots){d.innerHTML='<div class="dg"><span class="dot">•</span><span class="dot">•</span><span class="dot">•</span></div>';d._w=d.firstChild}
@@ -1863,9 +1863,8 @@ async function decorate(){
 }
 function setActive(i){
   li=i;
-  let nxt=-1;if(lfi!==-2)for(let k=Math.max(lfi+1,0);k<L.length;k++)if(!L[k].dots){nxt=k;break}   // Focus mode: the line waiting underneath
   for(let j=0;j<lEls.length;j++){
-    const d=Math.abs(j-i),c=lEls[j].dataset.b+(lfi!==-2?(j===lfi&&!lfo?' fv':'')+(j===nxt?' fn':'')+(j<lfi||(j===lfi&&lfo)?' fu':''):'')+(j===i?(lOut?' p dp':' a'):j<i?' p':'')+(d===1?' d1':d===2?' d2':d===3?' d3':d===4?' d4':d===5?' d5':d>5?' dx':'');
+    const d=Math.abs(j-i),c=lEls[j].dataset.b+(lfi!==-2?(j===lfi&&!lfo?' fv':'')+(j===lfn?' fn'+(lfs?' fs':''):'')+(j<lfi||(j===lfi&&lfo)?' fu':''):'')+(j===i?(lOut?' p dp':' a'):j<i?' p':'')+(d===1?' d1':d===2?' d2':d===3?' d3':d===4?' d4':d===5?' d5':d>5?' dx':'');
     if(lEls[j].className!==c)lEls[j].className=c;
   }
   place();
@@ -2065,13 +2064,16 @@ function lyricsTick(){
   if(!lsync){staticScroll();return}
   const t=curTime()*lPace+S.loff/1000,i=findIdx(t),e=i>=0?lineEnd(L[i]):null,out=e!=null&&t>=e;
   const nx=L[i+1];let si=S.learly&&nx&&nx.t!=null&&t>=nx.t-S.learlyMs/1000?i+1:i,fi=-2;
-  let fo=false;
+  let fo=false,fn=-1,fs=false;
   if(S.xFocus){   // Focus mode: a line is due on screen 200 ms before it's sung, but the line before holds until it's sung to the end
     const en=k=>{const l=L[k];if(l.dots)return l.t;const e=lineEnd(l);return e!=null?e:(L[k+1]&&L[k+1].t!=null?L[k+1].t:Infinity)};
     let f=findIdx(t+.2);while(f>0&&en(f-1)>t)f--;
     fi=f;fo=f>=0&&t>=en(f);si=Math.max(f,0);   // fo: sung to the end, it leaves; the middle stays empty until the next is due
+    let n=-1;for(let k=Math.max(f+1,0);k<L.length;k++)if(!L[k].dots){n=k;break}
+    // the line underneath shows up 200 ms before it's sung, and turns sharp if it starts while the middle line still holds
+    fn=n>=0&&t>=L[n].t-.2?n:-1;fs=fn>=0&&t>=L[fn].t;
   }
-  if(i!==li||out!==lOut||fi!==lfi||fo!==lfo){lOut=out;lsi=si;lfi=fi;lfo=fo;setActive(i)}else if(si!==lsi){lsi=si;place()}
+  if(i!==li||out!==lOut||fi!==lfi||fo!==lfo||fn!==lfn||fs!==lfs){lOut=out;lsi=si;lfi=fi;lfo=fo;lfn=fn;lfs=fs;setActive(i)}else if(si!==lsi){lsi=si;place()}
   wordsTick(t);
 }
 // lyrics sources, tried in the order set in Settings
@@ -2441,13 +2443,7 @@ function frame(now){
   lyricsTick();uiTick(now);
   if(body.classList.contains('cvlive')&&now-lastCv>90&&cvv.readyState>=2&&!document.hidden){lastCv=now;cvFrame()}
   const active=pl||mxv>.003||!!capStream;
-  if(active&&!S.low&&!flipping&&!body.classList.contains('cvmode')){
-    // the cover pulses on the beat: it pops bigger and glows on each detected beat (harder on a big hit) and eases back
-    if(beatAt>pulseSeen){pulseSeen=beatAt;pulse=Math.max(pulse,.55+.45*Math.min(1,bass*1.4))}
-    pulse*=Math.exp(-dt/170);
-    const sc=1+Math.round(pulse*55)/1000;   // up to ~5.5% bigger
-    if(sc!==lastSc){lastSc=sc;artw.style.transform='scale('+sc+')';artw.style.setProperty('--beat',pulse.toFixed(2));ttl.style.transform='scale('+(1+(sc-1)*.3).toFixed(4)+')'}
-  }else if(lastSc){lastSc=0;pulse=0;artw.style.transform='';artw.style.removeProperty('--beat');ttl.style.transform=''}
+  // the cover and title stay still (no beat pulse)
   if(!active&&!wasActive&&!dirty)return;
   wasActive=active;dirty=false;
   if(!W||!H)return;
