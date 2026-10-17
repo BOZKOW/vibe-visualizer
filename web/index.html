@@ -35,6 +35,12 @@ select option{background:#16161f;color:#fff}   /* Windows draws dropdown lists w
 @keyframes spin{to{transform:rotate(360deg)}}
 /* live background (Spicy Lyrics style): drawn every frame, the .bl layers become its sources */
 #bgl{position:absolute;inset:0;width:100%;height:100%;display:block}
+/* still backgrounds (Spicy Lyrics' Artist image / Cover art / Color / None) cover the animated one */
+#bgimg{position:absolute;inset:-6%;z-index:1;background:#07070c center/cover no-repeat;opacity:0;transition:opacity .8s,background-color .8s;
+  filter:blur(var(--bgb,0px)) brightness(var(--bgbr,.7)) saturate(var(--bgsa,1.7))}
+body.bgstill #bgimg{opacity:1}
+body.bgplain #bgimg{background-image:none!important;filter:none}
+body.sysfont .ll,body.sysfont .sub{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
 body:not(.low) .bl{display:none}
 body.low #bgl{display:none}
 #cvblur{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .8s}
@@ -402,7 +408,7 @@ body.low .ll{transition:opacity .25s}
 </style>
 </head>
 <body data-view="both" data-src="none">
-<div id="bg"><canvas class="bl" width="128" height="128"></canvas><canvas class="bl" width="128" height="128"></canvas><canvas class="bl" width="128" height="128"></canvas><canvas id="bgl"></canvas></div>
+<div id="bg"><div id="bgimg"></div><canvas class="bl" width="128" height="128"></canvas><canvas class="bl" width="128" height="128"></canvas><canvas class="bl" width="128" height="128"></canvas><canvas id="bgl"></canvas></div>
 <canvas id="cvblur" width="48" height="48"></canvas>
 <div id="shade"></div>
 <div id="cvpane"><video id="cvv" muted loop playsinline preload="auto"></video></div>
@@ -486,6 +492,7 @@ body.low .ll{transition:opacity .25s}
   <div class="f" data-k="c1 c2"><span class="lb">Custom colors</span><div class="cols"><input type="color" id="c1" aria-label="Color 1"><input type="color" id="c2" aria-label="Color 2"></div></div>
 
   <h4>Background</h4>
+  <div class="f" data-k="bgStyle"><span class="lb">Background</span><select id="bgStyle"><option value="dynamic">Dynamic (animated cover)</option><option value="artist">Artist image</option><option value="cover">Cover art</option><option value="color">Color</option><option value="none">None</option></select><small class="hint">Artist image needs Spotify; other songs use the cover art.</small></div>
   <div class="f" data-k="bgblur"><span class="lb">Blur</span><input type="range" id="bgblur" min="0" max="100"></div>
   <div class="f" data-k="bri"><span class="lb">Brightness</span><input type="range" id="bri" min="20" max="140"></div>
   <div class="f" data-k="sat"><span class="lb">Saturation</span><input type="range" id="sat" min="0" max="300"></div>
@@ -513,6 +520,7 @@ body.low .ll{transition:opacity .25s}
   <div class="f chk" data-k="lblur"><label><input type="checkbox" id="lblur"> Blur inactive lines</label></div>
   <div class="f" data-k="credPos"><span class="lb">Lyrics credits</span><select id="credPos"><option value="corner">Bottom-left corner</option><option value="lyrics">Under the lyrics</option></select><small class="hint">The provider, maker and uploader are always shown while lyrics are on screen (required by Spicy Lyrics).</small></div>
   <p class="sub-h">Style</p>
+  <div class="f chk" data-k="sysFont"><label><input type="checkbox" id="sysFont"> Use system font<small>Show the lyrics in your system’s font instead of Vibe Visualizer’s.</small></label></div>
   <div class="f chk" data-k="lsimple"><label><input type="checkbox" id="lsimple"> Simple lyrics mode<small>Drop the extra effects: words only fill, without growing, lifting or glowing.</small></label></div>
   <div class="f chk" data-k="lminimal"><label><input type="checkbox" id="lminimal"> Minimal lyrics mode<small>Hide lines that have already been sung.</small></label></div>
   <div class="f chk" data-k="lhover"><label><input type="checkbox" id="lhover"> Highlight on hover<small>Show a soft box behind a line when you point at it.</small></label></div>
@@ -722,7 +730,7 @@ addEventListener('unhandledrejection',e=>toast('Something failed: '+((e.reason&&
 /* ================= settings (one store) ================= */
 const LANGS=[['en','English'],['cs','Czech'],['sk','Slovak'],['de','German'],['es','Spanish'],['fr','French'],['it','Italian'],['pt','Portuguese'],['pl','Polish'],['nl','Dutch'],['sv','Swedish'],['da','Danish'],['no','Norwegian'],['fi','Finnish'],['hu','Hungarian'],['ro','Romanian'],['el','Greek'],['tr','Turkish'],['uk','Ukrainian'],['ru','Russian'],['ar','Arabic'],['he','Hebrew'],['hi','Hindi'],['th','Thai'],['vi','Vietnamese'],['id','Indonesian'],['tl','Filipino'],['ja','Japanese'],['ko','Korean'],['zh-CN','Chinese (Simplified)'],['zh-TW','Chinese (Traditional)']];
 const navLang=(()=>{const l=(navigator.language||'en').toLowerCase(),m=LANGS.find(x=>x[0].toLowerCase()===l)||LANGS.find(x=>x[0].split('-')[0]===l.split('-')[0]);return m?m[0]:'en'})();
-const DEF={lsimple:false,lminimal:false,lhover:true,lduet:true,lcredLast:false,lsmooth:true,learly:false,learlyMs:250,lseekFade:true,lnotice:true,volshow:true,fpscap:'0',credPos:'corner',cvNoArt:false,capDev:'',romMode:'replace',tr:false,trTo:navLang,trSkip:'',theme:'cover',c1:'#ff5a5f',c2:'#4f8cff',auto:true,boost:100,resp:25,blur:0,bars:72,gap:28,glow:false,round:true,scale:'1',fps:false,bgblur:60,bri:70,sat:170,bgspeed:100,online:true,volume:100,view:'both',lprov:'spicy:1,spotify:1,lrclib:1,netease:1',loff:0,lsize:100,lblur:true,canvasOn:true,low:false};
+const DEF={bgStyle:'dynamic',sysFont:false,lsimple:false,lminimal:false,lhover:true,lduet:true,lcredLast:false,lsmooth:true,learly:false,learlyMs:250,lseekFade:true,lnotice:true,volshow:true,fpscap:'0',credPos:'corner',cvNoArt:false,capDev:'',romMode:'replace',tr:false,trTo:navLang,trSkip:'',theme:'cover',c1:'#ff5a5f',c2:'#4f8cff',auto:true,boost:100,resp:25,blur:0,bars:72,gap:28,glow:false,round:true,scale:'1',fps:false,bgblur:60,bri:70,sat:170,bgspeed:100,online:true,volume:100,view:'both',lprov:'spicy:1,spotify:1,lrclib:1,netease:1',loff:0,lsize:100,lblur:true,canvasOn:true,low:false};
 const CFGD={spotId:'',canvasUrl:''},OLDCFG=['spicyUrl','spicyHdr','spicyPfx','spicyKey'];   // old fields that kept a key in the browser: always removed
 // Everything (settings, API keys, Spotify login, setup progress) lives in sessionStorage:
 // it survives a reload and the Spotify login redirect, and the browser deletes it when the tab is closed.
@@ -792,6 +800,8 @@ function onSetting(k){
   else if(k==='scale')resize();
   else if(k==='fps')$('fpsEl').style.display=S.fps?'block':'none';
   else if(k==='bgblur'||k==='bri'||k==='sat')applyBg();
+  else if(k==='bgStyle')applyBgStyle();
+  else if(k==='sysFont')body.classList.toggle('sysfont',!!S.sysFont);
   else if(k==='bgspeed')bgSpeed();
   else if(k==='volume'){muted=false;applyVolume()}
   else if(k==='low')applyLow();
@@ -893,8 +903,29 @@ function renderBg(){
       if(i){const g=sx.createRadialGradient(64,64,30,64,64,64);g.addColorStop(0,'#000');g.addColorStop(1,'rgba(0,0,0,0)');sx.globalCompositeOperation='destination-in';sx.fillStyle=g;sx.fillRect(0,0,128,128)}});
   }catch(e){toast('Background could not be processed ('+e.message+'). Using a plain background.','warn')}
 }
-let bgQ=0;function applyBg(){cancelAnimationFrame(bgQ);bgQ=requestAnimationFrame(renderBg)}
+// Settings → Background: Dynamic is the animated cover; the others are still images or a plain color
+let artistImg='',artistFor='';
+async function artistImage(){   // the playing artist's photo from Spotify
+  const id=curArtistId;if(!id||src!=='spotify')return '';
+  if(artistFor===id)return artistImg;
+  try{const a=await spApi('/artists/'+id);artistFor=id;artistImg=(a&&a.images&&a.images[0]&&a.images[0].url)||''}catch(e){artistImg=''}
+  return artistImg;
+}
+let curArtistId='';
+async function applyBgStyle(){
+  const st=S.bgStyle,el=$('bgimg');
+  body.classList.toggle('bgstill',st!=='dynamic');body.classList.toggle('bgplain',st==='color'||st==='none');
+  root.style.setProperty('--bgb',(S.bgblur*.6).toFixed(0)+'px');root.style.setProperty('--bgbr',(S.bri/100).toFixed(2));root.style.setProperty('--bgsa',(S.sat/100).toFixed(2));
+  if(st==='color'){const c=(rawCols&&rawCols[0])||[40,40,60];el.style.backgroundColor='rgb('+c.map(v=>Math.round(v*.55)).join()+')'}
+  else el.style.backgroundColor='#07070c';
+  if(st==='cover'||st==='artist'){
+    let img=st==='artist'?await artistImage():'';if(!img)img=artw.classList.contains('has')?art.src:'';
+    if(S.bgStyle===st)el.style.backgroundImage=img?'url("'+img.replace(/"/g,'%22')+'")':'none';
+  }
+}
+let bgQ=0;function applyBg(){applyBgStyle();cancelAnimationFrame(bgQ);bgQ=requestAnimationFrame(renderBg)}
 let fadeT;function fadeBake(){
+  applyBgStyle();   // still backgrounds follow the new cover / artist
   if(!S.low){bgFadeFrom();renderBg();return}     // live mode: crossfade old cover into new
   const b=$('bg');b.style.opacity=0;clearTimeout(fadeT);fadeT=setTimeout(()=>{renderBg();b.style.opacity=''},350)}
 
@@ -916,7 +947,7 @@ function beatTick(now,dt){
   bgKick*=Math.exp(-dt/260);
 }
 function drawLiveBg(now,dt){
-  if(S.low||document.hidden||body.classList.contains('cvlive'))return;
+  if(S.low||document.hidden||body.classList.contains('cvlive')||S.bgStyle!=='dynamic')return;
   // the background moves at the music's pace: faster when it's loud and busy, a push on every bass hit,
   // and the overall speed follows the tempo estimated from those hits
   let tempo=1;
@@ -1044,7 +1075,7 @@ function setSource(s){
 }
 function resize(){
   dpr=Math.min(devicePixelRatio||1,2)*(S.low?.6:parseFloat(S.scale));W=viz.clientWidth;H=viz.clientHeight;
-  if(!W||!H)return;cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);gradB=null;dirty=true;
+  if(!W||!H)return;cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);ctx.setTransform(cv.width/W,0,0,cv.height/H,0,0);gradB=null;dirty=true;
 }
 new ResizeObserver(()=>{resize();place()}).observe(viz);
 // keep the lyrics credit in the bottom-left corner: beside the dock if it fits, otherwise just above it
@@ -1218,7 +1249,7 @@ async function spPoll(){
     const it=d&&d.item;
     if(!it){spState=null;if(spId!==null||!ttl.textContent){spId=null;setIdle();clearLyrics('');clearCanvas()}updChips();syncCanvasPlay();return}
     const ep=it.type==='episode',imgs=(ep?it.images:(it.album&&it.album.images))||[];
-    const m={ep,id:it.id,uri:it.uri,title:it.name,artist:ep?((it.show&&it.show.name)||''):(it.artists||[]).map(a=>a.name).join(', '),album:ep?'':((it.album&&it.album.name)||''),duration:it.duration_ms/1000,cover:imgs[0]?imgs[0].url:''};
+    const m={ep,id:it.id,uri:it.uri,title:it.name,artist:ep?((it.show&&it.show.name)||''):(it.artists||[]).map(a=>a.name).join(', '),album:ep?'':((it.album&&it.album.name)||''),duration:it.duration_ms/1000,cover:imgs[0]?imgs[0].url:'',artistId:ep?'':((it.artists&&it.artists[0]&&it.artists[0].id)||'')};
     spState={playing:!!d.is_playing,progress:d.progress_ms||0,duration:it.duration_ms};
     // small differences glide in over ~0.6 s instead of jumping the lyrics; big ones (seek, skip) snap
     const after=spState.progress+(spState.playing?t1-spFetched:0),err=before==null?null:before+(t1-t0)-after;
@@ -1231,6 +1262,7 @@ async function spPoll(){
   }
 }
 function onSpTrack(m){
+  curArtistId=m.artistId||'';
   const tok=++coverTok;peak=.3;clearCanvas(true);
   ttl.textContent=m.title;sub.textContent=m.artist;status.textContent='Spotify';animTrack();
   if(!m.cover)resetCover();
@@ -1918,9 +1950,12 @@ function wordsTick(pos){
     let m=false;
     if(S.low||S.lsimple){groups(d).forEach(([sp,ts])=>{for(let j=0;j<sp.length&&j<ts.length;j++){const el=sp[j];
       if(el._sp){idle(el);if(el._lt)el._lt.forEach(lt=>{idle(lt.el);lt._sp=null})}   // switched to simple mid-song: drop the spring pose
-      if(el._lt)el._lt.forEach(lt=>lt.el.style.setProperty('--gradient-position',fillAt(pos,lt).toFixed(1)+'%'));else el.style.setProperty('--gradient-position',fillAt(pos,ts[j]).toFixed(1)+'%')}})}
-    else if(d._ts||d._bg)groups(d).forEach(([sp,ts])=>{for(let j=0;j<sp.length&&j<ts.length;j++)m=animateWord(sp[j],ts[j],pos,dt)||m});
-    else if(d._w)m=animateLineGlow(d,L[k],pos,dt);
+      if(el._lt)el._lt.forEach(lt=>lt.el.style.setProperty('--gradient-position',fillAt(pos,lt).toFixed(1)+'%'));else el.style.setProperty('--gradient-position',fillAt(pos,ts[j]).toFixed(1)+'%')}});
+      if(!d._ts&&d._w)animateLineGlow(d,L[k],pos,dt)}
+    else{
+      if(d._ts||d._bg)groups(d).forEach(([sp,ts])=>{for(let j=0;j<sp.length&&j<ts.length;j++)m=animateWord(sp[j],ts[j],pos,dt)||m});
+      if(!d._ts&&d._w)m=animateLineGlow(d,L[k],pos,dt)||m;   // line-synced: the line itself fills, also when it has a translation under it
+    }
     if(!m&&k!==li)moving.delete(k);   // settled; the words keep their final pose, as in Spicy Lyrics
   });
 }
@@ -2057,6 +2092,7 @@ audio.onerror=()=>{if(audio.getAttribute('src'))toast('This file could not be pl
 async function load(f){
   if(!f)return;
   const n=f.name||'',t=f.type||'';
+  if(!t.startsWith('image/')&&!t.startsWith('video/')&&!/\.(lrc|ttml|xml|txt)$/i.test(n))curArtistId='';   // a local song: no Spotify artist
   if(t.startsWith('image/')){const tok=++coverTok;if(!await setCover(URL.createObjectURL(f),'Custom cover',tok,false))toast('That image could not be read.');return}
   if(t.startsWith('video/')||/\.(mp4|webm|mov|m4v)$/i.test(n)){setCanvas(URL.createObjectURL(f),false,true);toast('Canvas video loaded.','ok',2500);return}
   if(/\.(lrc|ttml|xml|txt)$/i.test(n)){
@@ -2242,7 +2278,7 @@ function drawBars(mirror){
     for(let i=0;i<N;i++){const h=Math.max(2,vals[i]*maxH),x=i*step+gp/2-gr,y=by-h-gr,hh=(mirror?h*2:h)+gr*2,ww=bw+gr*2;
       rd?ctx.roundRect(x,y,ww,hh,Math.min(r+gr,hh/2)):ctx.rect(x,y,ww,hh)}
     ctx.fill()};
-  if(glowOn())pass(bw*.4,.16);
+  if(glowOn()){ctx.save();ctx.beginPath();ctx.rect(0,0,W,H);ctx.clip();pass(bw*.4,.16);ctx.restore()}   // glow stays inside the canvas
   pass(0,.95);ctx.globalAlpha=1;
 }
 let last=performance.now(),fc=0,ft=last;
@@ -2268,8 +2304,12 @@ function frame(now){
   if(S.view==='lyrics'&&L.length)return;               // lyrics-only view: skip drawing the bars
   if(palDirty)buildPal();
   ctx.globalAlpha=1;
-  if(S.blur>0&&active&&!S.low){ctx.globalCompositeOperation='destination-out';ctx.fillStyle='rgba(0,0,0,'+(1-S.blur/100*.9).toFixed(3)+')';ctx.fillRect(0,0,W,H);ctx.globalCompositeOperation='source-over'}
-  else ctx.clearRect(0,0,W,H);
+  // clear in real canvas pixels: W×H in page units can fall a pixel short of the canvas (scaled displays), which
+  // left a 1-2 px strip on the right that was never wiped and kept old bars stuck there
+  ctx.setTransform(1,0,0,1,0,0);
+  if(S.blur>0&&active&&!S.low){ctx.globalCompositeOperation='destination-out';ctx.fillStyle='rgba(0,0,0,'+(1-S.blur/100*.9).toFixed(3)+')';ctx.fillRect(0,0,cv.width,cv.height);ctx.globalCompositeOperation='source-over'}
+  else ctx.clearRect(0,0,cv.width,cv.height);
+  ctx.setTransform(cv.width/W,0,0,cv.height/H,0,0);   // and stretch the drawing to fill the canvas exactly
   drawBars(false);
   if(S.fps){fc++;if(now-ft>500){$('fpsEl').textContent=Math.round(fc*1000/(now-ft))+' fps';fc=0;ft=now}}
 }
@@ -2414,7 +2454,7 @@ netLoop();
 syncInputs();refreshReset();volIcon();
 root.style.setProperty('--ls',S.lsize/100);
 $('fpsEl').style.display=S.fps?'block':'none';
-body.classList.toggle('cvnoart',!!S.cvNoArt);applyCredPos();applyLyrOpts();setupBands();applyView();applyLow();resize();renderBg();updChips();updPlayIcon();updQuick();updNeed();
+body.classList.toggle('cvnoart',!!S.cvNoArt);applyCredPos();applyLyrOpts();body.classList.toggle('sysfont',!!S.sysFont);applyBgStyle();setupBands();applyView();applyLow();resize();renderBg();updChips();updPlayIcon();updQuick();updNeed();
 requestAnimationFrame(frame);
 poke();
 (async()=>{
