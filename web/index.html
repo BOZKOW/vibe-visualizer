@@ -103,7 +103,7 @@ body.lb .ll.d1{--bl:1.25px}body.lb .ll.d2{--bl:2.5px}body.lb .ll.d3{--bl:3.75px}
 .ll .w,.ll .w .c{display:inline-block;white-space:pre;padding:.14em .06em .22em;margin:-.14em -.06em -.22em}   /* extra paint room so tails (g, y, j) and accents aren't cut off by the text fill */
 .ll .w .c{padding:.14em 0 .22em;margin:-.14em 0 -.22em}
 /* the word being sung fills left to right (--gp), grows, lifts and glows; springs in JS drive the values */
-.ll.a .w,.ll.a .w .c{-webkit-background-clip:text;background-clip:text;background-image:linear-gradient(90deg,rgba(255,255,255,.85) var(--gp,-20%),rgba(255,255,255,.5) calc(var(--gp,-20%) + 20%));
+.ll.a .w,.ll.a .w .c{-webkit-background-clip:text;background-clip:text;background-image:linear-gradient(90deg,rgba(255,255,255,var(--ga,.85)) var(--gp,-20%),rgba(255,255,255,var(--gb,.5)) calc(var(--gp,-20%) + 20%));
   text-shadow:0 0 var(--gr,4px) rgba(255,255,255,var(--go,0))}
 .ll.a .w.lg{background-image:none;text-shadow:none}   /* long held words: every letter animates on its own */
 .ll.a .w,.ll.a .w .c{will-change:transform}
@@ -141,19 +141,24 @@ body.lb .ll.d1{--bl:1.25px}body.lb .ll.d2{--bl:2.5px}body.lb .ll.d3{--bl:3.75px}
 /* lyrics credit: always in the bottom-left corner, beside the dock (or just above it when there's no room) */
 #lcredit{position:fixed;left:var(--pad);bottom:var(--credb,calc(16px + env(safe-area-inset-bottom,0px)));max-width:var(--credw,min(420px,calc(100vw - var(--pad)*2)));z-index:6;font-size:11px;line-height:1.45;font-weight:600;color:var(--dim);overflow-wrap:anywhere;text-shadow:0 1px 10px rgba(0,0,0,.75);animation:fadein .6s;transition:bottom .35s cubic-bezier(.2,.8,.2,1)}
 #lcredit{display:flex;flex-direction:column;gap:.25em;font-size:12px;color:#fff}
-#lcredit a,.lcred a{color:inherit;text-decoration:underline;text-underline-offset:2px}
+#lcredit a{color:inherit;text-decoration:underline;text-underline-offset:2px}
 .cprov{opacity:.5}.cwrit{opacity:.6}.cdim{opacity:.5}
 .cinfo{display:flex;align-items:center;flex-wrap:wrap}.cinfo .cdim+.cwho{margin-left:.3em}
 .cwho{font-weight:700;opacity:.55;transition:opacity .21s;display:inline-flex;align-items:center}.cwho:hover{opacity:1}
 .cwho img{width:1.3em;height:1.3em;border-radius:50%;margin-left:.3em;object-fit:cover}
-/* the full credits after the last line, as in Spicy Lyrics */
-.lcred{display:flex;flex-direction:column;gap:.3em;padding:1.4em 0 40vh;font-size:calc(clamp(13px,1.15vw,17px)*var(--ls));font-weight:600;color:#fff}
-.lcred .cwrit{font-size:1.07em}.lcred.opp{align-items:flex-end;text-align:right}
-#lyr.st .lcred{padding-bottom:0}
+/* "Under the lyrics": pinned below the lyrics panel, the lyrics make room for it */
+body.credly #lcredit{position:absolute;left:0;bottom:4px;max-width:100%;z-index:2;font-size:13px}
+body.credly.hl #lyr{bottom:70px}
+body[data-view=both].credly.hl #lyr{bottom:calc(26% + 24px + 70px)}
+body[data-view=both].credly #lcredit{bottom:calc(26% + 24px + 4px)}
+body[data-view=viz].credly #lcredit{display:none}
 /* duet lines sung by the other voice sit on the right; background vocals in smaller italics */
 .ll.opp{text-align:right;transform-origin:right center}
-.ll .sub.bgv{font-style:italic;font-weight:700;color:rgba(255,255,255,.6)}
-.ll.a .sub.bgv{color:rgba(255,255,255,.85)}
+.ll .sub.bgv{font-size:.62em;font-weight:700;-webkit-text-fill-color:transparent;text-shadow:0 0 var(--bl) rgba(255,255,255,.3);--ga:.6;--gb:.3}   /* background vocals */
+.ll.p .sub.bgv{text-shadow:0 0 var(--bl) rgba(255,255,255,.6)}
+.ll.a .sub.bgv{text-shadow:none;background-image:linear-gradient(rgba(255,255,255,.6),rgba(255,255,255,.6));-webkit-background-clip:text;background-clip:text}
+.ll.a .sub.bgv.bw{background-image:none}
+#lyr.st .ll .sub.bgv{text-shadow:0 0 0 rgba(255,255,255,.6)}
 /* message in the lyrics area: searching / no lyrics */
 #lmsg{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;gap:10px;padding:0 6% 0 20px;pointer-events:none}
 #lmsg b{font-size:calc(clamp(22px,2.8vw,42px)*var(--ls));font-weight:800;letter-spacing:-.025em;line-height:1.15;color:rgba(255,255,255,.6)}
@@ -482,6 +487,7 @@ body.low .ll{transition:opacity .25s}
   <div class="f" data-k="loff"><span class="lb">Timing offset (ms)</span><input type="range" id="loff" min="-3000" max="3000" step="50"></div>
   <div class="f" data-k="lsize"><span class="lb">Text size</span><input type="range" id="lsize" min="70" max="150"></div>
   <div class="f chk" data-k="lblur"><label><input type="checkbox" id="lblur"> Blur inactive lines</label></div>
+  <div class="f" data-k="credPos"><span class="lb">Lyrics credits</span><select id="credPos"><option value="corner">Bottom-left corner</option><option value="lyrics">Under the lyrics</option></select><small class="hint">The provider, maker and uploader are always shown while lyrics are on screen (required by Spicy Lyrics).</small></div>
 
   <h4>Translation &amp; romanization</h4>
   <div class="f" data-k="romMode"><span class="lb">Romanization (Japanese, Korean, Chinese, Russian…)</span><select id="romMode"><option value="replace">Instead of the original line</option><option value="below">Below the original line</option><option value="off">Off</option></select></div>
@@ -617,7 +623,7 @@ addEventListener('unhandledrejection',e=>toast('Something failed: '+((e.reason&&
 /* ================= settings (one store) ================= */
 const LANGS=[['en','English'],['cs','Czech'],['sk','Slovak'],['de','German'],['es','Spanish'],['fr','French'],['it','Italian'],['pt','Portuguese'],['pl','Polish'],['nl','Dutch'],['sv','Swedish'],['da','Danish'],['no','Norwegian'],['fi','Finnish'],['hu','Hungarian'],['ro','Romanian'],['el','Greek'],['tr','Turkish'],['uk','Ukrainian'],['ru','Russian'],['ar','Arabic'],['he','Hebrew'],['hi','Hindi'],['th','Thai'],['vi','Vietnamese'],['id','Indonesian'],['tl','Filipino'],['ja','Japanese'],['ko','Korean'],['zh-CN','Chinese (Simplified)'],['zh-TW','Chinese (Traditional)']];
 const navLang=(()=>{const l=(navigator.language||'en').toLowerCase(),m=LANGS.find(x=>x[0].toLowerCase()===l)||LANGS.find(x=>x[0].split('-')[0]===l.split('-')[0]);return m?m[0]:'en'})();
-const DEF={cvNoArt:false,capDev:'',romMode:'replace',tr:false,trTo:navLang,trSkip:'',theme:'cover',c1:'#ff5a5f',c2:'#4f8cff',auto:true,boost:100,resp:25,blur:0,bars:72,gap:28,glow:false,round:true,scale:'1',fps:false,bgblur:60,bri:70,sat:170,bgspeed:100,online:true,volume:100,view:'both',lprov:'spicy:1,spotify:1,lrclib:1,netease:1',loff:0,lsize:100,lblur:true,canvasOn:true,low:false};
+const DEF={credPos:'corner',cvNoArt:false,capDev:'',romMode:'replace',tr:false,trTo:navLang,trSkip:'',theme:'cover',c1:'#ff5a5f',c2:'#4f8cff',auto:true,boost:100,resp:25,blur:0,bars:72,gap:28,glow:false,round:true,scale:'1',fps:false,bgblur:60,bri:70,sat:170,bgspeed:100,online:true,volume:100,view:'both',lprov:'spicy:1,spotify:1,lrclib:1,netease:1',loff:0,lsize:100,lblur:true,canvasOn:true,low:false};
 const CFGD={spotId:'',canvasUrl:''},OLDCFG=['spicyUrl','spicyHdr','spicyPfx','spicyKey'];   // old fields that kept a key in the browser: always removed
 // Everything (settings, API keys, Spotify login, setup progress) lives in sessionStorage:
 // it survives a reload and the Spotify login redirect, and the browser deletes it when the tab is closed.
@@ -694,6 +700,7 @@ function onSetting(k){
   else if(k==='lblur')applyLB();
   else if(k==='canvasOn')applyCanvasMode();
   else if(k==='view')applyView();
+  else if(k==='credPos')applyCredPos();
   else if(k==='cvNoArt')flipLayout(()=>body.classList.toggle('cvnoart',!!S.cvNoArt));
   else if(k==='lprov'){renderProv();lcache.clear()}
   else if(k==='tr'||k==='trTo'||k==='trSkip'||k==='romMode'){decorate();updQuick()}
@@ -1218,14 +1225,18 @@ function parseTTML(x){
   const out=[];
   d.querySelectorAll('p').forEach(p=>{
     const b=p.getAttribute('begin');if(b==null)return;
-    const words=[];
-    p.childNodes.forEach(n=>{
-      if(n.nodeType===1&&n.getAttribute('begin')!=null){words.push({t:ttSec(n.getAttribute('begin')),text:n.textContent,sp:false})}
+    const isBg=n=>n.nodeType===1&&/x-bg/.test(n.getAttribute('ttm:role')||n.getAttribute('role')||'');
+    const take=(par,words)=>par.childNodes.forEach(n=>{
+      if(isBg(n))return;
+      if(n.nodeType===1&&n.getAttribute('begin')!=null){const e=n.getAttribute('end');words.push({t:ttSec(n.getAttribute('begin')),end:e!=null?ttSec(e):null,text:n.textContent,sp:false})}
       else if(n.nodeType===3&&/\s/.test(n.nodeValue)&&words.length)words[words.length-1].sp=true;
     });
-    if(words.length&&!words.some(w=>w.sp||/\s$/.test(w.text)))words.forEach(w=>w.sp=true);
-    const text=p.textContent.replace(/\s+/g,' ').trim();if(!text)return;
-    out.push({t:ttSec(b),text,words:words.length>1?words:null});
+    const fix=ws=>{if(ws.length&&!ws.some(w=>w.sp||/\s$/.test(w.text)))ws.forEach(w=>w.sp=true);return ws};
+    const words=fix([]);take(p,words);fix(words);
+    const bg=[...p.children].filter(isBg).map(n=>{const ws=[];take(n,ws);fix(ws);return{text:n.textContent.replace(/\s+/g,' ').trim(),words:ws.length?ws:null}}).filter(x=>x.text);
+    let text='';p.childNodes.forEach(n=>{if(!isBg(n))text+=n.textContent});text=text.replace(/\s+/g,' ').trim();if(!text)return;
+    const e=p.getAttribute('end');
+    out.push({t:ttSec(b),end:e!=null?ttSec(e):null,text,words:words.length>1?words:null,bg:bg.length?bg:null});
   });
   return out.sort((a,b)=>a.t-b.t);
 }
@@ -1292,7 +1303,7 @@ function parseSpicy(j,dur){
   const textOf=(o,ws)=>String(o&&o.Text!=null?o.Text:ws?ws.map(w=>w.text+(w.sp?' ':'')).join(''):'').trim();
   let lines=(Array.isArray(B.Content)?B.Content:Array.isArray(B.Lines)?B.Lines:[]).map(it=>{   // Static lyrics may come as Lines[{Text}]
     const lead=it.Lead||it,ws=sylls(lead);
-    const bg=(it.Background||[]).map(b=>{const bw=sylls(b);return{text:textOf(b,bw),rom:b.TransliteratedText||null}}).filter(b=>b.text);
+    const bg=(it.Background||[]).map(b=>{const bw=sylls(b);return{text:textOf(b,bw),rom:b.TransliteratedText||null,words:bw}}).filter(b=>b.text);
     return{t:lead.StartTime??it.StartTime??null,end:lead.EndTime??it.EndTime??null,text:it.Text!=null?String(it.Text).trim():textOf(lead,ws),
       words:type==='Syllable'&&ws?ws:null,opp:!!it.OppositeAligned,bg,
       apiRom:lead.TransliteratedText||it.TransliteratedText||null,apiTr:lead.TranslatedText||it.TranslatedText||null};
@@ -1301,9 +1312,9 @@ function parseSpicy(j,dur){
   if(sync){
     const mx=Math.max(...lines.map(l=>l.end||l.t));
     if(mx>10000||(dur&&mx>dur*3)){const k=v=>v==null?v:v/1000;   // milliseconds -> seconds
-      lines.forEach(l=>{l.t=k(l.t);l.end=k(l.end);if(l.words)l.words.forEach(w=>{w.t=k(w.t);w.end=k(w.end)})})}
+      lines.forEach(l=>{l.t=k(l.t);l.end=k(l.end);if(l.words)l.words.forEach(w=>{w.t=k(w.t);w.end=k(w.end)});(l.bg||[]).forEach(b=>(b.words||[]).forEach(w=>{w.t=k(w.t);w.end=k(w.end)}))})}
     lines.sort((a,b)=>a.t-b.t);
-  }else lines.forEach(l=>{l.t=null;l.words=null});
+  }else lines.forEach(l=>{l.t=null;l.words=null;(l.bg||[]).forEach(b=>b.words=null)});
   const ua=B.UploadAttribution||{};
   return{lines,sync,label:'Spicy Lyrics',credit:{source:B.source||null,uploader:ua.Uploader||null,maker:ua.Maker||null,writers:Array.isArray(B.SongWriters)?B.SongWriters:[]}};
 }
@@ -1350,20 +1361,17 @@ function renderLyrics(label,quiet){
         else{span(l.rom);main.lastChild.classList.add('one');d._ts=[{t:ws[0].t,end:Math.min(ws[ws.length-1].t+.8,nt)}]}                 // fill the whole romanized line
       }
       else main.textContent=romOnly?l.rom:l.text;
-      if(d._ts&&main.children.length===d._ts.length&&!main.querySelector('.one')){
-        main.classList.add('wt');
-        [...main.children].forEach((el,k)=>{   // a word held for a second or more is split into letters that wave
-          const tm=d._ts[k],txt=el.textContent,core=txt.replace(/\s+$/,''),lets=graphemes(core);
-          if(tm.end-tm.t<1||lets.length<2||lets.length>24||RTL.test(core))return;
-          el.textContent='';el.classList.add('lg');
-          lets.forEach(ch=>{const c=document.createElement('span');c.className='c';c.textContent=ch;el.appendChild(c)});
-          if(txt.length>core.length)el.appendChild(document.createTextNode(txt.slice(core.length)));
-          el._lt=[...el.querySelectorAll('.c')];
-        });
-      }
+      if(d._ts&&main.children.length===d._ts.length&&!main.querySelector('.one')){main.classList.add('wt');splitLetters(main,d._ts)}
       d.appendChild(main);
-      const sub=(c,t)=>{const s=document.createElement('span');s.className='sub '+c;s.textContent=t;d.appendChild(s)};
-      if(l.bg)l.bg.forEach(b=>sub('bgv','('+(S.romMode==='replace'&&l.rom&&b.rom?b.rom:b.text).replace(/^\(|\)$/g,'')+')'));
+      const sub=(c,t)=>{const s=document.createElement('span');s.className='sub '+c;s.textContent=t;d.appendChild(s);return s};
+      if(l.bg)l.bg.forEach(b=>{   // background vocals: their own smaller line, sung word by word on their own timing
+        const romB=S.romMode==='replace'&&l.rom&&b.rom;
+        if(lsync&&b.words&&b.words.length&&!romB){
+          const s=sub('bgv bw',''),bts=b.words.map((w,k)=>({t:w.t,end:w.end!=null?w.end:k+1<b.words.length?b.words[k+1].t:w.t+1}));
+          b.words.forEach(w=>{const x=document.createElement('span');x.className='w';x.textContent=w.text+(w.sp?' ':'');s.appendChild(x)});
+          splitLetters(s,bts);(d._bg=d._bg||[]).push({el:s,ts:bts});
+        }else sub('bgv',romB?b.rom:b.text);
+      });
       if(l.rom&&S.romMode==='below')sub('rom',l.rom);
       if(l.tr)sub('tr',l.tr);
     }
@@ -1381,8 +1389,7 @@ function renderLyrics(label,quiet){
 let lCredit=null;
 const PROVIDERS={spicy_lyrics:'Spicy Lyrics',apple_music:'Apple Music',spotify:'Spotify',lrclib:'LRCLIB',netease:'NetEase Cloud Music'};
 // credits laid out like Spicy Lyrics: "Provided by", then "Made by @maker" / "Uploaded by @uploader" with their
-// avatars. Shown twice: in the bottom-left corner the whole time lyrics are on screen (the Spicy Lyrics terms
-// want attribution visible with the lyrics), and in full after the last line, the way Spicy Lyrics itself does it.
+// avatars. Visible the whole time lyrics are on screen (the Spicy Lyrics terms want attribution with the lyrics).
 const profileUrl=x=>x&&(x.url&&/^https:\/\//.test(x.url)?x.url:x.id?'https://spicylyrics.org/uid/'+encodeURIComponent(x.id):null);
 function creditNodes(c,full){
   const box=document.createDocumentFragment(),row=(cls,...kids)=>{const r=document.createElement('div');r.className=cls;kids.forEach(k=>r.append(k));box.appendChild(r);return r};
@@ -1407,11 +1414,14 @@ function creditNodes(c,full){
 }
 function renderCredit(){
   const el=$('lcredit'),c=lCredit;el.textContent='';
-  const old=ly.querySelector('.lcred');if(old)old.remove();
   if(!L.length||!c){el.hidden=true;return}
   el.appendChild(creditNodes(c,false));el.hidden=false;
-  const end=document.createElement('div');end.className='lcred'+(L.length&&L[L.length-1].opp?' opp':'');   // after the last line
-  end.appendChild(creditNodes(c,true));ly.appendChild(end);
+}
+// Settings → Lyrics credits: in the bottom-left corner, or pinned right under the lyrics. Never off.
+function applyCredPos(){
+  const under=S.credPos==='lyrics',el=$('lcredit');body.classList.toggle('credly',under);
+  if(under&&el.parentNode!==$('right'))$('right').appendChild(el);
+  else if(!under&&el.parentNode!==body)body.insertBefore(el,$('dock'));
 }
 function lyrMsg(msg,sub,kind){
   lmsg.className=kind||'';lmsg.textContent='';
@@ -1545,6 +1555,16 @@ function place(){
    follow curves over how far through the word the song is, so a word swells, rises and glows as it is
    sung and settles back when it's done. */
 const graphemes=s=>{try{return[...new Intl.Segmenter(undefined,{granularity:'grapheme'}).segment(s)].map(x=>x.segment)}catch(e){return Array.from(s)}};
+function splitLetters(box,ts){   // a word held for a second or more is split into letters that wave
+  [...box.children].forEach((el,k)=>{
+    const tm=ts[k];if(!tm)return;const txt=el.textContent,core=txt.replace(/\s+$/,''),lets=graphemes(core);
+    if(tm.end-tm.t<1||lets.length<2||lets.length>24||RTL.test(core))return;
+    el.textContent='';el.classList.add('lg');
+    lets.forEach(ch=>{const c=document.createElement('span');c.className='c';c.textContent=ch;el.appendChild(c)});
+    if(txt.length>core.length)el.appendChild(document.createTextNode(txt.slice(core.length)));
+    el._lt=[...el.querySelectorAll('.c')];
+  });
+}
 const RTL=/[\u0590-\u08ff\ufb1d-\ufdff\ufe70-\ufeff]/;
 function curve(pts){   // natural cubic spline through [x, y] points
   const n=pts.length,x=pts.map(q=>q[0]),y=pts.map(q=>q[1]),h=[],a=[],l=[1],mu=[0],z=[0],c=Array(n).fill(0),b=[],d=[];
@@ -1594,20 +1614,21 @@ function animWord(el,w,t,dt){   // returns true while still moving
   return moving;
 }
 const moving=new Set();let lastWT=0;
+const groups=d=>{const g=[];if(d._ts)g.push([d._w.children,d._ts]);(d._bg||[]).forEach(b=>g.push([b.el.children,b.ts]));return g};
 function wordsTick(t){
   const now=performance.now(),dt=Math.min(.1,Math.max(0,(now-(lastWT||now))/1000));lastWT=now;
   if(S.low){   // low performance mode: plain fill, no springs
     moving.forEach(k=>{const d=lEls[k];if(d)d.querySelectorAll('.w,.c').forEach(calm)});moving.clear();
-    if(li>=0&&lEls[li]&&lEls[li]._ts){const ts=lEls[li]._ts,sp=lEls[li]._w.children;
-      for(let j=0;j<sp.length&&j<ts.length;j++){const w=ts[j],st=t<w.t?0:t>=w.end?2:1;sp[j].style.setProperty('--gp',(st===0?-20:st===2?100:-20+120*(t-w.t)/Math.max(.05,w.end-w.t)).toFixed(1)+'%')}}
+    if(li>=0&&lEls[li])groups(lEls[li]).forEach(([sp,ts])=>{
+      for(let j=0;j<sp.length&&j<ts.length;j++){const w=ts[j],st=t<w.t?0:t>=w.end?2:1;sp[j].style.setProperty('--gp',(st===0?-20:st===2?100:-20+120*(t-w.t)/Math.max(.05,w.end-w.t)).toFixed(1)+'%')}});
     return;
   }
-  if(li>=0&&lEls[li]&&lEls[li]._ts)moving.add(li);
+  if(li>=0&&lEls[li]&&(lEls[li]._ts||lEls[li]._bg))moving.add(li);
   moving.forEach(k=>{
-    const d=lEls[k];if(!d||!d._ts){moving.delete(k);return}
+    const d=lEls[k];if(!d||!(d._ts||d._bg)){moving.delete(k);return}
     if(k>li){d.querySelectorAll('.w,.c').forEach(calm);moving.delete(k);return}   // seeking back: future lines just reset
-    const ts=d._ts,sp=d._w.children;let m=false;
-    for(let j=0;j<sp.length&&j<ts.length;j++)m=animWord(sp[j],ts[j],t,dt)||m;
+    let m=false;
+    groups(d).forEach(([sp,ts])=>{for(let j=0;j<sp.length&&j<ts.length;j++)m=animWord(sp[j],ts[j],t,dt)||m});
     if(!m&&k!==li){d.querySelectorAll('.w,.c').forEach(calm);moving.delete(k)}   // finished settling
   });
 }
@@ -2051,7 +2072,7 @@ netLoop();
 syncInputs();refreshReset();volIcon();
 root.style.setProperty('--ls',S.lsize/100);
 $('fpsEl').style.display=S.fps?'block':'none';
-body.classList.toggle('cvnoart',!!S.cvNoArt);setupBands();applyView();applyLow();resize();renderBg();updChips();updPlayIcon();updQuick();updNeed();
+body.classList.toggle('cvnoart',!!S.cvNoArt);applyCredPos();setupBands();applyView();applyLow();resize();renderBg();updChips();updPlayIcon();updQuick();updNeed();
 requestAnimationFrame(frame);
 poke();
 (async()=>{
