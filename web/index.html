@@ -289,6 +289,12 @@ body.lhover #lyr:not(.st) .ll:not(.dots):not(.a):hover::before{content:"";positi
 body.lduet #ly.duet .ll:not(.opp):not(.dots){padding-right:14%}body.lduet #ly.duet .ll.opp{padding-left:14%}
 body.credly.credr #lcredit{left:auto;right:0;align-items:flex-end;text-align:right}
 body.nosmooth #ly{transition:none}
+/* Experiment: Focus mode */
+body.xfocus #lyr:not(.st) .ll{opacity:0;transform:translateY(.9em);pointer-events:none;
+  transition:opacity .45s ease,transform .7s cubic-bezier(.2,.8,.2,1),filter .35s ease-out}
+body.xfocus #lyr:not(.st) .ll.a{opacity:1;transform:none;pointer-events:auto;transition-delay:.08s}
+body.xfocus #lyr:not(.st) .ll.p{opacity:0;transform:translateY(-.9em);transition-duration:.4s,.6s,.35s}
+body.xfocus #lyr:not(.st) .ll.dots.a{transform:none}
 body.novol #volwrap{display:none}
 .crow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-top:1px solid var(--line);font-size:13px;font-weight:600}
 .crow small{display:block;font-size:11.5px;font-weight:500;color:var(--faint);margin-top:2px;line-height:1.4}.crow .btn{flex:none}
@@ -617,6 +623,10 @@ body.low #cappanel,body.low #netpanel,body.low #setup .sw{background:rgba(20,20,
   <div class="f chk" data-k="fps"><label><input type="checkbox" id="fps"> Show FPS</label></div>
   <div class="row2"><button class="btn sm" id="reset">Reset all settings</button></div>
 
+  <h4>Experiments</h4>
+  <p class="hint">Ideas being tried out. They may change, or go away, in a later version.</p>
+  <div class="f chk" data-k="xFocus"><label><input type="checkbox" id="xFocus"> Focus mode<small>Only the line being sung is shown. Each line rises in from below when its turn comes, then floats up and fades away when it’s done.</small></label></div>
+
   <h4>Help</h4>
   <div class="row2"><button class="btn sm" id="rerun">Open setup guide</button><button class="btn sm" id="forget">Forget this device</button></div>
   <p class="hint">Opened from your Vibe Visualizer server, your settings, keys and Spotify login are kept on the server for this device (by its Tailscale address), so they’re still here next time. “Forget this device” deletes them.</p>
@@ -773,7 +783,7 @@ addEventListener('unhandledrejection',e=>toast('Something failed: '+((e.reason&&
 /* ================= settings (one store) ================= */
 const LANGS=[['en','English'],['cs','Czech'],['sk','Slovak'],['de','German'],['es','Spanish'],['fr','French'],['it','Italian'],['pt','Portuguese'],['pl','Polish'],['nl','Dutch'],['sv','Swedish'],['da','Danish'],['no','Norwegian'],['fi','Finnish'],['hu','Hungarian'],['ro','Romanian'],['el','Greek'],['tr','Turkish'],['uk','Ukrainian'],['ru','Russian'],['ar','Arabic'],['he','Hebrew'],['hi','Hindi'],['th','Thai'],['vi','Vietnamese'],['id','Indonesian'],['tl','Filipino'],['ja','Japanese'],['ko','Korean'],['zh-CN','Chinese (Simplified)'],['zh-TW','Chinese (Traditional)']];
 const navLang=(()=>{const l=(navigator.language||'en').toLowerCase(),m=LANGS.find(x=>x[0].toLowerCase()===l)||LANGS.find(x=>x[0].split('-')[0]===l.split('-')[0]);return m?m[0]:'en'})();
-const DEF={bgStyle:'dynamic',sysFont:false,lsimple:false,lminimal:false,lhover:true,lduet:true,lcredLast:false,lsmooth:true,learly:false,learlyMs:250,lseekFade:true,lnotice:true,volshow:true,fpscap:'0',credPos:'corner',cvNoArt:false,capDev:'',romMode:'replace',tr:false,trTo:navLang,trSkip:'',theme:'cover',c1:'#ff5a5f',c2:'#4f8cff',auto:true,boost:100,resp:25,blur:0,bars:72,gap:28,glow:false,round:true,scale:'1',fps:false,bgblur:60,bri:70,sat:170,bgspeed:100,online:true,volume:100,view:'both',lprov:'spicy:1,spotify:1,lrclib:1,netease:1',loff:0,lsize:100,lblur:true,canvasOn:true,low:false};
+const DEF={xFocus:false,bgStyle:'dynamic',sysFont:false,lsimple:false,lminimal:false,lhover:true,lduet:true,lcredLast:false,lsmooth:true,learly:false,learlyMs:250,lseekFade:true,lnotice:true,volshow:true,fpscap:'0',credPos:'corner',cvNoArt:false,capDev:'',romMode:'replace',tr:false,trTo:navLang,trSkip:'',theme:'cover',c1:'#ff5a5f',c2:'#4f8cff',auto:true,boost:100,resp:25,blur:0,bars:72,gap:28,glow:false,round:true,scale:'1',fps:false,bgblur:60,bri:70,sat:170,bgspeed:100,online:true,volume:100,view:'both',lprov:'spicy:1,spotify:1,lrclib:1,netease:1',loff:0,lsize:100,lblur:true,canvasOn:true,low:false};
 const CFGD={spotId:'',canvasUrl:''},OLDCFG=['spicyUrl','spicyHdr','spicyPfx','spicyKey'];   // old fields that kept a key in the browser: always removed
 // Everything (settings, API keys, Spotify login, setup progress) lives in sessionStorage:
 // it survives a reload and the Spotify login redirect, and the browser deletes it when the tab is closed.
@@ -853,7 +863,7 @@ function onSetting(k){
   else if(k==='canvasOn')applyCanvasMode();
   else if(k==='view')applyView();
   else if(k==='credPos')applyCredPos();
-  else if(/^(lsimple|lminimal|lhover|lduet|lcredLast|lsmooth|volshow)$/.test(k))applyLyrOpts();
+  else if(/^(xFocus|lsimple|lminimal|lhover|lduet|lcredLast|lsmooth|volshow)$/.test(k))applyLyrOpts();
   else if(k==='lnotice'&&!S.lnotice&&lmsg.className==='none')lyrMsg('');
   else if(k==='cvNoArt')flipLayout(()=>body.classList.toggle('cvnoart',!!S.cvNoArt));
   else if(k==='lprov'){renderProv();lcache.clear()}
@@ -1618,7 +1628,7 @@ function renderCredit(){
 }
 // Settings → Lyrics credits: in the bottom-left corner, or pinned right under the lyrics. Never off.
 function applyLyrOpts(){   // Spicy Lyrics style options
-  [['lsimple',S.lsimple],['lminimal',S.lminimal],['lhover',S.lhover],['lduet',S.lduet],['nosmooth',!S.lsmooth],['novol',!S.volshow]].forEach(([c,on])=>body.classList.toggle(c,!!on));
+  [['xfocus',S.xFocus],['lsimple',S.lsimple],['lminimal',S.lminimal],['lhover',S.lhover],['lduet',S.lduet],['nosmooth',!S.lsmooth],['novol',!S.volshow]].forEach(([c,on])=>body.classList.toggle(c,!!on));
   const last=L.filter(l=>!l.dots).pop();body.classList.toggle('credr',!!(S.lcredLast&&last&&last.opp));
 }
 function applyCredPos(){
@@ -2253,6 +2263,7 @@ const PAGES=[
   ['cache','Lyrics cache',['Lyrics cache'],'M12 3C7.6 3 4 4.3 4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6c0-1.7-3.6-3-8-3zm0 2c3.9 0 6 1.1 6 1s-2.1 1-6 1-6-.9-6-1 2.1-1 6-1zm6 13c0 .1-2.1 1-6 1s-6-.9-6-1v-2.3c1.5.8 3.6 1.3 6 1.3s4.5-.5 6-1.3V18zm0-5c0 .1-2.1 1-6 1s-6-.9-6-1v-2.3c1.5.8 3.6 1.3 6 1.3s4.5-.5 6-1.3V13z'],
   ['spotify','Spotify & Canvas',['Spotify','Canvas'],'M12 2a10 10 0 100 20 10 10 0 000-20zm4.6 14.4a.6.6 0 01-.9.2c-2.4-1.5-5.4-1.8-8.9-1a.6.6 0 11-.3-1.2c3.9-.9 7.2-.5 9.9 1.1.3.2.4.6.2.9zm1.2-2.7a.8.8 0 01-1.1.3c-2.7-1.7-6.9-2.2-10.1-1.2a.8.8 0 11-.5-1.5c3.7-1.1 8.3-.6 11.4 1.3.4.3.5.8.3 1.1zm.1-2.8C14.7 9 9.4 8.8 6.3 9.7a1 1 0 11-.6-1.9c3.5-1.1 9.4-.9 13.1 1.3a1 1 0 01-.9 1.8z'],
   ['perf','Performance',['Performance'],'M13 2L4 14h6l-1 8 9-12h-6l1-8z'],
+  ['exp','Experiments',['Experiments'],'M9 2v2h1v5.2L4.6 18.4A2.4 2.4 0 006.7 22h10.6a2.4 2.4 0 002.1-3.6L14 9.2V4h1V2H9zm3 2v5.7l2.1 3.3H9.9L12 9.7V4z'],
   ['help','Help & about',['Help'],'M12 2a10 10 0 100 20 10 10 0 000-20zm1 17h-2v-2h2v2zm2.1-7.7l-.9.9c-.7.7-1.2 1.3-1.2 2.8h-2v-.5c0-1.1.5-2.1 1.2-2.8l1.2-1.3A2 2 0 0012 8a2 2 0 00-2 2H8a4 4 0 118 0c0 .9-.4 1.7-.9 2.3z']];
 let pageNow='look';
 (function buildSettings(){
