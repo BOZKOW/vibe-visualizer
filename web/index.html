@@ -1,4 +1,6 @@
 <!DOCTYPE html>
+<!-- Vibe Visualizer · https://github.com/BOZKOW/vibe-visualizer · GNU AGPL-3.0
+     The lyrics animation is ported from Spicy Lyrics (https://github.com/Spikerko/spicy-lyrics), AGPL-3.0. -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -88,25 +90,26 @@ body[data-view=viz] #lyr{display:none}
 #ly{position:absolute;left:0;right:0;top:0;padding:0 6% 0 20px;transition:transform .55s cubic-bezier(.2,.8,.2,1);will-change:transform}
 #lyr.st{overflow-y:auto}
 #lyr.st #ly{position:relative;transform:none!important;padding:30vh 6% 30vh 20px}
-.ll{font-size:calc(clamp(24px,3.3vw,52px)*var(--ls));font-weight:700;line-height:1.18;letter-spacing:0;padding:.2em 0;opacity:.51;transform-origin:left center;transition:opacity .2s cubic-bezier(.61,1,.88,1);--bl:0px}
-/* Spicy Lyrics look: the text itself is transparent and drawn by a text-shadow, so lines away from the
-   current one can be blurred cheaply (a bigger shadow radius) instead of with a filter */
-.ll .lt{-webkit-text-fill-color:transparent;text-shadow:0 0 var(--bl) rgba(255,255,255,.35)}
-.ll.p{opacity:.497}.ll.p .lt{text-shadow:0 0 var(--bl) rgba(255,255,255,.85)}
+.ll{font-size:calc(clamp(24px,3.3vw,52px)*var(--ls));font-weight:700;line-height:1.18;letter-spacing:0;padding:.2em 0;opacity:.51;transform-origin:left center;transition:opacity .2s cubic-bezier(.61,1,.88,1);--bl:0px;
+  /* Spicy Lyrics' look (ported from its Mixed.css, AGPL-3.0): text is transparent and drawn by a text-shadow, so
+     lines away from the current one blur cheaply (--bl); the line being sung paints a gradient that fills */
+  --gradient-position:-20%;--gradient-alpha:.85;--gradient-alpha-end:.35;--gradient-degrees:180deg;--gradient-offset:0%;--text-shadow-blur-radius:4px;--text-shadow-opacity:0%}
+.ll .w,.ll .c{--gradient-position:-20%;--gradient-alpha-end:.5;--gradient-degrees:90deg;--text-shadow-blur-radius:4px;--text-shadow-opacity:0%}
+.ll .lt,.ll .lt .w,.ll .lt .c{-webkit-text-fill-color:transparent;text-shadow:0 0 var(--bl) rgba(255,255,255,var(--gradient-alpha-end))}
+.ll.p{opacity:.497}.ll.p .lt,.ll.p .lt .w,.ll.p .lt .c{text-shadow:0 0 var(--bl) rgba(255,255,255,var(--gradient-alpha))}
 .ll.a{opacity:1;--bl:0px}
-.ll.a .lt{text-shadow:none;background-image:linear-gradient(rgba(255,255,255,.85),rgba(255,255,255,.85));-webkit-background-clip:text;background-clip:text}   /* lines without word timing light up whole */
-.ll.a .lt.wt{background-image:none}
+.ll.a .lt,.ll.a .w,.ll.a .c{-webkit-background-clip:text;background-clip:text;text-shadow:0 0 var(--text-shadow-blur-radius) rgba(255,255,255,var(--text-shadow-opacity));
+  background-image:linear-gradient(var(--gradient-degrees),rgba(255,255,255,var(--gradient-alpha)) var(--gradient-position),rgba(255,255,255,var(--gradient-alpha-end)) calc(var(--gradient-position) + 20% + var(--gradient-offset)))}
+.ll.a .lt.wt,.ll.a .w.lg{background-image:none;text-shadow:none}   /* words and split letters paint their own fill */
 #lyr:not(.st) .ll:not(.dots){cursor:pointer}#lyr:not(.st) .ll:not(.a):not(.dots):hover{opacity:1;--bl:0px}   /* synced lines can be clicked to jump there */
 #lyr.st .ll{opacity:.85}#lyr.st .ll .lt{text-shadow:0 0 0 rgba(255,255,255,.85)}
-body.lb .ll.d1{--bl:1.25px}body.lb .ll.d2{--bl:2.5px}body.lb .ll.d3{--bl:3.75px}body.lb .ll.dx{--bl:5px}
-/* word-by-word: each word fills left-to-right as it is sung, then lifts (Spicy Lyrics style) */
+body.lb .ll.d1{--bl:1.25px}body.lb .ll.d2{--bl:2.5px}body.lb .ll.d3{--bl:3.75px}body.lb .ll.d4{--bl:5px}body.lb .ll.d5{--bl:6.25px}body.lb .ll.dx{--bl:6.83px}   /* Spicy Lyrics: 1.25px per line, up to 6.83px */
+/* words rest a little small and low; the springs lift them as they're sung */
 .ll .w,.ll .w .c{display:inline-block;white-space:pre;padding:.14em .06em .22em;margin:-.14em -.06em -.22em}   /* extra paint room so tails (g, y, j) and accents aren't cut off by the text fill */
 .ll .w .c{padding:.14em 0 .22em;margin:-.14em 0 -.22em}
-/* the word being sung fills left to right (--gp), grows, lifts and glows; springs in JS drive the values */
-.ll.a .w,.ll.a .w .c{-webkit-background-clip:text;background-clip:text;background-image:linear-gradient(90deg,rgba(255,255,255,var(--ga,.85)) var(--gp,-20%),rgba(255,255,255,var(--gb,.5)) calc(var(--gp,-20%) + 20%));
-  text-shadow:0 0 var(--gr,4px) rgba(255,255,255,var(--go,0))}
-.ll.a .w.lg{background-image:none;text-shadow:none}   /* long held words: every letter animates on its own */
-.ll.a .w,.ll.a .w .c{will-change:transform}
+.ll .w{scale:.95;transform:translateY(.01em)}.ll .w.lg,.ll .w .c{scale:.95;transform:translateY(.02em)}
+body.low .ll .w,body.low .ll .w .c{scale:1;transform:none}
+.ll.a .w,.ll.a .w .c{will-change:transform,scale}
 .ll .w.one{display:inline;white-space:normal;-webkit-box-decoration-break:clone;box-decoration-break:clone}   /* a whole romanized line: wraps like normal text */
 /* instrumental breaks: three dots that fill up until the next line */
 .ll.dots{display:flex;gap:.3em;align-items:center;height:1.2em;padding:.2em 0}
@@ -154,10 +157,12 @@ body[data-view=both].credly #lcredit{bottom:calc(26% + 24px + 4px)}
 body[data-view=viz].credly #lcredit{display:none}
 /* duet lines sung by the other voice sit on the right; background vocals in smaller italics */
 .ll.opp{text-align:right;transform-origin:right center}
-.ll .sub.bgv{font-size:.62em;font-weight:700;-webkit-text-fill-color:transparent;text-shadow:0 0 var(--bl) rgba(255,255,255,.3);--ga:.6;--gb:.3}   /* background vocals */
-.ll.p .sub.bgv{text-shadow:0 0 var(--bl) rgba(255,255,255,.6)}
-.ll.a .sub.bgv{text-shadow:none;background-image:linear-gradient(rgba(255,255,255,.6),rgba(255,255,255,.6));-webkit-background-clip:text;background-clip:text}
+.ll .sub.bgv{font-size:.75em;font-weight:600;line-height:1.18;margin-top:.1em;color:inherit}   /* background vocals (Spicy Lyrics' bg-line) */
+.ll .sub.bgv,.ll .sub.bgv .w,.ll .sub.bgv .c{--gradient-alpha:.6;--gradient-alpha-end:.3;-webkit-text-fill-color:transparent;text-shadow:0 0 var(--bl) rgba(255,255,255,var(--gradient-alpha-end))}
+.ll.p .sub.bgv,.ll.p .sub.bgv .w,.ll.p .sub.bgv .c{text-shadow:0 0 var(--bl) rgba(255,255,255,var(--gradient-alpha))}
+.ll.a .sub.bgv{-webkit-background-clip:text;background-clip:text;text-shadow:none;background-image:linear-gradient(rgba(255,255,255,.6),rgba(255,255,255,.6))}
 .ll.a .sub.bgv.bw{background-image:none}
+.ll.a .sub.bgv .w,.ll.a .sub.bgv .c{text-shadow:0 0 var(--text-shadow-blur-radius) rgba(255,255,255,var(--text-shadow-opacity))}
 #lyr.st .ll .sub.bgv{text-shadow:0 0 0 rgba(255,255,255,.6)}
 /* message in the lyrics area: searching / no lyrics */
 #lmsg{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;gap:10px;padding:0 6% 0 20px;pointer-events:none}
@@ -524,6 +529,7 @@ body.low .ll{transition:opacity .25s}
   <h4>Help</h4>
   <div class="row2"><button class="btn sm" id="rerun">Open setup guide</button><button class="btn sm" id="forget">Forget this device</button></div>
   <p class="hint">Opened from your Vibe Visualizer server, your settings, keys and Spotify login are kept on the server for this device (by its Tailscale address), so they’re still here next time. “Forget this device” deletes them.</p>
+  <p class="hint">Vibe Visualizer is free software under the <a class="src" target="_blank" rel="noopener" href="https://www.gnu.org/licenses/agpl-3.0.html">GNU AGPL-3.0</a>. Its lyrics animation is ported from <a class="src" target="_blank" rel="noopener" href="https://github.com/Spikerko/spicy-lyrics">Spicy Lyrics</a> by Spikerko and contributors. <a class="src" target="_blank" rel="noopener" href="https://github.com/BOZKOW/vibe-visualizer">Source code</a></p>
 </aside>
 
 <div id="setup" role="dialog" aria-modal="true" aria-labelledby="wzt0" hidden>
@@ -1540,7 +1546,7 @@ async function decorate(){
 function setActive(i){
   li=i;lw=-1;
   for(let j=0;j<lEls.length;j++){
-    const d=Math.abs(j-i),c=lEls[j].dataset.b+(j===i?' a':j<i?' p':'')+(d===1?' d1':d===2?' d2':d===3?' d3':d>3?' dx':'');
+    const d=Math.abs(j-i),c=lEls[j].dataset.b+(j===i?' a':j<i?' p':'')+(d===1?' d1':d===2?' d2':d===3?' d3':d===4?' d4':d===5?' d5':d>5?' dx':'');
     if(lEls[j].className!==c)lEls[j].className=c;
   }
   place();
@@ -1550,86 +1556,131 @@ function place(){
   const el=lEls[Math.max(li,0)];if(!el)return;
   ly.style.transform='translateY('+(lyr.clientHeight*.38-(el.offsetTop+el.offsetHeight/2))+'px)';
 }
-/* ---- word motion in the style of Spicy Lyrics ----
-   Every word (or letter of a long held word) rides three damped springs: grow, lift and glow. Their goals
-   follow curves over how far through the word the song is, so a word swells, rises and glows as it is
-   sung and settles back when it's done. */
+/* ==== Lyrics animation, ported from Spicy Lyrics ====
+   Source: https://github.com/Spikerko/spicy-lyrics (src/utils/Lyrics/Animator/Lyrics/LyricsAnimator.ts,
+   src/modules/Spring.ts, src/utils/Lyrics/Applyer/Utils/Emphasize.ts, src/css/Lyrics/Mixed.css)
+   Copyright (c) Spikerko and the Spicy Lyrics contributors, licensed AGPL-3.0; ported to plain JavaScript for
+   Vibe Visualizer, which is AGPL-3.0 as well. The Spring is itself a port of Fraktality's spr (MIT). */
 const graphemes=s=>{try{return[...new Intl.Segmenter(undefined,{granularity:'grapheme'}).segment(s)].map(x=>x.segment)}catch(e){return Array.from(s)}};
-function splitLetters(box,ts){   // a word held for a second or more is split into letters that wave
-  [...box.children].forEach((el,k)=>{
-    const tm=ts[k];if(!tm)return;const txt=el.textContent,core=txt.replace(/\s+$/,''),lets=graphemes(core);
-    if(tm.end-tm.t<1||lets.length<2||lets.length>24||RTL.test(core))return;
-    el.textContent='';el.classList.add('lg');
-    lets.forEach(ch=>{const c=document.createElement('span');c.className='c';c.textContent=ch;el.appendChild(c)});
-    if(txt.length>core.length)el.appendChild(document.createTextNode(txt.slice(core.length)));
-    el._lt=[...el.querySelectorAll('.c')];
-  });
+const SL_SLEEP_OFFSET_SQ=(1/3840)**2,SL_SLEEP_VEL_SQ=1e-2**2,SL_EPS=1e-5;
+class Spring{
+  constructor(startPosition,frequency,dampingRatio,goal){this.d=dampingRatio;this.f=frequency;this.g=goal??startPosition;this.p=startPosition;this.v=0}
+  Step(dt){
+    const d=this.d,f=this.f*(2*Math.PI),g=this.g;let p=this.p,v=this.v;
+    if(d===1){const q=Math.exp(-f*dt),w=dt*q,c0=q+w*f,c2=q-w*f,c3=w*f*f,o=p-g;p=o*c0+v*w+g;v=v*c2-o*c3}
+    else if(d<1){
+      const q=Math.exp(-d*f*dt),c=Math.sqrt(1-d*d),i=Math.cos(dt*f*c),j=Math.sin(dt*f*c);let z,y;
+      if(c>SL_EPS)z=j/c;else{const a=dt*f;z=a+((a*a)*(c*c)*(c*c)/20-c*c)*(a*a*a)/6}
+      if(f*c>SL_EPS)y=j/(f*c);else{const b=f*c;y=dt+((dt*dt)*(b*b)*(b*b)/20-b*b)*(dt*dt*dt)/6}
+      const o=p-g;p=(o*(i+z*d)+v*y)*q+g;v=(v*(i-z*d)-o*(z*f))*q;
+    }else{
+      const c=Math.sqrt(d*d-1),r1=-f*(d+c),r2=-f*(d-c),ec1=Math.exp(r1*dt),ec2=Math.exp(r2*dt),o=p-g,co2=(v-o*r1)/(2*f*c),co1=ec1*(o-co2);
+      p=co1+co2*ec2+g;v=co1*r1+co2*ec2*r2;
+    }
+    this.p=p;this.v=v;return p;
+  }
+  CanSleep(){if(this.v*this.v>SL_SLEEP_VEL_SQ)return false;const o=this.p-this.g;return o*o<=SL_SLEEP_OFFSET_SQ}
+  SetGoal(goal,replacePosition){this.g=goal;if(replacePosition){this.p=goal;this.v=0}}
 }
-const RTL=/[\u0590-\u08ff\ufb1d-\ufdff\ufe70-\ufeff]/;
-function curve(pts){   // natural cubic spline through [x, y] points
-  const n=pts.length,x=pts.map(q=>q[0]),y=pts.map(q=>q[1]),h=[],a=[],l=[1],mu=[0],z=[0],c=Array(n).fill(0),b=[],d=[];
+function GetSpline(range){   // natural cubic spline through {Time, Value} points (as the cubic-spline package)
+  const n=range.length,x=range.map(r=>r.Time),y=range.map(r=>r.Value),h=[],a=[],l=[1],mu=[0],z=[0],c=Array(n).fill(0),b=[],d=[];
   for(let i=0;i<n-1;i++)h[i]=x[i+1]-x[i];
   for(let i=1;i<n-1;i++){a[i]=3/h[i]*(y[i+1]-y[i])-3/h[i-1]*(y[i]-y[i-1]);l[i]=2*(x[i+1]-x[i-1])-h[i-1]*mu[i-1];mu[i]=h[i]/l[i];z[i]=(a[i]-h[i-1]*z[i-1])/l[i]}
-  for(let j=n-2;j>=0;j--){c[j]=z[j]-mu[j]*c[j+1];b[j]=(y[j+1]-y[j])/h[j]-h[j]*(c[j+1]+2*c[j])/3;d[j]=(c[j+1]-c[j])/(3*h[j])}
-  return t=>{t=Math.max(x[0],Math.min(x[n-1],t));let i=0;while(i<n-2&&t>x[i+1])i++;const u=t-x[i];return y[i]+b[i]*u+c[i]*u*u+d[i]*u*u*u};
+  for(let k=n-2;k>=0;k--){c[k]=z[k]-mu[k]*c[k+1];b[k]=(y[k+1]-y[k])/h[k]-h[k]*(c[k+1]+2*c[k])/3;d[k]=(c[k+1]-c[k])/(3*h[k])}
+  return{at:t=>{let i=0;while(i<n-2&&t>x[i+1])i++;const u=t-x[i];return y[i]+b[i]*u+c[i]*u*u+d[i]*u*u*u}};
 }
-class Spr{   // damped spring: f = frequency (Hz), z = damping ratio
-  constructor(p,f,z){this.p=this.g=p;this.v=0;this.w=2*Math.PI*f;this.z=z}
-  to(g,snap){this.g=g;if(snap){this.p=g;this.v=0}}
-  step(dt){const w=this.w,z=this.z;let n=Math.max(1,Math.ceil(dt/.004));const h=dt/n;while(n--){this.v+=(-w*w*(this.p-this.g)-2*z*w*this.v)*h;this.p+=this.v*h}return this.p}
-  get rest(){return Math.abs(this.p-this.g)<6e-4&&Math.abs(this.v)<6e-3}
+const easeSinOut=t=>Math.sin(t*Math.PI/2);
+const ScaleSpline=GetSpline([{Time:0,Value:.95},{Time:.7,Value:1.0505},{Time:1,Value:1}]);
+const LetterScaleSpline=GetSpline([{Time:0,Value:.95},{Time:.7,Value:1.175},{Time:1,Value:1}]);
+const YOffsetSpline=GetSpline([{Time:0,Value:1/100},{Time:.9,Value:-(1/60)},{Time:1,Value:0}]);
+const LetterYOffsetSpline=GetSpline([{Time:0,Value:1/100},{Time:.9,Value:-(1/56)},{Time:1,Value:0}]);
+const GlowSpline=GetSpline([{Time:0,Value:0},{Time:.15,Value:1},{Time:.6,Value:1},{Time:1,Value:0}]);
+const LineGlowSpline=GetSpline([{Time:0,Value:0},{Time:.5,Value:1},{Time:1,Value:0}]);
+const YOffsetDamping=.4,YOffsetFrequency=1.45,ScaleDamping=.64,ScaleFrequency=.88,GlowDamping=.56,GlowFrequency=1.18,LetterGlowMultiplier_Opacity=185;
+const MinLetterCapableDuration=1,EmphasisEndTrim=.25;   // seconds: words held 1 s+ split into letters, which finish 250 ms early
+const createWordSprings=()=>({Scale:new Spring(ScaleSpline.at(0),ScaleFrequency,ScaleDamping),YOffset:new Spring(YOffsetSpline.at(0),YOffsetFrequency,YOffsetDamping),Glow:new Spring(GlowSpline.at(0),GlowFrequency,GlowDamping)});
+const createLetterSprings=()=>({Scale:new Spring(LetterScaleSpline.at(0),ScaleFrequency,ScaleDamping),YOffset:new Spring(LetterYOffsetSpline.at(0),YOffsetFrequency,YOffsetDamping),Glow:new Spring(GlowSpline.at(0),GlowFrequency,GlowDamping)});
+const getElementState=(t,a,b)=>t<a?'NotSung':t>=b?'Sung':'Active';
+const getProgressPercentage=(t,a,b)=>t<=a?0:t>=b?1:(t-a)/(b-a);
+const RTL=/[֐-ࣿיִ-﷿ﹰ-﻿]/;
+function splitLetters(box,ts){   // Emphasize: a held word becomes a letter group, the letters share its time evenly
+  [...box.children].forEach((el,k)=>{
+    const tm=ts[k];if(!tm)return;const txt=el.textContent,core=txt.replace(/\s+$/,''),lets=graphemes(core);
+    if(tm.end-tm.t<MinLetterCapableDuration||lets.length<1||RTL.test(core))return;
+    el.textContent='';el.classList.add('lg');
+    tm.end=Math.max(tm.t+.05,tm.end-EmphasisEndTrim);
+    const per=(tm.end-tm.t)/lets.length;
+    el._lt=lets.map((ch,i)=>{const c=document.createElement('span');c.className='c';c.textContent=ch;el.appendChild(c);return{el:c,t:tm.t+i*per,end:tm.t+(i+1)*per}});
+    if(txt.length>core.length)el.appendChild(document.createTextNode(txt.slice(core.length)));
+  });
 }
-const W_SC=curve([[0,.95],[.7,1.0505],[1,1]]),W_Y=curve([[0,.01],[.9,-1/60],[1,0]]),
-  GLOW=curve([[0,0],[.15,1],[.6,1],[1,0]]),C_SC=curve([[0,.95],[.7,1.175],[1,1]]),C_Y=curve([[0,.01],[.9,-1/56],[1,0]]);
-const sinOut=p=>Math.sin(p*Math.PI/2);
-function drive(el,sc,y,g,gp,dt,letter){   // step one element's springs toward the goals and write the styles
-  let s=el._sp;
-  if(!s){s=el._sp={sc:new Spr(sc,.88,.64),y:new Spr(y,1.45,.4),g:new Spr(g,1.18,.56)}}
-  s.sc.to(sc);s.y.to(y);s.g.to(g);
-  const a=s.sc.step(dt),b=s.y.step(dt),c=s.g.step(dt);
-  el.style.transform='translate3d(0,'+(b*(letter?2:1)).toFixed(4)+'em,0) scale('+a.toFixed(4)+')';
-  el.style.setProperty('--gp',gp.toFixed(1)+'%');
-  el.style.setProperty('--gr',(letter?4+12*c:4+2*c).toFixed(1)+'px');
-  el.style.setProperty('--go',Math.max(0,Math.min(1,c*(letter?1.85:.35))).toFixed(3));
-  return !(s.sc.rest&&s.y.rest&&s.g.rest);
+function put(el,y,sc,glowR,glowO,grad){   // write one element's animated styles
+  el.style.transform='translate3d(0,'+y.toFixed(5)+'em,0)';el.style.scale=sc.toFixed(4);
+  if(glowR!=null){el.style.setProperty('--text-shadow-blur-radius',glowR.toFixed(1)+'px');el.style.setProperty('--text-shadow-opacity',Math.max(0,glowO).toFixed(1)+'%')}
+  if(grad!=null)el.style.setProperty('--gradient-position',grad.toFixed(1)+'%');
 }
-function calm(el){el._sp=null;el.style.removeProperty('transform');el.style.removeProperty('--gp');el.style.removeProperty('--gr');el.style.removeProperty('--go')}
-function animWord(el,w,t,dt){   // returns true while still moving
-  const st=t<w.t?0:t>=w.end?2:1,p=st===1?(t-w.t)/Math.max(.05,w.end-w.t):st;
-  if(el.classList.contains('one')){el.style.setProperty('--gp',(st===0?-20:st===2?100:-20+120*p).toFixed(1)+'%');return false}
-  if(!el._lt){
-    if(!el._sp)drive(el,W_SC(0),W_Y(0),0,-20,0);   // start from rest
-    return drive(el,W_SC(p),W_Y(p),st===1?GLOW(p):0,st===0?-20:st===2?100:-20+120*p,dt);
-  }
-  const cs=el._lt,n=cs.length,ai=st===1?Math.min(n-1,Math.floor(p*n)):-1,ap=st===1?p*n-ai:0;
-  let moving=false;
-  for(let k=0;k<n;k++){
-    const ls=st!==1?st:k<ai?2:k>ai?0:1;let sc=C_SC(0),y=C_Y(0),g=0;
-    if(ai>=0&&ls!==0){const d=Math.abs(k-ai),fo=1/(1+Math.pow(d,2.8)),gf=1/(1+d*.9);
-      sc=C_SC(0)+(C_SC(ap)-C_SC(0))*fo;y=C_Y(0)+(C_Y(ap)-C_Y(0))*fo;g=GLOW(ap)*gf}
-    if(st===2){sc=1;y=0;g=0}
-    if(!cs[k]._sp)drive(cs[k],C_SC(0),C_Y(0),0,-20,0,true);
-    moving=drive(cs[k],sc,y,g,ls===0?-20:ls===2?100:-20+120*sinOut(ap),dt,true)||moving;
+function idle(el){['transform','scale','--text-shadow-blur-radius','--text-shadow-opacity','--gradient-position'].forEach(k=>el.style.removeProperty(k));el._sp=null}
+function animateWord(el,w,pos,dt){   // one syllable (and its letters); returns true while its springs still move
+  if(el.classList.contains('one')){el.style.setProperty('--gradient-position',(pos<w.t?-20:pos>=w.end?100:-20+120*getProgressPercentage(pos,w.t,w.end)).toFixed(1)+'%');return false}
+  const state=getElementState(pos,w.t,w.end),pct=getProgressPercentage(pos,w.t,w.end),isLetterGroup=!!el._lt;
+  if(!el._sp){el._sp=createWordSprings();el._sp.Scale.SetGoal(ScaleSpline.at(0),true);el._sp.YOffset.SetGoal(YOffsetSpline.at(0),true);el._sp.Glow.SetGoal(GlowSpline.at(0),true)}
+  let tS,tY,tG,tGrad;
+  if(state==='Active'){tS=ScaleSpline.at(pct);tY=YOffsetSpline.at(pct);tG=GlowSpline.at(pct);tGrad=-20+120*pct}
+  else if(state==='NotSung'){tS=ScaleSpline.at(0);tY=YOffsetSpline.at(0);tG=GlowSpline.at(0);tGrad=-20}
+  else{tS=ScaleSpline.at(1);tY=YOffsetSpline.at(1);tG=GlowSpline.at(1);tGrad=100}
+  const S_=el._sp;S_.Scale.SetGoal(tS);S_.YOffset.SetGoal(tY);S_.Glow.SetGoal(tG);
+  const cS=S_.Scale.Step(dt),cY=S_.YOffset.Step(dt),cG=S_.Glow.Step(dt);
+  if(!isLetterGroup)put(el,cY,cS,4+2*cG,Math.min(cG*35,100),tGrad);else put(el,cY,cS);
+  let moving=!(S_.Scale.CanSleep()&&S_.YOffset.CanSleep()&&S_.Glow.CanSleep());
+  if(!isLetterGroup)return moving;
+  const L_=el._lt;let ai=-1,ap=0;
+  if(state==='Active')for(let i=0;i<L_.length;i++)if(getElementState(pos,L_[i].t,L_[i].end)==='Active'){ai=i;ap=getProgressPercentage(pos,L_[i].t,L_[i].end);break}
+  for(let k=0;k<L_.length;k++){
+    const lt=L_[k];if(!lt._sp){lt._sp=createLetterSprings();lt._sp.Scale.SetGoal(LetterScaleSpline.at(0),true);lt._sp.YOffset.SetGoal(LetterYOffsetSpline.at(0),true);lt._sp.Glow.SetGoal(GlowSpline.at(0),true)}
+    let sc,y,g,grad;
+    if(state==='Active'){
+      sc=LetterScaleSpline.at(0);y=LetterYOffsetSpline.at(0);g=GlowSpline.at(0);
+      const ls=getElementState(pos,lt.t,lt.end);
+      if(ai!==-1){
+        const bS=LetterScaleSpline.at(ap),bY=LetterYOffsetSpline.at(ap),bG=GlowSpline.at(ap),rS=LetterScaleSpline.at(0),rY=LetterYOffsetSpline.at(0),rG=GlowSpline.at(0);
+        const dist=Math.abs(k-ai),fo=Math.max(0,1/(1+Math.pow(dist,2.8))),gfo=Math.max(0,1/(1+dist*.9));
+        sc=rS+(bS-rS)*fo;y=rY+(bY-rY)*fo;g=rG+(bG-rG)*gfo;
+      }
+      if(ls==='NotSung'){sc=LetterScaleSpline.at(0);y=LetterYOffsetSpline.at(0);g=GlowSpline.at(0)}
+      else if(ls==='Sung'&&ai===-1)g=GlowSpline.at(.2);
+      grad=ls==='NotSung'?-20:ls==='Sung'?100:(k===ai?-20+120*easeSinOut(ap):-20);
+    }else if(state==='NotSung'){sc=LetterScaleSpline.at(0);y=LetterYOffsetSpline.at(0);g=GlowSpline.at(0);grad=-20}
+    else{sc=LetterScaleSpline.at(1);y=LetterYOffsetSpline.at(1);g=GlowSpline.at(1);grad=100}
+    lt._sp.Scale.SetGoal(sc);lt._sp.YOffset.SetGoal(y);lt._sp.Glow.SetGoal(g);
+    const a=lt._sp.Scale.Step(dt),b=lt._sp.YOffset.Step(dt),c=lt._sp.Glow.Step(dt);
+    put(lt.el,b*2,a,4+12*c,c*LetterGlowMultiplier_Opacity,grad);
+    if(!(lt._sp.Scale.CanSleep()&&lt._sp.YOffset.CanSleep()&&lt._sp.Glow.CanSleep()))moving=true;
   }
   return moving;
 }
+function animateLineGlow(d,l,pos,dt){   // lines without word timing (Spicy's "Line" type): top-to-bottom fill and a glow
+  const end=l.end!=null?l.end:(L[lEls.indexOf(d)+1]||{}).t??l.t+4;
+  const state=getElementState(pos,l.t,end),pct=getProgressPercentage(pos,l.t,end);
+  if(!d._lg){d._lg={Glow:new Spring(LineGlowSpline.at(0),1,.5)};d._lg.Glow.SetGoal(LineGlowSpline.at(0),true)}
+  d._lg.Glow.SetGoal(state==='Active'?LineGlowSpline.at(pct):LineGlowSpline.at(state==='Sung'?1:0));
+  const g=d._lg.Glow.Step(dt),m=d._w;
+  m.style.setProperty('--gradient-position',(state==='Active'?pct*100:state==='NotSung'?-20:100).toFixed(1)+'%');
+  m.style.setProperty('--text-shadow-blur-radius',(4+8*g).toFixed(1)+'px');m.style.setProperty('--text-shadow-opacity',(g*50).toFixed(1)+'%');
+  return !d._lg.Glow.CanSleep();
+}
 const moving=new Set();let lastWT=0;
 const groups=d=>{const g=[];if(d._ts)g.push([d._w.children,d._ts]);(d._bg||[]).forEach(b=>g.push([b.el.children,b.ts]));return g};
-function wordsTick(t){
+function wordsTick(pos){
   const now=performance.now(),dt=Math.min(.1,Math.max(0,(now-(lastWT||now))/1000));lastWT=now;
-  if(S.low){   // low performance mode: plain fill, no springs
-    moving.forEach(k=>{const d=lEls[k];if(d)d.querySelectorAll('.w,.c').forEach(calm)});moving.clear();
-    if(li>=0&&lEls[li])groups(lEls[li]).forEach(([sp,ts])=>{
-      for(let j=0;j<sp.length&&j<ts.length;j++){const w=ts[j],st=t<w.t?0:t>=w.end?2:1;sp[j].style.setProperty('--gp',(st===0?-20:st===2?100:-20+120*(t-w.t)/Math.max(.05,w.end-w.t)).toFixed(1)+'%')}});
-    return;
-  }
-  if(li>=0&&lEls[li]&&(lEls[li]._ts||lEls[li]._bg))moving.add(li);
+  if(li>=0&&lEls[li]&&!L[li].dots)moving.add(li);
   moving.forEach(k=>{
-    const d=lEls[k];if(!d||!(d._ts||d._bg)){moving.delete(k);return}
-    if(k>li){d.querySelectorAll('.w,.c').forEach(calm);moving.delete(k);return}   // seeking back: future lines just reset
+    const d=lEls[k];if(!d||L[k].dots){moving.delete(k);return}
+    if(k>li){d.querySelectorAll('.w,.c').forEach(idle);if(d._w)idle(d._w);d._lg=null;moving.delete(k);return}   // seeking back: lines ahead go back to rest
     let m=false;
-    groups(d).forEach(([sp,ts])=>{for(let j=0;j<sp.length&&j<ts.length;j++)m=animWord(sp[j],ts[j],t,dt)||m});
-    if(!m&&k!==li){d.querySelectorAll('.w,.c').forEach(calm);moving.delete(k)}   // finished settling
+    if(S.low){groups(d).forEach(([sp,ts])=>{for(let j=0;j<sp.length&&j<ts.length;j++){const w=ts[j];sp[j].style.setProperty('--gradient-position',(pos<w.t?-20:pos>=w.end?100:-20+120*getProgressPercentage(pos,w.t,w.end)).toFixed(1)+'%')}})}
+    else if(d._ts||d._bg)groups(d).forEach(([sp,ts])=>{for(let j=0;j<sp.length&&j<ts.length;j++)m=animateWord(sp[j],ts[j],pos,dt)||m});
+    else if(d._w)m=animateLineGlow(d,L[k],pos,dt);
+    if(!m&&k!==li)moving.delete(k);   // settled; the words keep their final pose, as in Spicy Lyrics
   });
 }
 function lyricsTick(){

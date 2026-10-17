@@ -16,7 +16,7 @@ port forwarding or domain is needed.
   (a "Monitor of …" input on Linux, or tab/screen audio sharing).
 - **Live background:** the cover art, blurred, drifting at the speed and tempo of the music and pulsing with the bass.
 - **Cover that moves with the beat**, and a smooth layout change when a Canvas video starts or stops.
-- **Synced lyrics** animated in the style of Spicy Lyrics: each word fills, swells, lifts and glows on springs as it's
+- **Synced lyrics** animated like Spicy Lyrics (its animation code, ported): each word fills, swells, lifts and glows on springs as it's
   sung, long held words wave letter by letter, and lines further away blur. Background vocals are animated on their own timing too. Also duet alignment,
   and instrumental-break dots that hop in time
   until the next line. Click any line to jump there.
@@ -170,6 +170,12 @@ may stop working at any time, and you are responsible for whether using them is 
 
 Made by [BOZKOW](https://github.com/BOZKOW), built together with [Claude Code](https://claude.com/claude-code) (Anthropic's Claude Opus).
 
+The lyrics animation (word and letter springs, fill gradient, line dimming and blur) and the credits layout are
+ported from [Spicy Lyrics](https://github.com/Spikerko/spicy-lyrics) by Spikerko and the Spicy Lyrics contributors,
+licensed under the GNU AGPL-3.0. Its spring model is a port of [spr](https://github.com/Fraktality/spr) by Fraktality (MIT).
+
 ## License
 
-[MIT](LICENSE)
+Vibe Visualizer is free software, licensed under the [GNU Affero General Public License v3.0](LICENSE)
+(AGPL-3.0), because it includes code ported from Spicy Lyrics. If you run a modified version for other people
+over a network, you must offer them its source code; the app links to it under *Settings → Help*.
