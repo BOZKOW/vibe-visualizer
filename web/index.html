@@ -238,10 +238,28 @@ select option{background:#14141f}
 .btn.sm{padding:6px 14px;font-size:13px}
 
 /* ---------- settings drawer ---------- */
-#panel{position:fixed;top:0;right:0;bottom:0;width:min(400px,100%);padding:64px 18px 28px;overflow:auto;background:rgba(14,14,22,.8);border-left:1px solid var(--line);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);transform:translateX(104%);transition:transform .4s cubic-bezier(.2,.8,.2,1);z-index:8;display:flex;flex-direction:column;gap:14px}
-#panel.open{transform:none}
-#pclose{position:absolute;top:14px;right:14px}
-#ptitle{position:absolute;top:22px;left:18px;font-weight:800;font-size:16px}
+/* Settings: a window in the middle, categories on the left, one page at a time on the right */
+#panel{position:fixed;inset:0;z-index:8;display:grid;place-items:center;padding:16px;background:rgba(4,4,10,.5);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);opacity:0;visibility:hidden;transition:opacity .25s,visibility 0s .25s}
+#panel.open{opacity:1;visibility:visible;transition:opacity .25s}
+#pwin{position:relative;width:min(940px,100%);height:min(700px,100%);display:grid;grid-template-columns:220px 1fr;background:rgba(16,16,26,.94);border:1px solid var(--line);border-radius:22px;overflow:hidden;box-shadow:0 40px 120px rgba(0,0,0,.65);transform:translateY(14px) scale(.97);transition:transform .35s cubic-bezier(.2,.8,.2,1)}
+#panel.open #pwin{transform:none}
+#pnav{display:flex;flex-direction:column;gap:2px;padding:20px 12px;border-right:1px solid var(--line);background:rgba(255,255,255,.03);overflow:auto}
+#ptitle{font-weight:800;font-size:18px;letter-spacing:-.02em;padding:2px 10px 12px}
+#psearch{margin:0 0 10px;width:100%;background:rgba(255,255,255,.07);border:1px solid var(--line);border-radius:10px;padding:8px 10px;color:var(--fg);font:inherit;font-size:13px}
+#pnav .pn{display:flex;align-items:center;gap:10px;text-align:left;padding:9px 10px;border-radius:10px;border:0;background:none;color:var(--dim);font:inherit;font-size:13.5px;font-weight:600;cursor:pointer;transition:background .15s,color .15s}
+#pnav .pn:hover{background:rgba(255,255,255,.06);color:#fff}
+#pnav .pn.on{background:rgba(255,255,255,.12);color:#fff}
+#pnav .pn svg{width:17px;height:17px;flex:none;fill:currentColor;opacity:.85}
+#pbody{overflow:auto;padding:28px 34px 34px;display:flex;flex-direction:column;gap:14px;scrollbar-gutter:stable}
+#phead{margin:0 0 4px;font-size:24px;font-weight:800;letter-spacing:-.03em}
+.ppage{display:flex;flex-direction:column;gap:14px}.ppage[hidden]{display:none}
+.ppage>h4:first-child.same{display:none}
+.psh{display:none;margin:6px 0 -2px;font-size:15px;font-weight:800;color:#fff}#pbody.searching .psh{display:block}#pbody.searching .ppage h4{display:none!important}
+#pclose{position:absolute;top:14px;right:14px;z-index:2}
+#pnone{color:var(--faint);font-size:13px}
+@media(max-width:700px){#pwin{grid-template-columns:1fr;grid-template-rows:auto 1fr;height:100%}
+  #pnav{flex-direction:row;flex-wrap:nowrap;overflow-x:auto;border-right:0;border-bottom:1px solid var(--line);padding:12px;align-items:center}
+  #ptitle,#psearch{display:none}#pnav .pn{flex:none}#pbody{padding:20px 18px 26px}}
 h4{margin:14px 0 -4px;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint)}
 .f{position:relative;display:flex;flex-direction:column;gap:4px;color:var(--dim);font-size:12px;font-weight:600;padding-right:26px}
 .f.chk{flex-direction:row;align-items:center;gap:8px}
@@ -262,7 +280,7 @@ input[type=color]{width:100%;height:28px;padding:0;border:1px solid var(--line);
 .stat{margin:0;font-size:12px;color:var(--dim)}
 .row2{display:flex;gap:8px;flex-wrap:wrap}
 .sub-h{margin:16px 0 4px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--faint)}
-.f.chk label small{display:block;margin:2px 0 0 26px;font-size:11.5px;font-weight:500;color:var(--faint);line-height:1.4}
+.f.chk label{flex-wrap:wrap}.f.chk label small{display:block;flex-basis:100%;margin:0 0 0 44px;font-size:11.5px;font-weight:500;color:var(--faint);line-height:1.4}   /* description under the switch's name */
 /* Spicy Lyrics style options */
 body.lsimple .ll .w,body.lsimple .ll .w .c{scale:1;transform:none}
 body.lminimal #lyr:not(.st) .ll.p:not(.dp){opacity:0;pointer-events:none}
@@ -346,7 +364,7 @@ code,kbd{font:12px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;backgrou
 #info.anim #txt>*{animation:up .6s cubic-bezier(.2,.8,.2,1) backwards}
 #info.anim #txt>:nth-child(2){animation-delay:.07s}#info.anim #txt>:nth-child(n+3){animation-delay:.14s}
 body:not([data-view=viz]) #lyr{animation:fadein .5s}
-#panel.open>*{animation:up .45s cubic-bezier(.2,.8,.2,1) backwards}
+.ppage:not([hidden])>*{animation:up .4s cubic-bezier(.2,.8,.2,1) backwards}
 .btn,.chip,.opt{transition:background .2s,border-color .2s,transform .15s}
 .btn:active,.chip:active,.opt:active{transform:scale(.96)}
 #seg button,#wzseg button{transition:background .25s,color .25s}
@@ -387,7 +405,7 @@ body.low #cappanel,body.low #netpanel{backdrop-filter:none;-webkit-backdrop-filt
 @media(max-width:760px){#netms{display:none}#netbtn{padding:8px 11px}}
 
 /* ---------- low performance mode ---------- */
-body.low #setup .sw,body.low .glass,body.low .btn,body.low .chip,body.low #seg,body.low .toast,body.low #panel{backdrop-filter:none;-webkit-backdrop-filter:none;background:rgba(20,20,30,.85)}
+body.low #setup .sw,body.low .glass,body.low .btn,body.low .chip,body.low #seg,body.low .toast,body.low #pwin{backdrop-filter:none;-webkit-backdrop-filter:none;background:rgba(20,20,30,.97)}body.low #panel{backdrop-filter:none;-webkit-backdrop-filter:none}
 body.low .bl:nth-child(n+2){display:none}
 body.low .bl{animation:none}
 body.low #bg::after{display:none}
@@ -405,6 +423,29 @@ body.low .ll{transition:opacity .25s}
   .brand span,#spt{display:none}
   #seg button{padding:6px 10px}
 }
+
+/* ===== glassmorphism: every surface is frosted glass over the live background ===== */
+:root{--g-tint:rgba(22,22,38,.26);--g-grad:linear-gradient(145deg,rgba(255,255,255,.16),rgba(255,255,255,.04) 60%,rgba(255,255,255,.08));
+  --g-bd:rgba(255,255,255,.2);--g-hi:inset 0 1px 0 rgba(255,255,255,.28),inset 0 -1px 0 rgba(255,255,255,.05);--g-sh:0 18px 50px rgba(0,0,0,.35);
+  --g-blur:blur(28px) saturate(175%)}
+/* big panes */
+.glass,#pwin,#setup .sw,#cappanel,#netpanel{background:var(--g-grad),var(--g-tint);border:1px solid var(--g-bd);box-shadow:var(--g-sh),var(--g-hi);backdrop-filter:var(--g-blur);-webkit-backdrop-filter:var(--g-blur)}
+#pwin{border-radius:26px}#setup .sw{border-radius:26px}
+#panel{background:rgba(4,4,12,.22)}#setup{background:rgba(4,4,12,.3);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+#pnav{background:rgba(255,255,255,.04);border-right-color:rgba(255,255,255,.12)}
+#pnav .pn.on{background:rgba(255,255,255,.16);box-shadow:var(--g-hi)}
+/* controls */
+.ib,.chip,#seg,.btn:not(.pri),select,.tin,#psearch,.f input[type=text],.f input[type=url],.f input[type=password],.prow{
+  background:linear-gradient(145deg,rgba(255,255,255,.15),rgba(255,255,255,.05));border:1px solid rgba(255,255,255,.18);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.22);backdrop-filter:blur(18px) saturate(160%);-webkit-backdrop-filter:blur(18px) saturate(160%)}
+.ib:hover,.chip:hover,.btn:not(.pri):hover{background:linear-gradient(145deg,rgba(255,255,255,.24),rgba(255,255,255,.09))}
+.ib.on{background:linear-gradient(145deg,rgba(255,255,255,.34),rgba(255,255,255,.14));border-color:rgba(255,255,255,.35)}
+.btn.pri{box-shadow:0 6px 20px rgba(255,255,255,.15),inset 0 1px 0 #fff}
+.toast{background:var(--g-grad),rgba(22,22,38,.5);border-color:var(--g-bd);box-shadow:var(--g-sh),var(--g-hi);backdrop-filter:var(--g-blur);-webkit-backdrop-filter:var(--g-blur)}
+#psearch::placeholder,.tin::placeholder{color:rgba(255,255,255,.55)}
+/* low performance mode: no blur behind the glass, a bit more opaque instead */
+body.low .ib,body.low .chip,body.low select,body.low .prow,body.low #cappanel,body.low #netpanel,body.low #setup .sw,body.low #setup{backdrop-filter:none;-webkit-backdrop-filter:none}
+body.low #cappanel,body.low #netpanel,body.low #setup .sw{background:rgba(20,20,32,.95)}
 </style>
 </head>
 <body data-view="both" data-src="none">
@@ -1193,8 +1234,8 @@ const spSave=()=>{store.set('pulse_sp',SP);pushPrefs()};
 const b64u=b=>btoa(String.fromCharCode(...new Uint8Array(b))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
 const redirectUri=()=>location.protocol==='http:'||location.protocol==='https:'?location.origin+location.pathname:'';
 async function spLogin(){
-  if(!C.spotId.trim()){toast('Add your Spotify Client ID first (Settings → Spotify).','warn');openPanel();return}
-  if(!redirectUri()){toast('Spotify login needs this page served over http://127.0.0.1 and not opened as a file. Run: python -m http.server 8000','warn',10000);openPanel();return}
+  if(!C.spotId.trim()){toast('Add your Spotify Client ID first (Settings → Spotify).','warn');openPanel('spotify');return}
+  if(!redirectUri()){toast('Spotify login needs this page served over http://127.0.0.1 and not opened as a file. Run: python -m http.server 8000','warn',10000);openPanel('spotify');return}
   if(!(window.crypto&&crypto.subtle)){toast('Spotify login needs a secure context. Open the page via http://127.0.0.1:8000 or https.');return}
   try{
     const v=b64u(crypto.getRandomValues(new Uint8Array(48))),st=b64u(crypto.getRandomValues(new Uint8Array(12)));
@@ -1283,7 +1324,7 @@ function updSpPanel(){
   $('spstatus').textContent=!SP.access?(C.spotId.trim()?'Client ID saved. Press Connect.':'Not connected.'):src==='spotify'?(spState?'Connected · '+(spPlaying()?'playing':'paused'):'Connected · nothing playing'):'Connected. Click the Spotify chip to use it.';
   $('spconnect').hidden=!!SP.access;$('spdisc').hidden=!SP.access;
 }
-$('spchip').onclick=()=>{if(!SP.access)spLogin();else if(src!=='spotify')setSource('spotify');else openPanel()};
+$('spchip').onclick=()=>{if(!SP.access)spLogin();else if(src!=='spotify')setSource('spotify');else openPanel('spotify')};
 $('spstart').onclick=()=>spLogin();
 $('spconnect').onclick=()=>spLogin();
 $('spdisc').onclick=()=>{SP={};spSave();if(src==='spotify'){setSource('none');ttl.textContent='';sub.textContent='';clearLyrics('');clearCanvas();$('empty').classList.remove('gone')}updChips();toast('Spotify disconnected.','ok',2500)};
@@ -2201,7 +2242,58 @@ function uiTick(now){
 }
 function fsToggle(){try{document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen()}catch(e){toast('Fullscreen is not available here.','warn')}}
 $('fs').onclick=fsToggle;
-function openPanel(){$('panel').classList.add('open');$('gear').classList.add('on');updSpPanel();poke()}
+// group the settings (each <h4> and what follows it) into pages, with a category list and a search box
+const PAGES=[
+  ['look','Appearance',['Colors','Background','Cover'],'M12 3a9 9 0 000 18c.8 0 1.5-.7 1.5-1.5 0-.4-.1-.7-.4-1-.2-.3-.4-.6-.4-1 0-.8.7-1.5 1.5-1.5H16a5 5 0 005-5c0-4.4-4-8-9-8zM6.5 12a1.5 1.5 0 110-3 1.5 1.5 0 010 3zm3-4a1.5 1.5 0 110-3 1.5 1.5 0 010 3zm5 0a1.5 1.5 0 110-3 1.5 1.5 0 010 3zm3 4a1.5 1.5 0 110-3 1.5 1.5 0 010 3z'],
+  ['viz','Visualizer',['Visualizer'],'M4 14h3v6H4zm6.5-6h3v12h-3zM17 4h3v16h-3z'],
+  ['lyrics','Lyrics',['Lyrics'],'M4 6h16v2H4zm0 5h12v2H4zm0 5h16v2H4z'],
+  ['tr','Translation',['Translation & romanization'],'M12.9 15.1l-2.5-2.5A17.5 17.5 0 0014 6h3V4h-7V2H8v2H1v2h11.2A15.7 15.7 0 019 11.4 15.6 15.6 0 016.7 8H4.7a17.6 17.6 0 003 4.6l-5.1 5 1.4 1.4 5-5 3.1 3.1.8-2zM18.5 10h-2L12 22h2l1.1-3h4.8l1.1 3h2l-4.5-12zm-2.6 7l1.6-4.3 1.6 4.3h-3.2z'],
+  ['cache','Lyrics cache',['Lyrics cache'],'M12 3C7.6 3 4 4.3 4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6c0-1.7-3.6-3-8-3zm0 2c3.9 0 6 1.1 6 1s-2.1 1-6 1-6-.9-6-1 2.1-1 6-1zm6 13c0 .1-2.1 1-6 1s-6-.9-6-1v-2.3c1.5.8 3.6 1.3 6 1.3s4.5-.5 6-1.3V18zm0-5c0 .1-2.1 1-6 1s-6-.9-6-1v-2.3c1.5.8 3.6 1.3 6 1.3s4.5-.5 6-1.3V13z'],
+  ['spotify','Spotify & Canvas',['Spotify','Canvas'],'M12 2a10 10 0 100 20 10 10 0 000-20zm4.6 14.4a.6.6 0 01-.9.2c-2.4-1.5-5.4-1.8-8.9-1a.6.6 0 11-.3-1.2c3.9-.9 7.2-.5 9.9 1.1.3.2.4.6.2.9zm1.2-2.7a.8.8 0 01-1.1.3c-2.7-1.7-6.9-2.2-10.1-1.2a.8.8 0 11-.5-1.5c3.7-1.1 8.3-.6 11.4 1.3.4.3.5.8.3 1.1zm.1-2.8C14.7 9 9.4 8.8 6.3 9.7a1 1 0 11-.6-1.9c3.5-1.1 9.4-.9 13.1 1.3a1 1 0 01-.9 1.8z'],
+  ['perf','Performance',['Performance'],'M13 2L4 14h6l-1 8 9-12h-6l1-8z'],
+  ['help','Help & about',['Help'],'M12 2a10 10 0 100 20 10 10 0 000-20zm1 17h-2v-2h2v2zm2.1-7.7l-.9.9c-.7.7-1.2 1.3-1.2 2.8h-2v-.5c0-1.1.5-2.1 1.2-2.8l1.2-1.3A2 2 0 0012 8a2 2 0 00-2 2H8a4 4 0 118 0c0 .9-.4 1.7-.9 2.3z']];
+let pageNow='look';
+(function buildSettings(){
+  const P=$('panel'),title=$('ptitle'),close=$('pclose');
+  const win=document.createElement('div');win.id='pwin';win.setAttribute('role','dialog');win.setAttribute('aria-modal','true');win.setAttribute('aria-labelledby','ptitle');
+  const nav=document.createElement('nav');nav.id='pnav';nav.setAttribute('aria-label','Settings categories');
+  const bodyEl=document.createElement('div');bodyEl.id='pbody';
+  const head=document.createElement('h2');head.id='phead';bodyEl.appendChild(head);
+  const none=document.createElement('p');none.id='pnone';none.hidden=true;none.textContent='No setting matches that.';bodyEl.appendChild(none);
+  nav.appendChild(title);
+  const search=document.createElement('input');search.id='psearch';search.type='search';search.placeholder='Search settings';search.setAttribute('aria-label','Search settings');nav.appendChild(search);
+  // cut the flat list into sections at each <h4>
+  const sections={};let cur=null;
+  [...P.children].forEach(el=>{if(el===title||el===close)return;if(el.tagName==='H4'){cur=el.textContent.trim();sections[cur]=[el]}else if(cur)sections[cur].push(el)});
+  PAGES.forEach(([id,name,parts,icon])=>{
+    const page=document.createElement('section');page.className='ppage';page.dataset.p=id;page.dataset.name=name;
+    const sh=document.createElement('div');sh.className='psh';sh.textContent=name;page.appendChild(sh);   // page name, shown in search results
+    parts.forEach(h=>(sections[h]||[]).forEach(el=>page.appendChild(el)));
+    const h4=page.querySelector('h4');if(h4&&parts.length===1)h4.classList.add('same');   // the page title already says it
+    bodyEl.appendChild(page);
+    const b=document.createElement('button');b.type='button';b.className='pn';b.dataset.p=id;
+    b.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="'+icon+'"/></svg>';b.appendChild(document.createTextNode(name));
+    b.onclick=()=>{search.value='';showPage(id)};nav.appendChild(b);
+  });
+  win.append(nav,bodyEl,close);P.textContent='';P.appendChild(win);
+  P.addEventListener('mousedown',e=>{if(e.target===P)closePanel()});   // click outside the window to close
+  search.addEventListener('input',()=>{
+    const q=search.value.trim().toLowerCase();
+    if(!q){showPage(pageNow);return}
+    let hits=0;head.textContent='Search results';bodyEl.classList.add('searching');
+    $('pbody').querySelectorAll('.ppage').forEach(pg=>{
+      let any=false;[...pg.children].forEach(el=>{if(el.classList.contains('psh')||el.tagName==='H4')return;const m=el.textContent.toLowerCase().includes(q);el.style.display=m?'':'none';if(m)any=true});
+      pg.hidden=!any;if(any)hits++});
+    none.hidden=!!hits;nav.querySelectorAll('.pn').forEach(b=>b.classList.remove('on'));
+  });
+})();
+function showPage(id){
+  pageNow=id;$('pnone').hidden=true;$('pbody').classList.remove('searching');
+  $('pbody').querySelectorAll('.ppage').forEach(pg=>{pg.hidden=pg.dataset.p!==id;pg.querySelectorAll(':scope>*').forEach(el=>el.style.display='')});
+  $('pnav').querySelectorAll('.pn').forEach(b=>b.classList.toggle('on',b.dataset.p===id));
+  const pg=$('pbody').querySelector('.ppage[data-p="'+id+'"]');$('phead').textContent=pg?pg.dataset.name:'';$('pbody').scrollTop=0;
+}
+function openPanel(page){showPage(page||pageNow);$('panel').classList.add('open');$('gear').classList.add('on');updSpPanel();poke();setTimeout(()=>$('psearch').focus({preventScroll:true}),60)}
 function closePanel(){$('panel').classList.remove('open');$('gear').classList.remove('on')}
 $('gear').onclick=()=>$('panel').classList.contains('open')?closePanel():openPanel();
 $('pclose').onclick=closePanel;
