@@ -86,7 +86,7 @@ body[data-view=viz] #lyr{display:none}
 #ly{position:absolute;left:0;right:0;top:0;padding:0 6% 0 20px;transition:transform .55s cubic-bezier(.2,.8,.2,1);will-change:transform}
 #lyr.st{overflow-y:auto}
 #lyr.st #ly{position:relative;transform:none!important;padding:30vh 6% 30vh 20px}
-.ll{font-size:calc(clamp(24px,3.3vw,52px)*var(--ls));font-weight:700;line-height:1.18;letter-spacing:0;padding:.2em 0;opacity:.51;transform-origin:left center;transition:opacity .2s cubic-bezier(.61,1,.88,1);--bl:0px;
+.ll{font-size:calc(clamp(24px,3.3vw,52px)*var(--ls));font-weight:700;line-height:1.18;letter-spacing:0;padding:.2em 0;opacity:.51;transform-origin:left center;transition:opacity .2s cubic-bezier(.61,1,.88,1),filter .35s ease-out;--bl:0px;
   /* Spicy Lyrics' look (ported from its Mixed.css, AGPL-3.0): text is transparent and drawn by a text-shadow, so
      lines away from the current one blur cheaply (--bl); the line being sung paints a gradient that fills */
   --gradient-position:-20%;--gradient-alpha:.85;--gradient-alpha-end:.35;--gradient-degrees:180deg;--gradient-offset:0%;--text-shadow-blur-radius:4px;--text-shadow-opacity:0%}
@@ -97,13 +97,12 @@ body[data-view=viz] #lyr{display:none}
 .ll.a .lt,.ll.a .w,.ll.a .c{-webkit-background-clip:text;background-clip:text;text-shadow:0 0 var(--text-shadow-blur-radius) rgba(255,255,255,var(--text-shadow-opacity));
   background-image:linear-gradient(var(--gradient-degrees),rgba(255,255,255,var(--gradient-alpha)) var(--gradient-position),rgba(255,255,255,var(--gradient-alpha-end)) calc(var(--gradient-position) + 20% + var(--gradient-offset)))}
 .ll.a .lt.wt,.ll.a .w.lg{background-image:none;text-shadow:none}   /* words and split letters paint their own fill */
-#lyr:not(.st) .ll:not(.dots){cursor:pointer}#lyr:not(.st) .ll:not(.a):not(.dots):hover{opacity:1;--bl:0px}   /* synced lines can be clicked to jump there */
+#lyr:not(.st) .ll:not(.dots){cursor:pointer}#lyr:not(.st) .ll:not(.a):not(.dots):hover{opacity:1;--bl:0px;--fb:0px}   /* synced lines can be clicked to jump there */
 #lyr.st .ll{opacity:.85}#lyr.st .ll .lt{text-shadow:0 0 0 rgba(255,255,255,.85)}
-/* every line but the one being sung is blurred, more the further away it is (Spicy Lyrics' steps, starting stronger
-   so the nearest lines are clearly soft too); the line being sung is always sharp */
-body.lb .ll.dp,body.lb .ll.d1{--bl:2.25px}body.lb .ll.d2{--bl:3.25px}body.lb .ll.d3{--bl:4.25px}body.lb .ll.d4{--bl:5.25px}body.lb .ll.d5{--bl:6.25px}body.lb .ll.dx{--bl:6.83px}
-body.lb .ll:not(.a) .sub:not(.bgv){filter:blur(calc(var(--bl) * .8));transition:filter .3s}   /* romanization / translation under them too */
-body.lb #lyr:not(.st) .ll.a .sub{filter:none}
+/* every line but the one being sung is blurred, more the further away it is; the line being sung is always sharp */
+body.lb .ll.dp,body.lb .ll.d1{--fb:3px}body.lb .ll.d2{--fb:4.5px}body.lb .ll.d3{--fb:6px}body.lb .ll.d4{--fb:7px}body.lb .ll.d5,body.lb .ll.dx{--fb:8px}
+body.lb #lyr:not(.st) .ll:is(.dp,.d1,.d2,.d3,.d4,.d5,.dx){filter:blur(var(--fb))}   /* only blurred lines get a filter */
+
 /* words rest a little small and low; the springs lift them as they're sung */
 .ll .w,.ll .w .c{display:inline-block;white-space:pre;padding:.14em .06em .22em;margin:-.14em -.06em -.22em}   /* extra paint room so tails (g, y, j) and accents aren't cut off by the text fill */
 .ll .w .c{padding:.14em 0 .22em;margin:-.14em 0 -.22em}
