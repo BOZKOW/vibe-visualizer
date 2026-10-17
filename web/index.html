@@ -289,13 +289,14 @@ body.lhover #lyr:not(.st) .ll:not(.dots):not(.a):hover::before{content:"";positi
 body.lduet #ly.duet .ll:not(.opp):not(.dots){padding-right:14%}body.lduet #ly.duet .ll.opp{padding-left:14%}
 body.credly.credr #lcredit{left:auto;right:0;align-items:flex-end;text-align:right}
 body.nosmooth #ly{transition:none}
-/* Experiment: Focus mode */
-body.xfocus #lyr:not(.st) .ll{opacity:0;transform:translateY(.9em);pointer-events:none;
-  transition:opacity .45s ease,transform .7s cubic-bezier(.2,.8,.2,1),filter .35s ease-out}
-body.xfocus #lyr:not(.st) .ll.a{opacity:1;transform:none;pointer-events:auto;transition-delay:.08s}
-body.xfocus #lyr:not(.st) .ll.p{opacity:0;transform:translateY(-.9em);transition-duration:.4s,.6s,.35s}
-body.xfocus #lyr:not(.st) .ll.dots,body.xfocus #lyr:not(.st) .ll.dots.a{opacity:0!important;visibility:hidden}
-body.xfocus #lyr:not(.st) .ll:not(.a){filter:blur(12px)}   /* blurred while waiting and while leaving, like the other lines */   /* in Focus mode breaks show nothing, no dots */
+/* Experiment: Focus mode: the line being sung is sharp; the lines just before and after stay visible but blurred
+   and faded as they scroll in from below and away to the top; everything further out is hidden */
+body.xfocus #lyr:not(.st) .ll{transition:opacity .5s ease,filter .5s ease}
+body.xfocus #lyr:not(.st) .ll:not(.a){opacity:0;pointer-events:none;filter:blur(12px)}
+body.xfocus #lyr:not(.st) .ll:is(.d1,.dp){opacity:.4;filter:blur(6px)}
+body.xfocus #lyr:not(.st) .ll.d2{opacity:.18;filter:blur(10px)}
+body.xfocus #lyr:not(.st) .ll.a{opacity:1;filter:none;pointer-events:auto}
+body.xfocus #lyr:not(.st) .ll.dots,body.xfocus #lyr:not(.st) .ll.dots.a{opacity:0!important;visibility:hidden}   /* breaks show nothing, no dots */
 body.novol #volwrap{display:none}
 .crow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-top:1px solid var(--line);font-size:13px;font-weight:600}
 .crow small{display:block;font-size:11.5px;font-weight:500;color:var(--faint);margin-top:2px;line-height:1.4}.crow .btn{flex:none}
@@ -640,7 +641,7 @@ body.low #cappanel,body.low #netpanel,body.low #setup .sw{background:rgba(20,20,
 
   <h4>Experiments</h4>
   <p class="hint">Ideas being tried out. They may change, or go away, in a later version.</p>
-  <div class="f chk" data-k="xFocus"><label><input type="checkbox" id="xFocus"> Focus mode<small>Only the line being sung is shown. Each line rises in from below when its turn comes, then floats up and fades away when it’s done. Instrumental breaks stay empty, without the dots.</small></label></div>
+  <div class="f chk" data-k="xFocus"><label><input type="checkbox" id="xFocus"> Focus mode<small>The line being sung is sharp. The next line rises in from below, blurred, until its turn comes; sung lines float up blurred and fade away. Lines further away are hidden. Instrumental breaks stay empty, without the dots.</small></label></div>
 
   <h4>Help</h4>
   <div class="row2"><button class="btn sm" id="rerun">Open setup guide</button><button class="btn sm" id="forget">Forget this device</button></div>
