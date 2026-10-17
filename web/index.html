@@ -1693,7 +1693,7 @@ async function decorate(){
 function setActive(i){
   li=i;
   for(let j=0;j<lEls.length;j++){
-    const d=Math.abs(j-i),c=lEls[j].dataset.b+(j===i?' a':j<i?' p':'')+(d===1?' d1':d===2?' d2':d===3?' d3':d===4?' d4':d===5?' d5':d>5?' dx':'');
+    const d=Math.abs(j-i),c=lEls[j].dataset.b+(j===i?(lOut?' p':' a'):j<i?' p':'')+(d===1?' d1':d===2?' d2':d===3?' d3':d===4?' d4':d===5?' d5':d>5?' dx':'');
     if(lEls[j].className!==c)lEls[j].className=c;
   }
   place();
@@ -1861,10 +1861,18 @@ function wordsTick(pos){
     if(!m&&k!==li)moving.delete(k);   // settled; the words keep their final pose, as in Spicy Lyrics
   });
 }
+// when a line has been sung to its end and the next hasn't started (a pause), it dims back like the other sung lines,
+// as in Spicy Lyrics. Its end is the latest of the line's own end and its words' and background vocals' ends.
+let lOut=false;
+function lineEnd(l){
+  if(!l||l.dots)return null;
+  let e=l.end!=null?l.end:null;const up=ws=>ws&&ws.forEach(w=>{const x=w.end!=null?w.end:w.t;if(e==null||x>e)e=x});
+  up(l.words);(l.bg||[]).forEach(b=>up(b.words));return e;   // null when the source doesn't say (LRC): the line stays lit
+}
 function lyricsTick(){
   if(!lsync||!L.length||S.view==='viz')return;
-  const t=curTime()*lPace+S.loff/1000,i=findIdx(t);
-  if(i!==li)setActive(i);
+  const t=curTime()*lPace+S.loff/1000,i=findIdx(t),e=i>=0?lineEnd(L[i]):null,out=e!=null&&t>=e;
+  if(i!==li||out!==lOut){lOut=out;setActive(i)}
   wordsTick(t);
 }
 // lyrics sources, tried in the order set in Settings
