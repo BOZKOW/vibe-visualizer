@@ -111,16 +111,15 @@ body.lb .ll.d1{--bl:1.25px}body.lb .ll.d2{--bl:2.5px}body.lb .ll.d3{--bl:3.75px}
 body.low .ll .w,body.low .ll .w .c{scale:1;transform:none}
 .ll.a .w,.ll.a .w .c{will-change:transform,scale}
 .ll .w.one{display:inline;white-space:normal;-webkit-box-decoration-break:clone;box-decoration-break:clone}   /* a whole romanized line: wraps like normal text */
-/* instrumental breaks: three dots that fill up until the next line */
-.ll.dots{display:flex;gap:.3em;align-items:center;height:1.2em;padding:.2em 0}
-.ll.dots i{width:.3em;height:.3em;border-radius:50%;background:#fff;opacity:.3;transition:opacity .4s,transform .4s}
-.ll.dots:not(.a){opacity:.15}
-.ll.dots.a i.on{animation:hop var(--seg,1s) linear both;animation-delay:var(--at,0s)}   /* each dot's hop lasts its whole turn and lands as the next one lights up */
-@keyframes hop{   /* crouch, rise, then fall and touch down exactly at the end of the dot's turn */
-  0%{transform:translateY(0) scale(1);animation-timing-function:ease-out}8%{transform:translateY(.05em) scale(1.12,.88);animation-timing-function:cubic-bezier(.2,.7,.4,1)}
-  50%{transform:translateY(-.5em) scale(1.18);animation-timing-function:cubic-bezier(.6,0,.8,.4)}100%{transform:translateY(0) scale(1)}}
-.ll.dots i.on{opacity:1}
-.ll.dots.p i{opacity:0;transform:scale(0);transition:opacity .3s,transform .35s cubic-bezier(.5,-.6,.7,.4)}   /* the 3rd dot lands, the lyrics start, and the dots pop away */
+/* instrumental breaks, as in Spicy Lyrics (Mixed.css, AGPL-3.0): three dots that swell, rise and glow one after
+   another; the line takes no room until it's active, and the group pops away half a second before the singing */
+.ll.dots{height:0;padding:0;margin:0;overflow:hidden;opacity:0;line-height:0;transition:transform .14s,opacity .14s!important;transform-origin:center center}
+.ll.dots.a{opacity:1;height:auto;overflow:visible;line-height:1.18;padding:.2em 0}
+.ll.dots .dg{display:flex;flex-direction:row;gap:.18em;width:max-content;transform-origin:center center;scale:1;transition:scale .3s}
+.ll.dots.opp .dg{margin-left:auto}
+.ll.dots:is(.ph,:not(.a)) .dg{scale:0;transition:scale .4s linear(0,-.006 9.4%,-.029 18%,-.157 43.3%,-.185 51.4%,-.189 55.9%,-.182 60%,-.163 63.9%,-.133 67.6%,-.074 72.3%,.006 76.7%,.238 85%,.566 92.7%,1)}
+.ll.dots .dot{display:inline-block;font-size:1.3em;line-height:.65;scale:.75;opacity:.35;color:rgba(255,255,255,.85);-webkit-text-fill-color:currentColor;
+  text-shadow:0 0 var(--text-shadow-blur-radius,4px) rgba(255,255,255,var(--text-shadow-opacity,0%))}
 @keyframes breathe{50%{transform:scale(1.3)}}
 /* romanization + translation under each line */
 .ll .lt{display:block}
@@ -1363,7 +1362,7 @@ function renderLyrics(label,quiet){
   ly.textContent='';lEls=[];li=-2;lw=-1;moving.clear();lyr.classList.toggle('st',!lsync&&L.length>0);
   L.forEach((l,idx)=>{
     const d=document.createElement('div');d.className=l.dots?'ll dots':l.opp?'ll opp':'ll';
-    if(l.dots){d.innerHTML='<i></i><i></i><i></i>';d._w=d}
+    if(l.dots){d.innerHTML='<div class="dg"><span class="dot">•</span><span class="dot">•</span><span class="dot">•</span></div>';d._w=d.firstChild}
     else{
       const main=document.createElement('span');main.className='lt';d._w=main;
       const romOnly=S.romMode==='replace'&&l.rom;
@@ -1679,13 +1678,41 @@ function animateLineGlow(d,l,pos,dt){   // lines without word timing (Spicy's "L
   m.style.setProperty('--text-shadow-blur-radius',(4+8*g).toFixed(1)+'px');m.style.setProperty('--text-shadow-opacity',(g*50).toFixed(1)+'%');
   return !d._lg.Glow.CanSleep();
 }
+const preHiddenDotLine=.5,InterludeTimePadding=-(preHiddenDotLine+.05);   // seconds
+const DotScaleSpline=GetSpline([{Time:0,Value:.75},{Time:.7,Value:1.05},{Time:1,Value:1}]);
+const DotYOffsetSpline=GetSpline([{Time:0,Value:0},{Time:.9,Value:-.12},{Time:1,Value:0}]);
+const DotGlowSpline=GetSpline([{Time:0,Value:0},{Time:.6,Value:1},{Time:1,Value:1}]);
+const DotOpacitySpline=GetSpline([{Time:0,Value:.35},{Time:.6,Value:1},{Time:1,Value:1}]);
+const createDotSprings=()=>({Scale:new Spring(DotScaleSpline.at(0),.7,.6),YOffset:new Spring(DotYOffsetSpline.at(0),1.25,.4),Glow:new Spring(DotGlowSpline.at(0),1,.5),Opacity:new Spring(DotOpacitySpline.at(0),1,.5)});
+function animateDots(d,l,pos,dt){   // the three dots each take a third of the break, ending 550 ms before the next line
+  const total=Math.max(.1,l.end-l.t),base=total/3,pad=InterludeTimePadding/3;
+  const e1=Math.max(0,base+pad),e2=Math.max(e1,base*2+pad*2),e3=Math.max(e2,total+InterludeTimePadding),span=[[0,e1],[e1,e2],[e2,e3]];
+  d.classList.toggle('ph',pos>l.end-preHiddenDotLine);
+  let moving=false;
+  [...d._w.children].forEach((el,k)=>{
+    const a=l.t+span[k][0],b=l.t+span[k][1],st=getElementState(pos,a,b),pc=getProgressPercentage(pos,a,b),q=st==='Active'?pc:st==='NotSung'?0:1;
+    if(!el._sp){el._sp=createDotSprings();el._sp.Scale.SetGoal(DotScaleSpline.at(0),true);el._sp.YOffset.SetGoal(DotYOffsetSpline.at(0),true);el._sp.Glow.SetGoal(DotGlowSpline.at(0),true);el._sp.Opacity.SetGoal(DotOpacitySpline.at(0),true)}
+    const sp=el._sp;sp.Scale.SetGoal(DotScaleSpline.at(q));sp.YOffset.SetGoal(DotYOffsetSpline.at(q));sp.Glow.SetGoal(DotGlowSpline.at(q));sp.Opacity.SetGoal(DotOpacitySpline.at(q));
+    const cS=sp.Scale.Step(dt),cY=sp.YOffset.Step(dt),cG=sp.Glow.Step(dt),cO=sp.Opacity.Step(dt);
+    el.style.transform='translate3d(0,'+(cY/1.3).toFixed(5)+'em,0)';   // the offset is in line font sizes; the dot's font is 1.3×
+    el.style.scale=cS.toFixed(4);el.style.opacity=Math.max(0,Math.min(1,cO)).toFixed(3);
+    el.style.setProperty('--text-shadow-blur-radius',(4+6*cG).toFixed(1)+'px');el.style.setProperty('--text-shadow-opacity',Math.max(0,cG*90).toFixed(1)+'%');
+    if(!(sp.Scale.CanSleep()&&sp.YOffset.CanSleep()&&sp.Glow.CanSleep()&&sp.Opacity.CanSleep()))moving=true;
+  });
+  return moving;
+}
 const moving=new Set();let lastWT=0;
 const groups=d=>{const g=[];if(d._ts)g.push([d._w.children,d._ts]);(d._bg||[]).forEach(b=>g.push([b.el.children,b.ts]));return g};
 function wordsTick(pos){
   const now=performance.now(),dt=Math.min(.1,Math.max(0,(now-(lastWT||now))/1000));lastWT=now;
-  if(li>=0&&lEls[li]&&!L[li].dots)moving.add(li);
+  if(li>=0&&lEls[li])moving.add(li);
   moving.forEach(k=>{
-    const d=lEls[k];if(!d||L[k].dots){moving.delete(k);return}
+    const d=lEls[k];if(!d){moving.delete(k);return}
+    if(L[k].dots){
+      if(k>li){d.querySelectorAll('.dot').forEach(el=>{el._sp=null;['transform','scale','opacity','--text-shadow-blur-radius','--text-shadow-opacity'].forEach(x=>el.style.removeProperty(x))});moving.delete(k);return}
+      if(!animateDots(d,L[k],pos,dt)&&k!==li)moving.delete(k);
+      return;
+    }
     if(k>li){d.querySelectorAll('.w,.c').forEach(idle);if(d._w)idle(d._w);d._lg=null;moving.delete(k);return}   // seeking back: lines ahead go back to rest
     let m=false;
     if(S.low){groups(d).forEach(([sp,ts])=>{for(let j=0;j<sp.length&&j<ts.length;j++){const w=ts[j];sp[j].style.setProperty('--gradient-position',(pos<w.t?-20:pos>=w.end?100:-20+120*getProgressPercentage(pos,w.t,w.end)).toFixed(1)+'%')}})}
@@ -1699,14 +1726,6 @@ function lyricsTick(){
   const t=curTime()+S.loff/1000,i=findIdx(t);
   if(i!==li)setActive(i);
   wordsTick(t);
-  if(i<0)return;
-  const l=L[i],sp=lEls[i]._w.children;
-  if(l.dots){   // fill the dots over the length of the break
-    const seg=Math.max(.1,l.end-l.t)/3,n=Math.min(3,Math.floor((t-l.t)/seg)+1);
-    if(n!==lw){lw=n;for(let j=0;j<sp.length;j++){   // a negative delay keeps the hop in step with the song, also after seeking
-      if(j<n){sp[j].style.setProperty('--seg',seg.toFixed(3)+'s');sp[j].style.setProperty('--at',(-(t-l.t-j*seg)).toFixed(3)+'s')}
-      sp[j].classList.toggle('on',j<n)}}
-  }
 }
 // lyrics sources, tried in the order set in Settings
 const PROVS={spicy:{name:'Spicy Lyrics',desc:'community word-synced lyrics · needs your API key'},

@@ -18,8 +18,8 @@ port forwarding or domain is needed.
 - **Cover that moves with the beat**, and a smooth layout change when a Canvas video starts or stops.
 - **Synced lyrics** animated like Spicy Lyrics (its animation code, ported): each word fills, swells, lifts and glows on springs as it's
   sung, long held words wave letter by letter, and lines further away blur. Background vocals are animated on their own timing too. Also duet alignment,
-  and instrumental-break dots that hop in time
-  until the next line. Click any line to jump there.
+  and Spicy Lyrics' instrumental-break dots, which
+  swell and rise one after another and pop away just before the singing starts. Click any line to jump there.
 - **Several lyrics providers** (Spicy Lyrics, Spotify, LRCLIB, NetEase Cloud Music), each one switchable, in the order you choose.
 - **Romanization** (Japanese, Korean, Chinese, Cyrillic, …) and **translation** into any language,
   with a list of languages to leave untranslated. Toggle both from the top bar (`T` / `R`).
