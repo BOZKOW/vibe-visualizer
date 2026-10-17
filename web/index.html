@@ -505,7 +505,7 @@ body.low .ll{transition:opacity .25s}
   <p class="hint">Lines already in the language you translate into are never translated. Translation and romanization use Google Translate’s free web service (unofficial), so lyric lines are sent to Google.</p>
   <div class="row2"><button class="btn sm" id="lyrbtn">Load lyrics file…</button></div>
   <div class="f plain"><span class="lb">Spicy Lyrics</span><p class="stat" id="lyrstatus">Checking…</p></div>
-  <div class="row2"><button class="btn sm" id="lyrtest">Test connection</button></div>
+  <div class="row2"><button class="btn sm" id="lyrtest">Test connection</button><button class="btn sm" id="lyrclear">Clear saved lyrics</button></div>
   <p class="hint">Spicy Lyrics needs your own API key. Create an application in the <a class="src" target="_blank" rel="noopener" href="https://developers.spicylyrics.org/dashboard">Spicy Lyrics developer dashboard</a>, copy its <b>secret key</b> (<b>sl_sk_…</b>, shown only once) and save it on your server as <b>config/spicy_key</b> (see the README). It stays there and never reaches the browser.</p>
   <p class="hint">Spicy Lyrics looks songs up by Spotify track, so local files are matched through your Spotify connection. Every lyric shown credits its source, and community syncs credit their uploader and maker, as the <a class="src" target="_blank" rel="noopener" href="https://developers.spicylyrics.org/docs/attribution">Spicy Lyrics attribution rules</a> require.</p>
 
@@ -1289,6 +1289,16 @@ function cvFrame(){
 /* ================= lyrics ================= */
 let L=[],lsync=false,li=-2,lEls=[];
 const lcache=new Map();
+// lyrics saved on this device (IndexedDB), so a song's lyrics aren't fetched again every time: found lyrics for 7 days,
+// "no lyrics" for 1 day. Spicy Lyrics allows keeping its responses for up to 30 days; expired entries are deleted.
+const LC_HIT=7*864e5,LC_MISS=864e5;let lcDb=null;
+const lcOpen=()=>lcDb||(lcDb=new Promise((ok,no)=>{const q=indexedDB.open('vv-lyrics',1);q.onupgradeneeded=()=>q.result.createObjectStore('l');q.onsuccess=()=>ok(q.result);q.onerror=()=>no(q.error)}).catch(()=>null));
+const lcFresh=v=>v&&Date.now()-v.at<(v.r?LC_HIT:LC_MISS);
+async function lcStore(mode,fn){try{const db=await lcOpen();if(!db)return;return await new Promise(ok=>{const tx=db.transaction('l',mode),q=fn(tx.objectStore('l'));tx.oncomplete=()=>ok(q&&q.result);tx.onerror=tx.onabort=()=>ok(undefined)})}catch(e){}}
+const lcGet=async key=>{const v=await lcStore('readonly',st=>st.get(key));return lcFresh(v)?v:undefined};
+const lcPut=(key,r)=>lcStore('readwrite',st=>st.put({at:Date.now(),r},key));
+const lcClear=()=>lcStore('readwrite',st=>st.clear());
+const lcPrune=()=>lcStore('readwrite',st=>{const q=st.openCursor();q.onsuccess=()=>{const c=q.result;if(!c)return;if(!lcFresh(c.value))c.delete();c.continue()};return null});
 function parseLRC(t){
   const out=[];
   for(const ln of t.split(/\r?\n/)){
@@ -1943,15 +1953,18 @@ async function loadLyrics(m,tok){
   if(!order.length){clearLyrics('All lyrics sources are off','Turn one on in Settings → Lyrics.','none');return}
   const key=[m.id||'',m.artist,m.title,Math.round(m.duration||0),order.join()].join('|').toLowerCase();
   if(lcache.has(key)){applyLyrics(lcache.get(key));return}
+  const saved=await lcGet(key);if(tok!==coverTok)return;
+  if(saved){if(saved.r){lcache.set(key,saved.r);applyLyrics(saved.r)}else clearLyrics('No lyrics for this song','None of your lyrics sources had it recently. Settings → Lyrics → Clear saved lyrics looks again.','none');return}
   const FN={spicy:fromSpicy,spotify:fromSpotifyLyrics,lrclib:fromLrclib,netease:fromNetease},errs=[];
   for(const p of order){
     try{
       const r=await FN[p](m);
       if(tok!==coverTok)return;
-      if(r&&r.lines.some(l=>!l.dots)){lcache.set(key,r);applyLyrics(r);return}
+      if(r&&r.lines.some(l=>!l.dots)){lcache.set(key,r);lcPut(key,r);applyLyrics(r);return}
     }catch(e){if(e.noKey)continue;errs.push(PROVS[p].name+': '+e.message)}
   }
   if(tok!==coverTok)return;
+  if(!errs.length)lcPut(key,null);   // remember "none" for a day; failures aren't remembered
   if(errs.length)clearLyrics('Couldn’t load lyrics','A lyrics source didn’t answer. Try again in a moment.','none');else clearLyrics('No lyrics for this song','It may be instrumental, or none of your lyrics sources has it. You can drop a .lrc or .ttml file here.','none');
   if(errs.length)toast('Lyrics lookup problem. '+errs.join(' · '),'warn',8000);
 }
@@ -2253,10 +2266,13 @@ function applyRemote(p){
   store.set('pulse4',S);store.set('pulse_cfg',C);store.set('pulse_sp',SP);
   syncInputs();Object.keys(DEF).forEach(onSetting);refreshReset();updSpPanel();
 }
+$('lyrclear').onclick=async()=>{await lcClear();lcache.clear();toast('Saved lyrics cleared. They’re fetched again as songs play.','ok',3000)};
+lcPrune();
 $('forget').onclick=async()=>{
-  if(!confirm('Delete everything Vibe Visualizer saved for this device (settings, API keys, Spotify login)?'))return;
+  if(!confirm('Delete everything Vibe Visualizer saved for this device (settings, API keys, Spotify login, saved lyrics)?'))return;
   prefsReady=false;clearTimeout(prefT);
   try{if(PREFS)await fetch(PREFS,{method:'DELETE'})}catch(e){}
+  await lcClear();
   try{sessionStorage.clear()}catch(e){}
   location.replace(location.pathname);
 };
