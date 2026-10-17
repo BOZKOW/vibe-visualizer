@@ -67,7 +67,8 @@ your devices ──Tailscale HTTPS──▶ tailscale serve ──▶ 127.0.0.1:
 
 ## Setup
 
-You need a Linux server with Docker and Tailscale, and your devices on the same tailnet.
+You need a computer that stays on, with Docker and Tailscale, and your devices on the same tailnet.
+The steps below are for Linux; see [Running the server on Windows](#running-the-server-on-windows) for Windows.
 
 1. **Clone and start**
    ```sh
@@ -100,6 +101,44 @@ You need a Linux server with Docker and Tailscale, and your devices on the same 
    *Install app*; on iPhone use Safari's *Share → Add to Home Screen*.
 
 Everything else (theme, visualizer, lyrics, translation) is in the in-app Settings panel.
+
+### Running the server on Windows
+
+The same setup works on Windows 10/11 with [Docker Desktop](https://docs.docker.com/desktop/setup/install/windows-install/)
+and [Tailscale for Windows](https://tailscale.com/download/windows). In PowerShell:
+
+```powershell
+git clone https://github.com/BOZKOW/vibe-visualizer.git
+cd vibe-visualizer
+mkdir config, prefs
+docker compose up -d --build
+```
+
+Then, in a PowerShell window opened with *Run as administrator*:
+
+```powershell
+tailscale serve --bg --https=443 http://127.0.0.1:8095
+```
+
+To save the Spicy Lyrics key without showing it on screen:
+
+```powershell
+$k = Read-Host "Spicy Lyrics key" -AsSecureString
+[Net.NetworkCredential]::new('', $k).Password | Set-Content -NoNewline config\spicy_key
+Remove-Variable k
+```
+
+Docker Desktop has to be running for the app to be up; turn on *Start Docker Desktop when you sign in* in its
+settings, and set Windows not to sleep while you use it.
+
+## Using it on Windows
+
+- **Install as an app:** open your `https://…ts.net/` address in Edge or Chrome and choose *Install Vibe Visualizer*
+  (Edge: *⋯ → Apps → Install this site as an app*). It gets its own window, Start menu entry and taskbar icon.
+- **Bars for the Spotify app:** press the microphone button, choose *Share all computer sound*, pick
+  **Entire screen** and turn on **Also share system audio**. That carries everything Windows plays, the Spotify
+  app included. If *Stereo Mix* is enabled in the Windows sound settings, it also shows up in the device list.
+- **Media keys and the Windows media flyout** control local files and show their title and cover.
 
 ## Third-party services
 

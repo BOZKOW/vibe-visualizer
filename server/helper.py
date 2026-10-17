@@ -41,7 +41,7 @@ def log(*a):
 
 def read_sp_dc():
     try:
-        return open(SP_DC_FILE).read().strip() or None
+        return open(SP_DC_FILE, encoding="utf-8-sig").read().strip() or None   # utf-8-sig: files saved on Windows may start with a BOM
     except OSError:
         return None
 
@@ -130,7 +130,7 @@ async def canvas(track_id):
 
 def spicy_key():
     try:
-        return open(SPICY_KEY_FILE).read().strip() or None
+        return open(SPICY_KEY_FILE, encoding="utf-8-sig").read().strip() or None
     except OSError:
         return None
 

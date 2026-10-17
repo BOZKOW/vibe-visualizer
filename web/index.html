@@ -16,6 +16,10 @@
 *{box-sizing:border-box}
 html,body{height:100%;margin:0;background:#07070c;color:var(--fg);font:14px/1.45 "Inter","Satoshi","SF Pro Display","Segoe UI",system-ui,sans-serif;overflow:hidden;-webkit-font-smoothing:antialiased}
 button{font:inherit;color:inherit}
+*{scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.22) transparent}   /* thin dark scrollbars (Windows draws wide light ones by default) */
+::-webkit-scrollbar{width:10px;height:10px}::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.2);border-radius:10px;border:3px solid transparent;background-clip:padding-box}::-webkit-scrollbar-thumb:hover{background-color:rgba(255,255,255,.35)}
+select option{background:#16161f;color:#fff}   /* Windows draws dropdown lists white otherwise */
 :focus-visible{outline:2px solid var(--acc);outline-offset:2px}
 [hidden]{display:none!important}
 
@@ -539,7 +543,7 @@ body.low .ll{transition:opacity .25s}
         <ul class="steps plain">
           <li><b>Lyrics come from LRCLIB</b>, a free, open lyrics database. It needs no account or key. You can also drop your own <code>.lrc</code> or <code>.ttml</code> file onto the page.
             <div class="srcl"><a class="src" target="_blank" rel="noopener" href="https://lrclib.net/docs">LRCLIB API docs</a></div></li>
-          <li><b>Make the bars react to Spotify.</b> Browsers can’t read Spotify’s audio directly. Press the microphone button in the top bar, pick what to share and turn on <b>Share audio</b>. On Linux and macOS, Chrome can only share audio from a tab, so play Spotify in the Web Player at <code>open.spotify.com</code> and share that tab. Firefox doesn’t support sharing audio this way.
+          <li><b>Make the bars react to Spotify.</b> Browsers can’t read Spotify’s audio directly. Press the microphone button in the top bar, pick what to share and turn on <b>Share audio</b>. On <b>Windows</b>, Chrome and Edge can share all computer sound: pick <b>Entire screen</b> and turn on <b>Also share system audio</b>, which includes the Spotify app. On Linux, pick a “Monitor of …” device instead. On macOS, Chrome can only share audio from a tab, so play Spotify in the Web Player at <code>open.spotify.com</code> and share that tab. Firefox doesn’t support sharing audio this way.
             <div class="srcl"><a class="src" target="_blank" rel="noopener" href="https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getDisplayMedia">MDN: getDisplayMedia()</a></div></li>
         </ul>
       </section>
@@ -943,9 +947,13 @@ function attachCapture(s,kind){
   $('capbtn').classList.add('on');bump($('capbtn'));toast('Capturing audio: the bars now react to what is playing.','ok',3500);
   setTimeout(()=>{if(capStream&&!capHeard)toast(kind==='device'
     ?'No sound is coming from that device. Pick the “Monitor of …” device for the output you listen on (headphones or speakers), and make sure something is playing.'
-    :'The share has no sound coming through. On Linux, Chrome can only share a browser tab’s audio. For the Spotify desktop app, use a “Monitor of …” device instead.','warn',12000)},5000);
+    :isWin?'The share has no sound coming through. Share again, pick “Entire screen” and turn on “Also share system audio”, and make sure something is playing.'
+    :'The share has no sound coming through. On Linux and macOS, Chrome can only share a browser tab’s audio. For the Spotify desktop app, use a “Monitor of …” device instead.','warn',12000)},5000);
 }
-// "Monitor of …" inputs carry what the speakers play (Linux PulseAudio/PipeWire), so the Spotify desktop app works too
+// devices that carry what the speakers play, so the Spotify desktop app works too:
+// "Monitor of …" (Linux PulseAudio/PipeWire), "Stereo Mix" (Windows), virtual cables (VB-Audio, BlackHole)
+const isWin=/Windows/i.test(navigator.userAgent),isMac=/Mac OS X|Macintosh/i.test(navigator.userAgent)&&!/Mobile/i.test(navigator.userAgent);
+const LOOP=/monitor|stereo ?mix|what u hear|wave ?out|loopback|cable output|vb-audio|blackhole|soundflower/i;
 async function listInputs(){
   let d=await navigator.mediaDevices.enumerateDevices();
   if(!d.some(x=>x.kind==='audioinput'&&x.label)){   // names are only visible after permission
@@ -953,20 +961,23 @@ async function listInputs(){
     d=await navigator.mediaDevices.enumerateDevices();
   }
   return d.filter(x=>x.kind==='audioinput'&&x.deviceId!=='default'&&x.deviceId!=='communications')
-    .sort((a,b)=>(/monitor/i.test(b.label)-/monitor/i.test(a.label)));
+    .sort((a,b)=>(LOOP.test(b.label)-LOOP.test(a.label)));
 }
 async function openCapPanel(){
   const p=$('cappanel'),sel=$('capsel');$('netpanel').hidden=true;p.hidden=false;
   sel.innerHTML='<option>Looking for devices…</option>';$('capgo').disabled=true;
+  $('captab').textContent=isWin?'Share all computer sound (Spotify app too)':'Share a browser tab or screen instead';$('captab').classList.toggle('pri',isWin);
+  if(isWin)$('capnote').textContent='The button below shares all computer sound, the Spotify app included. Devices marked 🔊 (like Stereo Mix) work too.';
   try{
     const ins=await listInputs();
     if(!ins.length){sel.innerHTML='<option>No input devices found</option>';return}
-    sel.innerHTML=ins.map(d=>'<option value="'+d.deviceId+'">'+(/monitor/i.test(d.label)?'🔊 ':'🎤 ')+(d.label||'Input device').replace(/[<&]/g,'')+'</option>').join('');
-    const saved=ins.find(d=>d.deviceId===S.capDev),mon=ins.find(d=>/monitor/i.test(d.label));
+    sel.innerHTML=ins.map(d=>'<option value="'+d.deviceId+'">'+(LOOP.test(d.label)?'🔊 ':'🎤 ')+(d.label||'Input device').replace(/[<&]/g,'')+'</option>').join('');
+    const saved=ins.find(d=>d.deviceId===S.capDev),mon=ins.find(d=>LOOP.test(d.label));
     sel.value=(saved||mon||ins[0]).deviceId;$('capgo').disabled=false;
-    $('capnote').textContent=mon?'🔊 “Monitor of …” devices carry everything your speakers or headphones play, including the Spotify desktop app. Pick the one you listen on.'
+    $('capnote').textContent=mon?'🔊 devices carry everything your speakers or headphones play, including the Spotify desktop app. Pick the one you listen on.'
+      :isWin?'🎤 devices are microphones, which only hear the room. For the Spotify app, use the button below: it shares all computer sound.'
       :'No “Monitor” device was found. 🎤 devices are microphones, which only hear the room. A browser tab share still works for the Spotify Web Player.';
-  }catch(e){sel.innerHTML='<option>Microphone permission was refused</option>';$('capnote').textContent='Allow microphone access for this site (the lock icon in the address bar) to list the computer-sound devices.'}
+  }catch(e){sel.innerHTML='<option>Microphone permission was refused</option>';$('capnote').textContent=isWin?'No device list without microphone access. The button below still shares all computer sound, the Spotify app included.':'Allow microphone access for this site (the lock icon in the address bar) to list the computer-sound devices.'}
 }
 async function toggleCapture(){
   if(capStream){stopCapture();return}
@@ -988,10 +999,11 @@ $('captab').onclick=async()=>{
   if(!navigator.mediaDevices.getDisplayMedia){toast('Tab sharing is not supported in this browser.');return}
   try{
     await ac.resume();
-    const s=await navigator.mediaDevices.getDisplayMedia({video:true,
+    if(isWin)toast('Pick “Entire screen” and turn on “Also share system audio”. That includes the Spotify app.','ok',9000);
+    const s=await navigator.mediaDevices.getDisplayMedia({video:isWin?{displaySurface:'monitor'}:true,   // Windows: a whole-screen share carries all computer sound
       audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false,suppressLocalAudioPlayback:false},
-      systemAudio:'include',selfBrowserSurface:'exclude'});
-    if(!s.getAudioTracks().length){s.getTracks().forEach(t=>t.stop());toast('No audio was shared. Pick a browser tab and turn on “Share tab audio”.','warn',9000);return}
+      systemAudio:'include',selfBrowserSurface:'exclude',monitorTypeSurfaces:'include'});
+    if(!s.getAudioTracks().length){s.getTracks().forEach(t=>t.stop());toast(isWin?'No audio was shared. Pick “Entire screen” and turn on “Also share system audio”.':'No audio was shared. Pick a browser tab and turn on “Share tab audio”.','warn',9000);return}
     s.getVideoTracks().forEach(t=>t.enabled=false);   // keep video alive but off: stopping it can end the whole share in Chrome
     attachCapture(s,'tab');
   }catch(e){if(e&&e.name==='NotAllowedError')toast('Audio capture was cancelled.','warn');else toast('Audio capture failed: '+(e.message||e))}
@@ -1668,7 +1680,26 @@ function toggle(){
   if(audio.paused||audio.ended){if(audio.ended)audio.currentTime=0;audio.play().catch(e=>toast('Playback failed: '+e.message))}else audio.pause();
 }
 $('play').onclick=toggle;
-audio.onplay=audio.onpause=audio.onended=()=>{updPlayIcon();syncCanvasPlay();poke()};
+audio.onplay=audio.onpause=audio.onended=()=>{updPlayIcon();syncCanvasPlay();poke();updMediaSession()};
+// local files: show title, artist and cover in the system media controls (the Windows media flyout, lock screens)
+// and let the keyboard's media keys control playback
+function updMediaSession(){
+  if(!('mediaSession' in navigator)||src!=='file')return;
+  try{
+    navigator.mediaSession.metadata=new MediaMetadata({title:ttl.textContent||'Vibe Visualizer',artist:sub.textContent||'',
+      artwork:artw.classList.contains('has')&&art.src?[{src:art.src,sizes:'512x512'}]:[{src:'icon-512.png',sizes:'512x512',type:'image/png'}]});
+    navigator.mediaSession.playbackState=audio.paused?'paused':'playing';
+    if(audio.duration&&isFinite(audio.duration))navigator.mediaSession.setPositionState({duration:audio.duration,position:Math.min(audio.currentTime,audio.duration),playbackRate:audio.playbackRate||1});
+  }catch(e){}
+}
+if('mediaSession' in navigator){
+  const on=(a,f)=>{try{navigator.mediaSession.setActionHandler(a,f)}catch(e){}};
+  const skip=d=>{if(src==='file'&&audio.duration)audio.currentTime=Math.min(audio.duration,Math.max(0,audio.currentTime+d))};
+  on('play',()=>{if(src==='file'&&audio.paused)toggle()});on('pause',()=>{if(src==='file'&&!audio.paused)toggle()});
+  on('seekbackward',e=>skip(-(e.seekOffset||10)));on('seekforward',e=>skip(e.seekOffset||10));
+  on('seekto',e=>{if(src==='file'&&audio.duration){audio.currentTime=e.seekTime;updMediaSession()}});
+  on('previoustrack',()=>{if(src==='file')audio.currentTime=0});
+}
 const fmt=s=>isFinite(s)&&s>=0?Math.floor(s/60)+':'+String(Math.floor(s%60)).padStart(2,'0'):'0:00';
 let seeking=false,lastUi=0;
 $('seek').oninput=()=>{seeking=true;if(src==='file'&&audio.duration)audio.currentTime=$('seek').value/1000*audio.duration;fill($('seek'))};
