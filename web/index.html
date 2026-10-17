@@ -293,13 +293,14 @@ body.nosmooth #ly{transition:none}
 /* Experiment: Focus mode. The line on screen (.fv) is sharp in the middle and holds until it's sung to the end.
    The next line (.fn) waits right under it, blurred. Lines further down wait off the bottom of the screen and fly
    in, blurred, when it's their turn to wait; finished lines (.fu) fly up and disappear. */
-body.xfocus #lyr:not(.st) .ll:not(.fv){opacity:0;transform:translateY(60vh);filter:blur(14px);pointer-events:none;
+body.xfocus #lyr .ll:not(.fv){opacity:0;transform:translateY(60vh);filter:blur(14px);pointer-events:none;
   transition:opacity .5s ease,transform .8s cubic-bezier(.2,.8,.2,1),filter .6s ease}
-body.xfocus #lyr:not(.st) .ll.fn{opacity:.5;transform:none;filter:blur(5px)}
-body.xfocus #lyr:not(.st) .ll.fn.fs{opacity:1;filter:none}   /* sung right after the middle line: sharp while it waits */
-body.xfocus #lyr:not(.st) .ll.fv{opacity:1;transform:none;filter:none;pointer-events:auto;transition:opacity .5s ease,transform .8s cubic-bezier(.2,.8,.2,1),filter .6s ease}
-body.xfocus #lyr:not(.st) .ll.fu{opacity:0;transform:translateY(-34vh);filter:blur(14px);transition:opacity .45s ease,transform .6s cubic-bezier(.5,0,.75,.4),filter .45s ease}
-body.xfocus #lyr:not(.st) .ll.dots{opacity:0!important;visibility:hidden}   /* breaks show nothing, no dots */
+body.xfocus #lyr .ll.fn{opacity:.5;transform:none;filter:blur(5px)}
+body.xfocus #lyr .ll.fn.fs{opacity:1;filter:none}   /* sung right after the middle line: sharp while it waits */
+body.xfocus #lyr .ll.fv{opacity:1;transform:none;filter:none;pointer-events:auto;transition:opacity .5s ease,transform .8s cubic-bezier(.2,.8,.2,1),filter .6s ease}
+body.xfocus #lyr .ll.fu{opacity:0;transform:translateY(-34vh);filter:blur(14px);transition:opacity .45s ease,transform .6s cubic-bezier(.5,0,.75,.4),filter .45s ease}
+body.xfocus #lyr .ll.dots{opacity:0!important;visibility:hidden}   /* breaks show nothing, no dots */
+body.xfocus #lyr.st{overflow:hidden}   /* untimed lyrics in Focus mode are moved by the song, not scrolled */
 /* in "Both" the lyrics reach down behind the bars, which are drawn on top */
 body.xfocus[data-view=both] #viz{z-index:2}body.xfocus[data-view=both] #lyr{z-index:1}
 body.xfocus[data-view=both]:is(.hl,.lm) #lyr{bottom:0;-webkit-mask-image:linear-gradient(transparent,#000 12%,#000 58%,transparent 74%);mask-image:linear-gradient(transparent,#000 12%,#000 58%,transparent 74%)}   /* lines fade in from where the bars are, nothing shows between them */
@@ -1600,7 +1601,7 @@ function findIdx(t){let a=0,b=L.length-1,r=-1;while(a<=b){const m=(a+b)>>1;if(L[
 let lLabel='';
 function renderLyrics(label,quiet){
   if(!quiet)lLabel=label||'';
-  ly.textContent='';lEls=[];lAct=new Set();lActKey='';li=-2;lsi=-2;lfi=-2;lfo=false;lfn='';lfs='';lfnSet=new Set();lfsSet=new Set();moving.clear();ly.classList.toggle('duet',L.some(l=>l.opp));stPos=null;if(!quiet)lyr.scrollTop=0;lyr.classList.toggle('st',!lsync&&L.length>0);
+  ly.textContent='';lEls=[];stFk=-1;lAct=new Set();lActKey='';li=-2;lsi=-2;lfi=-2;lfo=false;lfn='';lfs='';lfnSet=new Set();lfsSet=new Set();moving.clear();ly.classList.toggle('duet',L.some(l=>l.opp));stPos=null;if(!quiet)lyr.scrollTop=0;lyr.classList.toggle('st',!lsync&&L.length>0);
   L.forEach((l,idx)=>{
     const d=document.createElement('div');d.className=l.dots?'ll dots':l.opp?'ll opp':'ll';
     if(l.dots){d.innerHTML='<div class="dg"><span class="dot">•</span><span class="dot">•</span><span class="dot">•</span></div>';d._w=d.firstChild}
@@ -2086,8 +2087,21 @@ function lineEnd(l){
 // ends, so skipping around keeps them in the right place. Scrolling by hand pauses this for a few seconds.
 let stPos=null,stUser=0,stLast=0;
 ['wheel','touchmove','pointerdown','keydown'].forEach(ev=>lyr.addEventListener(ev,()=>{stUser=performance.now();stPos=null},{passive:true}));
+let stFk=-1;
+function staticFocus(dt){   // Focus mode for untimed lyrics: each line gets a share of the song by its length
+  const d=curDur();if(!d)return;
+  if(!L._w){let c=0;L._w=L.map(l=>{const s0=c;c+=Math.max(8,(l.text||'').length);return s0});L._wt=c}
+  const at=(curTime()+.2)/d*L._wt;let k=0;for(let j=0;j<L.length;j++)if(L._w[j]<=at)k=j;   // the next line comes 200 ms early
+  if(k!==stFk){stFk=k;lEls.forEach((el,j)=>{el.classList.toggle('fv',j===k);el.classList.toggle('fu',j<k)})}
+  const el=lEls[k];if(!el)return;
+  const target=Math.max(0,ly.offsetTop+el.offsetTop+el.offsetHeight/2-lyr.clientHeight*.38);
+  if(stPos==null)stPos=lyr.scrollTop;stPos+=(target-stPos)*Math.min(1,dt*6);
+  if(Math.abs(Math.round(stPos)-lyr.scrollTop)>=1)lyr.scrollTop=Math.round(stPos);
+}
 function staticScroll(){
   const now=performance.now(),dt=Math.min(.1,(now-(stLast||now))/1000);stLast=now;
+  if(S.xFocus&&lyr.classList.contains('st')){staticFocus(dt);return}
+  if(stFk!==-1){stFk=-1;lEls.forEach(el=>el.classList.remove('fv','fu'))}   // Focus mode was turned off
   if(!lyr.classList.contains('st')||now-stUser<4000)return;
   const d=curDur(),max=lyr.scrollHeight-lyr.clientHeight;if(!d||max<=0)return;
   const target=Math.max(0,Math.min(1,curTime()/d))*max;   // top when the song starts, the end when it ends
