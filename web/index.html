@@ -911,8 +911,14 @@ const filePlaying=()=>loaded&&!audio.paused&&!audio.ended;
 const spPlaying=()=>!!(spState&&spState.playing);
 const playing=()=>src==='file'?filePlaying():src==='spotify'?spPlaying():false;
 const liveAudio=()=>!!capStream||(src==='file'&&filePlaying());
+let spSlew=null;
+function curMs(){   // Spotify position in ms, with any resync correction still gliding in
+  const now=performance.now();let t=spState.progress+(spState.playing?now-spFetched:0);
+  if(spSlew){const k=(now-spSlew.at)/600;if(k>=1)spSlew=null;else t+=spSlew.e*(1-k*k*(3-2*k))}
+  return t;
+}
 function curTime(){
-  if(src==='spotify'){if(!spState)return 0;const t=spState.progress+(spState.playing?performance.now()-spFetched:0);return Math.min(t,spState.duration)/1000}
+  if(src==='spotify'){if(!spState)return 0;return Math.min(curMs(),spState.duration)/1000}
   return audio.currentTime||0;
 }
 const curDur=()=>src==='spotify'?(spState?spState.duration/1000:0):(audio.duration>0?audio.duration:0);
@@ -923,7 +929,7 @@ function setSource(s){
     if(!SP.access){spLogin();return}
     if(src==='spotify')return;
     audio.pause();src='spotify';spState=null;spId=null;
-    clearInterval(spTimer);spPoll();spTimer=setInterval(spPoll,3500);
+    clearInterval(spTimer);spPoll();spTimer=setInterval(spPoll,2000);   // resync with Spotify every 2 s
   }else{
     clearInterval(spTimer);spTimer=0;spState=null;spId=null;src=s;
   }
@@ -1097,14 +1103,19 @@ function setIdle(){ttl.textContent='Nothing playing';sub.textContent='Play somet
 async function spPoll(){
   if(src!=='spotify'||document.hidden||Date.now()<backoff)return;
   try{
+    const t0=performance.now(),before=spState&&spState.playing?curMs():null,oldId=spId;
     const d=await spApi('/me/player/currently-playing?additional_types=track,episode');
     if(src!=='spotify')return;
-    spFetched=performance.now();
+    const t1=performance.now();
+    spFetched=t0+(t1-t0)/2;   // auto resync: Spotify read the position somewhere during the request, so count it from the midpoint
     const it=d&&d.item;
     if(!it){spState=null;if(spId!==null||!ttl.textContent){spId=null;setIdle();clearLyrics('');clearCanvas()}updChips();syncCanvasPlay();return}
     const ep=it.type==='episode',imgs=(ep?it.images:(it.album&&it.album.images))||[];
     const m={ep,id:it.id,uri:it.uri,title:it.name,artist:ep?((it.show&&it.show.name)||''):(it.artists||[]).map(a=>a.name).join(', '),album:ep?'':((it.album&&it.album.name)||''),duration:it.duration_ms/1000,cover:imgs[0]?imgs[0].url:''};
     spState={playing:!!d.is_playing,progress:d.progress_ms||0,duration:it.duration_ms};
+    // small differences glide in over ~0.6 s instead of jumping the lyrics; big ones (seek, skip) snap
+    const after=spState.progress+(spState.playing?t1-spFetched:0),err=before==null?null:before+(t1-t0)-after;
+    spSlew=err!=null&&it.id===oldId&&spState.playing&&Math.abs(err)<1500&&Math.abs(err)>15?{e:err,at:t1}:null;
     if(m.id!==spId){spId=m.id;onSpTrack(m)}
     updChips();syncCanvasPlay();updPlayIcon();
   }catch(e){
@@ -1854,7 +1865,7 @@ $('prev').onclick=()=>{bump($('prev'));prevTrack()};$('next').onclick=()=>{bump(
 function toggle(){
   if(src==='spotify'){
     const play=!spPlaying();
-    spCtl('PUT',play?'/me/player/play':'/me/player/pause').then(ok=>{if(ok&&spState){spState.playing=play;spState.progress=Math.round(curTime()*1000);spFetched=performance.now();updPlayIcon();updChips()}});
+    spCtl('PUT',play?'/me/player/play':'/me/player/pause').then(ok=>{if(ok&&spState){spState.playing=play;spState.progress=Math.round(curTime()*1000);spFetched=performance.now();spSlew=null;updPlayIcon();updChips()}});
     return;
   }
   if(!loaded){$('file').click();return}
@@ -1890,13 +1901,13 @@ function seekTo(sec){
   sec=Math.max(0,sec);
   if(src==='file'&&audio.duration){audio.currentTime=sec;return true}
   if(src==='spotify'&&spState){const ms=Math.round(sec*1000);
-    spCtl('PUT','/me/player/seek?position_ms='+ms).then(ok=>{if(ok){spState.progress=ms;spFetched=performance.now();dirty=true}});return true}
+    spCtl('PUT','/me/player/seek?position_ms='+ms).then(ok=>{if(ok){spState.progress=ms;spFetched=performance.now();spSlew=null;dirty=true}});return true}
   return false;
 }
 $('seek').onchange=()=>{
   seeking=false;
   if(src==='spotify'&&spState){const ms=Math.round($('seek').value/1000*spState.duration);
-    spCtl('PUT','/me/player/seek?position_ms='+ms).then(ok=>{if(ok){spState.progress=ms;spFetched=performance.now()}})}
+    spCtl('PUT','/me/player/seek?position_ms='+ms).then(ok=>{if(ok){spState.progress=ms;spFetched=performance.now();spSlew=null}})}
 };
 function uiTick(now){
   if(now-lastUi<240)return;lastUi=now;
