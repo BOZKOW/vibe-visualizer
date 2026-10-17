@@ -16,7 +16,9 @@ port forwarding or domain is needed.
   (a "Monitor of …" input on Linux, or tab/screen audio sharing).
 - **Live background:** the cover art, blurred, drifting at the speed and tempo of the music and pulsing with the bass.
 - **Cover that moves with the beat**, and a smooth layout change when a Canvas video starts or stops.
-- **Synced lyrics:** word-by-word fill, background vocals, duet alignment, and instrumental-break dots that hop in time
+- **Synced lyrics** animated in the style of Spicy Lyrics: each word fills, swells, lifts and glows on springs as it's
+  sung, long held words wave letter by letter, and lines further away blur. Also background vocals, duet alignment,
+  and instrumental-break dots that hop in time
   until the next line. Click any line to jump there.
 - **Several lyrics providers** (Spicy Lyrics, Spotify, LRCLIB, NetEase Cloud Music), each one switchable, in the order you choose.
 - **Romanization** (Japanese, Korean, Chinese, Cyrillic, …) and **translation** into any language,
@@ -47,7 +49,7 @@ The Spicy Lyrics integration follows the
 | --- | --- |
 | Secret keys stay on a server you control | The `sl_sk_…` key lives only in `config/spicy_key` on your server. The helper calls the API; the browser never sees the key. |
 | Use, don't redistribute | The helper's `/api/lyrics` route only answers requests from your own Tailscale network (Tailscale `100.64.0.0/10` / `fd7a:115c:a1e0::/48` addresses, forwarded by `tailscale serve`), and the web port is bound to `127.0.0.1`. It is not a public or shared endpoint. Lyrics are fetched one track at a time, only for the song being played. |
-| Show attribution with the lyrics | While lyrics are on screen, a credit line in the bottom-left corner always names the provider from the response's `source` field. For `spicy_lyrics` it also credits and links the uploader and the maker. For other sources it shows the provider only, and "source unknown" when no source is given. It is never hidden, and never shown empty. Songwriters are listed when the response includes them. |
+| Show attribution with the lyrics | While lyrics are on screen, a credit in the bottom-left corner always names the provider from the response's `source` field. For `spicy_lyrics` it also credits and links the uploader and the maker. For other sources it shows the provider only, and "source unknown" when no source is given. It is never hidden, and never shown empty. The full credits (songwriters, provider, maker and uploader with their avatars) also follow the last line, laid out the way Spicy Lyrics shows them. Songwriters are listed when the response includes them. |
 | Read attribution from each response | Nothing is hardcoded: the credit is built from `source` and `UploadAttribution` of every response. |
 | Cache for no more than 30 days | Responses are cached **in memory only, for at most 7 days** (misses for 6 hours), and are never written to disk. |
 | Your own key, never shared | Each person who runs their own copy needs their own Spicy Lyrics application and key. Don't share yours, and don't commit `config/`. |

@@ -88,16 +88,25 @@ body[data-view=viz] #lyr{display:none}
 #ly{position:absolute;left:0;right:0;top:0;padding:0 6% 0 20px;transition:transform .55s cubic-bezier(.2,.8,.2,1);will-change:transform}
 #lyr.st{overflow-y:auto}
 #lyr.st #ly{position:relative;transform:none!important;padding:30vh 6% 30vh 20px}
-.ll{font-size:calc(clamp(24px,3.3vw,52px)*var(--ls));font-weight:800;line-height:1.14;letter-spacing:-.025em;padding:.2em 0;opacity:.3;transform:scale(.94);transform-origin:left center;transition:opacity .5s,transform .7s cubic-bezier(.34,1.4,.64,1),filter .5s,text-shadow .5s}
-.ll.p{opacity:.22}
-.ll.a{opacity:1;transform:none;text-shadow:0 0 30px rgba(255,255,255,.16)}
-#lyr:not(.st) .ll:not(.dots){cursor:pointer}#lyr:not(.st) .ll:not(.a):not(.dots):hover{opacity:.6}   /* synced lines can be clicked to jump there */
-#lyr.st .ll{opacity:.85;transform:none;filter:none}
-body.lb .ll.d1{filter:blur(.6px)}body.lb .ll.d2{filter:blur(1.4px)}body.lb .ll.d3{filter:blur(2.4px)}body.lb .ll.dx{filter:blur(3.2px);opacity:.16}
+.ll{font-size:calc(clamp(24px,3.3vw,52px)*var(--ls));font-weight:700;line-height:1.18;letter-spacing:0;padding:.2em 0;opacity:.51;transform-origin:left center;transition:opacity .2s cubic-bezier(.61,1,.88,1);--bl:0px}
+/* Spicy Lyrics look: the text itself is transparent and drawn by a text-shadow, so lines away from the
+   current one can be blurred cheaply (a bigger shadow radius) instead of with a filter */
+.ll .lt{-webkit-text-fill-color:transparent;text-shadow:0 0 var(--bl) rgba(255,255,255,.35)}
+.ll.p{opacity:.497}.ll.p .lt{text-shadow:0 0 var(--bl) rgba(255,255,255,.85)}
+.ll.a{opacity:1;--bl:0px}
+.ll.a .lt{text-shadow:none;background-image:linear-gradient(rgba(255,255,255,.85),rgba(255,255,255,.85));-webkit-background-clip:text;background-clip:text}   /* lines without word timing light up whole */
+.ll.a .lt.wt{background-image:none}
+#lyr:not(.st) .ll:not(.dots){cursor:pointer}#lyr:not(.st) .ll:not(.a):not(.dots):hover{opacity:1;--bl:0px}   /* synced lines can be clicked to jump there */
+#lyr.st .ll{opacity:.85}#lyr.st .ll .lt{text-shadow:0 0 0 rgba(255,255,255,.85)}
+body.lb .ll.d1{--bl:1.25px}body.lb .ll.d2{--bl:2.5px}body.lb .ll.d3{--bl:3.75px}body.lb .ll.dx{--bl:5px}
 /* word-by-word: each word fills left-to-right as it is sung, then lifts (Spicy Lyrics style) */
-.ll .w{display:inline-block;white-space:pre;transition:transform .5s cubic-bezier(.34,1.56,.64,1);padding:.14em .06em .22em;margin:-.14em -.06em -.22em}   /* extra paint room so tails (g, y, j) and accents aren't cut off by the text fill */
-.ll.a .w{color:transparent;-webkit-background-clip:text;background-clip:text;background-image:linear-gradient(90deg,#fff calc(var(--wp,0%) - 8%),rgba(255,255,255,.32) calc(var(--wp,0%) + 8%))}
-.ll.a .w.on{--wp:116%;transform:translateY(-.045em)}
+.ll .w,.ll .w .c{display:inline-block;white-space:pre;padding:.14em .06em .22em;margin:-.14em -.06em -.22em}   /* extra paint room so tails (g, y, j) and accents aren't cut off by the text fill */
+.ll .w .c{padding:.14em 0 .22em;margin:-.14em 0 -.22em}
+/* the word being sung fills left to right (--gp), grows, lifts and glows; springs in JS drive the values */
+.ll.a .w,.ll.a .w .c{-webkit-background-clip:text;background-clip:text;background-image:linear-gradient(90deg,rgba(255,255,255,.85) var(--gp,-20%),rgba(255,255,255,.5) calc(var(--gp,-20%) + 20%));
+  text-shadow:0 0 var(--gr,4px) rgba(255,255,255,var(--go,0))}
+.ll.a .w.lg{background-image:none;text-shadow:none}   /* long held words: every letter animates on its own */
+.ll.a .w,.ll.a .w .c{will-change:transform}
 .ll .w.one{display:inline;white-space:normal;-webkit-box-decoration-break:clone;box-decoration-break:clone}   /* a whole romanized line: wraps like normal text */
 /* instrumental breaks: three dots that fill up until the next line */
 .ll.dots{display:flex;gap:.3em;align-items:center;height:1.2em;padding:.2em 0}
@@ -131,7 +140,16 @@ body.lb .ll.d1{filter:blur(.6px)}body.lb .ll.d2{filter:blur(1.4px)}body.lb .ll.d
 /* lyrics credit: under the cover, on screen whenever lyrics are (Spicy Lyrics attribution rules) */
 /* lyrics credit: always in the bottom-left corner, beside the dock (or just above it when there's no room) */
 #lcredit{position:fixed;left:var(--pad);bottom:var(--credb,calc(16px + env(safe-area-inset-bottom,0px)));max-width:var(--credw,min(420px,calc(100vw - var(--pad)*2)));z-index:6;font-size:11px;line-height:1.45;font-weight:600;color:var(--dim);overflow-wrap:anywhere;text-shadow:0 1px 10px rgba(0,0,0,.75);animation:fadein .6s;transition:bottom .35s cubic-bezier(.2,.8,.2,1)}
-#lcredit a{color:var(--dim);text-decoration:none;border-bottom:1px solid var(--line);transition:color .2s,border-color .2s}#lcredit a:hover{color:#fff;border-color:#fff}
+#lcredit{display:flex;flex-direction:column;gap:.25em;font-size:12px;color:#fff}
+#lcredit a,.lcred a{color:inherit;text-decoration:underline;text-underline-offset:2px}
+.cprov{opacity:.5}.cwrit{opacity:.6}.cdim{opacity:.5}
+.cinfo{display:flex;align-items:center;flex-wrap:wrap}.cinfo .cdim+.cwho{margin-left:.3em}
+.cwho{font-weight:700;opacity:.55;transition:opacity .21s;display:inline-flex;align-items:center}.cwho:hover{opacity:1}
+.cwho img{width:1.3em;height:1.3em;border-radius:50%;margin-left:.3em;object-fit:cover}
+/* the full credits after the last line, as in Spicy Lyrics */
+.lcred{display:flex;flex-direction:column;gap:.3em;padding:1.4em 0 40vh;font-size:calc(clamp(13px,1.15vw,17px)*var(--ls));font-weight:600;color:#fff}
+.lcred .cwrit{font-size:1.07em}.lcred.opp{align-items:flex-end;text-align:right}
+#lyr.st .lcred{padding-bottom:0}
 /* duet lines sung by the other voice sit on the right; background vocals in smaller italics */
 .ll.opp{text-align:right;transform-origin:right center}
 .ll .sub.bgv{font-style:italic;font-weight:700;color:rgba(255,255,255,.6)}
@@ -1314,7 +1332,7 @@ function findIdx(t){let a=0,b=L.length-1,r=-1;while(a<=b){const m=(a+b)>>1;if(L[
 let lLabel='';
 function renderLyrics(label,quiet){
   if(!quiet)lLabel=label||'';
-  ly.textContent='';lEls=[];li=-2;lw=-1;lyr.classList.toggle('st',!lsync&&L.length>0);
+  ly.textContent='';lEls=[];li=-2;lw=-1;moving.clear();lyr.classList.toggle('st',!lsync&&L.length>0);
   L.forEach((l,idx)=>{
     const d=document.createElement('div');d.className=l.dots?'ll dots':l.opp?'ll opp':'ll';
     if(l.dots){d.innerHTML='<i></i><i></i><i></i>';d._w=d}
@@ -1332,6 +1350,17 @@ function renderLyrics(label,quiet){
         else{span(l.rom);main.lastChild.classList.add('one');d._ts=[{t:ws[0].t,end:Math.min(ws[ws.length-1].t+.8,nt)}]}                 // fill the whole romanized line
       }
       else main.textContent=romOnly?l.rom:l.text;
+      if(d._ts&&main.children.length===d._ts.length&&!main.querySelector('.one')){
+        main.classList.add('wt');
+        [...main.children].forEach((el,k)=>{   // a word held for a second or more is split into letters that wave
+          const tm=d._ts[k],txt=el.textContent,core=txt.replace(/\s+$/,''),lets=graphemes(core);
+          if(tm.end-tm.t<1||lets.length<2||lets.length>24||RTL.test(core))return;
+          el.textContent='';el.classList.add('lg');
+          lets.forEach(ch=>{const c=document.createElement('span');c.className='c';c.textContent=ch;el.appendChild(c)});
+          if(txt.length>core.length)el.appendChild(document.createTextNode(txt.slice(core.length)));
+          el._lt=[...el.querySelectorAll('.c')];
+        });
+      }
       d.appendChild(main);
       const sub=(c,t)=>{const s=document.createElement('span');s.className='sub '+c;s.textContent=t;d.appendChild(s)};
       if(l.bg)l.bg.forEach(b=>sub('bgv','('+(S.romMode==='replace'&&l.rom&&b.rom?b.rom:b.text).replace(/^\(|\)$/g,'')+')'));
@@ -1351,22 +1380,38 @@ function renderLyrics(label,quiet){
 }
 let lCredit=null;
 const PROVIDERS={spicy_lyrics:'Spicy Lyrics',apple_music:'Apple Music',spotify:'Spotify',lrclib:'LRCLIB',netease:'NetEase Cloud Music'};
-function renderCredit(){   // provider always; Spicy Lyrics community syncs also credit + link uploader and maker
-  const el=$('lcredit'),c=lCredit;el.textContent='';
-  if(!L.length||!c){el.hidden=true;return}
-  const add=(t,u)=>{if(u&&/^https?:\/\//.test(u)){const a=document.createElement('a');a.href=u;a.target='_blank';a.rel='noopener noreferrer';a.textContent=t;el.appendChild(a)}else el.appendChild(document.createTextNode(t))};
-  if(c.source==='file')add('Lyrics from your file '+c.name);
-  else{
-    add('Lyrics: ');add(c.source?(PROVIDERS[c.source]||c.source):'source unknown',c.source==='lrclib'?'https://lrclib.net':null);
-    if(c.via)add(' ('+c.via+')');
-    if(c.source==='spicy_lyrics'){
-      const u=c.uploader&&c.uploader.username?c.uploader:null,m=c.maker&&c.maker.username?c.maker:null;
-      if(u&&m&&u.id&&u.id===m.id){add(' · synced & uploaded by ');add(u.username,u.url)}
-      else{if(m){add(' · synced by ');add(m.username,m.url)}if(u){add(' · uploaded by ');add(u.username,u.url)}}
-    }
+// credits laid out like Spicy Lyrics: "Provided by", then "Made by @maker" / "Uploaded by @uploader" with their
+// avatars. Shown twice: in the bottom-left corner the whole time lyrics are on screen (the Spicy Lyrics terms
+// want attribution visible with the lyrics), and in full after the last line, the way Spicy Lyrics itself does it.
+const profileUrl=x=>x&&(x.url&&/^https:\/\//.test(x.url)?x.url:x.id?'https://spicylyrics.org/uid/'+encodeURIComponent(x.id):null);
+function creditNodes(c,full){
+  const box=document.createDocumentFragment(),row=(cls,...kids)=>{const r=document.createElement('div');r.className=cls;kids.forEach(k=>r.append(k));box.appendChild(r);return r};
+  const dim=t=>{const x=document.createElement('span');x.className='cdim';x.textContent=t;return x};
+  const who=(x)=>{const u=profileUrl(x),a=document.createElement(u?'a':'span');a.className='cwho';
+    if(u){a.href=u;a.target='_blank';a.rel='noopener noreferrer';a.title='View TTML profile'}
+    a.append('@'+x.username);
+    if(x.avatar&&/^https:\/\//.test(x.avatar)){const im=document.createElement('img');im.src=x.avatar;im.alt='';im.loading='lazy';im.referrerPolicy='no-referrer';im.onerror=()=>im.remove();a.appendChild(im)}
+    return a};
+  if(c.source==='file'){row('cprov',dim('From your file: '+c.name));return box}
+  if(full&&c.writers&&c.writers.length)row('cwrit','Written by: '+c.writers.join(', '));
+  const name=c.source?(PROVIDERS[c.source]||c.source):'Unknown';
+  if(c.source==='lrclib'){const a=document.createElement('a');a.href='https://lrclib.net';a.target='_blank';a.rel='noopener noreferrer';a.textContent=name;row('cprov','Provided by: ',a)}
+  else row('cprov','Provided by: '+name+(c.via?' ('+c.via+')':''));
+  if(c.source==='spicy_lyrics'){
+    const m=c.maker&&c.maker.username?c.maker:null,u=c.uploader&&c.uploader.username?c.uploader:null;
+    if(full&&(m||u))row('cinfo',dim('These lyrics have been provided by our community'));
+    if(m)row('cinfo',dim('Made by '),who(m));
+    if(u)row('cinfo',dim((m?'Uploaded by':'Made by')+' '),who(u));
   }
-  if(c.writers&&c.writers.length){el.appendChild(document.createElement('br'));add('Written by '+c.writers.join(', '))}
-  el.hidden=false;
+  return box;
+}
+function renderCredit(){
+  const el=$('lcredit'),c=lCredit;el.textContent='';
+  const old=ly.querySelector('.lcred');if(old)old.remove();
+  if(!L.length||!c){el.hidden=true;return}
+  el.appendChild(creditNodes(c,false));el.hidden=false;
+  const end=document.createElement('div');end.className='lcred'+(L.length&&L[L.length-1].opp?' opp':'');   // after the last line
+  end.appendChild(creditNodes(c,true));ly.appendChild(end);
 }
 function lyrMsg(msg,sub,kind){
   lmsg.className=kind||'';lmsg.textContent='';
@@ -1495,10 +1540,82 @@ function place(){
   const el=lEls[Math.max(li,0)];if(!el)return;
   ly.style.transform='translateY('+(lyr.clientHeight*.38-(el.offsetTop+el.offsetHeight/2))+'px)';
 }
+/* ---- word motion in the style of Spicy Lyrics ----
+   Every word (or letter of a long held word) rides three damped springs: grow, lift and glow. Their goals
+   follow curves over how far through the word the song is, so a word swells, rises and glows as it is
+   sung and settles back when it's done. */
+const graphemes=s=>{try{return[...new Intl.Segmenter(undefined,{granularity:'grapheme'}).segment(s)].map(x=>x.segment)}catch(e){return Array.from(s)}};
+const RTL=/[\u0590-\u08ff\ufb1d-\ufdff\ufe70-\ufeff]/;
+function curve(pts){   // natural cubic spline through [x, y] points
+  const n=pts.length,x=pts.map(q=>q[0]),y=pts.map(q=>q[1]),h=[],a=[],l=[1],mu=[0],z=[0],c=Array(n).fill(0),b=[],d=[];
+  for(let i=0;i<n-1;i++)h[i]=x[i+1]-x[i];
+  for(let i=1;i<n-1;i++){a[i]=3/h[i]*(y[i+1]-y[i])-3/h[i-1]*(y[i]-y[i-1]);l[i]=2*(x[i+1]-x[i-1])-h[i-1]*mu[i-1];mu[i]=h[i]/l[i];z[i]=(a[i]-h[i-1]*z[i-1])/l[i]}
+  for(let j=n-2;j>=0;j--){c[j]=z[j]-mu[j]*c[j+1];b[j]=(y[j+1]-y[j])/h[j]-h[j]*(c[j+1]+2*c[j])/3;d[j]=(c[j+1]-c[j])/(3*h[j])}
+  return t=>{t=Math.max(x[0],Math.min(x[n-1],t));let i=0;while(i<n-2&&t>x[i+1])i++;const u=t-x[i];return y[i]+b[i]*u+c[i]*u*u+d[i]*u*u*u};
+}
+class Spr{   // damped spring: f = frequency (Hz), z = damping ratio
+  constructor(p,f,z){this.p=this.g=p;this.v=0;this.w=2*Math.PI*f;this.z=z}
+  to(g,snap){this.g=g;if(snap){this.p=g;this.v=0}}
+  step(dt){const w=this.w,z=this.z;let n=Math.max(1,Math.ceil(dt/.004));const h=dt/n;while(n--){this.v+=(-w*w*(this.p-this.g)-2*z*w*this.v)*h;this.p+=this.v*h}return this.p}
+  get rest(){return Math.abs(this.p-this.g)<6e-4&&Math.abs(this.v)<6e-3}
+}
+const W_SC=curve([[0,.95],[.7,1.0505],[1,1]]),W_Y=curve([[0,.01],[.9,-1/60],[1,0]]),
+  GLOW=curve([[0,0],[.15,1],[.6,1],[1,0]]),C_SC=curve([[0,.95],[.7,1.175],[1,1]]),C_Y=curve([[0,.01],[.9,-1/56],[1,0]]);
+const sinOut=p=>Math.sin(p*Math.PI/2);
+function drive(el,sc,y,g,gp,dt,letter){   // step one element's springs toward the goals and write the styles
+  let s=el._sp;
+  if(!s){s=el._sp={sc:new Spr(sc,.88,.64),y:new Spr(y,1.45,.4),g:new Spr(g,1.18,.56)}}
+  s.sc.to(sc);s.y.to(y);s.g.to(g);
+  const a=s.sc.step(dt),b=s.y.step(dt),c=s.g.step(dt);
+  el.style.transform='translate3d(0,'+(b*(letter?2:1)).toFixed(4)+'em,0) scale('+a.toFixed(4)+')';
+  el.style.setProperty('--gp',gp.toFixed(1)+'%');
+  el.style.setProperty('--gr',(letter?4+12*c:4+2*c).toFixed(1)+'px');
+  el.style.setProperty('--go',Math.max(0,Math.min(1,c*(letter?1.85:.35))).toFixed(3));
+  return !(s.sc.rest&&s.y.rest&&s.g.rest);
+}
+function calm(el){el._sp=null;el.style.removeProperty('transform');el.style.removeProperty('--gp');el.style.removeProperty('--gr');el.style.removeProperty('--go')}
+function animWord(el,w,t,dt){   // returns true while still moving
+  const st=t<w.t?0:t>=w.end?2:1,p=st===1?(t-w.t)/Math.max(.05,w.end-w.t):st;
+  if(el.classList.contains('one')){el.style.setProperty('--gp',(st===0?-20:st===2?100:-20+120*p).toFixed(1)+'%');return false}
+  if(!el._lt){
+    if(!el._sp)drive(el,W_SC(0),W_Y(0),0,-20,0);   // start from rest
+    return drive(el,W_SC(p),W_Y(p),st===1?GLOW(p):0,st===0?-20:st===2?100:-20+120*p,dt);
+  }
+  const cs=el._lt,n=cs.length,ai=st===1?Math.min(n-1,Math.floor(p*n)):-1,ap=st===1?p*n-ai:0;
+  let moving=false;
+  for(let k=0;k<n;k++){
+    const ls=st!==1?st:k<ai?2:k>ai?0:1;let sc=C_SC(0),y=C_Y(0),g=0;
+    if(ai>=0&&ls!==0){const d=Math.abs(k-ai),fo=1/(1+Math.pow(d,2.8)),gf=1/(1+d*.9);
+      sc=C_SC(0)+(C_SC(ap)-C_SC(0))*fo;y=C_Y(0)+(C_Y(ap)-C_Y(0))*fo;g=GLOW(ap)*gf}
+    if(st===2){sc=1;y=0;g=0}
+    if(!cs[k]._sp)drive(cs[k],C_SC(0),C_Y(0),0,-20,0,true);
+    moving=drive(cs[k],sc,y,g,ls===0?-20:ls===2?100:-20+120*sinOut(ap),dt,true)||moving;
+  }
+  return moving;
+}
+const moving=new Set();let lastWT=0;
+function wordsTick(t){
+  const now=performance.now(),dt=Math.min(.1,Math.max(0,(now-(lastWT||now))/1000));lastWT=now;
+  if(S.low){   // low performance mode: plain fill, no springs
+    moving.forEach(k=>{const d=lEls[k];if(d)d.querySelectorAll('.w,.c').forEach(calm)});moving.clear();
+    if(li>=0&&lEls[li]&&lEls[li]._ts){const ts=lEls[li]._ts,sp=lEls[li]._w.children;
+      for(let j=0;j<sp.length&&j<ts.length;j++){const w=ts[j],st=t<w.t?0:t>=w.end?2:1;sp[j].style.setProperty('--gp',(st===0?-20:st===2?100:-20+120*(t-w.t)/Math.max(.05,w.end-w.t)).toFixed(1)+'%')}}
+    return;
+  }
+  if(li>=0&&lEls[li]&&lEls[li]._ts)moving.add(li);
+  moving.forEach(k=>{
+    const d=lEls[k];if(!d||!d._ts){moving.delete(k);return}
+    if(k>li){d.querySelectorAll('.w,.c').forEach(calm);moving.delete(k);return}   // seeking back: future lines just reset
+    const ts=d._ts,sp=d._w.children;let m=false;
+    for(let j=0;j<sp.length&&j<ts.length;j++)m=animWord(sp[j],ts[j],t,dt)||m;
+    if(!m&&k!==li){d.querySelectorAll('.w,.c').forEach(calm);moving.delete(k)}   // finished settling
+  });
+}
 function lyricsTick(){
   if(!lsync||!L.length||S.view==='viz')return;
   const t=curTime()+S.loff/1000,i=findIdx(t);
   if(i!==li)setActive(i);
+  wordsTick(t);
   if(i<0)return;
   const l=L[i],sp=lEls[i]._w.children;
   if(l.dots){   // fill the dots over the length of the break
@@ -1506,13 +1623,6 @@ function lyricsTick(){
     if(n!==lw){lw=n;for(let j=0;j<sp.length;j++){   // a negative delay keeps the hop in step with the song, also after seeking
       if(j<n){sp[j].style.setProperty('--seg',seg.toFixed(3)+'s');sp[j].style.setProperty('--at',(-(t-l.t-j*seg)).toFixed(3)+'s')}
       sp[j].classList.toggle('on',j<n)}}
-  }else if(lEls[i]._ts){
-    const ts=lEls[i]._ts;let n=0;while(n<ts.length&&ts[n].t<=t)n++;
-    if(n!==lw){if(lw>0&&sp[lw-1])sp[lw-1].style.removeProperty('--wp');lw=n;for(let j=0;j<sp.length;j++)sp[j].classList.toggle('on',j<n)}
-    if(n>0&&sp[n-1]){   // the word (or romanized line) being sung right now fills left to right
-      const w=ts[n-1];
-      sp[n-1].style.setProperty('--wp',(Math.min(1,(t-w.t)/Math.max(.08,w.end-w.t))*116).toFixed(1)+'%');
-    }
   }
 }
 // lyrics sources, tried in the order set in Settings
