@@ -172,7 +172,7 @@ Made by [BOZKOW](https://github.com/BOZKOW), built together with [Claude Code](h
 
 The lyrics animation (word and letter springs, fill gradient, line dimming and blur) and the credits layout are
 ported from [Spicy Lyrics](https://github.com/Spikerko/spicy-lyrics) by Spikerko and the Spicy Lyrics contributors,
-licensed under the GNU AGPL-3.0. Its spring model is a port of [spr](https://github.com/Fraktality/spr) by Fraktality (MIT).
+licensed under the GNU AGPL-3.0. **Vibe Visualizer is unofficial: it is not made by, endorsed by or affiliated with Spicy Lyrics.** Its spring model is a port of [spr](https://github.com/Fraktality/spr) by Fraktality (MIT).
 
 ## License
 
