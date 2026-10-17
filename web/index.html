@@ -290,14 +290,13 @@ body.lhover #lyr:not(.st) .ll:not(.dots):not(.a):hover::before{content:"";positi
 body.lduet #ly.duet .ll:not(.opp):not(.dots){padding-right:14%}body.lduet #ly.duet .ll.opp{padding-left:14%}
 body.credly.credr #lcredit{left:auto;right:0;align-items:flex-end;text-align:right}
 body.nosmooth #ly{transition:none}
-/* Experiment: Focus mode: the line being sung is sharp; the lines just before and after stay visible but blurred
-   and faded as they scroll in from below and away to the top; everything further out is hidden */
-body.xfocus #lyr:not(.st) .ll{transition:opacity .5s ease,filter .5s ease}
-body.xfocus #lyr:not(.st) .ll:not(.a){opacity:0;pointer-events:none;filter:blur(12px)}
-body.xfocus #lyr:not(.st) .ll:is(.d1,.dp){opacity:.4;filter:blur(6px)}
-body.xfocus #lyr:not(.st) .ll.d2{opacity:.18;filter:blur(10px)}
-body.xfocus #lyr:not(.st) .ll.a{opacity:1;filter:none;pointer-events:auto}
-body.xfocus #lyr:not(.st) .ll.dots,body.xfocus #lyr:not(.st) .ll.dots.a{opacity:0!important;visibility:hidden}   /* breaks show nothing, no dots */
+/* Experiment: Focus mode: only the line on screen (.fv) is visible, in the middle. The next one rises in from below
+   200 ms before it's sung, the old one goes up and disappears; both are blurred while they move */
+body.xfocus #lyr:not(.st) .ll:not(.fv){opacity:0;transform:translateY(1.1em);filter:blur(12px);pointer-events:none}
+body.xfocus #lyr:not(.st) .ll.fu:not(.fv){transform:translateY(-1.1em)}
+body.xfocus #lyr:not(.st) .ll.fv{opacity:1;transform:none;filter:none}
+body.xfocus #lyr:not(.st) .ll{transition:opacity .45s ease,transform .6s cubic-bezier(.2,.8,.2,1),filter .6s ease}
+body.xfocus #lyr:not(.st) .ll.dots{opacity:0!important;visibility:hidden}   /* breaks show nothing, no dots */
 body.novol #volwrap{display:none}
 .crow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-top:1px solid var(--line);font-size:13px;font-weight:600}
 .crow small{display:block;font-size:11.5px;font-weight:500;color:var(--faint);margin-top:2px;line-height:1.4}.crow .btn{flex:none}
@@ -642,7 +641,7 @@ body.low #cappanel,body.low #netpanel,body.low #setup .sw{background:rgba(20,20,
 
   <h4>Experiments</h4>
   <p class="hint">Ideas being tried out. They may change, or go away, in a later version.</p>
-  <div class="f chk" data-k="xFocus"><label><input type="checkbox" id="xFocus"> Focus mode<small>The line being sung is sharp. The next line rises in from below, blurred, until its turn comes; sung lines float up blurred and fade away. Lines further away are hidden. Instrumental breaks stay empty, without the dots.</small></label></div>
+  <div class="f chk" data-k="xFocus"><label><input type="checkbox" id="xFocus"> Focus mode<small>Only the line being sung is on screen, in the middle. The next one rises in from below 200 ms before it’s sung while the old one goes up and disappears, both blurred while they move. Instrumental breaks stay empty. Instrumental breaks stay empty, without the dots.</small></label></div>
 
   <h4>Help</h4>
   <div class="row2"><button class="btn sm" id="rerun">Open setup guide</button><button class="btn sm" id="forget">Forget this device</button></div>
@@ -1433,7 +1432,7 @@ function cvFrame(){
 }
 
 /* ================= lyrics ================= */
-let L=[],lsync=false,li=-2,lsi=-2,lEls=[];   // lsi: the line the view is scrolled to (the next one early, with Early scroll)
+let L=[],lsync=false,li=-2,lsi=-2,lfi=-2,lEls=[];   // lfi: the line on screen in Focus mode   // lsi: the line the view is scrolled to (the next one early, with Early scroll)
 const lcache=new Map();
 // lyrics saved on this device (IndexedDB), so a song's lyrics aren't fetched again every time: found lyrics for 7 days,
 // "no lyrics" for 1 day. Spicy Lyrics allows keeping its responses for up to 30 days; expired entries are deleted.
@@ -1557,7 +1556,7 @@ function findIdx(t){let a=0,b=L.length-1,r=-1;while(a<=b){const m=(a+b)>>1;if(L[
 let lLabel='';
 function renderLyrics(label,quiet){
   if(!quiet)lLabel=label||'';
-  ly.textContent='';lEls=[];li=-2;lsi=-2;moving.clear();ly.classList.toggle('duet',L.some(l=>l.opp));stPos=null;if(!quiet)lyr.scrollTop=0;lyr.classList.toggle('st',!lsync&&L.length>0);
+  ly.textContent='';lEls=[];li=-2;lsi=-2;lfi=-2;moving.clear();ly.classList.toggle('duet',L.some(l=>l.opp));stPos=null;if(!quiet)lyr.scrollTop=0;lyr.classList.toggle('st',!lsync&&L.length>0);
   L.forEach((l,idx)=>{
     const d=document.createElement('div');d.className=l.dots?'ll dots':l.opp?'ll opp':'ll';
     if(l.dots){d.innerHTML='<div class="dg"><span class="dot">•</span><span class="dot">•</span><span class="dot">•</span></div>';d._w=d.firstChild}
@@ -1856,7 +1855,7 @@ async function decorate(){
 function setActive(i){
   li=i;
   for(let j=0;j<lEls.length;j++){
-    const d=Math.abs(j-i),c=lEls[j].dataset.b+(j===i?(lOut?' p dp':' a'):j<i?' p':'')+(d===1?' d1':d===2?' d2':d===3?' d3':d===4?' d4':d===5?' d5':d>5?' dx':'');
+    const d=Math.abs(j-i),c=lEls[j].dataset.b+(lfi!==-2?(j===lfi?' fv':'')+((lfi>=0?j<lfi:j<=i)?' fu':''):'')+(j===i?(lOut?' p dp':' a'):j<i?' p':'')+(d===1?' d1':d===2?' d2':d===3?' d3':d===4?' d4':d===5?' d5':d>5?' dx':'');
     if(lEls[j].className!==c)lEls[j].className=c;
   }
   place();
@@ -2054,8 +2053,11 @@ function lyricsTick(){
   if(!L.length||S.view==='viz')return;
   if(!lsync){staticScroll();return}
   const t=curTime()*lPace+S.loff/1000,i=findIdx(t),e=i>=0?lineEnd(L[i]):null,out=e!=null&&t>=e;
-  const nx=L[i+1],si=S.learly&&nx&&nx.t!=null&&t>=nx.t-S.learlyMs/1000?i+1:i;
-  if(i!==li||out!==lOut){lOut=out;lsi=si;setActive(i)}else if(si!==lsi){lsi=si;place()}
+  const nx=L[i+1];let si=S.learly&&nx&&nx.t!=null&&t>=nx.t-S.learlyMs/1000?i+1:i,fi=-2;
+  if(S.xFocus){   // Focus mode: the next line comes 200 ms early; a finished line leaves straight away
+    fi=nx&&nx.t!=null&&t>=nx.t-.2?i+1:(i<0||out?-1:i);if(fi>=0)si=fi;
+  }
+  if(i!==li||out!==lOut||fi!==lfi){lOut=out;lsi=si;lfi=fi;setActive(i)}else if(si!==lsi){lsi=si;place()}
   wordsTick(t);
 }
 // lyrics sources, tried in the order set in Settings
