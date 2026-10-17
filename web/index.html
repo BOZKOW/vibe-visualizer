@@ -99,7 +99,11 @@ body[data-view=viz] #lyr{display:none}
 .ll.a .lt.wt,.ll.a .w.lg{background-image:none;text-shadow:none}   /* words and split letters paint their own fill */
 #lyr:not(.st) .ll:not(.dots){cursor:pointer}#lyr:not(.st) .ll:not(.a):not(.dots):hover{opacity:1;--bl:0px}   /* synced lines can be clicked to jump there */
 #lyr.st .ll{opacity:.85}#lyr.st .ll .lt{text-shadow:0 0 0 rgba(255,255,255,.85)}
-body.lb .ll.d1{--bl:1.25px}body.lb .ll.d2{--bl:2.5px}body.lb .ll.d3{--bl:3.75px}body.lb .ll.d4{--bl:5px}body.lb .ll.d5{--bl:6.25px}body.lb .ll.dx{--bl:6.83px}   /* Spicy Lyrics: 1.25px per line, up to 6.83px */
+/* every line but the one being sung is blurred, more the further away it is (Spicy Lyrics' steps, starting stronger
+   so the nearest lines are clearly soft too); the line being sung is always sharp */
+body.lb .ll.dp,body.lb .ll.d1{--bl:2.25px}body.lb .ll.d2{--bl:3.25px}body.lb .ll.d3{--bl:4.25px}body.lb .ll.d4{--bl:5.25px}body.lb .ll.d5{--bl:6.25px}body.lb .ll.dx{--bl:6.83px}
+body.lb .ll:not(.a) .sub:not(.bgv){filter:blur(calc(var(--bl) * .8));transition:filter .3s}   /* romanization / translation under them too */
+body.lb #lyr:not(.st) .ll.a .sub{filter:none}
 /* words rest a little small and low; the springs lift them as they're sung */
 .ll .w,.ll .w .c{display:inline-block;white-space:pre;padding:.14em .06em .22em;margin:-.14em -.06em -.22em}   /* extra paint room so tails (g, y, j) and accents aren't cut off by the text fill */
 .ll .w .c{padding:.14em 0 .22em;margin:-.14em 0 -.22em}
@@ -1703,7 +1707,7 @@ async function decorate(){
 function setActive(i){
   li=i;
   for(let j=0;j<lEls.length;j++){
-    const d=Math.abs(j-i),c=lEls[j].dataset.b+(j===i?(lOut?' p':' a'):j<i?' p':'')+(d===1?' d1':d===2?' d2':d===3?' d3':d===4?' d4':d===5?' d5':d>5?' dx':'');
+    const d=Math.abs(j-i),c=lEls[j].dataset.b+(j===i?(lOut?' p dp':' a'):j<i?' p':'')+(d===1?' d1':d===2?' d2':d===3?' d3':d===4?' d4':d===5?' d5':d>5?' dx':'');
     if(lEls[j].className!==c)lEls[j].className=c;
   }
   place();
