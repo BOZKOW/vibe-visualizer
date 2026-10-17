@@ -12,20 +12,32 @@ port forwarding or domain is needed.
 
 ## Features
 
-- **Bar visualizer** that reacts to local files, or to Spotify through tab/screen audio sharing.
-- **Live background:** the cover art, blurred, drifting and pulsing with the bass.
-- **Synced lyrics:** word-by-word fill, instrumental-break dots, background vocals, duet alignment.
+- **Bar visualizer** that reacts to local files, or to Spotify through your computer's sound
+  (a "Monitor of …" input on Linux, or tab/screen audio sharing).
+- **Live background:** the cover art, blurred, drifting at the speed and tempo of the music and pulsing with the bass.
+- **Cover that moves with the beat**, and a smooth layout change when a Canvas video starts or stops.
+- **Synced lyrics:** word-by-word fill, background vocals, duet alignment, and instrumental-break dots that hop in time
+  until the next line. Click any line to jump there.
+- **Several lyrics providers** (Spicy Lyrics, Spotify, LRCLIB, NetEase Cloud Music), each one switchable, in the order you choose.
 - **Romanization** (Japanese, Korean, Chinese, Cyrillic, …) and **translation** into any language,
   with a list of languages to leave untranslated. Toggle both from the top bar (`T` / `R`).
-- **Spotify** "now playing" through the official Web API (PKCE login, no client secret).
+- **Spotify** "now playing" through the official Web API (PKCE login, no client secret), with previous / play-pause /
+  next and seeking (needs Spotify Premium).
+- **Ping meter** showing the response time and status of every service the app uses.
 - **Canvas videos** (optional, unofficial; see [Third-party services](#third-party-services)).
 - **Per-device settings** saved on your server, keyed by each device's Tailscale address.
 - First-run setup guide with links to the official Spotify and Tailscale documentation.
 
 ## Lyrics sources and attribution
 
-Lyrics come from the [Spicy Lyrics API](https://developers.spicylyrics.org) when a key is configured,
-otherwise from [LRCLIB](https://lrclib.net). You can also drop your own `.lrc` or `.ttml` file onto the page.
+Lyrics are looked up in the order set under *Settings → Lyrics*, and each provider can be switched off:
+
+1. [Spicy Lyrics API](https://developers.spicylyrics.org) (needs your own key on the server)
+2. Spotify's own lyrics (unofficial, needs `config/sp_dc`; see [Third-party services](#third-party-services))
+3. [LRCLIB](https://lrclib.net)
+4. NetEase Cloud Music (unofficial)
+
+You can also drop your own `.lrc` or `.ttml` file onto the page.
 
 The Spicy Lyrics integration follows the
 [Spicy Lyrics Terms](https://developers.spicylyrics.org/terms) and
@@ -35,7 +47,7 @@ The Spicy Lyrics integration follows the
 | --- | --- |
 | Secret keys stay on a server you control | The `sl_sk_…` key lives only in `config/spicy_key` on your server. The helper calls the API; the browser never sees the key. |
 | Use, don't redistribute | The helper's `/api/lyrics` route only answers requests from your own Tailscale network (Tailscale `100.64.0.0/10` / `fd7a:115c:a1e0::/48` addresses, forwarded by `tailscale serve`), and the web port is bound to `127.0.0.1`. It is not a public or shared endpoint. Lyrics are fetched one track at a time, only for the song being played. |
-| Show attribution with the lyrics | While lyrics are on screen, a credit line under the cover always names the provider from the response's `source` field. For `spicy_lyrics` it also credits and links the uploader and the maker. For other sources it shows the provider only, and "source unknown" when no source is given. It is never hidden, and never shown empty. Songwriters are listed when the response includes them. |
+| Show attribution with the lyrics | While lyrics are on screen, a credit line in the bottom-left corner always names the provider from the response's `source` field. For `spicy_lyrics` it also credits and links the uploader and the maker. For other sources it shows the provider only, and "source unknown" when no source is given. It is never hidden, and never shown empty. Songwriters are listed when the response includes them. |
 | Read attribution from each response | Nothing is hardcoded: the credit is built from `source` and `UploadAttribution` of every response. |
 | Cache for no more than 30 days | Responses are cached **in memory only, for at most 7 days** (misses for 6 hours), and are never written to disk. |
 | Your own key, never shared | Each person who runs their own copy needs their own Spicy Lyrics application and key. Don't share yours, and don't commit `config/`. |
@@ -49,7 +61,8 @@ your devices ──Tailscale HTTPS──▶ tailscale serve ──▶ 127.0.0.1:
                                                                      └─ /api/* ─▶ helper (server/helper.py)
                                                                                    ├─ Spicy Lyrics API (secret key)
                                                                                    ├─ per-device settings (prefs/)
-                                                                                   └─ Spotify Canvas lookup (optional)
+                                                                                   ├─ Spotify lyrics + Canvas (optional)
+                                                                                   └─ NetEase lyrics lookup
 ```
 
 ## Setup
@@ -58,7 +71,7 @@ You need a Linux server with Docker and Tailscale, and your devices on the same 
 
 1. **Clone and start**
    ```sh
-   git clone https://github.com/<your-username>/vibe-visualizer.git
+   git clone https://github.com/BOZKOW/vibe-visualizer.git
    cd vibe-visualizer
    mkdir -p config prefs && chmod 700 config prefs
    docker compose up -d --build
@@ -94,9 +107,10 @@ Some features rely on services that do not offer an official API for this purpos
 may stop working at any time, and you are responsible for whether using them is acceptable to you:
 
 - **Translation and romanization** use Google Translate's free web endpoint (unofficial). Lyric lines are sent to Google.
-- **Spotify Canvas videos** are looked up by a headless Chromium that opens the Spotify web player with
-  *your own* `sp_dc` cookie (`config/sp_dc`). This is not an official Spotify API and is against
+- **Spotify Canvas videos and Spotify's lyrics** are looked up by a headless Chromium that opens the Spotify web
+  player with *your own* `sp_dc` cookie (`config/sp_dc`). This is not an official Spotify API and is against
   Spotify's terms of use. Leave `config/sp_dc` absent to keep it disabled.
+- **NetEase Cloud Music lyrics** use NetEase's public web endpoints (unofficial).
 - **Cover art** for local files is looked up through the iTunes Search API and MusicBrainz / Cover Art Archive.
 
 ## Privacy
@@ -109,4 +123,8 @@ may stop working at any time, and you are responsible for whether using them is 
 ## Keyboard shortcuts
 
 `Space` play/pause · `←`/`→` seek · `↑`/`↓` volume · `M` mute · `F` fullscreen ·
-`1`/`2`/`3` visualizer / lyrics / both · `T` translate · `R` romanize
+`1`/`2`/`3` visualizer / lyrics / both · `T` translate · `R` romanize · click a lyric line to jump to it
+
+## License
+
+[MIT](LICENSE)

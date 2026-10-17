@@ -1,0 +1,11 @@
+# secrets and per-device data: never commit
+config/
+prefs/
+*.key
+.env
+
+# editor / OS clutter
+.vscode/
+.idea/
+.DS_Store
+__pycache__/
