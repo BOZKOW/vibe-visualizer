@@ -1476,7 +1476,7 @@ function cvFrame(){
 
 /* ================= lyrics ================= */
 let lAct=new Set(),lActKey='';   // all lines being sung right now (duets can overlap)
-let L=[],lsync=false,li=-2,lsi=-2,lfi=-2,lfo=false,lfn=-1,lfs=false,lEls=[];   // lfi: the line on screen in Focus mode   // lsi: the line the view is scrolled to (the next one early, with Early scroll)
+let L=[],lsync=false,li=-2,lsi=-2,lfi=-2,lfo=false,lfn='',lfs='',lfnSet=new Set(),lfsSet=new Set(),lEls=[];   // lfi: the line on screen in Focus mode   // lsi: the line the view is scrolled to (the next one early, with Early scroll)
 const lcache=new Map();
 // lyrics saved on this device (IndexedDB), so a song's lyrics aren't fetched again every time: found lyrics for 7 days,
 // "no lyrics" for 1 day. Spicy Lyrics allows keeping its responses for up to 30 days; expired entries are deleted.
@@ -1600,7 +1600,7 @@ function findIdx(t){let a=0,b=L.length-1,r=-1;while(a<=b){const m=(a+b)>>1;if(L[
 let lLabel='';
 function renderLyrics(label,quiet){
   if(!quiet)lLabel=label||'';
-  ly.textContent='';lEls=[];lAct=new Set();lActKey='';li=-2;lsi=-2;lfi=-2;lfo=false;lfn=-1;lfs=false;moving.clear();ly.classList.toggle('duet',L.some(l=>l.opp));stPos=null;if(!quiet)lyr.scrollTop=0;lyr.classList.toggle('st',!lsync&&L.length>0);
+  ly.textContent='';lEls=[];lAct=new Set();lActKey='';li=-2;lsi=-2;lfi=-2;lfo=false;lfn='';lfs='';lfnSet=new Set();lfsSet=new Set();moving.clear();ly.classList.toggle('duet',L.some(l=>l.opp));stPos=null;if(!quiet)lyr.scrollTop=0;lyr.classList.toggle('st',!lsync&&L.length>0);
   L.forEach((l,idx)=>{
     const d=document.createElement('div');d.className=l.dots?'ll dots':l.opp?'ll opp':'ll';
     if(l.dots){d.innerHTML='<div class="dg"><span class="dot">•</span><span class="dot">•</span><span class="dot">•</span></div>';d._w=d.firstChild}
@@ -1899,7 +1899,7 @@ async function decorate(){
 function setActive(i){
   li=i;
   for(let j=0;j<lEls.length;j++){
-    const d=Math.abs(j-i),c=lEls[j].dataset.b+(lfi!==-2?(j===lfi&&!lfo?' fv':'')+(j===lfn?' fn'+(lfs?' fs':''):'')+(j<lfi||(j===lfi&&lfo)?' fu':''):'')+(lAct.has(j)?' a':j===i?(lOut?' p dp':' a'):j<i?' p':'')+(lAct.has(j)?'':d===1?' d1':d===2?' d2':d===3?' d3':d===4?' d4':d===5?' d5':d>5?' dx':'');
+    const d=Math.abs(j-i),c=lEls[j].dataset.b+(lfi!==-2?(j===lfi&&!lfo?' fv':'')+(lfnSet.has(j)?' fn'+(lfsSet.has(j)?' fs':''):'')+(j<lfi||(j===lfi&&lfo)?' fu':''):'')+(lAct.has(j)?' a':j===i?(lOut?' p dp':' a'):j<i?' p':'')+(lAct.has(j)?'':d===1?' d1':d===2?' d2':d===3?' d3':d===4?' d4':d===5?' d5':d>5?' dx':'');
     if(lEls[j].className!==c)lEls[j].className=c;
   }
   place();
@@ -2100,14 +2100,15 @@ function lyricsTick(){
   if(!lsync){staticScroll();return}
   const t=curTime()*lPace+S.loff/1000,i=findIdx(t),e=i>=0?lineEnd(L[i]):null,out=e!=null&&t>=e;
   const nx=L[i+1];let si=S.learly&&nx&&nx.t!=null&&t>=nx.t-S.learlyMs/1000?i+1:i,fi=-2;
-  let fo=false,fn=-1,fs=false;
+  let fo=false,fn='',fs='';
   if(S.xFocus){   // Focus mode: a line is due on screen 200 ms before it's sung, but the line before holds until it's sung to the end
     const en=k=>{const l=L[k];if(l.dots)return l.t;const e=lineEnd(l);return e!=null?e:(L[k+1]&&L[k+1].t!=null?L[k+1].t:Infinity)};
     let f=findIdx(t+.2);while(f>0&&en(f-1)>t)f--;
     fi=f;fo=f>=0&&t>=en(f);si=Math.max(f,0);   // fo: sung to the end, it leaves; the middle stays empty until the next is due
-    let n=-1;for(let k=Math.max(f+1,0);k<L.length;k++)if(!L[k].dots){n=k;break}
-    // the line underneath shows up 200 ms before it's sung, and turns sharp if it starts while the middle line still holds
-    fn=n>=0&&t>=L[n].t-.2?n:-1;fs=fn>=0&&t>=L[fn].t;
+    // every line due (200 ms before it's sung) while the middle line still holds waits underneath, stacked in
+    // order, and turns sharp once it starts: two, three or more lines sung together all show
+    const due=[],sung=[];for(let k=Math.max(f+1,0);k<L.length&&L[k].t!=null&&t>=L[k].t-.2;k++)if(!L[k].dots){due.push(k);if(t>=L[k].t)sung.push(k)}
+    fn=due.join();fs=sung.join();lfnSet=new Set(due);lfsSet=new Set(sung);
   }
   // every line still being sung is active, not just the newest: a duet line can start while another is going
   const act=new Set();if(i>=0&&!out)act.add(i);
