@@ -767,12 +767,12 @@ skipBox.onclick=e=>{
 const pct=v=>v+'%',VFMT={bgspeed:v=>v==0?'Still':+(v/100).toFixed(2)+'×',bars:v=>String(v),loff:v=>(v>0?'+':'')+v+' ms'};
 function fill(el){
   const mn=+el.min||0,mx=+el.max||100;el.style.setProperty('--p',((el.value-mn)/(mx-mn)*100)+'%');
-  if(el._val)el._val.textContent=(VFMT[el.id]||pct)(+el.value);
+  if(el._val)el._val.textContent=(VFMT[el.id]||(el._ms?v=>v+' ms':pct))(+el.value);   // sliders labelled (ms) show milliseconds, not %
 }
 document.querySelectorAll('.f input[type=range],#volume').forEach(el=>{
   const v=document.createElement('span');v.className='val';el._val=v;
   if(el.id==='volume'){v.id='volval';el.after(v)}
-  else{const lb=el.closest('.f').querySelector('.lb');if(lb)lb.appendChild(v)}
+  else{const lb=el.closest('.f').querySelector('.lb');if(lb){el._ms=/\(ms\)/.test(lb.textContent);lb.appendChild(v)}}
 });
 function syncInputs(){
   for(const k in DEF){const el=$(k);if(!el)continue;if(el.type==='checkbox')el.checked=!!S[k];else el.value=S[k]}
