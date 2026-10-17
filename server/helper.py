@@ -10,6 +10,8 @@ GET /lyrics?id=<spotify track id>  ->  Spicy Lyrics API answer (secret key stays
 GET /spotify-lyrics?id=<track id>   ->  Spotify's own lyrics via the web player session (unofficial, needs sp_dc)
 GET /netease?title=&artist=&duration=  ->  NetEase Cloud Music lyrics (unofficial API)
 GET/PUT/DELETE /prefs              ->  per-device Vibe Visualizer preferences, keyed by the device's Tailscale IP
+GET  /version                      ->  installed web app version and the newest one on GitHub
+POST /update                       ->  download the newest web app files from GitHub into WEB_DIR
 """
 import asyncio, ipaddress, json, os, re, time, urllib.error, urllib.parse, urllib.request
 from playwright.async_api import async_playwright
@@ -25,6 +27,12 @@ SPICY_KEY_FILE = os.environ.get("SPICY_KEY_FILE", "/config/spicy_key")
 SPICY_API = "https://api.spicylyrics.org/v1/lyrics/"
 SPICY_TTL, SPICY_MISS_TTL = 7 * 86400, 6 * 3600   # API terms: anything stored must be refetched or dropped within 30 days
 lyrics_cache = {}      # in memory only: track id -> (status, body, expires)
+# updates: the web app files are downloaded from this GitHub repository into WEB_DIR (the folder nginx serves)
+UPDATE_REPO = os.environ.get("UPDATE_REPO", "BOZKOW/vibe-visualizer")
+UPDATE_BRANCH = os.environ.get("UPDATE_BRANCH", "main")
+WEB_DIR = os.environ.get("WEB_DIR", "/www")
+WEB_FILES = ["index.html", "sw.js", "manifest.webmanifest", "logo.svg", "icon-192.png", "icon-512.png",
+             "icon-maskable-512.png", "apple-touch-icon.png"]
 ID_RE = re.compile(r"^[0-9A-Za-z]{22}$")
 HASH_RE = re.compile(r'"canvas","query","([0-9a-f]{64})"')
 
@@ -270,6 +278,54 @@ async def netease(title, artist, duration):
     return status, body
 
 
+def gh_get(url, raw=False):
+    req = urllib.request.Request(url, headers={"User-Agent": "VibeVisualizer-updater", "Accept": "application/vnd.github+json"})
+    with urllib.request.urlopen(req, timeout=30) as r:
+        data = r.read()
+    return data if raw else json.loads(data)
+
+
+def installed_version():
+    try:
+        return json.load(open(os.path.join(WEB_DIR, "version.json")))
+    except (OSError, ValueError):
+        return None
+
+
+def latest_version():
+    """The newest commit on GitHub that changed the web app."""
+    c = gh_get("https://api.github.com/repos/%s/commits?sha=%s&path=web&per_page=1" % (UPDATE_REPO, UPDATE_BRANCH))[0]
+    return {"sha": c["sha"], "date": c["commit"]["committer"]["date"], "message": c["commit"]["message"].splitlines()[0]}
+
+
+def web_dir_writable():
+    return os.path.isdir(WEB_DIR) and os.access(WEB_DIR, os.W_OK)
+
+
+def do_update():
+    if not web_dir_writable():
+        return 501, {"error": "updates need the web folder mounted writable into the helper at %s (see the README)" % WEB_DIR}
+    new = latest_version()
+    cur = installed_version()
+    if cur and cur.get("sha") == new["sha"]:
+        return 200, {"updated": False, "version": cur}
+    files = {}
+    for f in WEB_FILES:   # download everything first, so a failed download leaves the installed app untouched
+        files[f] = gh_get("https://raw.githubusercontent.com/%s/%s/web/%s" % (UPDATE_REPO, new["sha"], f), raw=True)
+    page = files["index.html"].decode("utf-8", "replace")
+    if "Vibe Visualizer" not in page or "</html>" not in page.lower():
+        return 502, {"error": "the downloaded page doesn't look like Vibe Visualizer; nothing was changed"}
+    for f, data in files.items():   # replace each file in one step
+        tmp = os.path.join(WEB_DIR, "." + f + ".new")
+        with open(tmp, "wb") as fh:
+            fh.write(data)
+        os.replace(tmp, os.path.join(WEB_DIR, f))
+    with open(os.path.join(WEB_DIR, "version.json"), "w") as fh:
+        json.dump(new, fh)
+    log("updated web app to", new["sha"][:7], new["message"])
+    return 200, {"updated": True, "version": new}
+
+
 def client_ip(headers):
     """The device's Tailscale address, as passed on by `tailscale serve` -> nginx. None if not from the tailnet."""
     ip = headers.get("x-forwarded-for", "").split(",")[0].strip()
@@ -353,12 +409,25 @@ async def handle(reader, writer):
             else:
                 tid = params.get("id", "")
                 status, out = (await spotify_lyrics(tid)) if ID_RE.match(tid) else (400, {"error": "id must be a 22-character Spotify track id"})
+        elif route.endswith("/version") or route.endswith("/update"):
+            if not client_ip(headers):
+                status, out = 403, {"error": "only for Vibe Visualizer on your tailnet"}
+            elif route.endswith("/version"):
+                try:
+                    latest = await asyncio.to_thread(latest_version)
+                except Exception as e:
+                    latest = {"error": str(e)[:200]}
+                status, out = 200, {"installed": installed_version(), "latest": latest, "can_update": web_dir_writable(), "repo": UPDATE_REPO}
+            elif method != "POST":
+                status, out = 405, {"error": "use POST"}
+            else:
+                status, out = await asyncio.to_thread(do_update)
         elif route.endswith("/whoami"):
             status, out = 200, {"ip": client_ip(headers), "x-forwarded-for": headers.get("x-forwarded-for"), "tailscale-user": headers.get("tailscale-user-login")}
         elif route.endswith("/health"):
             status, out = 200, {"ok": state["error"] is None, "logged_in": state["logged_in"], "hash": state["hash"],
                                 "token_age_s": int(time.time() - state["minted"]) if state["minted"] else None,
-                                "cached": len(cache), "error": state["error"], "spicy_key": bool(spicy_key()),
+                                "cached": len(cache), "error": state["error"], "spicy_key": bool(spicy_key()), "can_update": web_dir_writable(),
                                 "timing": {k: {"ms": v["ms"], "status": v["status"], "age_s": int(time.time() - v["at"])} for k, v in timing.items()}}
         elif route.endswith("/canvas"):
             tid = params.get("id", "")
@@ -379,7 +448,7 @@ async def handle(reader, writer):
         log("error:", e)
         status, out = 502, {"error": str(e)[:300]}
     data = json.dumps(out).encode()
-    reason = {200: "OK", 400: "Bad Request", 401: "Unauthorized", 403: "Forbidden", 404: "Not Found", 405: "Method Not Allowed", 429: "Too Many Requests", 500: "Internal Server Error", 502: "Bad Gateway", 503: "Service Unavailable"}.get(status, "Error")
+    reason = {200: "OK", 400: "Bad Request", 401: "Unauthorized", 403: "Forbidden", 404: "Not Found", 405: "Method Not Allowed", 501: "Not Implemented", 429: "Too Many Requests", 500: "Internal Server Error", 502: "Bad Gateway", 503: "Service Unavailable"}.get(status, "Error")
     writer.write(("HTTP/1.1 %d %s\r\nContent-Type: application/json\r\nCache-Control: no-store\r\nContent-Length: %d\r\nConnection: close\r\n\r\n"
                   % (status, reason, len(data))).encode() + data)
     try:

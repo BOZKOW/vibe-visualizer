@@ -105,6 +105,13 @@ The steps below are for Linux; see [Running the server on Windows](#running-the-
 
 Everything else (theme, visualizer, lyrics, translation) is in the in-app Settings panel.
 
+### Updating
+
+*Settings → Help & about → Check for updates* compares your installed version with the newest one on GitHub, and
+**Update now** downloads it onto your server (only the web app files; your `config/` and `prefs/` stay as they are).
+The helper does the download, so it needs the web folder mounted writable at `/www`, which `docker-compose.yml`
+already does. Changes to the server helper itself still need `git pull && docker compose up -d --build`.
+
 ### Running the server on Windows
 
 The same setup works on Windows 10/11 with [Docker Desktop](https://docs.docker.com/desktop/setup/install/windows-install/)

@@ -648,6 +648,10 @@ body.low #cappanel,body.low #netpanel,body.low #setup .sw{background:rgba(20,20,
   <div class="f chk" data-k="xFocus"><label><input type="checkbox" id="xFocus"> Focus mode<small>Only the line being sung is on screen. The next one flies up from the bottom, blurred, 200 ms before its turn and lands sharp in the middle; when it’s done it flies up and disappears. Instrumental breaks stay empty. Instrumental breaks stay empty, without the dots.</small></label></div>
 
   <h4>Help</h4>
+  <p class="sub-h">Updates</p>
+  <p class="stat" id="updstat">Not checked yet.</p>
+  <div class="row2"><button class="btn sm" id="updcheck">Check for updates</button><button class="btn sm pri" id="updgo" hidden>Update now</button></div>
+  <p class="hint">Updates download the newest Vibe Visualizer from its GitHub page onto your server. Your settings, keys and saved lyrics stay as they are.</p>
   <div class="row2"><button class="btn sm" id="rerun">Open setup guide</button><button class="btn sm" id="forget">Forget this device</button></div>
   <p class="hint">Opened from your Vibe Visualizer server, your settings, keys and Spotify login are kept on the server for this device (by its Tailscale address), so they’re still here next time. “Forget this device” deletes them.</p>
   <p class="hint">Vibe Visualizer is free software under the <a class="src" target="_blank" rel="noopener" href="https://www.gnu.org/licenses/agpl-3.0.html">GNU AGPL-3.0</a>. Its lyrics animation is ported from <a class="src" target="_blank" rel="noopener" href="https://github.com/Spikerko/spicy-lyrics">Spicy Lyrics</a> by Spikerko and contributors. Vibe Visualizer is an unofficial project, not made by or affiliated with Spicy Lyrics. <a class="src" target="_blank" rel="noopener" href="https://github.com/BOZKOW/vibe-visualizer">Source code</a></p>
@@ -2511,6 +2515,34 @@ $('wzlow').onchange=()=>{S.low=$('wzlow').checked;applyLow();save();refreshReset
 $('wzpick').onclick=()=>{wzDone();$('file').click()};
 $('wzsp').onclick=()=>{wzDone();setSource('spotify')};
 $('rerun').onclick=wzOpen;
+// updates: the server helper compares the installed version with the newest on GitHub and downloads it
+const fmtV=v=>'“'+v.message+'” ('+new Date(v.date).toLocaleDateString()+')';
+async function checkUpdate(manual){
+  const out=$('updstat'),go=$('updgo');
+  if(!PREFS){out.textContent='Updates work when Vibe Visualizer is opened from your server.';return}
+  if(manual)out.textContent='Checking…';
+  try{
+    const r=await fetch('/api/version',{cache:'no-store'}),v=await r.json().catch(()=>({}));
+    if(!r.ok)throw new Error(r.status===404?'your server’s helper is too old for updates (see the README)':v.error||'HTTP '+r.status);
+    const cur=v.installed,lat=v.latest;if(!lat||lat.error)throw new Error((lat&&lat.error)||'GitHub didn’t answer');
+    const newer=!cur||cur.sha!==lat.sha;
+    out.textContent=(cur?'Installed: '+fmtV(cur)+'. ':'')+(newer?'New version: '+fmtV(lat)+'.':'You have the newest version.');
+    go.hidden=!newer;go.disabled=!v.can_update;
+    if(newer&&!v.can_update)out.textContent+=' To update from here, the web folder has to be mounted into the helper (see the README).';
+    if(newer&&!manual&&v.can_update&&cur)toast('A new Vibe Visualizer version is out: Settings → Help & about → Update now.','ok',7000);
+  }catch(e){out.textContent='Couldn’t check for updates: '+e.message}
+}
+$('updcheck').onclick=()=>checkUpdate(true);
+$('updgo').onclick=async()=>{
+  const out=$('updstat'),go=$('updgo');go.disabled=true;out.textContent='Downloading the new version…';
+  try{
+    const r=await fetch('/api/update',{method:'POST'}),v=await r.json().catch(()=>({}));
+    if(!r.ok)throw new Error(v.error||'HTTP '+r.status);
+    out.textContent=v.updated?'Updated to '+fmtV(v.version)+'. Reloading…':'Already up to date.';
+    if(v.updated){toast('Vibe Visualizer updated. Reloading…','ok',2500);setTimeout(()=>location.reload(),1200)}
+  }catch(e){out.textContent='Update failed: '+e.message;go.disabled=false}
+};
+setTimeout(()=>checkUpdate(false),4000);   // look once in the background after opening
 $('brand').onclick=wzOpen;   // the logo opens the welcome page
 $('brand').onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();wzOpen()}};
 

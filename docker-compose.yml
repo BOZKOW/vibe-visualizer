@@ -22,3 +22,4 @@ services:
     volumes:
       - ./config:/config:ro   # secrets: spicy_key (Spicy Lyrics secret key), optional sp_dc. Never commit this folder.
       - ./prefs:/prefs        # per-device saved settings
+      - ./web:/www            # the web app files, so Settings → Help → Update now can install new versions from GitHub
