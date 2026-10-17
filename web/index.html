@@ -127,6 +127,11 @@ body.low .ll .w,body.low .ll .w .c{scale:1;transform:none}
 .ll .sub.tr{font-weight:600;color:rgba(255,255,255,.58)}
 .ll.a .sub{animation:up .5s cubic-bezier(.2,.8,.2,1) backwards}.ll.a .sub.tr{animation-delay:.06s}
 .ll.a .sub.rom{color:#fff}
+/* timed romanization / translation: transparent text filled by the same gradient as the lyrics */
+.ll .sub.tm{width:fit-content;max-width:100%}.ll.opp .sub.tm{margin-left:auto}
+.ll.a .sub.tm .w{-webkit-text-fill-color:transparent}
+.ll .sub.rom.tm .w{--gradient-alpha:1;--gradient-alpha-end:.45}
+.ll .sub.tr.tm .w{--gradient-alpha:.8;--gradient-alpha-end:.35}
 .lchips{display:flex;flex-wrap:wrap;gap:6px}
 .lchip{border:1px solid var(--line);background:rgba(255,255,255,.05);border-radius:999px;padding:4px 10px;font-size:12px;font-weight:600;color:var(--dim);cursor:pointer;transition:background .2s,color .2s,border-color .2s,transform .15s}
 .lchip:hover{background:rgba(255,255,255,.12)}.lchip:active{transform:scale(.94)}
@@ -1439,7 +1444,7 @@ function renderLyrics(label,quiet){
         else{span(l.rom);main.lastChild.classList.add('one');d._ts=[{t:ws[0].t,end:Math.min(ws[ws.length-1].t+.8,nt)}]}                 // fill the whole romanized line
       }
       else main.textContent=romOnly?l.rom:l.text;
-      if(d._ts&&main.children.length===d._ts.length&&!main.querySelector('.one')){main.classList.add('wt');splitLetters(main,d._ts)}
+      if(d._ts){main.classList.add('wt');if(main.children.length===d._ts.length&&!main.querySelector('.one'))splitLetters(main,d._ts)}
       d.appendChild(main);
       const sub=(c,t)=>{const s=document.createElement('span');s.className='sub '+c;s.textContent=t;d.appendChild(s);return s};
       if(l.bg)l.bg.forEach(b=>{   // background vocals: their own smaller line, sung word by word on their own timing
@@ -1450,8 +1455,20 @@ function renderLyrics(label,quiet){
           splitLetters(s,bts);(d._bg=d._bg||[]).push({el:s,ts:bts});
         }else sub('bgv',romB?b.rom:b.text);
       });
-      if(l.rom&&S.romMode==='below')sub('rom',l.rom);
-      if(l.tr)sub('tr',l.tr);
+      // romanization and translation under the line fill in time with it: word by word when the romanized
+      // words line up with the sung ones, otherwise across the whole line
+      const lEnd=d._ts&&d._ts.length?d._ts[d._ts.length-1].end:(L[idx+1]&&L[idx+1].t!=null?L[idx+1].t:l.t+4);
+      const timed=(c,text,words)=>{
+        if(!lsync||l.t==null){sub(c,text);return}
+        const s=sub(c+' tm',''),ts=[];
+        if(words&&l.words&&words.length===l.words.length){
+          words.forEach((x,k)=>{const w=l.words[k],y=document.createElement('span');y.className='w';y.textContent=x+(k<words.length-1?' ':'');s.appendChild(y);
+            ts.push({t:w.t,end:w.end!=null?w.end:k+1<l.words.length?l.words[k+1].t:Math.min(w.t+1.5,lEnd)})});
+        }else{const y=document.createElement('span');y.className='w one';y.textContent=text;s.appendChild(y);ts.push({t:l.t,end:Math.max(l.t+.3,lEnd)})}
+        (d._bg=d._bg||[]).push({el:s,ts});
+      };
+      if(l.rom&&S.romMode==='below')timed('rom',l.rom,l.rom.split(/\s+/).filter(Boolean));
+      if(l.tr)timed('tr',l.tr);
     }
     d.dataset.b=d.className;
     d.onclick=()=>{if(lsync&&l.t!=null&&seekTo((l.t-S.loff/1000)/lPace)&&d.animate)d.animate([{transform:'scale(.97)'},{transform:'none'}],{duration:260,easing:'ease-out'})};   // click a line to jump there
