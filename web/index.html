@@ -282,6 +282,12 @@ input[type=color]{width:100%;height:28px;padding:0;border:1px solid var(--line);
 .steps li.ok::before{content:"✓";background:#1ed760;color:#08200f}
 .steps.plain li::before{content:"";width:8px;height:8px;top:7px;left:8px;background:var(--acc)}
 .steps li b{color:#fff}
+.steps ul.sub{margin:6px 0 2px;padding-left:16px;display:flex;flex-direction:column;gap:4px;list-style:disc}
+.steps ul.sub li{padding-left:0;counter-increment:none}.steps ul.sub li::before{display:none}
+.steps li.os{opacity:.55}.steps li.os.me{opacity:1}.steps li.os.me>b:first-child::after{content:"your system";margin-left:8px;padding:2px 7px;border-radius:999px;background:rgba(30,215,96,.16);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#7ef0a8;vertical-align:1px}
+.wzchk{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px}
+.wzchk span{font-size:12px;font-weight:600;padding:5px 10px;border-radius:999px;background:rgba(255,255,255,.08);color:var(--dim)}
+.wzchk span.y{background:rgba(30,215,96,.16);color:#7ef0a8}.wzchk span.n{background:rgba(255,190,90,.14);color:#ffd08a}
 .srcl{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:6px}
 .src{color:#fff;text-decoration:none;border-bottom:1px solid var(--line);font-weight:600;font-size:12px}
 .src:hover{border-color:#fff}.src::after{content:" ↗";opacity:.55}
@@ -552,29 +558,80 @@ body.low .ll{transition:opacity .25s}
         <ol class="steps">
           <li id="wzserve"><b>Serve this page locally.</b> In the folder that contains this file, run <code>python3 -m http.server 8000</code>, then open <code id="wzurl">http://127.0.0.1:8000/index.html</code>.
             <div class="srcl"><a class="src" target="_blank" rel="noopener" href="https://docs.python.org/3/library/http.server.html">Python docs: http.server</a><a class="src" target="_blank" rel="noopener" href="https://www.python.org/downloads/">Get Python</a></div></li>
-          <li><b>Create an app</b> in the Spotify Developer Dashboard. When it asks which APIs you’ll use, tick <b>Web API</b>.
+          <li><b>Create an app</b> in the Spotify Developer Dashboard. Sign in with your normal Spotify account and press <b>Create app</b>.
+            <ul class="sub">
+              <li><b>App name</b> and <b>description</b>: anything, for example “Vibe Visualizer” and “My music visualizer”.</li>
+              <li><b>Website</b>: leave empty.</li>
+              <li><b>Which API/SDKs</b>: tick <b>Web API</b> only.</li>
+              <li>Accept the terms and press <b>Save</b>.</li>
+            </ul>
             <div class="srcl"><a class="src" target="_blank" rel="noopener" href="https://developer.spotify.com/dashboard">Developer Dashboard</a><a class="src" target="_blank" rel="noopener" href="https://developer.spotify.com/documentation/web-api/concepts/apps">Spotify guide: Apps</a></div></li>
-          <li><b>Add this Redirect URI</b> to the app, exactly as shown:
+          <li><b>Add this Redirect URI</b> to the app (<b>Settings → Edit → Redirect URIs</b>), exactly as shown, including the <b>/</b> at the end, then <b>Add</b> and <b>Save</b>:
             <div class="inl"><input class="tin" id="wzredir" readonly aria-label="Redirect URI"><button class="btn sm" id="wzcopy">Copy</button></div>
             <div class="srcl"><a class="src" target="_blank" rel="noopener" href="https://developer.spotify.com/documentation/web-api/concepts/redirect_uri">Spotify guide: Redirect URIs</a></div></li>
-          <li><b>Paste the Client ID</b> from the app’s Settings page. You don’t need the client secret, because Vibe Visualizer signs in with the PKCE flow.
+          <li><b>Paste the Client ID</b>. It’s on the app’s <b>Settings → Basic Information</b> page, a long code of letters and numbers. You don’t need the client secret, because Vibe Visualizer signs in with the PKCE flow.
             <div class="inl"><input class="tin" id="wzid" placeholder="Client ID" autocomplete="off" spellcheck="false" aria-label="Spotify Client ID"></div>
             <div class="srcl"><a class="src" target="_blank" rel="noopener" href="https://developer.spotify.com/documentation/web-api/tutorials/code-pkce-flow">Spotify guide: Authorization Code with PKCE</a></div></li>
-          <li><b>Add your Spotify account</b> under the app’s <b>User Management</b>. Apps in development mode only work for users listed there.
+          <li><b>Add your Spotify account</b> under the app’s <b>Settings → User Management</b>: your name and the email address of your Spotify account. Apps in development mode only work for users listed there, up to 25 people.</li>
+          <li><b>Press Connect now</b> and allow access. Spotify asks to see what you’re playing and to control playback.
+            <ul class="sub">
+              <li>The play, pause, skip and seek buttons, and clicking a lyric line to jump, need <b>Spotify Premium</b>. Everything else works with a free account.</li>
+              <li>Signed in once, the login stays on your server for this device.</li>
+            </ul>
             <div class="srcl"><a class="src" target="_blank" rel="noopener" href="https://developer.spotify.com/documentation/web-api/concepts/quota-modes">Spotify guide: Quota modes</a></div></li>
         </ol>
         <div class="inl" style="margin-top:18px;align-items:center"><button class="btn sm pri" id="wzconn">Connect now</button><span class="stat" id="wzspst"></span></div>
       </section>
 
-      <section class="step" data-s="extras">
-        <h2>Lyrics &amp; reactive visuals</h2>
-        <p>These two work without extra setup, but they’re worth knowing about.</p>
-        <ul class="steps plain">
-          <li><b>Lyrics come from LRCLIB</b>, a free, open lyrics database. It needs no account or key. You can also drop your own <code>.lrc</code> or <code>.ttml</code> file onto the page.
-            <div class="srcl"><a class="src" target="_blank" rel="noopener" href="https://lrclib.net/docs">LRCLIB API docs</a></div></li>
-          <li><b>Make the bars react to Spotify.</b> Browsers can’t read Spotify’s audio directly. Press the microphone button in the top bar, pick what to share and turn on <b>Share audio</b>. On <b>Windows</b>, Chrome and Edge can share all computer sound: pick <b>Entire screen</b> and turn on <b>Also share system audio</b>, which includes the Spotify app. On Linux, pick a “Monitor of …” device instead. On macOS, Chrome can only share audio from a tab, so play Spotify in the Web Player at <code>open.spotify.com</code> and share that tab. Firefox doesn’t support sharing audio this way.
-            <div class="srcl"><a class="src" target="_blank" rel="noopener" href="https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getDisplayMedia">MDN: getDisplayMedia()</a></div></li>
-        </ul>
+      <section class="step" data-s="lyrics">
+        <h2>Lyrics sources</h2>
+        <p>Vibe Visualizer tries these in order and uses the first that has the song. Change the order or switch sources off in <b>Settings → Lyrics</b>.</p>
+        <div class="wzchk" id="wzchk"></div>
+        <ol class="steps">
+          <li id="wzl-spicy"><b>Spicy Lyrics</b>: the best ones, synced word by word, with background vocals and duets. Needs a free key, kept on your server.
+            <ul class="sub">
+              <li>Sign in at the Spicy Lyrics developer site and create a <b>New application</b>. Name: <b>Vibe Visualizer</b>. Project URL: your copy of the project on GitHub (or <code>https://github.com/BOZKOW/vibe-visualizer</code>).</li>
+              <li>Create a <b>secret key</b> (it starts with <code>sl_sk_</code>). Don’t paste it into this page or share it.</li>
+              <li>Save it on the server as a file named exactly <code>spicy_key</code> in the helper’s <code>config</code> folder (next to <code>docker-compose.yml</code>). Any file manager works, for example ZimaOS <b>Files</b>. No restart needed.</li>
+              <li>Spicy Lyrics’ rules: the credits (provider, maker, uploader) always show while their lyrics are on screen.</li>
+            </ul>
+            <div class="srcl"><a class="src" target="_blank" rel="noopener" href="https://developers.spicylyrics.org/dashboard">Spicy Lyrics dashboard</a><a class="src" target="_blank" rel="noopener" href="https://developers.spicylyrics.org/terms">Terms</a></div></li>
+          <li id="wzl-spdc"><b>Spotify’s own lyrics and Canvas videos</b> (optional, unofficial). The server opens a hidden Spotify web player with your login cookie.
+            <ul class="sub">
+              <li>Open <code>open.spotify.com</code> in your browser, signed in.</li>
+              <li>Press <b>F12</b> → <b>Application</b> (Chrome, Edge) or <b>Storage</b> (Firefox) → <b>Cookies</b> → <code>https://open.spotify.com</code>, and copy the value of <b>sp_dc</b>.</li>
+              <li>Save it on the server as a file named <code>sp_dc</code> in the same <code>config</code> folder.</li>
+              <li>The cookie is your Spotify login: keep it private. This way of reading Spotify isn’t official and is against Spotify’s terms; leave it out if you’d rather not.</li>
+            </ul></li>
+          <li class="ok"><b>LRCLIB</b> and <b>NetEase Cloud Music</b>: no setup. LRCLIB is a free, open database; NetEase is strong for Chinese, Japanese and Korean songs. You can also drop your own <code>.lrc</code> or <code>.ttml</code> file onto the page.
+            <div class="srcl"><a class="src" target="_blank" rel="noopener" href="https://lrclib.net/docs">LRCLIB</a></div></li>
+          <li class="ok"><b>Translation and romanization</b>: press <b>T</b> or <b>R</b>, or use the buttons in the top bar (they appear when a song needs them). Pick the language, and languages to leave alone, in <b>Settings → Translation</b>.</li>
+          <li class="ok"><b>Timing</b>: lyrics re-sync with Spotify every 2 seconds. If they’re still always a bit early or late (Bluetooth headphones add a delay), press <b>]</b> for earlier or <b>[</b> for later while a song plays.</li>
+        </ol>
+      </section>
+
+      <section class="step" data-s="sound">
+        <h2>Sound for the bars</h2>
+        <p>The bars react to sound. Local files work straight away. For Spotify, the browser needs to hear what your computer plays: press the <b>microphone button</b> in the top bar.</p>
+        <ol class="steps">
+          <li class="os" data-os="win"><b>Windows</b> (Chrome or Edge): choose <b>Share all computer sound</b>, then in the window that opens pick <b>Entire screen</b> and turn on <b>Also share system audio</b>. That includes the Spotify app. Nothing is recorded or sent anywhere; the picture is ignored.</li>
+          <li class="os" data-os="linux"><b>Linux</b> (Chrome, Edge, Brave): pick a <b>🔊 Monitor of …</b> device for the speakers or headphones you listen on, then <b>Start</b>. It carries everything your computer plays, the Spotify app included. Allow microphone access when asked; that’s only how browsers list these devices.</li>
+          <li class="os" data-os="mac"><b>macOS</b>: Chrome can only share a browser tab’s sound. Play Spotify in the web player at <code>open.spotify.com</code>, choose <b>Share a browser tab</b>, pick that tab and turn on <b>Share tab audio</b>.</li>
+          <li><b>Firefox</b> can’t share sound this way; use Chrome, Edge or Brave for the bars.</li>
+          <li><b>Without shared sound</b>, the bars still move with Spotify, but only as an imitation, not to the real music.</li>
+        </ol>
+        <div class="srcl"><a class="src" target="_blank" rel="noopener" href="https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getDisplayMedia">MDN: screen and audio sharing</a></div>
+      </section>
+
+      <section class="step" data-s="app">
+        <h2>Install it as an app</h2>
+        <p>Vibe Visualizer can run in its own window with its own icon, like any other app. <span id="wzinst"></span></p>
+        <ol class="steps">
+          <li><b>Chrome, Edge or Brave on a computer</b>: press the install icon at the right end of the address bar (a screen with an arrow), or <b>⋮ → Cast, save and share → Install page as app</b>. In Edge: <b>⋯ → Apps → Install this site as an app</b>.</li>
+          <li><b>Android</b> (Chrome): <b>⋮ → Add to Home screen → Install</b>.</li>
+          <li><b>iPhone and iPad</b> (Safari): <b>Share → Add to Home Screen</b>.</li>
+          <li>The app always loads the newest version from your server, so updates show up by themselves.</li>
+        </ol>
       </section>
 
       <section class="step" data-s="finish">
@@ -582,6 +639,8 @@ body.low .ll{transition:opacity .25s}
         <p>Last couple of preferences.</p>
         <div class="wzrow"><span>Default view<small>You can switch any time with 1 / 2 / 3.</small></span>
           <div id="wzseg"><button data-v="viz">Visualizer</button><button data-v="lyrics">Lyrics</button><button data-v="both">Both</button></div></div>
+        <div class="wzrow"><span>Lyrics credits<small>Where the provider, maker and uploader are shown. Always visible while lyrics are on screen.</small></span>
+          <select id="wzcred"><option value="corner">Bottom-left corner</option><option value="lyrics">Under the lyrics</option></select></div>
         <label class="wzrow" style="cursor:pointer"><span>Low performance mode<small>Turns off blur and glow effects. Useful on older laptops.</small></span><input type="checkbox" id="wzlow"></label>
         <div class="wzrow" style="display:block"><span>Shortcuts</span>
           <div class="keys"><kbd>Space</kbd><span>Play / pause</span><kbd>← →</kbd><span>Seek 5 seconds</span><kbd>↑ ↓</kbd><span>Volume</span><kbd>N / P</kbd><span>Next / previous</span><kbd>M</kbd><span>Mute</span><kbd>T</kbd><span>Translate lyrics</span><kbd>R</kbd><span>Romanize lyrics</span><kbd>] / [</kbd><span>Lyrics earlier / later</span><kbd>F</kbd><span>Fullscreen</span></div></div>
@@ -1349,9 +1408,12 @@ async function fromLrclib(m){
   if(m.album)q.set('album_name',m.album);if(m.duration)q.set('duration',Math.round(m.duration));
   let d=null,getErr=null;
   try{d=await get('https://lrclib.net/api/get?'+q)}catch(e){getErr=e}   // exact lookup failed: still try search
-  if(!d){const a=await get('https://lrclib.net/api/search?'+new URLSearchParams(m.artist?{track_name:m.title,artist_name:m.artist}:{q:m.title}));d=Array.isArray(a)?(a.find(x=>x.syncedLyrics)||a[0]):null}
+  if(!d){const a=await get('https://lrclib.net/api/search?'+new URLSearchParams(m.artist?{track_name:m.title,artist_name:m.artist}:{q:m.title}));
+    if(Array.isArray(a)&&a.length){   // several versions: take the synced one closest in length to this song
+      const off=x=>m.duration&&x.duration?Math.abs(x.duration-m.duration):99;
+      d=[...a].sort((x,y)=>(!!y.syncedLyrics-!!x.syncedLyrics)||off(x)-off(y))[0]}}
   if(!d){if(getErr)throw getErr;return null}
-  if(d.syncedLyrics){const l=parseLRC(d.syncedLyrics);if(l.length)return{lines:l,sync:true,label:'LRCLIB',credit:{source:'lrclib'}}}
+  if(d.syncedLyrics){const l=parseLRC(d.syncedLyrics);if(l.length)return{lines:l,sync:true,label:'LRCLIB',credit:{source:'lrclib'},srcDur:d.duration||null}}
   if(d.plainLyrics){const r=fromText(d.plainLyrics);return{lines:r.lines,sync:false,label:'LRCLIB',credit:{source:'lrclib'}}}
   return null;
 }
@@ -1392,14 +1454,14 @@ function renderLyrics(label,quiet){
       if(l.tr)sub('tr',l.tr);
     }
     d.dataset.b=d.className;
-    d.onclick=()=>{if(lsync&&l.t!=null&&seekTo(l.t-S.loff/1000)&&d.animate)d.animate([{transform:'scale(.97)'},{transform:'none'}],{duration:260,easing:'ease-out'})};   // click a line to jump there
+    d.onclick=()=>{if(lsync&&l.t!=null&&seekTo((l.t-S.loff/1000)/lPace)&&d.animate)d.animate([{transform:'scale(.97)'},{transform:'none'}],{duration:260,easing:'ease-out'})};   // click a line to jump there
     ly.appendChild(d);lEls.push(d);
   });
   body.classList.toggle('hl',L.length>0);lyrMsg('');
   if(L.length&&!quiet&&ly.animate)ly.animate([{opacity:0},{opacity:1}],{duration:600,easing:'ease-out'});
   lstat.textContent='';   // the credit line under the cover names the source; no second lyrics line
   renderCredit();updNeed();
-  if(lsync&&L.length)setActive(findIdx(curTime()+S.loff/1000));
+  if(lsync&&L.length)setActive(findIdx(curTime()*lPace+S.loff/1000));
   dirty=true;
 }
 let lCredit=null;
@@ -1459,7 +1521,18 @@ function interludes(ls){
     res.push({t:l.t,text:'',dots:true,end:nx.t})});
   return res;
 }
-function applyLyrics(r){lCredit=r.credit||(r.label?{source:null}:null);L=(r.sync?interludes(r.lines):r.lines.filter(l=>!l.dots)).map(l=>Object.assign({},l));lsync=r.sync;renderLyrics(r.label);decorate()}
+// auto timing check: lyrics found by song name can belong to a slightly different version (radio edit, sped up,
+// remaster) that runs at another pace, so they slide further off as the song goes on. When the lyrics' own length is
+// known, or their last line comes after the song has ended, stretch the lyrics timeline to fit this song.
+let lPace=1;
+function checkPace(r,dur){
+  lPace=1;if(!r.sync||!dur||r.credit&&/^(spicy_lyrics|apple_music|spotify|file)$/.test(r.credit.source||''))return;   // matched by track id or your own file: exact
+  const last=r.lines.filter(l=>!l.dots&&l.t!=null).pop();
+  let src=r.srcDur&&Math.abs(r.srcDur-dur)>1.5?r.srcDur:null;
+  if(!src&&last&&last.t>dur-.5)src=last.t+Math.max(2,dur*.03);   // a line after the end can't be right
+  if(src&&Math.abs(src-dur)/dur<.12){lPace=src/dur;toast('Lyrics timing adjusted to this version of the song ('+(lPace>1?'+':'')+((lPace-1)*100).toFixed(1)+'% pace).','ok',4000)}
+}
+function applyLyrics(r){checkPace(r,curDur());lCredit=r.credit||(r.label?{source:null}:null);L=(r.sync?interludes(r.lines):r.lines.filter(l=>!l.dots)).map(l=>Object.assign({},l));lsync=r.sync;renderLyrics(r.label);decorate()}
 
 /* ---------- translation + romanization (Google Translate's free web endpoint, unofficial) ---------- */
 const GT='https://translate.googleapis.com/translate_a/single?client=dict-chrome-ex&sl=auto&dt=t&dt=rm&tl=';
@@ -1723,7 +1796,7 @@ function wordsTick(pos){
 }
 function lyricsTick(){
   if(!lsync||!L.length||S.view==='viz')return;
-  const t=curTime()+S.loff/1000,i=findIdx(t);
+  const t=curTime()*lPace+S.loff/1000,i=findIdx(t);
   if(i!==li)setActive(i);
   wordsTick(t);
 }
@@ -2042,7 +2115,7 @@ function frame(now){
 
 /* ================= first-run setup ================= */
 const WZ=$('setup'),wzUse={file:true,spotify:!!C.spotId.trim()};let wzI=0;
-const wzSteps=()=>['welcome'].concat(wzUse.spotify?['spotify']:[],['extras','finish']);
+const wzSteps=()=>['welcome'].concat(wzUse.spotify?['spotify']:[],['lyrics','sound','app','finish']);
 const wzGuessUri=()=>redirectUri()||'http://127.0.0.1:8000/'+(location.pathname.split('/').pop()||'index.html');
 function wzRender(){
   const st=wzSteps();wzI=Math.max(0,Math.min(wzI,st.length-1));const cur=st[wzI];
@@ -2055,6 +2128,10 @@ function wzRender(){
   const fin=cur==='finish';
   $('wzpick').hidden=!fin||!wzUse.file;$('wzsp').hidden=!fin||!wzUse.spotify||!!SP.access;
   if(cur==='spotify')wzSp();
+  if(cur==='lyrics')wzLyrics();
+  if(cur==='sound'){const os=isWin?'win':isMac?'mac':/Linux|X11|CrOS/.test(navigator.userAgent)&&!/Android/.test(navigator.userAgent)?'linux':'';WZ.querySelectorAll('li.os').forEach(li=>li.classList.toggle('me',!os||li.dataset.os===os))}
+  if(cur==='app')$('wzinst').textContent=matchMedia('(display-mode: standalone)').matches?'✓ You’re already using the installed app.':'';
+  if(fin)$('wzcred').value=S.credPos;
   if(fin){$('wzlow').checked=!!S.low;wzSeg()}
   $('wzbody').scrollTop=0;
 }
@@ -2065,6 +2142,16 @@ function wzSp(){
   if(document.activeElement!==$('wzid'))$('wzid').value=C.spotId;
   $('wzconn').disabled=!!SP.access||!served||!C.spotId.trim();
   $('wzspst').textContent=SP.access?'Connected ✓':!served?'Finish step 1 first.':!C.spotId.trim()?'Paste your Client ID to connect.':'Ready to connect.';
+}
+async function wzLyrics(){   // live check of what the server has set up
+  const box=$('wzchk'),chip=(t,c)=>'<span class="'+c+'">'+t+'</span>';
+  if(!PREFS){box.innerHTML=chip('Open Vibe Visualizer from your server to use Spicy Lyrics and Spotify lyrics','n');return}
+  box.innerHTML=chip('Checking your server…','');
+  try{
+    const h=await (await fetch('/api/health',{cache:'no-store'})).json();
+    $('wzl-spicy').classList.toggle('ok',!!h.spicy_key);$('wzl-spdc').classList.toggle('ok',!!h.logged_in);
+    box.innerHTML=chip(h.spicy_key?'✓ Spicy Lyrics key found':'Spicy Lyrics key not set yet',h.spicy_key?'y':'n')+chip(h.logged_in?'✓ Spotify cookie works':'Spotify cookie not set (optional)',h.logged_in?'y':'n')+chip('✓ LRCLIB and NetEase ready','y');
+  }catch(e){box.innerHTML=chip('Couldn’t reach the server helper','n')}
 }
 function wzSeg(){$('wzseg').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.v===S.view))}
 function wzOpen(){wzI=0;closePanel();WZ.hidden=false;wzRender();setTimeout(()=>$('wznext').focus(),50)}
@@ -2077,6 +2164,7 @@ $('wzid').addEventListener('input',()=>{C.spotId=$('wzid').value.trim();saveC();
 $('wzcopy').onclick=async()=>{try{await navigator.clipboard.writeText($('wzredir').value);toast('Redirect URI copied.','ok',2000)}catch(e){$('wzredir').select();toast('Could not copy. Press Ctrl+C to copy the selected text.','warn')}};
 $('wzconn').onclick=()=>{wzDone();spLogin()};
 $('wzseg').querySelectorAll('button').forEach(b=>b.onclick=()=>{S.view=b.dataset.v;applyView();save();wzSeg()});
+$('wzcred').onchange=()=>{S.credPos=$('wzcred').value;applyCredPos();save();refreshReset();syncInputs()};
 $('wzlow').onchange=()=>{S.low=$('wzlow').checked;applyLow();save();refreshReset()};
 $('wzpick').onclick=()=>{wzDone();$('file').click()};
 $('wzsp').onclick=()=>{wzDone();setSource('spotify')};
