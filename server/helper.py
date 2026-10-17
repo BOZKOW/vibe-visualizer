@@ -10,7 +10,8 @@ GET /lyrics?id=<spotify track id>  ->  Spicy Lyrics API answer (secret key stays
 GET /spotify-lyrics?id=<track id>   ->  Spotify's own lyrics via the web player session (unofficial, needs sp_dc)
 GET /netease?title=&artist=&duration=  ->  NetEase Cloud Music lyrics (unofficial API)
 GET/PUT/DELETE /prefs              ->  per-device Vibe Visualizer preferences, keyed by the device's Tailscale IP
-GET  /version                      ->  installed web app version and the newest one on GitHub
+GET  /version                      ->  installed web app version, the newest one on GitHub, and release notes
+POST /report, GET /report, DELETE /report  ->  error reports from the app, kept on this server (errors.jsonl in PREFS_DIR)
 POST /update                       ->  download the newest web app files from GitHub into WEB_DIR
 """
 import asyncio, ipaddress, json, os, re, time, urllib.error, urllib.parse, urllib.request
@@ -298,6 +299,67 @@ def latest_version():
     return {"sha": c["sha"], "date": c["commit"]["committer"]["date"], "message": c["commit"]["message"].splitlines()[0]}
 
 
+def note_of(c):
+    """One release note from a commit: its title and its "- " bullet points."""
+    msg = c["commit"]["message"].splitlines()
+    pts = []
+    for l in msg[1:]:
+        if l.strip().startswith("- "):
+            pts.append(l.strip()[2:].strip())
+        elif pts and l.startswith("  ") and l.strip():   # a bullet that wraps onto the next line
+            pts[-1] += " " + l.strip()
+    return {"sha": c["sha"][:7], "date": c["commit"]["committer"]["date"], "title": msg[0], "points": pts}
+
+
+def release_notes(cur_sha, new_sha):
+    """What changed between the installed version and the newest one (newest first, at most 25)."""
+    try:
+        if cur_sha:
+            commits = gh_get("https://api.github.com/repos/%s/compare/%s...%s" % (UPDATE_REPO, cur_sha, new_sha))["commits"][::-1]
+        else:
+            commits = gh_get("https://api.github.com/repos/%s/commits?sha=%s&per_page=10" % (UPDATE_REPO, new_sha))
+        return [note_of(c) for c in commits[:25] if not c["commit"]["message"].startswith("Merge ")]
+    except Exception as e:
+        log("release notes:", e)
+        return []
+
+
+ERR_FILE = os.path.join(PREFS_DIR, "errors.jsonl")
+
+
+def report(method, ip, body):
+    """Errors the app ran into, kept on this server (last 300) so they can be looked at and fixed."""
+    if method == "DELETE":
+        try:
+            os.remove(ERR_FILE)
+        except OSError:
+            pass
+        return 200, {"ok": True}
+    if method == "GET":
+        try:
+            lines = open(ERR_FILE, encoding="utf-8").read().splitlines()[-50:]
+        except OSError:
+            lines = []
+        return 200, {"errors": [json.loads(l) for l in lines[::-1] if l.strip()]}
+    try:
+        e = json.loads(body or b"{}")
+    except ValueError:
+        return 400, {"error": "not JSON"}
+    rec = {"at": int(time.time()), "device": ip}
+    for k in ("kind", "msg", "where", "stack", "version", "ua", "view", "src"):
+        if isinstance(e.get(k), str):
+            rec[k] = e[k][:2000]
+    try:
+        old = open(ERR_FILE, encoding="utf-8").read().splitlines()[-299:]
+    except OSError:
+        old = []
+    with open(ERR_FILE + ".tmp", "w", encoding="utf-8") as fh:
+        fh.write("\n".join(old + [json.dumps(rec, ensure_ascii=False)]) + "\n")
+    os.replace(ERR_FILE + ".tmp", ERR_FILE)
+    log("app error from", ip, ":", rec.get("msg", "")[:160])
+    return 200, {"ok": True}
+
+
 def web_dir_writable():
     return os.path.isdir(WEB_DIR) and os.access(WEB_DIR, os.W_OK)
 
@@ -409,6 +471,9 @@ async def handle(reader, writer):
             else:
                 tid = params.get("id", "")
                 status, out = (await spotify_lyrics(tid)) if ID_RE.match(tid) else (400, {"error": "id must be a 22-character Spotify track id"})
+        elif route.endswith("/report"):
+            ip = client_ip(headers)
+            status, out = report(method, ip, body) if ip else (403, {"error": "only for Vibe Visualizer on your tailnet"})
         elif route.endswith("/version") or route.endswith("/update"):
             if not client_ip(headers):
                 status, out = 403, {"error": "only for Vibe Visualizer on your tailnet"}
@@ -417,7 +482,11 @@ async def handle(reader, writer):
                     latest = await asyncio.to_thread(latest_version)
                 except Exception as e:
                     latest = {"error": str(e)[:200]}
-                status, out = 200, {"installed": installed_version(), "latest": latest, "can_update": web_dir_writable(), "repo": UPDATE_REPO}
+                cur = installed_version()
+                notes = []
+                if latest.get("sha") and (not cur or cur.get("sha") != latest["sha"]):
+                    notes = await asyncio.to_thread(release_notes, cur and cur.get("sha"), latest["sha"])
+                status, out = 200, {"installed": cur, "latest": latest, "notes": notes, "can_update": web_dir_writable(), "repo": UPDATE_REPO}
             elif method != "POST":
                 status, out = 405, {"error": "use POST"}
             else:

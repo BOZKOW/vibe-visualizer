@@ -111,6 +111,14 @@ Everything else (theme, visualizer, lyrics, translation) is in the in-app Settin
 **Update now** downloads it onto your server (only the web app files; your `config/` and `prefs/` stay as they are).
 The helper does the download, so it needs the web folder mounted writable at `/www`, which `docker-compose.yml`
 already does. Changes to the server helper itself still need `git pull && docker compose up -d --build`.
+When an update is out, a notification lists what's new (the release notes come from the commit messages), and after
+updating a "What's new" card shows what changed.
+
+### Error log
+
+Errors Vibe Visualizer runs into show up as a notification and are saved on your server in `prefs/errors.jsonl`
+(the last 300, never sent anywhere else), so they can be looked at and fixed. *Settings → Help & about → Error log*
+shows and clears them.
 
 ### Running the server on Windows
 

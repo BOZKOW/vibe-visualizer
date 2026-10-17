@@ -459,6 +459,23 @@ body.low .ll{transition:opacity .25s}
 .btn.pri{box-shadow:0 6px 20px rgba(255,255,255,.15),inset 0 1px 0 #fff}
 .toast{background:var(--g-grad),rgba(22,22,38,.5);border-color:var(--g-bd);box-shadow:var(--g-sh),var(--g-hi);backdrop-filter:var(--g-blur);-webkit-backdrop-filter:var(--g-blur)}
 #psearch::placeholder,.tin::placeholder{color:rgba(255,255,255,.55)}
+/* notification cards (updates, what's new, errors) */
+#notes{position:fixed;top:70px;right:16px;z-index:12;display:flex;flex-direction:column;gap:10px;width:min(360px,calc(100% - 32px));pointer-events:none}
+.note{pointer-events:auto;padding:14px 16px 12px;border-radius:18px;background:linear-gradient(145deg,rgba(255,255,255,.16),rgba(255,255,255,.05)),rgba(20,20,34,.62);
+  border:1px solid rgba(255,255,255,.2);box-shadow:0 18px 50px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.25);backdrop-filter:blur(30px) saturate(170%);-webkit-backdrop-filter:blur(30px) saturate(170%);
+  animation:pop .4s cubic-bezier(.2,.8,.2,1);transform-origin:top right}
+.note.bye{animation:none;opacity:0;transform:translateX(30px) scale(.96);transition:opacity .25s,transform .25s}
+.note b{display:block;font-size:14px;font-weight:800}.note .nsub{font-size:11.5px;color:var(--faint);margin-top:2px}
+.note.err{border-left:3px solid #ff6b6b}.note.ok{border-left:3px solid #1ed760}
+.note ul{margin:8px 0 0;padding-left:16px;font-size:12.5px;line-height:1.45;color:var(--dim);max-height:220px;overflow:auto}
+.note .nmsg{margin-top:6px;font-size:12.5px;color:var(--dim);word-break:break-word}
+.note .nact{display:flex;gap:8px;margin-top:10px;justify-content:flex-end}
+.relnotes{display:flex;flex-direction:column;gap:10px;font-size:12.5px;color:var(--dim)}
+.relnotes .rn b{color:#fff;font-size:13px}.relnotes .rn small{color:var(--faint);margin-left:6px}.relnotes ul{margin:4px 0 0;padding-left:18px;line-height:1.45}
+/* Focus mode in Both: the lines behind the bars melt into a frosted blur, as in Spicy Lyrics, instead of showing between them */
+body.xfocus[data-view=both] #viz::before{content:"";position:absolute;inset:-30% 0 0;pointer-events:none;
+  backdrop-filter:blur(22px) saturate(140%);-webkit-backdrop-filter:blur(22px) saturate(140%);
+  -webkit-mask-image:linear-gradient(transparent,#000 45%);mask-image:linear-gradient(transparent,#000 45%)}
 /* ===== Liquid Glass behaviour: controls swell under the pointer, squish when pressed and spring back,
    and a highlight follows the pointer across the glass ===== */
 .lq{position:relative;transition:transform .5s cubic-bezier(.34,1.56,.64,1),background .25s,box-shadow .3s}
@@ -654,6 +671,12 @@ body.low #cappanel,body.low #netpanel,body.low #setup .sw{background:rgba(20,20,
   <p class="stat" id="updstat">Not checked yet.</p>
   <div class="row2"><button class="btn sm" id="updcheck">Check for updates</button><button class="btn sm pri" id="updgo" hidden>Update now</button></div>
   <p class="hint">Updates download the newest Vibe Visualizer from its GitHub page onto your server. Your settings, keys and saved lyrics stay as they are.</p>
+  <p class="sub-h">Release notes</p>
+  <div id="relnotes" class="relnotes"><p class="hint">Check for updates to see what’s new.</p></div>
+  <p class="sub-h">Error log</p>
+  <p class="hint">Errors Vibe Visualizer runs into are saved on your server (not sent anywhere else), so they can be looked at and fixed.</p>
+  <div id="errlog" class="relnotes"></div>
+  <div class="row2"><button class="btn sm" id="errload">Show errors</button><button class="btn sm" id="errclear">Clear</button></div>
   <div class="row2"><button class="btn sm" id="rerun">Open setup guide</button><button class="btn sm" id="forget">Forget this device</button></div>
   <p class="hint">Opened from your Vibe Visualizer server, your settings, keys and Spotify login are kept on the server for this device (by its Tailscale address), so they’re still here next time. “Forget this device” deletes them.</p>
   <p class="hint">Vibe Visualizer is free software under the <a class="src" target="_blank" rel="noopener" href="https://www.gnu.org/licenses/agpl-3.0.html">GNU AGPL-3.0</a>. Its lyrics animation is ported from <a class="src" target="_blank" rel="noopener" href="https://github.com/Spikerko/spicy-lyrics">Spicy Lyrics</a> by Spikerko and contributors. Vibe Visualizer is an unofficial project, not made by or affiliated with Spicy Lyrics. <a class="src" target="_blank" rel="noopener" href="https://github.com/BOZKOW/vibe-visualizer">Source code</a></p>
@@ -779,6 +802,7 @@ body.low #cappanel,body.low #netpanel,body.low #setup .sw{background:rgba(20,20,
 </div>
 
 <div id="toasts" aria-live="polite"></div>
+<div id="notes" aria-live="polite"></div>
 <input type="file" id="file" accept="audio/*" hidden>
 <input type="file" id="coverfile" accept="image/*" hidden>
 <input type="file" id="cvfile" accept="video/*" hidden>
@@ -796,14 +820,27 @@ const audio=new Audio();audio.preload='auto';
 
 /* ================= toasts + global error handling ================= */
 const tbox=$('toasts');
+// notification cards: notify({title, sub, msg, list, kind, actions:[{label, pri, fn}], key, ms})
+function notify(o){
+  const box=$('notes');if(o.key)box.querySelectorAll('.note').forEach(n=>{if(n.dataset.key===o.key)n.remove()});
+  const n=document.createElement('div');n.className='note '+(o.kind||'');if(o.key)n.dataset.key=o.key;
+  const el=(t,c,txt)=>{const e=document.createElement(t);if(c)e.className=c;if(txt!=null)e.textContent=txt;return e};
+  n.appendChild(el('b','',o.title));if(o.sub)n.appendChild(el('div','nsub',o.sub));if(o.msg)n.appendChild(el('div','nmsg',o.msg));
+  if(o.list&&o.list.length){const ul=el('ul');o.list.forEach(x=>ul.appendChild(el('li','',x)));n.appendChild(ul)}
+  const close=()=>{n.classList.add('bye');setTimeout(()=>n.remove(),260)};
+  const act=el('div','nact');(o.actions||[{label:'OK'}]).forEach(a=>{const b=el('button','btn sm'+(a.pri?' pri':''),a.label);b.onclick=()=>{close();a.fn&&a.fn()};act.appendChild(b)});n.appendChild(act);
+  box.prepend(n);while(box.children.length>3)box.lastChild.remove();
+  if(o.ms)setTimeout(close,o.ms);return n;
+}
 function toast(msg,type,ms){
   msg=String(msg);type=type||'err';
+  if(type==='err'&&typeof reportError==='function')reportError('notice',msg);   // problems shown to you are saved in the error log too
   for(const n of tbox.children)if(n.dataset.m===msg)return;
   const d=document.createElement('div');d.className='toast '+type;d.dataset.m=msg;d.textContent=msg;d.onclick=()=>d.remove();
   tbox.appendChild(d);setTimeout(()=>d.remove(),ms||6500);
   while(tbox.children.length>4)tbox.firstChild.remove();
 }
-addEventListener('error',e=>{if(e.message)toast('Unexpected error: '+e.message)});
+// errors are shown as a notification card and saved on the server: see appError() below
 addEventListener('unhandledrejection',e=>toast('Something failed: '+((e.reason&&e.reason.message)||e.reason||'unknown error')));
 
 /* ================= settings (one store) ================= */
@@ -2516,8 +2553,18 @@ $('wzlow').onchange=()=>{S.low=$('wzlow').checked;applyLow();save();refreshReset
 $('wzpick').onclick=()=>{wzDone();$('file').click()};
 $('wzsp').onclick=()=>{wzDone();setSource('spotify')};
 $('rerun').onclick=wzOpen;
-// updates: the server helper compares the installed version with the newest on GitHub and downloads it
+// updates: the server helper compares the installed version with the newest on GitHub, lists what changed, and downloads it
 const fmtV=v=>'“'+v.message+'” ('+new Date(v.date).toLocaleDateString()+')';
+const noteLines=notes=>notes.map(n=>n.title);
+function showNotes(notes,box){   // release notes into Settings → Help & about
+  box=box||$('relnotes');box.textContent='';
+  if(!notes||!notes.length){const p=document.createElement('p');p.className='hint';p.textContent='Nothing new.';box.appendChild(p);return}
+  notes.forEach(n=>{const d=document.createElement('div');d.className='rn';const b=document.createElement('b');b.textContent=n.title;d.appendChild(b);
+    const sm=document.createElement('small');sm.textContent=new Date(n.date).toLocaleDateString();d.appendChild(sm);
+    if(n.points&&n.points.length){const ul=document.createElement('ul');n.points.forEach(x=>{const li=document.createElement('li');li.textContent=x;ul.appendChild(li)});d.appendChild(ul)}
+    box.appendChild(d)});
+}
+let updInfo=null;
 async function checkUpdate(manual){
   const out=$('updstat'),go=$('updgo');
   if(!PREFS){out.textContent='Updates work when Vibe Visualizer is opened from your server.';return}
@@ -2526,24 +2573,64 @@ async function checkUpdate(manual){
     const r=await fetch('/api/version',{cache:'no-store'}),v=await r.json().catch(()=>({}));
     if(!r.ok)throw new Error(r.status===404?'your server’s helper is too old for updates (see the README)':v.error||'HTTP '+r.status);
     const cur=v.installed,lat=v.latest;if(!lat||lat.error)throw new Error((lat&&lat.error)||'GitHub didn’t answer');
-    const newer=!cur||cur.sha!==lat.sha;
+    const newer=!cur||cur.sha!==lat.sha;updInfo=v;
     out.textContent=(cur?'Installed: '+fmtV(cur)+'. ':'')+(newer?'New version: '+fmtV(lat)+'.':'You have the newest version.');
     go.hidden=!newer;go.disabled=!v.can_update;
     if(newer&&!v.can_update)out.textContent+=' To update from here, the web folder has to be mounted into the helper (see the README).';
-    if(newer&&!manual&&v.can_update&&cur)toast('A new Vibe Visualizer version is out: Settings → Help & about → Update now.','ok',7000);
-  }catch(e){out.textContent='Couldn’t check for updates: '+e.message}
+    if(newer)showNotes(v.notes);
+    let skip='';try{skip=localStorage.getItem('vv_skip')||''}catch(e){}
+    if(newer&&v.can_update&&(manual||skip!==lat.sha)){   // a notification card with what's new
+      const ls=noteLines(v.notes||[]);
+      notify({key:'upd',kind:'ok',title:'Update available',sub:fmtV(lat),list:ls.slice(0,5).concat(ls.length>5?['…and '+(ls.length-5)+' more (Settings → Help & about)']:[]),
+        actions:[{label:'Later',fn:()=>{try{localStorage.setItem('vv_skip',lat.sha)}catch(e){}}},{label:'Update now',pri:true,fn:doUpdate}]});
+    }
+  }catch(e){out.textContent='Couldn’t check for updates: '+e.message;if(manual)notify({key:'upd',kind:'err',title:'Couldn’t check for updates',msg:e.message})}
 }
-$('updcheck').onclick=()=>checkUpdate(true);
-$('updgo').onclick=async()=>{
+async function doUpdate(){
   const out=$('updstat'),go=$('updgo');go.disabled=true;out.textContent='Downloading the new version…';
+  const n=notify({key:'upd',title:'Updating…',sub:'Downloading the new version from GitHub',actions:[]});
   try{
     const r=await fetch('/api/update',{method:'POST'}),v=await r.json().catch(()=>({}));
     if(!r.ok)throw new Error(v.error||'HTTP '+r.status);
-    out.textContent=v.updated?'Updated to '+fmtV(v.version)+'. Reloading…':'Already up to date.';
-    if(v.updated){toast('Vibe Visualizer updated. Reloading…','ok',2500);setTimeout(()=>location.reload(),1200)}
-  }catch(e){out.textContent='Update failed: '+e.message;go.disabled=false}
-};
+    if(v.updated){   // keep the notes so "What's new" can show them after the reload
+      try{localStorage.setItem('vv_whatsnew',JSON.stringify({v:v.version,notes:(updInfo&&updInfo.notes)||[]}))}catch(e){}
+      out.textContent='Updated to '+fmtV(v.version)+'. Reloading…';setTimeout(()=>location.reload(),900);
+    }else{n.remove();out.textContent='Already up to date.';notify({key:'upd',kind:'ok',title:'Already up to date',ms:4000})}
+  }catch(e){n.remove();out.textContent='Update failed: '+e.message;go.disabled=false;notify({key:'upd',kind:'err',title:'Update failed',msg:e.message,actions:[{label:'OK'},{label:'Try again',pri:true,fn:doUpdate}]});reportError('update',e.message)}
+}
+$('updcheck').onclick=()=>checkUpdate(true);
+$('updgo').onclick=doUpdate;
 setTimeout(()=>checkUpdate(false),4000);   // look once in the background after opening
+(function whatsNew(){   // right after an update: what changed
+  let w=null;try{w=JSON.parse(localStorage.getItem('vv_whatsnew')||'null');localStorage.removeItem('vv_whatsnew')}catch(e){}
+  if(!w||!w.v)return;
+  const ls=[];(w.notes||[]).forEach(n=>{ls.push(n.title);(n.points||[]).slice(0,3).forEach(p=>ls.push('· '+p))});
+  setTimeout(()=>{notify({key:'new',kind:'ok',title:'Updated: what’s new',sub:fmtV(w.v),list:ls.slice(0,12),actions:[{label:'All release notes',fn:()=>{openPanel('help');showNotes(w.notes)}},{label:'Nice',pri:true}]})},1200);
+})();
+// errors: shown as a notification and saved on the server (Settings → Help & about → Error log) so they can be fixed
+let errSeen=0;
+function reportError(kind,msg,where,stack){
+  if(PREFS)fetch('/api/report',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind,msg:String(msg||''),where:where||'',stack:String(stack||'').slice(0,1500),
+    version:(updInfo&&updInfo.installed&&updInfo.installed.sha||'').slice(0,7),ua:navigator.userAgent,view:S.view,src})}).catch(()=>{});
+}
+function appError(msg,where,stack){
+  reportError('error',msg,where,stack);
+  const now=Date.now();if(now-errSeen<8000)return;errSeen=now;   // at most one card every few seconds
+  notify({key:'err',kind:'err',title:'Something went wrong',msg:String(msg).slice(0,200),sub:PREFS?'It was saved on your server so it can be fixed.':'',
+    actions:[{label:'Details',fn:()=>{openPanel('help');loadErrors()}},{label:'OK',pri:true}],ms:15000});
+}
+addEventListener('error',e=>{if(e.message)appError(e.message,(e.filename||'').split('/').pop()+':'+e.lineno,e.error&&e.error.stack)});
+addEventListener('unhandledrejection',e=>{const r=e.reason;appError(r&&r.message||String(r),'promise',r&&r.stack)});
+async function loadErrors(){
+  const box=$('errlog');box.textContent='Loading…';
+  try{const r=await fetch('/api/report',{cache:'no-store'}),v=await r.json();box.textContent='';
+    if(!v.errors||!v.errors.length){box.textContent='No errors saved.';return}
+    v.errors.slice(0,20).forEach(e=>{const d=document.createElement('div');d.className='rn';const b=document.createElement('b');b.textContent=e.msg||'(no message)';d.appendChild(b);
+      const sm=document.createElement('small');sm.textContent=new Date(e.at*1000).toLocaleString()+(e.where?' · '+e.where:'');d.appendChild(sm);box.appendChild(d)})}
+  catch(e){box.textContent='Couldn’t load the error log ('+e.message+').'}
+}
+$('errload').onclick=loadErrors;
+$('errclear').onclick=async()=>{try{await fetch('/api/report',{method:'DELETE'})}catch(e){}$('errlog').textContent='Cleared.'};
 $('brand').onclick=wzOpen;   // the logo opens the welcome page
 $('brand').onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();wzOpen()}};
 
