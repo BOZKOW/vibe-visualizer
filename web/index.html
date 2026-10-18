@@ -235,12 +235,16 @@ body[data-view=viz].credly #lcredit{display:none}
 .pok{display:block;margin-top:12px;pointer-events:auto;text-shadow:none}#lprob.big .pr:first-child .pok{margin-top:18px}
 #lprob{position:absolute;left:0;top:4px;z-index:4;display:flex;flex-direction:column;gap:8px;max-width:min(560px,92%);pointer-events:none;text-shadow:0 1px 10px rgba(0,0,0,.6);animation:up .5s cubic-bezier(.2,.8,.2,1)}
 /* "Next up": the queue's next song, shown in the last 10 seconds of a Spotify song */
-#nextup{display:flex;align-items:center;gap:10px;margin-top:14px;padding:7px 14px 7px 7px;border-radius:14px;max-width:min(360px,100%);text-align:left;animation:nuin .5s cubic-bezier(.2,.8,.2,1)}   /* look: the .glass class */
+#nextup{display:flex;align-items:center;gap:10px;margin-top:14px;padding:7px 14px 7px 7px;border-radius:14px;max-width:min(360px,100%);text-align:left;transform-origin:30% 100%}   /* look: the .glass class */
+#nextup.nin{animation:nuin .75s cubic-bezier(.2,.8,.2,1) both}
+#nextup.nout{animation:nuout .45s cubic-bezier(.4,0,.6,1) forwards;pointer-events:none}
+@keyframes nuout{to{opacity:0;transform:translateY(6px) scale(.9,.82);filter:blur(10px)}}
 #nextup[hidden]{display:none}#nextup img{width:40px;height:40px;border-radius:8px;object-fit:cover;flex:none;background:rgba(255,255,255,.1)}
 #nextup div{min-width:0;display:flex;flex-direction:column}
 #nextup small{font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--faint)}
 #nextup b,#nextup span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#nextup b{font-size:13.5px}#nextup span{font-size:12px;color:var(--dim)}
-@keyframes nuin{from{opacity:0;transform:translateY(8px)}}
+@keyframes nuin{0%{opacity:0;transform:translateY(22px) scale(.7,.55);filter:blur(12px)}55%{opacity:1;transform:translateY(-3px) scale(1.04,1.08);filter:blur(0)}78%{transform:translateY(1px) scale(.99,.97)}100%{transform:none}}   /* rises in like a drop */
+body.low #nextup.nin,body.low #nextup.nout{animation:none}
 body:not(.classic) #nextup.lq:hover{transform:translate(calc(var(--dx,0)*2px),calc(var(--dy,0)*2px)) scale(1.025)}   /* a big card leans less than a button */
 body:not(.classic) #nextup{cursor:default;border-radius:16px}   /* the bottom bar's glass (.glass), so it looks exactly the same */
 #nextup img{box-shadow:0 4px 12px rgba(0,0,0,.35)}
@@ -502,7 +506,7 @@ body.low .tsw,body.low .chip.live .dot,body.low .nrow.good i,body.low #capbtn.br
 .drow{animation:up .35s cubic-bezier(.2,.8,.2,1) backwards}.drow:nth-child(2){animation-delay:40ms}.drow:nth-child(3){animation-delay:80ms}.drow:nth-child(4){animation-delay:120ms}.drow:nth-child(n+5){animation-delay:160ms}
 body.low #pbody .ppage.enter>*,body.low #ly.enter .ll,body.low .drow{animation:none}
 #info.anim:not(.keepart) #artw{animation:pop .7s cubic-bezier(.2,.8,.2,1)}   /* only when there was no cover: an existing one melts into the next instead */
-#info.anim #txt>*{animation:up .6s cubic-bezier(.2,.8,.2,1) backwards}
+#info.anim #txt>:not(#nextup){animation:up .6s cubic-bezier(.2,.8,.2,1) backwards}   /* not Next up: it has its own animations, which this rule would override */
 #info.anim #txt>:nth-child(2){animation-delay:.07s}#info.anim #txt>:nth-child(n+3){animation-delay:.14s}
 body:not([data-view=viz]) #lyr{animation:fadein .5s}
 .ppage:not([hidden])>*{animation:up .4s cubic-bezier(.2,.8,.2,1) backwards}
@@ -3055,9 +3059,10 @@ function nextUpTick(){
       const ep=it.type==='episode',imgs=(ep?it.images:(it.album&&it.album.images))||[];
       nuItem={t:it.name,a:ep?((it.show&&it.show.name)||''):(it.artists||[]).map(a=>a.name).join(', '),img:(imgs[imgs.length-1]||imgs[0]||{}).url||''}}).catch(()=>{})}
   const on=show&&nuItem&&nuFor===spId;
-  if(on&&el.hidden){el.querySelector('b').textContent=nuItem.t;el.querySelector('span').textContent=nuItem.a;
-    const im=el.querySelector('img');if(nuItem.img)im.src=nuItem.img;else im.removeAttribute('src');el.hidden=false}
-  else if(!on&&!el.hidden)el.hidden=true;
+  if(on&&(el.hidden||el.classList.contains('nout'))){el.querySelector('b').textContent=nuItem.t;el.querySelector('span').textContent=nuItem.a;
+    const im=el.querySelector('img');if(nuItem.img)im.src=nuItem.img;else im.removeAttribute('src');
+    clearTimeout(el._t);el.classList.remove('nout','nin');el.hidden=false;void el.offsetWidth;el.classList.add('nin')}   // rises in like a drop
+  else if(!on&&!el.hidden&&!el.classList.contains('nout')){el.classList.remove('nin');el.classList.add('nout');clearTimeout(el._t);el._t=setTimeout(()=>{el.hidden=true;el.classList.remove('nout')},460)}   // melts away
 }
 function uiTick(now){
   if(now-lastUi<240)return;lastUi=now;nextUpTick();
