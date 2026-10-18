@@ -716,7 +716,6 @@ body.low #cappanel,body.low #netpanel,body.low #setup .sw{background:rgba(20,20,
   <p class="sub-h">Interface</p>
   <div class="f chk" data-k="lnotice"><label><input type="checkbox" id="lnotice"> No lyrics notice<small>Say so when a song has no lyrics.</small></label></div>
   <div class="f chk" data-k="volshow"><label><input type="checkbox" id="volshow"> Volume slider</label></div>
-  <div class="f" data-k="fpscap"><span class="lb">Limit frame rate</span><select id="fpscap"><option value="0">Off</option><option value="30">30 fps</option><option value="60">60 fps</option><option value="120">120 fps</option></select><small class="hint">Caps how often the animations redraw, to save power.</small></div>
 
   <h4>Translation &amp; romanization</h4>
   <div class="f" data-k="romMode"><span class="lb">Romanization (Japanese, Korean, Chinese, Russian…)</span><select id="romMode"><option value="replace">Instead of the original line</option><option value="below">Below the original line</option><option value="off">Off</option></select></div>
@@ -724,6 +723,8 @@ body.low #cappanel,body.low #netpanel,body.low #setup .sw{background:rgba(20,20,
   <div class="f" data-k="trTo"><span class="lb">Translate into</span><select id="trTo"></select></div>
   <div class="f" data-k="trSkip"><span class="lb">Don’t translate lines in (pick any)</span><div class="lchips" id="trSkipBox"></div></div>
   <p class="hint">Lines already in the language you translate into are never translated. Translation and romanization use Google Translate’s free web service (unofficial), so lyric lines are sent to Google.</p>
+
+  <h4>Spicy Lyrics &amp; files</h4>
   <div class="row2"><button class="btn sm" id="lyrbtn">Load lyrics file…</button></div>
   <div class="f plain"><span class="lb">Spicy Lyrics</span><p class="stat" id="lyrstatus">Checking…</p></div>
   <div class="row2"><button class="btn sm" id="lyrtest">Test connection</button></div>
@@ -753,7 +754,8 @@ body.low #cappanel,body.low #netpanel,body.low #setup .sw{background:rgba(20,20,
 
   <h4>Performance</h4>
   <div class="f chk" data-k="low"><label><input type="checkbox" id="low"> Low performance mode</label></div>
-  <div class="f chk" data-k="perfAsk"><label><input type="checkbox" id="perfAsk"> Suggest Low performance mode when needed</label><small class="hint">Watches how smoothly the app runs while a song plays. If your computer can’t keep up, or the battery is low and not charging, a pop-up offers to turn Low performance mode on.</small></div>
+  <div class="f chk" data-k="perfAsk"><label><input type="checkbox" id="perfAsk"> Suggest Low performance mode when needed<small>Watches how smoothly the app runs while a song plays. If your computer can’t keep up, or the battery is low and not charging, a pop-up offers to turn Low performance mode on.</small></label></div>
+  <div class="f" data-k="fpscap"><span class="lb">Limit frame rate</span><select id="fpscap"><option value="0">Off</option><option value="30">30 fps</option><option value="60">60 fps</option><option value="120">120 fps</option></select><small class="hint">Caps how often the animations redraw, to save power.</small></div>
   <div class="f chk" data-k="fps"><label><input type="checkbox" id="fps"> Show FPS</label></div>
   <div class="row2"><button class="btn sm" id="reset">Reset all settings</button></div>
 
@@ -2711,7 +2713,7 @@ $('fs').onclick=fsToggle;
 const PAGES=[
   ['look','Appearance',['Colors','Background','Cover'],'M12 3a9 9 0 000 18c.8 0 1.5-.7 1.5-1.5 0-.4-.1-.7-.4-1-.2-.3-.4-.6-.4-1 0-.8.7-1.5 1.5-1.5H16a5 5 0 005-5c0-4.4-4-8-9-8zM6.5 12a1.5 1.5 0 110-3 1.5 1.5 0 010 3zm3-4a1.5 1.5 0 110-3 1.5 1.5 0 010 3zm5 0a1.5 1.5 0 110-3 1.5 1.5 0 010 3zm3 4a1.5 1.5 0 110-3 1.5 1.5 0 010 3z'],
   ['viz','Visualizer',['Visualizer'],'M4 14h3v6H4zm6.5-6h3v12h-3zM17 4h3v16h-3z'],
-  ['lyrics','Lyrics',['Lyrics'],'M4 6h16v2H4zm0 5h12v2H4zm0 5h16v2H4z'],
+  ['lyrics','Lyrics',['Lyrics','Spicy Lyrics & files'],'M4 6h16v2H4zm0 5h12v2H4zm0 5h16v2H4z'],
   ['tr','Translation',['Translation & romanization'],'M12.9 15.1l-2.5-2.5A17.5 17.5 0 0014 6h3V4h-7V2H8v2H1v2h11.2A15.7 15.7 0 019 11.4 15.6 15.6 0 016.7 8H4.7a17.6 17.6 0 003 4.6l-5.1 5 1.4 1.4 5-5 3.1 3.1.8-2zM18.5 10h-2L12 22h2l1.1-3h4.8l1.1 3h2l-4.5-12zm-2.6 7l1.6-4.3 1.6 4.3h-3.2z'],
   ['cache','Lyrics cache',['Lyrics cache'],'M12 3C7.6 3 4 4.3 4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6c0-1.7-3.6-3-8-3zm0 2c3.9 0 6 1.1 6 1s-2.1 1-6 1-6-.9-6-1 2.1-1 6-1zm6 13c0 .1-2.1 1-6 1s-6-.9-6-1v-2.3c1.5.8 3.6 1.3 6 1.3s4.5-.5 6-1.3V18zm0-5c0 .1-2.1 1-6 1s-6-.9-6-1v-2.3c1.5.8 3.6 1.3 6 1.3s4.5-.5 6-1.3V13z'],
   ['spotify','Spotify & Canvas',['Spotify','Canvas'],'M12 2a10 10 0 100 20 10 10 0 000-20zm4.6 14.4a.6.6 0 01-.9.2c-2.4-1.5-5.4-1.8-8.9-1a.6.6 0 11-.3-1.2c3.9-.9 7.2-.5 9.9 1.1.3.2.4.6.2.9zm1.2-2.7a.8.8 0 01-1.1.3c-2.7-1.7-6.9-2.2-10.1-1.2a.8.8 0 11-.5-1.5c3.7-1.1 8.3-.6 11.4 1.3.4.3.5.8.3 1.1zm.1-2.8C14.7 9 9.4 8.8 6.3 9.7a1 1 0 11-.6-1.9c3.5-1.1 9.4-.9 13.1 1.3a1 1 0 01-.9 1.8z'],
@@ -2848,7 +2850,8 @@ function drawBars(mirror){
   const step=W/N,gp=step*S.gap/100,bw=Math.max(1,step-gp),maxH=H*(mirror?.42:.9),by=mirror?H/2:H*.97,rd=S.round&&ctx.roundRect&&bw>2,r=bw/2;
   ctx.fillStyle=barsGrad();
   const pass=(gr,al)=>{ctx.globalAlpha=al;ctx.beginPath();
-    for(let i=0;i<N;i++){const h=Math.max(2,vals[i]*maxH),x=i*step+gp/2-gr,y=by-h-gr,hh=(mirror?h*2:h)+gr*2,ww=bw+gr*2;
+    const hMin=rd?bw:3;   // silent bars rest as small dots (rounded) instead of flat dashes
+    for(let i=0;i<N;i++){const h=Math.max(hMin,vals[i]*maxH),x=i*step+gp/2-gr,y=by-h-gr,hh=(mirror?h*2:h)+gr*2,ww=bw+gr*2;
       rd?ctx.roundRect(x,y,ww,hh,Math.min(r+gr,hh/2)):ctx.rect(x,y,ww,hh)}
     ctx.fill()};
   if(!S.low){ctx.save();ctx.beginPath();ctx.rect(0,0,W,H);ctx.clip();ctx.fillStyle='#000';pass(Math.max(1,bw*.14),.14);ctx.fillStyle=barsGrad();   // a soft dark edge, so the bars never melt into the background
