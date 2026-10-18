@@ -1819,6 +1819,7 @@ function spApply(d,mid){   // a player state from Spotify (fetched here or share
   updChips();updSpx();syncCanvasPlay();updPlayIcon();
 }
 function onSpTrack(m){
+  nextUpFly(m);
   curArtistId=m.artistId||'';spMeta=m;spLikeCheck(m);
   if(vals)vals.fill(0);   // the bars drop and grow back with the new song
   const tok=++coverTok;peak=.3;clearCanvas(true);
@@ -3050,6 +3051,30 @@ $('seek').onchange=()=>{
 };
 // Next up: in the last 10 seconds of a Spotify song, ask once what's next in the queue and show it
 let nuFor=null,nuItem=null;
+// the song Next up announced starts: its thumbnail jumps into the cover (arcs up, grows to the cover's size, lands, and
+// dissolves into the new cover, which is the same picture) while the rest of the card melts away
+function nextUpFly(m){
+  const el=$('nextup');if(el.hidden||el.classList.contains('nout')||!nuItem||nuItem.t!==m.title||S.low||rmOn())return;
+  const im=el.querySelector('img'),a=im.getBoundingClientRect();
+  if(!im.getAttribute('src')||!a.width||!artw.offsetParent)return;
+  const f=im.cloneNode();f.removeAttribute('id');f.setAttribute('aria-hidden','true');
+  Object.assign(f.style,{position:'fixed',left:a.left+'px',top:a.top+'px',width:a.width+'px',height:a.height+'px',margin:0,zIndex:7,objectFit:'cover',
+    pointerEvents:'none',transformOrigin:'0 0',borderRadius:'8px',boxShadow:'0 10px 30px rgba(0,0,0,.4)'});
+  document.body.appendChild(f);
+  el.classList.remove('nin');el.classList.add('nout');clearTimeout(el._t);el._t=setTimeout(()=>{el.hidden=true;el.classList.remove('nout')},460);
+  requestAnimationFrame(()=>{   // measure the cover after the new title is in: a shorter or longer title moves it
+  const d=el.style.display;el.style.display='none';const b=artw.getBoundingClientRect();el.style.display=d;   // where the cover will be once the card is gone (the info re-centres)
+  if(!b.width){f.remove();return}
+  const dx=b.left-a.left,dy=b.top-a.top,sc=b.width/a.width,r=parseFloat(getComputedStyle(artw).borderTopLeftRadius)||20,hop=Math.min(140,Math.abs(dy)*.35+60);
+  f.animate([{transform:'translate(0,0) scale(1)',borderRadius:'8px'},
+    {transform:'translate('+dx*.45+'px,'+(dy*.45-hop)+'px) scale('+(1+(sc-1)*.45)+')',borderRadius:(r/(1+(sc-1)*.45)).toFixed(1)+'px',offset:.5},   // up in an arc
+    {transform:'translate('+dx+'px,'+dy+'px) scale('+sc*1.03+')',borderRadius:(r/sc).toFixed(1)+'px',offset:.85},   // lands a touch big
+    {transform:'translate('+dx+'px,'+dy+'px) scale('+sc+')',borderRadius:(r/sc).toFixed(1)+'px'}],
+    {duration:750,easing:'cubic-bezier(.45,0,.25,1)',fill:'forwards'}).onfinish=()=>{
+      f.animate([{opacity:1,filter:'blur(0)'},{opacity:0,filter:'blur(8px)'}],{duration:500,easing:'ease-out',fill:'forwards'}).onfinish=()=>f.remove()};
+  artw.animate([{transform:'scale(1)'},{transform:'scale(.97)',offset:.82},{transform:'scale(1.02)',offset:.9},{transform:'scale(1)'}],{duration:900,easing:'ease-out'});   // the cover gives a little as it lands
+  });
+}
 function nextUpTick(){
   const el=$('nextup');
   const left=src==='spotify'&&spState&&spPlaying()?(spState.duration-curMs())/1000:Infinity;
