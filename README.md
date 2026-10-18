@@ -65,6 +65,9 @@ domain is needed.
 - Spotify "now playing" through the official Web API (PKCE login, no client secret), with previous, play/pause, next,
   seeking, shuffle, repeat, Spotify's own volume and a device picker to choose where it plays (Spotify Premium), and a
   heart to save the song to your Liked Songs. Logged in before these were added? Reconnect Spotify once to allow them.
+- Desync detection: with real sound (Vibe Bridge, audio capture or a local file) it listens to the singing and, if the
+  lyrics run ahead or behind, offers to fix them for that song (or fixes them by itself; Settings → Lyrics).
+- Song changes blend smoothly: the old cover melts into the new one and the colors fade over.
 - Settings in their own window, with categories and a search box.
 - A home screen (click the logo), a first-run setup guide, and a ping meter for every service the app uses.
 - Installable as an app on computers and phones.

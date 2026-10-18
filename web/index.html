@@ -76,6 +76,11 @@ body.cvmode #ttl{transform-origin:center}
 body.flip #stage,body.flip #artw,body.flip #ttl{transition:none!important}
 #art{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none}
 #artw.has #art{display:block}
+/* song change: the old cover melts away (fades, grows a little, blurs) while the new one settles in */
+.artghost{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;pointer-events:none;transition:opacity .75s ease,transform .75s cubic-bezier(.2,.8,.2,1),filter .75s ease}
+.artghost.go{opacity:0;transform:scale(1.08);filter:blur(12px) saturate(1.3)}
+#art.swap{animation:artin .75s cubic-bezier(.2,.8,.2,1)}@keyframes artin{from{transform:scale(.94);filter:blur(8px) brightness(1.15)}}
+body.low .artghost{display:none}body.low #art.swap{animation:none}
 #ph{position:absolute;inset:0;display:grid;place-items:center;font-size:64px;color:var(--dim)}
 #artw.has #ph{display:none}
 #ttl{font-size:clamp(22px,2.6vw,38px);font-weight:800;letter-spacing:-.03em;line-height:1.08;margin:0;overflow-wrap:anywhere;transform-origin:left center;transition:transform .09s linear}
@@ -684,6 +689,7 @@ body.low #cappanel,body.low #netpanel,body.low #setup .sw{background:rgba(20,20,
   <h4>Lyrics</h4>
   <div class="f" data-k="lprov"><span class="lb">Sources, in priority order</span><div id="provlist"></div><small class="hint">The first source that has the song is used. ▲▼ to reorder, the switch to turn a source off.</small></div>
   <div class="f" data-k="loff"><span class="lb">Timing offset (ms)</span><input type="range" id="loff" min="-3000" max="3000" step="50"><small class="hint">Lyrics behind the music? Raise it. While a song plays, <b>]</b> moves the lyrics 100 ms earlier and <b>[</b> 100 ms later.</small></div>
+  <div class="f" data-k="lDesync"><span class="lb">Desync detection</span><select id="lDesync"><option value="ask">Ask before fixing</option><option value="auto">Fix automatically</option><option value="off">Off</option></select><small class="hint">Listens to the music and checks that the singing lines up with the lyrics. Needs real sound for the bars: Vibe Bridge, audio capture or a local file. A fix only applies to the song playing. <span id="dsstat"></span></small></div>
   <div class="f" data-k="lsize"><span class="lb">Text size</span><input type="range" id="lsize" min="70" max="150"></div>
   <div class="f chk" data-k="lblur"><label><input type="checkbox" id="lblur"> Blur inactive lines</label></div>
   <div class="f" data-k="credPos"><span class="lb">Lyrics credits</span><select id="credPos"><option value="corner">Bottom-left corner</option><option value="lyrics">Under the lyrics</option></select><small class="hint">The provider, maker and uploader are always shown while lyrics are on screen (required by Spicy Lyrics).</small></div>
@@ -927,7 +933,7 @@ addEventListener('unhandledrejection',e=>toast('Something failed: '+((e.reason&&
 /* ================= settings (one store) ================= */
 const LANGS=[['en','English'],['cs','Czech'],['sk','Slovak'],['de','German'],['es','Spanish'],['fr','French'],['it','Italian'],['pt','Portuguese'],['pl','Polish'],['nl','Dutch'],['sv','Swedish'],['da','Danish'],['no','Norwegian'],['fi','Finnish'],['hu','Hungarian'],['ro','Romanian'],['el','Greek'],['tr','Turkish'],['uk','Ukrainian'],['ru','Russian'],['ar','Arabic'],['he','Hebrew'],['hi','Hindi'],['th','Thai'],['vi','Vietnamese'],['id','Indonesian'],['tl','Filipino'],['ja','Japanese'],['ko','Korean'],['zh-CN','Chinese (Simplified)'],['zh-TW','Chinese (Traditional)']];
 const navLang=(()=>{const l=(navigator.language||'en').toLowerCase(),m=LANGS.find(x=>x[0].toLowerCase()===l)||LANGS.find(x=>x[0].split('-')[0]===l.split('-')[0]);return m?m[0]:'en'})();
-const DEF={bridge:true,xFocus:false,bgStyle:'dynamic',sysFont:false,lsimple:false,lminimal:false,lhover:true,lduet:true,lcredLast:false,lsmooth:true,learly:false,learlyMs:250,lseekFade:true,lnotice:true,volshow:true,fpscap:'0',credPos:'corner',cvNoArt:false,capDev:'',romMode:'replace',tr:false,trTo:navLang,trSkip:'',theme:'cover',c1:'#ff5a5f',c2:'#4f8cff',auto:true,boost:100,resp:25,blur:0,bars:72,gap:28,glow:false,round:true,scale:'1',fps:false,bgblur:60,bri:70,sat:170,bgspeed:100,online:true,volume:100,view:'both',lprov:'spicy:1,spotify:1,lrclib:1,netease:1',loff:0,lsize:100,lblur:true,canvasOn:true,low:false,perfAsk:true};
+const DEF={bridge:true,xFocus:false,bgStyle:'dynamic',sysFont:false,lsimple:false,lminimal:false,lhover:true,lduet:true,lcredLast:false,lsmooth:true,learly:false,learlyMs:250,lseekFade:true,lnotice:true,volshow:true,fpscap:'0',credPos:'corner',cvNoArt:false,capDev:'',romMode:'replace',tr:false,trTo:navLang,trSkip:'',theme:'cover',c1:'#ff5a5f',c2:'#4f8cff',auto:true,boost:100,resp:25,blur:0,bars:72,gap:28,glow:false,round:true,scale:'1',fps:false,bgblur:60,bri:70,sat:170,bgspeed:100,online:true,volume:100,view:'both',lprov:'spicy:1,spotify:1,lrclib:1,netease:1',loff:0,lsize:100,lblur:true,canvasOn:true,low:false,perfAsk:true,lDesync:'ask'};
 const CFGD={spotId:'',canvasUrl:''},OLDCFG=['spicyUrl','spicyHdr','spicyPfx','spicyKey'];   // old fields that kept a key in the browser: always removed
 // Everything (settings, API keys, Spotify login, setup progress) lives in sessionStorage:
 // it survives a reload and the Spotify login redirect, and the browser deletes it when the tab is closed.
@@ -1180,14 +1186,20 @@ async function setCover(s,label,tok,remote){
   let img=await loadImg(s,remote),tainted=false;
   if(!img&&remote){img=await loadImg(s,false);tainted=!!img}
   if(!img||tok!==coverTok)return false;
-  art.src=s;artw.classList.add('has');status.textContent=label;
+  coverSwap();art.src=s;artw.classList.add('has');status.textContent=label;
   let cols=null;if(!tainted){try{cols=extract(img)}catch(e){}}
   curImg=img;
   if(cols){rawCols=cols.raw;barCols=cols.bar}else{rawCols=barCols=DEF_COLS;toast('Cover colors could not be read (image blocked by the browser); using default colors.','warn')}
   palDirty=true;dirty=true;fadeBake();return true;
 }
 function animTrack(){const i=$('info');i.classList.remove('anim');void i.offsetWidth;i.classList.add('anim')}
-function resetCover(){rawCols=barCols=DEF_COLS;curImg=null;artw.classList.remove('has');art.removeAttribute('src');palDirty=true;dirty=true;fadeBake()}
+function coverSwap(){   // keep the old cover on top for a moment and let it melt into the new one
+  if(S.low||!artw.classList.contains('has')||!art.getAttribute('src'))return;
+  const g=document.createElement('img');g.className='artghost';g.alt='';g.src=art.src;artw.appendChild(g);
+  art.classList.remove('swap');void art.offsetWidth;art.classList.add('swap');
+  requestAnimationFrame(()=>requestAnimationFrame(()=>g.classList.add('go')));setTimeout(()=>g.remove(),900);
+}
+function resetCover(){coverSwap();rawCols=barCols=DEF_COLS;curImg=null;artw.classList.remove('has');art.removeAttribute('src');palDirty=true;dirty=true;fadeBake()}
 const getJSON=async u=>{const r=await fetch(u);if(!r.ok)throw new Error('HTTP '+r.status);return r.json()};
 // Apple Music artwork via Apple's official iTunes Search API (no key needed)
 const norm=s=>String(s||'').toLowerCase().replace(/\s*[\(\[].*?[\)\]]/g,'').replace(/\s*-\s.*$/,'').replace(/[^\p{L}\p{N}]+/gu,' ').trim();
@@ -1227,14 +1239,25 @@ function setupBands(){
   gradB=null;
 }
 const STOPS={aurora:['#19f5b0','#5b7cff','#c24bff'],sunset:['#ff3d6e','#ff8a3d','#ffd23d'],neon:['#ff2bd6','#7a5cff','#19e3ff'],ice:['#7fd7ff','#d4f1ff','#6a8dff'],mono:['#ffffff','#8d93a0']};
+// new colors (a new cover, another theme) blend in from the old ones over 0.9 s instead of switching at once
+let palRGB=null,palAnim=null;
 function buildPal(){
-  const st=S.theme==='cover'?barCols:(S.theme==='custom'?[S.c1,S.c2]:STOPS[S.theme]).map(hex);pal=[];
+  const st=S.theme==='cover'?barCols:(S.theme==='custom'?[S.c1,S.c2]:STOPS[S.theme]).map(hex),to=[];
   for(let i=0;i<N;i++){
     const t=N>1?i/(N-1):0,f=t*(st.length-1),j=Math.min(Math.floor(f),st.length-2),u=f-j,a=st[j],b=st[j+1];
-    pal.push('rgb('+a.map((v,x)=>Math.round(v+(b[x]-v)*u)).join()+')');
+    to.push(a.map((v,x)=>v+(b[x]-v)*u));
   }
-  root.style.setProperty('--acc',pal[Math.min(1,N-1)]||'#8b7cff');
-  gradB=null;palDirty=false;
+  if(palRGB&&palRGB.length===N&&!S.low)palAnim={from:palRGB,to,t0:performance.now()};else{palRGB=to;palAnim=null}
+  palShow();palDirty=false;
+}
+function palShow(){
+  pal=palRGB.map(c=>'rgb('+Math.round(c[0])+','+Math.round(c[1])+','+Math.round(c[2])+')');
+  root.style.setProperty('--acc',pal[Math.min(1,N-1)]||'#8b7cff');gradB=null;
+}
+function palTick(now){
+  if(!palAnim)return;const k=Math.min(1,(now-palAnim.t0)/900),e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2,A=palAnim;
+  palRGB=A.to.map((c,i)=>{const o=A.from[i];return[o[0]+(c[0]-o[0])*e,o[1]+(c[1]-o[1])*e,o[2]+(c[2]-o[2])*e]});
+  palShow();dirty=true;if(k>=1)palAnim=null;
 }
 
 /* ================= state + sources ================= */
@@ -1808,14 +1831,14 @@ function renderLyrics(label,quiet){
       if(l.tr)timed('tr',l.tr);
     }
     d.dataset.b=d.className;
-    d.onclick=()=>{if(lsync&&l.t!=null&&seekTo((l.t-S.loff/1000)/lPace-(S.lseekFade&&src==='spotify'?.3:0))&&d.animate)d.animate([{transform:'scale(.97)'},{transform:'none'}],{duration:260,easing:'ease-out'})};   // click a line to jump there
+    d.onclick=()=>{if(lsync&&l.t!=null&&seekTo((l.t-S.loff/1000-lAdj)/lPace-(S.lseekFade&&src==='spotify'?.3:0))&&d.animate)d.animate([{transform:'scale(.97)'},{transform:'none'}],{duration:260,easing:'ease-out'})};   // click a line to jump there
     ly.appendChild(d);lEls.push(d);
   });
   body.classList.toggle('hl',L.length>0);lyrMsg('');
   if(L.length&&!quiet&&ly.animate)ly.animate([{opacity:0},{opacity:1}],{duration:600,easing:'ease-out'});
   lstat.textContent='';   // the credit line under the cover names the source; no second lyrics line
   renderCredit();updNeed();applyLyrOpts();
-  if(lsync&&L.length)setActive(findIdx(curTime()*lPace+S.loff/1000));
+  if(lsync&&L.length)setActive(findIdx(lyrT()));
   dirty=true;
 }
 let lCredit=null;
@@ -1882,7 +1905,8 @@ function interludes(ls){
 // auto timing check: lyrics found by song name can belong to a slightly different version (radio edit, sped up,
 // remaster) that runs at another pace, so they slide further off as the song goes on. When the lyrics' own length is
 // known, or their last line comes after the song has ended, stretch the lyrics timeline to fit this song.
-let lPace=1;
+let lPace=1,lAdj=0,realAudio=false;   // lAdj: this song's correction from the desync detection (seconds)
+const lyrT=()=>curTime()*lPace+S.loff/1000+lAdj;   // the lyrics clock
 function checkPace(r,dur){
   lPace=1;if(!r.sync||!dur||r.credit&&/^(spicy_lyrics|apple_music|spotify|file)$/.test(r.credit.source||''))return;   // matched by track id or your own file: exact
   const last=r.lines.filter(l=>!l.dots&&l.t!=null).pop();
@@ -1890,7 +1914,7 @@ function checkPace(r,dur){
   if(!src&&last&&last.t>dur-.5)src=last.t+Math.max(2,dur*.03);   // a line after the end can't be right
   if(src&&Math.abs(src-dur)/dur<.12){lPace=src/dur;toast('Lyrics timing adjusted to this version of the song ('+(lPace>1?'+':'')+((lPace-1)*100).toFixed(1)+'% pace).','ok',4000)}
 }
-function applyLyrics(r){checkPace(r,curDur());lCredit=r.credit||(r.label?{source:null}:null);L=(r.sync?interludes(r.lines):r.lines.filter(l=>!l.dots)).map(l=>Object.assign({},l));lsync=r.sync;renderLyrics(r.label);decorate()}
+function applyLyrics(r){checkPace(r,curDur());dsSong();lCredit=r.credit||(r.label?{source:null}:null);L=(r.sync?interludes(r.lines):r.lines.filter(l=>!l.dots)).map(l=>Object.assign({},l));lsync=r.sync;renderLyrics(r.label);decorate()}
 
 /* ---------- translation + romanization (Google Translate's free web endpoint, unofficial) ---------- */
 const GT='https://translate.googleapis.com/translate_a/single?client=dict-chrome-ex&sl=auto&dt=t&dt=rm&tl=';
@@ -2272,7 +2296,7 @@ function staticScroll(){
 function lyricsTick(){
   if(!L.length||S.view==='viz')return;
   if(!lsync){staticScroll();return}
-  const t=curTime()*lPace+S.loff/1000,i=findIdx(t),e=i>=0?lineEnd(L[i]):null,out=e!=null&&t>=e;
+  const t=lyrT(),i=findIdx(t),e=i>=0?lineEnd(L[i]):null,out=e!=null&&t>=e;
   const nx=L[i+1];let si=S.learly&&nx&&nx.t!=null&&t>=nx.t-S.learlyMs/1000?i+1:i,fi=-2;
   let fo=false,fn='',fs='';
   if(S.xFocus){   // Focus mode: a line is due on screen 200 ms before it's sung, but the line before holds until it's sung to the end
@@ -2290,6 +2314,72 @@ function lyricsTick(){
   for(let k=i-1;k>=0&&k>=i-6;k--){const l=L[k];if(l.dots)continue;const ek=lineEnd(l);if(ek!=null&&t>=l.t&&t<ek)ak+=k+','}
   if(i!==li||out!==lOut||fi!==lfi||fo!==lfo||fn!==lfn||fs!==lfs||ak!==lActKey){lOut=out;lsi=si;lfi=fi;lfo=fo;lfn=fn;lfs=fs;lAct=new Set(ak.split(',').filter(Boolean).map(Number));lActKey=ak;setActive(i)}else if(si!==lsi){lsi=si;place()}
   wordsTick(t);
+}
+/* ---- desync detection: listens to the music and checks that the singing lines up with the lyrics. Singing starts
+   show up as sudden rises in the voice range (300-3400 Hz); they're compared with where the lyrics expect words to
+   start (or lines, without word timing), trying every shift from -3 to +3 s. Only a clear, repeated answer counts.
+   Needs real sound (Vibe Bridge, audio capture, a local file); Spotify's ambient bars carry none. ---- */
+const DS={prev:new Uint8Array(1024),acc:0,lv:0,ln:0,bt:0,t:[],f:[],v:[],lastT:null,off:0,est:[],fixes:0,asked:false,ign:false,next:0,stat:'',ok:0};
+function dsReset(){DS.t.length=DS.f.length=DS.v.length=0;DS.lastT=null;DS.est.length=0}
+function dsSong(){dsReset();DS.fixes=0;DS.asked=false;DS.ign=false;DS.ok=0;lAdj=0}
+function dsStat(m){if(m===DS.stat)return;DS.stat=m;const e=$('dsstat');if(e)e.textContent=m}
+function desyncTick(now){
+  if(S.lDesync==='off'){dsStat('');return}
+  if(!lsync||!L.length||DS.ign||!playing()){DS.lastT=null;dsStat(DS.ign?'Ignored for this song.':'');return}
+  if(!realAudio){DS.lastT=null;dsStat('Waiting for real sound (Vibe Bridge, audio capture or a local file).');return}
+  const t=lyrT();
+  if((DS.lastT!=null&&Math.abs(t-DS.lastT)>.35)||DS.off!==S.loff){dsReset();DS.off=S.loff}   // a seek, a jump or a new offset: start over
+  DS.lastT=t;
+  const bw=((ac&&!bridgeLive()?ac.sampleRate:48000)/2)/1024,a=Math.round(300/bw),b=Math.round(3400/bw);
+  let fl=0,lv=0;for(let k=a;k<b;k++){const d=data[k]-DS.prev[k];if(d>0)fl+=d;lv+=data[k]}DS.prev.set(data);
+  if(fl>DS.acc)DS.acc=fl;DS.lv+=lv;DS.ln++;
+  if(now-DS.bt<50)return;DS.bt=now;   // one value every 50 ms: the strongest rise in it, and the average level
+  DS.t.push(t);DS.f.push(DS.acc);DS.v.push(DS.lv/Math.max(1,DS.ln));DS.acc=DS.lv=DS.ln=0;
+  while(DS.t.length&&t-DS.t[0]>60){DS.t.shift();DS.f.shift();DS.v.shift()}
+  if(DS.t.length<400)dsStat('Listening… ('+Math.round(DS.t.length/20)+' of 20 s)');
+  else if(now>DS.next){DS.next=now+5000;dsAnalyze()}
+}
+function dsAnalyze(){
+  // two things have to line up: singing starts with word (or line) starts, and singing with the parts where the
+  // lyrics say someone sings, so the pauses between lines count too (a steady rhythm alone can't fool it)
+  const T=DS.t,F=DS.f,n=T.length,t0=T[0],t1=T[n-1],on=[],sp=[];
+  for(let i=0;i<L.length;i++){const l=L[i];if(l.dots||l.t==null)continue;
+    if(l.words&&l.words.length)for(const w of l.words){on.push(w.t);sp.push([w.t,w.end!=null?w.end:w.t+.3])}
+    else{on.push(l.t);const e=lineEnd(l);sp.push([l.t,e!=null?e:(L[i+1]&&L[i+1].t!=null?L[i+1].t:l.t+4)])}}
+  if(on.filter(o=>o>t0+3&&o<t1-3).length<12){dsStat('Listening… (too little singing so far)');return}
+  on.sort((x,y)=>x-y);sp.sort((x,y)=>x[0]-y[0]);
+  const near=x=>{let lo=0,hi=on.length;while(lo<hi){const m=(lo+hi)>>1;if(on[m]<x)lo=m+1;else hi=m}
+    return (lo<on.length&&on[lo]-x<.06)||(lo>0&&x-on[lo-1]<.06)?1:0};
+  const inside=x=>{let lo=0,hi=sp.length;while(lo<hi){const m=(lo+hi)>>1;if(sp[m][0]<=x)lo=m+1;else hi=m}
+    for(let k=lo-1;k>=0&&k>=lo-4;k--)if(x<sp[k][1])return 1;return 0};
+  // the level, without slow loudness changes (a louder chorus isn't singing starting)
+  const V=new Float32Array(n);for(let i=0;i<n;i++){let s=0,c=0;for(let k=Math.max(0,i-30);k<=Math.min(n-1,i+30);k++){s+=DS.v[k];c++}V[i]=DS.v[i]-s/c}
+  const pear=(X,f,e)=>{let sx=0,sy=0,sxx=0,syy=0,sxy=0,c=0;
+    for(let i=0;i<n;i++){const x=X[i],y=f(T[i]-e);sx+=x;sy+=y;sxx+=x*x;syy+=y*y;sxy+=x*y;c++}
+    const vx=sxx-sx*sx/c,vy=syy-sy*sy/c;return vx>0&&vy>0?(sxy-sx*sy/c)/Math.sqrt(vx*vy):0};
+  const lags=[],sc=[];
+  for(let k=-60;k<=60;k++){const e=k*.05;lags.push(e);sc.push(pear(F,near,e)+pear(V,inside,e))}
+  let bi=0;for(let k=1;k<sc.length;k++)if(sc[k]>sc[bi])bi=k;
+  const best=sc[bi],e=lags[bi];let second=-1;
+  sc.forEach((x,k)=>{if(Math.abs(lags[k]-e)>.2&&x>second)second=x});
+  if(best<.12||best-second<.02){DS.est.length=0;dsStat('Listening… (no clear match yet)');return}
+  if(Math.abs(e)<.25){DS.est.length=0;DS.ok=performance.now();dsStat('In sync ✓');return}
+  DS.est.push(e);if(DS.est.length>3)DS.est.shift();
+  if(DS.est.length<3){dsStat('Checking a possible desync…');return}
+  const lo=Math.min(...DS.est),hi=Math.max(...DS.est);if(hi-lo>.1){DS.est.shift();return}   // three checks in a row (15 s) must agree
+  dsFound((lo+hi)/2);
+}
+function dsFound(e){   // e > 0: the singing comes e seconds after the lyrics' time, so the lyrics are ahead
+  DS.est.length=0;
+  const txt='about '+Math.abs(e).toFixed(1)+' s '+(e>0?'ahead of':'behind')+' the singing';
+  const fix=()=>{lAdj-=e;DS.fixes++;dsReset();moving.forEach(k=>{if(lEls[k])restLine(lEls[k])});moving.clear();li=-2;lsi=-2;lActKey='';lyricsTick();dsStat('Fixed: moved '+(e>0?'back ':'ahead ')+Math.abs(e).toFixed(1)+' s.')};
+  if(DS.fixes>=4)return;   // something odd with this song: stop adjusting
+  if(S.lDesync==='auto'||DS.fixes>0){fix();toast('Lyrics were '+txt+'. Fixed for this song.','ok',3500);return}   // once you've said yes, later fixes for the song just happen
+  if(DS.asked)return;DS.asked=true;dsStat('Lyrics look '+txt+'.');
+  notify({key:'desync',kind:'warn',title:'Lyrics look out of sync',msg:'From the music, they seem '+txt+'.',
+    actions:[{label:'Fix it',pri:true,fn:()=>{fix();toast('Lyrics re-timed for this song.','ok',2500)}},
+      {label:'Ignore for this song',fn:()=>{DS.ign=true}},
+      {label:'Not now',fn:()=>{DS.asked=false;DS.next=performance.now()+60000}}]});
 }
 // lyrics sources, tried in the order set in Settings
 const PROVS={spicy:{name:'Spicy Lyrics',desc:'community word-synced lyrics · needs your API key'},
@@ -2714,7 +2804,7 @@ function poke(){
 /* ================= analysis ================= */
 function sample(dt,now){
   const aA=1-Math.exp(-dt/(6+S.resp*.5)),aR=1-Math.exp(-dt/(30+S.resp*3.5)),boost=S.boost/100;
-  const viaBridge=!liveAudio()&&bridgeLive();   // the Vibe Bridge app: the sound of the whole computer (the Spotify app too)
+  const viaBridge=!liveAudio()&&bridgeLive();realAudio=liveAudio()||viaBridge;   // the Vibe Bridge app: the sound of the whole computer (the Spotify app too)
   if(liveAudio()||viaBridge){
     if(viaBridge)data.set(bridgeBuf);else analyser.getByteFrequencyData(data);
     if(capStream&&!capHeard){for(let k=0;k<64;k++)if(data[k]){capHeard=true;break}}
@@ -2790,7 +2880,7 @@ function frame(now){
   const cap=+S.fpscap;if(cap&&now-last<1000/cap-1)return;   // Limit frame rate
   const dt=Math.min(now-last,50);last=now;
   const pl=playing();sample(dt,now);beatTick(now,dt);drawLiveBg(now,dt);
-  lyricsTick();uiTick(now);
+  lyricsTick();desyncTick(now);uiTick(now);if(palDirty)buildPal();palTick(now);
   if(body.classList.contains('cvlive')&&now-lastCv>90&&cvv.readyState>=2&&!document.hidden){lastCv=now;cvFrame()}
   const active=pl||mxv>.003||!!capStream;
   // the cover and title stay still (no beat pulse)
