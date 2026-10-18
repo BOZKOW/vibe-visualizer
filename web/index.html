@@ -41,12 +41,10 @@ select option{color:#fff}   /* Windows draws dropdown lists white otherwise */
 body.bgstill #bgimg{opacity:1}
 body.bgplain #bgimg{background-image:none!important;filter:none}
 body.lf-system .ll,body.lf-system .sub{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
-/* Spicy Lyrics' lyrics font (from fonts.spikerko.org, by Spikerko) */
-@font-face{font-family:SpicyLyrics;font-weight:400;font-display:swap;src:url(SpicyLyrics-Regular.woff2) format("woff2")}
-@font-face{font-family:SpicyLyrics;font-weight:500;font-display:swap;src:url(SpicyLyrics-Medium.woff2) format("woff2")}
-@font-face{font-family:SpicyLyrics;font-weight:600;font-display:swap;src:url(SpicyLyrics-Semibold.woff2) format("woff2")}
-@font-face{font-family:SpicyLyrics;font-weight:700;font-display:swap;src:url(SpicyLyrics-Bold.woff2) format("woff2")}
-body.lf-spicy .ll,body.lf-spicy .sub{font-family:SpicyLyrics,"Inter","Segoe UI",system-ui,sans-serif}
+/* the Spicy Lyrics look: Spicy Lyrics uses Apple's San Francisco font, which can't be shared, so Apple devices use
+   their own copy and everything else gets Inter (SIL Open Font License, see InterVariable-LICENSE.txt), which is very close */
+@font-face{font-family:InterVV;font-weight:100 900;font-display:swap;src:url(InterVariable.woff2) format("woff2")}
+body.lf-spicy .ll,body.lf-spicy .sub{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display",InterVV,"Segoe UI",system-ui,sans-serif}
 body:not(.low) .bl{display:none}
 body.low #bgl{display:none}
 #cvblur{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .8s}

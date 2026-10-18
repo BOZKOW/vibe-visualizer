@@ -102,7 +102,8 @@ move.
 **Spicy Lyrics' settings, in *Settings → Lyrics***
 - Simple lyrics mode, minimal lyrics mode, highlight on hover, duet line padding, credits follow the last singer.
 - Smooth scrolling, early scroll and its time, seek fade-in compensation, timing offset.
-- No lyrics notice, volume slider, limit frame rate, use system font.
+- No lyrics notice, volume slider, limit frame rate (up to 240 fps), lyrics font (Vibe Visualizer, a Spicy Lyrics look, or
+  your system font).
 - Background style (dynamic, artist image, cover art, color, none) and image blur, under *Appearance*.
 - Lyrics cache: clear this song's cache, clear stored lyrics, reset this song's lyrics.
 
@@ -418,6 +419,9 @@ Click any lyric line to jump to it.
 
 Made by [BOZKOW](https://github.com/BOZKOW), built together with [Claude Code](https://claude.com/claude-code)
 (Anthropic's Claude Opus).
+
+The "Spicy Lyrics" lyrics font option uses [Inter](https://rsms.me/inter/) by Rasmus Andersson (SIL Open Font License
+1.1, `web/InterVariable-LICENSE.txt`), or the device's own San Francisco font on Apple devices.
 
 The lyrics animation (word and letter springs, fill gradient, line dimming and blur), the instrumental-break dots,
 the credits layout and the way romanization is done are ported from
