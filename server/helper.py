@@ -36,7 +36,8 @@ UPDATE_REPO = os.environ.get("UPDATE_REPO", "BOZKOW/vibe-visualizer")
 UPDATE_BRANCH = os.environ.get("UPDATE_BRANCH", "main")
 WEB_DIR = os.environ.get("WEB_DIR", "/www")
 WEB_FILES = ["index.html", "sw.js", "manifest.webmanifest", "logo.svg", "icon-192.png", "icon-512.png",
-             "icon-maskable-512.png", "apple-touch-icon.png"]
+             "icon-maskable-512.png", "apple-touch-icon.png",
+             "SpicyLyrics-Regular.woff2", "SpicyLyrics-Medium.woff2", "SpicyLyrics-Semibold.woff2", "SpicyLyrics-Bold.woff2"]
 ID_RE = re.compile(r"^[0-9A-Za-z]{22}$")
 SPWEB_RE = re.compile(r"^/spweb/(me(/[A-Za-z0-9_/-]*)?|artists/[0-9A-Za-z]{22}|tracks/[0-9A-Za-z]{22}|search)$")
 HASH_RE = re.compile(r'"canvas","query","([0-9a-f]{64})"')

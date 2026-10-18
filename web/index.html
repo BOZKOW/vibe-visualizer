@@ -40,7 +40,13 @@ select option{color:#fff}   /* Windows draws dropdown lists white otherwise */
   filter:blur(var(--bgb,0px)) brightness(var(--bgbr,.7)) saturate(var(--bgsa,1.7))}
 body.bgstill #bgimg{opacity:1}
 body.bgplain #bgimg{background-image:none!important;filter:none}
-body.sysfont .ll,body.sysfont .sub{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+body.lf-system .ll,body.lf-system .sub{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+/* Spicy Lyrics' lyrics font (from fonts.spikerko.org, by Spikerko) */
+@font-face{font-family:SpicyLyrics;font-weight:400;font-display:swap;src:url(SpicyLyrics-Regular.woff2) format("woff2")}
+@font-face{font-family:SpicyLyrics;font-weight:500;font-display:swap;src:url(SpicyLyrics-Medium.woff2) format("woff2")}
+@font-face{font-family:SpicyLyrics;font-weight:600;font-display:swap;src:url(SpicyLyrics-Semibold.woff2) format("woff2")}
+@font-face{font-family:SpicyLyrics;font-weight:700;font-display:swap;src:url(SpicyLyrics-Bold.woff2) format("woff2")}
+body.lf-spicy .ll,body.lf-spicy .sub{font-family:SpicyLyrics,"Inter","Segoe UI",system-ui,sans-serif}
 body:not(.low) .bl{display:none}
 body.low #bgl{display:none}
 #cvblur{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .8s}
@@ -783,7 +789,7 @@ body.low #bar input[type=range]::-webkit-slider-thumb{transition:none}
   <div class="f chk" data-k="lblur"><label><input type="checkbox" id="lblur"> Blur inactive lines</label></div>
   <div class="f" data-k="credPos"><span class="lb">Lyrics credits</span><select id="credPos"><option value="corner">Bottom-left corner</option><option value="lyrics">Under the lyrics</option></select><small class="hint">The provider, maker and uploader are always shown while lyrics are on screen (required by Spicy Lyrics).</small></div>
   <p class="sub-h">Style</p>
-  <div class="f chk" data-k="sysFont"><label><input type="checkbox" id="sysFont"> Use system font<small>Show the lyrics in your system’s font instead of Vibe Visualizer’s.</small></label></div>
+  <div class="f" data-k="lfont"><span class="lb">Lyrics font</span><select id="lfont"><option value="vv">Vibe Visualizer</option><option value="spicy">Spicy Lyrics</option><option value="system">System font</option></select><small class="hint">Spicy Lyrics is the font Spicy Lyrics (by Spikerko) shows lyrics in.</small></div>
   <div class="f chk" data-k="lsimple"><label><input type="checkbox" id="lsimple"> Simple lyrics mode<small>Drop the extra effects: words only fill, without growing, lifting or glowing.</small></label></div>
   <div class="f chk" data-k="lminimal"><label><input type="checkbox" id="lminimal"> Minimal lyrics mode<small>Hide lines that have already been sung.</small></label></div>
   <div class="f chk" data-k="lhover"><label><input type="checkbox" id="lhover"> Highlight on hover<small>Show a soft box behind a line when you point at it.</small></label></div>
@@ -1041,15 +1047,18 @@ addEventListener('unhandledrejection',e=>toast('Something failed: '+((e.reason&&
 /* ================= settings (one store) ================= */
 const LANGS=[['en','English'],['cs','Czech'],['sk','Slovak'],['de','German'],['es','Spanish'],['fr','French'],['it','Italian'],['pt','Portuguese'],['pl','Polish'],['nl','Dutch'],['sv','Swedish'],['da','Danish'],['no','Norwegian'],['fi','Finnish'],['hu','Hungarian'],['ro','Romanian'],['el','Greek'],['tr','Turkish'],['uk','Ukrainian'],['ru','Russian'],['ar','Arabic'],['he','Hebrew'],['hi','Hindi'],['th','Thai'],['vi','Vietnamese'],['id','Indonesian'],['tl','Filipino'],['ja','Japanese'],['ko','Korean'],['zh-CN','Chinese (Simplified)'],['zh-TW','Chinese (Traditional)']];
 const navLang=(()=>{const l=(navigator.language||'en').toLowerCase(),m=LANGS.find(x=>x[0].toLowerCase()===l)||LANGS.find(x=>x[0].split('-')[0]===l.split('-')[0]);return m?m[0]:'en'})();
-const DEF={bridge:true,xFocus:false,bgStyle:'dynamic',sysFont:false,lsimple:false,lminimal:false,lhover:true,lduet:true,lcredLast:false,lsmooth:true,learly:false,learlyMs:250,lseekFade:true,lnotice:true,volshow:true,fpscap:'0',credPos:'corner',cvNoArt:false,capDev:'',romMode:'replace',tr:false,trTo:navLang,trSkip:'',theme:'cover',c1:'#ff5a5f',c2:'#4f8cff',auto:true,boost:100,resp:25,blur:0,bars:72,gap:28,glow:false,round:true,scale:'1',fps:false,bgblur:60,bri:70,sat:170,bgspeed:100,online:true,volume:100,view:'both',lprov:'spicy:1,spotify:1,lrclib:1,netease:1',loff:0,lsize:100,lblur:true,canvasOn:true,low:false,perfAsk:true,lDesync:'ask',design:'glass',uiHide:'idle'};
+const DEF={bridge:true,xFocus:false,bgStyle:'dynamic',lfont:'vv',lsimple:false,lminimal:false,lhover:true,lduet:true,lcredLast:false,lsmooth:true,learly:false,learlyMs:250,lseekFade:true,lnotice:true,volshow:true,fpscap:'0',credPos:'corner',cvNoArt:false,capDev:'',romMode:'replace',tr:false,trTo:navLang,trSkip:'',theme:'cover',c1:'#ff5a5f',c2:'#4f8cff',auto:true,boost:100,resp:25,blur:0,bars:72,gap:28,glow:false,round:true,scale:'1',fps:false,bgblur:60,bri:70,sat:170,bgspeed:100,online:true,volume:100,view:'both',lprov:'spicy:1,spotify:1,lrclib:1,netease:1',loff:0,lsize:100,lblur:true,canvasOn:true,low:false,perfAsk:true,lDesync:'ask',design:'glass',uiHide:'idle'};
 const CFGD={spotId:'',canvasUrl:''},OLDCFG=['spicyUrl','spicyHdr','spicyPfx','spicyKey'];   // old fields that kept a key in the browser: always removed
 // Everything (settings, API keys, Spotify login, setup progress) lives in sessionStorage:
 // it survives a reload and the Spotify login redirect, and the browser deletes it when the tab is closed.
 const store={get(k){try{return JSON.parse(sessionStorage.getItem(k)||'null')}catch(e){return null}},set(k,v){try{sessionStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
 try{['pulse4','pulse3','pulseLowPerformance','pulse_cfg','pulse_sp','pulse_setup'].forEach(k=>localStorage.removeItem(k))}catch(e){}   // wipe anything older versions kept
 let S=Object.assign({},DEF),C=Object.assign({},CFGD);
+function fontMig(o){if(o&&o.sysFont===true&&!('lfont' in o))S.lfont='system'}   // the old "Use system font" checkbox
+function applyFont(){['vv','spicy','system'].forEach(f=>body.classList.toggle('lf-'+f,S.lfont===f))}
 {const o=store.get('pulse4')||{};
  for(const k in DEF)if(k in o&&typeof o[k]===typeof DEF[k])S[k]=o[k];
+ fontMig(o);
  Object.assign(C,store.get('pulse_cfg')||{});
  OLDCFG.forEach(k=>delete C[k]);
  if(!store.get('pulse_cfg')&&/^https?:$/.test(location.protocol))C.canvasUrl='/api/canvas?id={id}';}   // Canvas helper on the Vibe Visualizer server
@@ -1112,7 +1121,7 @@ function onSetting(k){
   else if(k==='fps')$('fpsEl').style.display=S.fps?'block':'none';
   else if(k==='bgblur'||k==='bri'||k==='sat')applyBg();
   else if(k==='bgStyle')applyBgStyle();
-  else if(k==='sysFont')body.classList.toggle('sysfont',!!S.sysFont);
+  else if(k==='lfont')applyFont();
   else if(k==='bgspeed')bgSpeed();
   else if(k==='volume'){muted=false;applyVolume()}
   else if(k==='low')applyLow();
@@ -3389,6 +3398,7 @@ $('hsetup').onclick=()=>{leaveHome();wzOpen()};$('hset').onclick=()=>{leaveHome(
 
 function applyRemote(p){
   for(const k in DEF)if(p.S&&k in p.S&&typeof p.S[k]===typeof DEF[k])S[k]=p.S[k];
+  fontMig(p.S);
   if(p.C){Object.assign(C,p.C);OLDCFG.forEach(k=>delete C[k])}
   if(p.SP&&p.SP.refresh&&!SP.access)SP=p.SP;
   if(p.setup)store.set('pulse_setup',1);
@@ -3473,7 +3483,7 @@ netLoop();
 applyDesign();syncInputs();refreshReset();volIcon();
 root.style.setProperty('--ls',S.lsize/100);
 $('fpsEl').style.display=S.fps?'block':'none';
-body.classList.toggle('cvnoart',!!S.cvNoArt);applyCredPos();applyLyrOpts();bridgeConnect();updBridge();body.classList.toggle('sysfont',!!S.sysFont);applyBgStyle();setupBands();applyView();applyLow();resize();renderBg();updChips();updPlayIcon();updQuick();updNeed();
+body.classList.toggle('cvnoart',!!S.cvNoArt);applyCredPos();applyLyrOpts();bridgeConnect();updBridge();applyFont();applyBgStyle();setupBands();applyView();applyLow();resize();renderBg();updChips();updPlayIcon();updQuick();updNeed();
 requestAnimationFrame(frame);
 poke();
 (async()=>{
