@@ -532,7 +532,7 @@ body.wz #empty,body.popen #empty{opacity:0;transition:opacity .3s}   /* nothing 
 @media(max-width:1180px){#capt{max-width:90px}}
 /* notification cards (updates, what's new, errors) */
 /* every notification lives in one stack in the top-right corner: cards with buttons first, short notes under them */
-#corner{position:fixed;top:70px;right:16px;z-index:20;display:flex;flex-direction:column;gap:10px;width:min(360px,calc(100% - 32px));pointer-events:none}
+#corner{position:fixed;top:70px;right:16px;z-index:20;transition:top .4s cubic-bezier(.2,.8,.2,1);display:flex;flex-direction:column;gap:10px;width:min(360px,calc(100% - 32px));pointer-events:none}
 #notes,#toasts{display:flex;flex-direction:column;gap:10px;pointer-events:none}
 #notes:empty,#toasts:empty{display:none}
 #notes .note{margin:0}
@@ -986,10 +986,15 @@ function notify(o){
   if(o.ms)setTimeout(close,o.ms);return n;
 }
 // pop-up panels close with an animation instead of vanishing
-function closePop(el){if(el.hidden||el.classList.contains('closing'))return;if(S.low){el.hidden=true;return}
-  el.classList.add('closing');clearTimeout(el._ct);el._ct=setTimeout(()=>{el.hidden=true;el.classList.remove('closing')},240)}
-function openPop(el){clearTimeout(el._ct);el.classList.remove('closing');el.hidden=false}
+function closePop(el){if(el.hidden||el.classList.contains('closing'))return;if(S.low){el.hidden=true;placeCorner();return}
+  el.classList.add('closing');clearTimeout(el._ct);el._ct=setTimeout(()=>{el.hidden=true;el.classList.remove('closing')},240);placeCorner()}
+function openPop(el,btn){clearTimeout(el._ct);el.classList.remove('closing');el.hidden=false;
+  if(btn){const b=btn.getBoundingClientRect();   // grow out of (and later back into) the button that opened it; layout position, not the animated one
+    el.style.transformOrigin=(b.left+b.width/2-el.offsetLeft).toFixed(0)+'px '+(b.top+b.height/2-el.offsetTop).toFixed(0)+'px'}}
 const popOpen=el=>!el.hidden&&!el.classList.contains('closing');
+function placeCorner(){   // notifications make way: under an open top panel instead of on top of it
+  const o=['cappanel','netpanel'].map(id=>$(id)).find(popOpen);$('corner').style.top=o?(o.offsetTop+o.offsetHeight+12)+'px':''}
+{const ro=new ResizeObserver(()=>requestAnimationFrame(placeCorner));['cappanel','netpanel'].forEach(id=>ro.observe($(id)))}
 function swapText(el,t){if(el.textContent===t)return;el.textContent=t;el.classList.remove('tsw');void el.offsetWidth;el.classList.add('tsw')}   // a label that changes fades in
 function toast(msg,type,ms){
   msg=String(msg);type=type||'err';
@@ -1528,7 +1533,7 @@ async function listInputs(){
     .sort((a,b)=>(LOOP.test(b.label)-LOOP.test(a.label)));
 }
 async function openCapPanel(){
-  const p=$('cappanel'),sel=$('capsel');closePop($('netpanel'));$('netbtn').classList.remove('on');openPop(p);
+  const p=$('cappanel'),sel=$('capsel');closePop($('netpanel'));$('netbtn').classList.remove('on');openPop(p,$('capbtn'));
   $('capbr').hidden=!bridgeOn;if(bridgeOn)$('capbr').textContent='✓ Vibe Bridge is connected'+(bridgeDev?' ('+bridgeDev+')':'')+', so the bars already follow your computer’s sound. Capturing here is only needed without it.';
   sel.innerHTML='<option>Looking for devices…</option>';$('capgo').disabled=true;
   $('captab').textContent=isWin?'Share all computer sound (Spotify app too)':'Share a browser tab or screen instead';$('captab').classList.toggle('pri',isWin);
@@ -2716,7 +2721,7 @@ function devClose(){closePop($('devpanel'));$('devbtn').classList.remove('on')}
 async function devOpen(){
   const p=$('devpanel'),rows=$('devrows');
   if(popOpen(p)){devClose();return}
-  openPop(p);$('devbtn').classList.add('on');placeDev();$('devnote').textContent='';
+  openPop(p);placeDev();openPop(p,$('devbtn'));$('devbtn').classList.add('on');$('devnote').textContent='';
   rows.innerHTML='<p class="hint">Looking for devices…</p>';
   let list;try{list=((await spApi('/me/player/devices'))||{}).devices||[]}catch(e){rows.innerHTML='';const x=document.createElement('p');x.className='hint';x.textContent=e.message;rows.appendChild(x);return}
   rows.innerHTML='';
@@ -3236,7 +3241,7 @@ function netRender(){
 }
 let netT=0;
 function netLoop(){clearTimeout(netT);netPing();netT=setTimeout(netLoop,$('netpanel').hidden?30000:3000)}
-$('netbtn').onclick=e=>{e.stopPropagation();const p=$('netpanel'),open=!popOpen(p);if(open){closePop($('cappanel'));openPop(p)}else closePop(p);$('netbtn').classList.toggle('on',open);if(open){netRender();netLoop()}};
+$('netbtn').onclick=e=>{e.stopPropagation();const p=$('netpanel'),open=!popOpen(p);if(open){closePop($('cappanel'));openPop(p,$('netbtn'))}else closePop(p);$('netbtn').classList.toggle('on',open);if(open){netRender();netLoop()}};
 document.addEventListener('click',e=>{const p=$('netpanel');if(popOpen(p)&&!p.contains(e.target)&&!$('netbtn').contains(e.target)){closePop(p);$('netbtn').classList.remove('on')}});
 $('syncbtn').onclick=resyncNow;
 addEventListener('keydown',e=>{if(e.key==='Escape'){devClose();closePop($('netpanel'));closePop($('cappanel'));$('netbtn').classList.remove('on')}});
