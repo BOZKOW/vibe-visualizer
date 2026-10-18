@@ -216,6 +216,7 @@ body[data-view=viz].credly #lcredit{display:none}
 .pr.err>i{background:#ff6b6b;color:#3a0000}
 .pr b{display:block;font-size:14px}.pr small{display:block;font-size:12.5px;line-height:1.45;opacity:.85;margin-top:2px;font-variant-numeric:tabular-nums}
 .prx{font-size:12px;opacity:.7;padding-left:30px}
+.pok{display:block;margin-top:12px;pointer-events:auto;text-shadow:none}#lprob.big .pr:first-child .pok{margin-top:18px}
 #lprob{position:absolute;left:0;top:4px;z-index:4;display:flex;flex-direction:column;gap:8px;max-width:min(560px,92%);pointer-events:none;text-shadow:0 1px 10px rgba(0,0,0,.6);animation:up .5s cubic-bezier(.2,.8,.2,1)}
 #lprob .pr b{font-size:13px}#lprob .pr small{font-size:12px;font-weight:500}
 /* an error: its text replaces the lyrics. The most important one large, like a lyric line; the others smaller below */
@@ -1703,7 +1704,7 @@ function problemsNow(home){
     else if(sp&&spErrMsg)add(70,'err','Spotify isn’t answering',spErrMsg);
     if(sp&&Date.now()<backoff)add(40,'wait','Spotify is making Vibe Visualizer wait','It asked Spotify too often, so Spotify paused it. It carries on by itself in '+clockLeft((backoff-Date.now())/1000)+(home||out.some(x=>x.k==='err')?'.':'; the lyrics keep running meanwhile.'));
   }
-  if(appProb&&Date.now()-appProb.at<12000)add(appProb.k==='err'?60:30,appProb.k||'err',appProb.t,appProb.s);   // a one-off: shown for 12 s
+  if(appProb&&Date.now()-appProb.at<10000){add(appProb.k==='err'?60:30,appProb.k||'err',appProb.t,appProb.s);out[out.length-1].ok=1}   // one-off errors and warnings: 10 s or until OK. The serious ones above stay until they're solved
   return out.sort((a,b)=>b.pr-a.pr);
 }
 function showProblems(el,list,max){
@@ -1712,7 +1713,9 @@ function showProblems(el,list,max){
   el.classList.toggle('err',list[0].k==='err');el.textContent='';
   list.slice(0,max).forEach((p,i)=>{const r=document.createElement('div');r.className='pr'+(i?' more':'')+(p.k==='err'?' err':'');
     const ic=document.createElement('i');ic.setAttribute('aria-hidden','true');ic.textContent='!';
-    const tx=document.createElement('div'),b=document.createElement('b'),sm=document.createElement('small');b.textContent=p.t;sm.textContent=p.s;tx.append(b,sm);r.append(ic,tx);el.appendChild(r)});
+    const tx=document.createElement('div'),b=document.createElement('b'),sm=document.createElement('small');b.textContent=p.t;sm.textContent=p.s;tx.append(b,sm);
+    if(p.ok){const ok=document.createElement('button');ok.type='button';ok.className='btn sm pok';ok.textContent='OK';ok.onclick=()=>{appProb=null;renderProblem()};tx.appendChild(ok)}
+    r.append(ic,tx);el.appendChild(r)});
   if(list.length>max){const x=document.createElement('small');x.className='prx';x.textContent='+ '+(list.length-max)+' more';el.appendChild(x)}
   el.hidden=false;
 }
