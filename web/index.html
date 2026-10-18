@@ -66,10 +66,12 @@ body.cvmode.cvnoart #left{justify-content:flex-end}   /* no cover: the text drop
 #artw{position:relative;width:100%;aspect-ratio:1;border-radius:clamp(16px,2vw,28px);overflow:hidden;background:rgba(255,255,255,.1);transition:transform .07s ease-out,box-shadow .12s linear;
   /* depth: a tight contact shadow, a soft wide one as from a light above, and a faint glow in the cover's colour */
   box-shadow:0 1px 2px rgba(0,0,0,.35),0 8px 16px rgba(0,0,0,.28),0 28px 56px -8px rgba(0,0,0,.5),0 60px 110px -20px rgba(0,0,0,.55),0 0 90px -30px var(--acc)}
-/* 3D: the cover tilts a little toward the pointer (JS sets --rx/--ry), with a sheen where the light hits */
-#artw::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:var(--sheen,0);transition:opacity .4s;
-  background:radial-gradient(circle at var(--shx,30%) var(--shy,20%),rgba(255,255,255,.28),rgba(255,255,255,0) 55%);mix-blend-mode:soft-light}
-#artw::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:1;box-shadow:inset 0 1px 0 rgba(255,255,255,.25),inset 0 -1px 0 rgba(0,0,0,.25)}
+/* 3D through light, not movement: a fixed glossy highlight from the top-left, a bright top edge and a darker
+   bottom edge, so the cover reads as a raised card floating above its shadow */
+#artw::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:1;
+  background:linear-gradient(155deg,rgba(255,255,255,.22) 0%,rgba(255,255,255,.06) 28%,rgba(255,255,255,0) 45%,rgba(0,0,0,0) 70%,rgba(0,0,0,.18) 100%);mix-blend-mode:soft-light}
+#artw::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:2;
+  box-shadow:inset 0 1.5px 0 rgba(255,255,255,.35),inset 1px 0 0 rgba(255,255,255,.12),inset 0 -2px 0 rgba(0,0,0,.3),inset -1px 0 0 rgba(0,0,0,.15)}
 body.cvmode #ttl{transform-origin:center}
 body.flip #stage,body.flip #artw,body.flip #ttl{transition:none!important}
 #art{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none}
@@ -2716,23 +2718,7 @@ function goHome(){
 }
 function leaveHome(){if(!body.classList.contains('home'))return;body.classList.remove('home');if(src!=='none'||loaded)$('empty').classList.add('gone')}
 $('brand').onclick=goHome;
-// 3D: the cover tilts toward the pointer (up to ~7°), with a sheen; flat in low performance / reduced motion and during the Canvas move
-(function coverTilt(){
-  const area=$('left');let raf=0,tx=0,ty=0,cx=0,cy=0,on=false;
-  const still=()=>S.low||matchMedia('(prefers-reduced-motion: reduce)').matches||flipping||body.classList.contains('cvmode');
-  function step(){
-    cx+=(tx-cx)*.15;cy+=(ty-cy)*.15;
-    const done=Math.abs(tx-cx)<.01&&Math.abs(ty-cy)<.01;
-    if(still()){artw.style.removeProperty('transform');artw.style.setProperty('--sheen',0);raf=0;return}
-    artw.style.transform=Math.abs(cx)+Math.abs(cy)<.02&&!on?'':'perspective(900px) rotateX('+(-cy*7).toFixed(2)+'deg) rotateY('+(cx*7).toFixed(2)+'deg)';
-    artw.style.setProperty('--shx',(50+cx*45).toFixed(1)+'%');artw.style.setProperty('--shy',(50+cy*45).toFixed(1)+'%');artw.style.setProperty('--sheen',on?1:0);
-    raf=done&&!on?0:requestAnimationFrame(step);
-    if(done&&on)raf=0;
-  }
-  area.addEventListener('pointermove',e=>{const r=artw.getBoundingClientRect();if(!r.width)return;
-    tx=Math.max(-1,Math.min(1,(e.clientX-r.left-r.width/2)/(r.width/2)));ty=Math.max(-1,Math.min(1,(e.clientY-r.top-r.height/2)/(r.height/2)));on=true;if(!raf)raf=requestAnimationFrame(step)});
-  area.addEventListener('pointerleave',()=>{tx=ty=0;on=false;if(!raf)raf=requestAnimationFrame(step)});
-})();
+
 $('brand').onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();goHome()}};
 $('hback').onclick=leaveHome;
 $('hsetup').onclick=()=>{leaveHome();wzOpen()};$('hset').onclick=()=>{leaveHome();openPanel()};$('hnew').onclick=()=>{leaveHome();openPanel('help');checkUpdate(true)};
