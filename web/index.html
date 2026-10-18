@@ -213,13 +213,14 @@ body[data-view=viz].credly #lcredit{display:none}
 #hprob i{flex:none;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-style:normal;font-weight:800;font-size:13px;background:#ffc857;color:#3a2600;margin-top:1px}
 #hprob b{display:block;font-size:14px}#hprob small{display:block;font-size:12.5px;line-height:1.45;opacity:.85;margin-top:3px;font-variant-numeric:tabular-nums}
 #hprob.err{background:rgba(255,107,107,.1);border-color:rgba(255,107,107,.4);color:#ffd6d6}#hprob.err i{background:#ff6b6b;color:#3a0000}
-#lprob{position:absolute;left:0;top:-4px;z-index:4;display:flex;gap:10px;align-items:flex-start;max-width:min(560px,92%);padding:10px 14px;border-radius:14px;pointer-events:none;box-shadow:0 10px 30px rgba(0,0,0,.3);
-  background:rgba(16,16,26,.82);border:1px solid rgba(255,200,87,.4);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);color:#ffe8b8;animation:up .5s cubic-bezier(.2,.8,.2,1)}
+#lprob{position:absolute;left:0;top:4px;z-index:4;display:flex;gap:10px;align-items:flex-start;max-width:min(560px,92%);pointer-events:none;color:#ffe8b8;text-shadow:0 1px 10px rgba(0,0,0,.6);animation:up .5s cubic-bezier(.2,.8,.2,1)}
 #lprob b{display:block;font-size:13px}#lprob small{display:block;font-size:12px;font-weight:500;opacity:.85;font-variant-numeric:tabular-nums}
-#lprob.err{border-color:rgba(255,107,107,.45);color:#ffd6d6}
+#lprob.err{color:#ffd6d6}
+#lprob.big>div{display:flex;flex-direction:column}
 #lprob>i{flex:none;width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font-style:normal;font-weight:800;font-size:12px;background:#ffc857;color:#3a2600;margin-top:1px}#lprob.err>i{background:#ff6b6b;color:#3a0000}
 #lprob.big>i{display:none}
-#lprob.big{top:30%;padding:0 6% 0 0;max-width:none;background:none;border:0;backdrop-filter:none;-webkit-backdrop-filter:none}
+#lprob.big{top:30%;padding:0 6% 0 0;max-width:none}
+body.prob #ly{opacity:0;pointer-events:none;transition:opacity .4s}   /* an error: its text replaces the lyrics */
 #lprob.big b{font-size:calc(clamp(22px,2.8vw,42px)*var(--ls));font-weight:800;letter-spacing:-.025em;line-height:1.15}
 #lprob.big small{font-size:15px;font-weight:600;margin-top:10px;max-width:46ch}
 body.prob #lmsg{opacity:0}
@@ -1702,7 +1703,7 @@ function showProblem(el,p){
 }
 function renderProblem(){
   showProblem($('hprob'),problemNow(true));
-  const p=problemNow(false),lp=$('lprob'),big=!!p&&!L.length&&S.view!=='viz';
+  const p=problemNow(false),lp=$('lprob'),big=!!p&&S.view!=='viz'&&(p.k==='err'||!L.length);
   lp.classList.toggle('big',big);body.classList.toggle('prob',big);showProblem(lp,p);
 }
 function spSched(extra){
@@ -3401,9 +3402,10 @@ async function netPing(){
   if(!PREFS){$('netms').textContent='local';return}
   await timed('app',()=>fetch('manifest.webmanifest',{method:'HEAD',cache:'no-store'})).catch(()=>{});
   try{const r=await timed('helper',()=>fetch('/api/health',{cache:'no-store'}));netHealth=r.ok?await r.json():null}catch(e){netHealth=null}
-  const a=NET.app,b=$('netbtn');
-  b.classList.remove('good','ok','bad');
-  if(a&&a.ms!=null&&a.status<400){$('netms').textContent=a.ms+' ms';b.classList.add(lvl(a.ms,true))}else{$('netms').textContent='offline';b.classList.add('bad')}
+  const a=NET.app,b=$('netbtn'),up=(a&&a.ms!=null&&a.status<400)||!!netHealth;   // the server answered one of the two
+  netFails=up?0:netFails+1;
+  if(up){b.classList.remove('good','ok','bad');if(a&&a.ms!=null&&a.status<400){$('netms').textContent=a.ms+' ms';b.classList.add(lvl(a.ms,true))}else{$('netms').textContent='–';b.classList.add('ok')}}
+  else if(netFails>=2){b.classList.remove('good','ok');$('netms').textContent='offline';b.classList.add('bad')}   // one lost request isn't "offline"
   if(!$('netpanel').hidden)netRender();
 }
 function netRender(){
@@ -3431,7 +3433,8 @@ function netRender(){
   $('netnote').textContent=PREFS?'updates every 3 s':'';
 }
 let netT=0;
-function netLoop(){clearTimeout(netT);netPing();netT=setTimeout(netLoop,$('netpanel').hidden?30000:3000)}
+let netFails=0;
+async function netLoop(){clearTimeout(netT);await netPing();netT=setTimeout(netLoop,netFails?5000:$('netpanel').hidden?30000:3000)}   // after a failure, check again soon
 $('netbtn').onclick=e=>{e.stopPropagation();const p=$('netpanel'),open=!popOpen(p);if(open){closePop($('cappanel'));openPop(p,$('netbtn'))}else closePop(p);$('netbtn').classList.toggle('on',open);if(open){netRender();netLoop()}};
 document.addEventListener('click',e=>{const p=$('netpanel');if(popOpen(p)&&!p.contains(e.target)&&!$('netbtn').contains(e.target)){closePop(p);$('netbtn').classList.remove('on')}});
 $('syncbtn').onclick=resyncNow;
