@@ -435,7 +435,7 @@ code,kbd{font:12px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;backgrou
 .closing{animation:popout .22s ease-in forwards!important;pointer-events:none}@keyframes popout{to{opacity:0;transform:scale(.94) translateY(4px)}}
 .tsw{animation:tsw .4s cubic-bezier(.2,.8,.2,1)}@keyframes tsw{from{opacity:0;filter:blur(3px)}}
 #corner .toast.bye{opacity:0;transform:translateX(24px) scale(.97);transition:opacity .25s,transform .25s}
-.chip.live .dot,.nrow.good i,#capbtn.bridge svg{animation:livedot 2.6s ease-in-out infinite}@keyframes livedot{50%{opacity:.6;filter:brightness(.8)}}
+.chip.live .dot,.nrow.good i,#capbtn.bridge svg{animation:livedot 2.6s ease-in-out infinite}@keyframes livedot{50%{opacity:.55}}   /* opacity only: the graphics chip runs it, no restyle every frame */
 #pnav{position:relative}#pnav>.pn{position:relative;z-index:1}
 #pnavpill{position:absolute;z-index:0;border-radius:10px;background:rgba(255,255,255,.12);pointer-events:none;transition:top .4s cubic-bezier(.34,1.3,.64,1),left .4s cubic-bezier(.34,1.3,.64,1),width .4s,height .4s cubic-bezier(.34,1.3,.64,1),opacity .2s,transform .35s cubic-bezier(.34,1.56,.64,1)}
 #pnav.haspill .pn.on{background:transparent;box-shadow:none}
@@ -583,7 +583,7 @@ body.low #cappanel,body.low #netpanel,body.low #setup .sw{background:rgba(20,20,
 #psearch::placeholder,.tin::placeholder{color:rgba(255,255,255,.55)}
 .lq{position:relative;transition:transform .5s cubic-bezier(.34,1.56,.64,1),background .25s,box-shadow .3s}
 .lq::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:0;transition:opacity .3s;
-  background:radial-gradient(circle at var(--mx,50%) var(--my,50%),rgba(255,255,255,.32),rgba(255,255,255,0) 60%);mix-blend-mode:screen}
+  background:radial-gradient(circle at var(--mx,50%) var(--my,50%),rgba(255,255,255,.26),rgba(255,255,255,0) 60%)}
 .lq:hover::after{opacity:1}
 .lq:hover{transform:scale(1.06)}
 .lq.press{transform:scale(.9,.86);transition:transform .12s cubic-bezier(.3,0,.5,1)}
@@ -598,7 +598,7 @@ body.low #cappanel,body.low #netpanel,body.low #setup .sw{background:rgba(20,20,
   -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0)}
 .lq:hover::before{opacity:1}
 .lqr{position:absolute;left:var(--rx);top:var(--ry);width:var(--rs);height:var(--rs);border-radius:50%;pointer-events:none;z-index:0;transform:translate(-50%,-50%) scale(0);
-  background:radial-gradient(circle,rgba(255,255,255,.6),rgba(255,255,255,.2) 45%,rgba(255,255,255,0) 70%);mix-blend-mode:screen;animation:lqr .65s cubic-bezier(.2,.8,.2,1) forwards}
+  background:radial-gradient(circle,rgba(255,255,255,.5),rgba(255,255,255,.16) 45%,rgba(255,255,255,0) 70%);animation:lqr .65s cubic-bezier(.2,.8,.2,1) forwards}
 @keyframes lqr{to{transform:translate(-50%,-50%) scale(1);opacity:0}}
 #cappanel:not([hidden]),#netpanel:not([hidden]),#devpanel:not([hidden]),#notes .note{animation:liquidin .6s cubic-bezier(.2,.8,.2,1)}
 #cappanel.closing,#netpanel.closing,#devpanel.closing{animation:liquidout .24s cubic-bezier(.5,0,.75,0) forwards!important}@keyframes liquidout{to{opacity:0;transform:scale(.62,.45);filter:blur(10px)}}
@@ -2869,20 +2869,31 @@ function closePanel(){$('panel').classList.remove('open');body.classList.remove(
 // Liquid Glass behaviour for every control: pointer-following highlight, squish on press, springy release
 function liquid(el){
   if(el._lq)return;el._lq=1;el.classList.add('lq');
-  el.addEventListener('pointermove',e=>{const r=el.getBoundingClientRect(),x=(e.clientX-r.left)/r.width,y=(e.clientY-r.top)/r.height,dx=x*2-1,dy=y*2-1;
-    el.style.setProperty('--mx',(x*100).toFixed(1)+'%');el.style.setProperty('--my',(y*100).toFixed(1)+'%');
-    // jelly: the control leans toward the pointer and stretches along that direction
-    el.style.setProperty('--dx',dx.toFixed(3));el.style.setProperty('--dy',dy.toFixed(3));el.style.setProperty('--ax',Math.abs(dx).toFixed(3));el.style.setProperty('--ay',Math.abs(dy).toFixed(3))});
+  // pointer tracking: measure once when the pointer comes in, update at most once a frame, write only what changed
+  let r=null,q=0,px=0,py=0;const last={};
+  const put=(k,v)=>{if(last[k]!==v){last[k]=v;el.style.setProperty(k,v)}};
+  const paint=()=>{q=0;if(!r)return;
+    const x=Math.min(1,Math.max(0,(px-r.left)/r.width)),y=Math.min(1,Math.max(0,(py-r.top)/r.height)),dx=x*2-1,dy=y*2-1;
+    // in steps: the springy transition smooths them, and most small pointer moves then change nothing (no restyle,
+    // no repaint, no re-blurring the glass behind the control)
+    const st=v=>Math.round(v*4)/4;
+    put('--mx',Math.round(x*20)*5+'%');put('--my',Math.round(y*20)*5+'%');   // highlight and rim position
+    put('--dx',st(dx).toFixed(2));put('--dy',st(dy).toFixed(2));put('--ax',Math.abs(st(dx)).toFixed(2));put('--ay',Math.abs(st(dy)).toFixed(2))};   // jelly lean
+  el.addEventListener('pointerenter',()=>{r=el.getBoundingClientRect()},{passive:true});
+  el.addEventListener('pointermove',e=>{if(S.design==='classic'||S.low)return;px=e.clientX;py=e.clientY;if(!r)r=el.getBoundingClientRect();if(!q)q=requestAnimationFrame(paint)},{passive:true});
   el.addEventListener('pointerdown',e=>{el.classList.add('press');
     if(S.design==='classic'||S.low)return;   // a droplet ripple from where it was pressed
-    const r=el.getBoundingClientRect(),d=document.createElement('span');d.className='lqr';d.setAttribute('aria-hidden','true');
-    d.style.setProperty('--rx',(e.clientX-r.left)+'px');d.style.setProperty('--ry',(e.clientY-r.top)+'px');d.style.setProperty('--rs',(Math.max(r.width,r.height)*2.2)+'px');
+    const b=r||el.getBoundingClientRect(),d=document.createElement('span');d.className='lqr';d.setAttribute('aria-hidden','true');
+    d.style.setProperty('--rx',(e.clientX-b.left)+'px');d.style.setProperty('--ry',(e.clientY-b.top)+'px');d.style.setProperty('--rs',(Math.max(b.width,b.height)*2.2)+'px');
     el.appendChild(d);setTimeout(()=>d.remove(),700)});
   const up=()=>el.classList.remove('press');el.addEventListener('pointerup',up);el.addEventListener('pointercancel',up);
-  el.addEventListener('pointerleave',()=>{up();['--dx','--dy','--ax','--ay'].forEach(k=>el.style.removeProperty(k))});
+  el.addEventListener('pointerleave',()=>{up();r=null;cancelAnimationFrame(q);q=0;['--dx','--dy','--ax','--ay'].forEach(k=>{delete last[k];el.style.removeProperty(k)})});
 }
-const liquidAll=()=>document.querySelectorAll('.ib,.chip,.btn,#seg button,#pnav .pn,.prow,.opt').forEach(liquid);
-liquidAll();new MutationObserver(liquidAll).observe(document.body,{childList:true,subtree:true});
+const LQ_SEL='.ib,.chip,.btn,#seg button,#pnav .pn,.prow,.opt';
+document.querySelectorAll(LQ_SEL).forEach(liquid);
+// controls added later (panels, rows): only look at what was added, not the whole page on every change
+new MutationObserver(ms=>{for(const m of ms)for(const n of m.addedNodes){if(n.nodeType!==1||n.classList.contains('lqr'))continue;
+  if(n.matches(LQ_SEL))liquid(n);if(n.firstElementChild)n.querySelectorAll(LQ_SEL).forEach(liquid)}}).observe(document.body,{childList:true,subtree:true});
 $('gear').onclick=()=>$('panel').classList.contains('open')?closePanel():openPanel();
 $('pclose').onclick=closePanel;
 function nudgeVol(d){if(src==='spotify'){if(!$('spvol').disabled)spSetVol(+$('spvol').value+d);return}S.volume=Math.max(0,Math.min(100,S.volume+d));syncInputs();onSetting('volume');save()}
@@ -2911,7 +2922,7 @@ addEventListener('keydown',e=>{
 });
 let tm;
 function poke(){
-  body.classList.remove('uihide','idle');clearTimeout(tm);
+  if(body.classList.contains('uihide')||body.classList.contains('idle'))body.classList.remove('uihide','idle');clearTimeout(tm);   // touch <body> only when it changes: on every mouse move it restyled the whole page
   if(playing()&&S.uiHide!=='never'&&!$('panel').classList.contains('open'))tm=setTimeout(()=>{
     const a=document.activeElement;
     if($('dock').matches(':hover')||$('top').matches(':hover')||(a&&a.tagName==='SELECT')||['devpanel','cappanel','netpanel'].some(id=>popOpen($(id))))return poke();   // not while a panel is open
