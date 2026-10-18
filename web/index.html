@@ -1633,7 +1633,7 @@ async function spApi(path,method,body,raw){
   if(r.status===403)throw new Error('Spotify refused access (403). In development mode your account must be added under the app’s User Management.');
   if(method&&method!=='GET'){if(r.status===404)throw new Error('No active Spotify device. Start playing in Spotify first.');if(r.ok)return null}
   if(r.status===429){   // through your server Spotify's Retry-After is known; directly it isn't (Spotify hides it from pages): then back off hard
-    spRateN=Math.min(spRateN+1,6);spRateAt=Date.now();const ra=+r.headers.get('Retry-After')||0;
+    spRateN=Math.min(spRateN+1,6);spRateAt=Date.now();if(spRateN===1)spPaceSlower();const ra=+r.headers.get('Retry-After')||0;
     const wait=ra||Math.min(300,10*2**(spRateN-1));   // known wait, or 10, 20, 40, 80, 160, 300 s
     backoff=Date.now()+wait*1000;spWaitKnown=ra?wait:0;updChips();
     const e=new Error(ra?'Spotify asked Vibe Visualizer to wait '+fmtWait(ra)+' before asking again. It will carry on by itself then; the lyrics keep running meanwhile.'
@@ -1644,10 +1644,17 @@ async function spApi(path,method,body,raw){
 function setIdle(){ttl.textContent='Nothing playing';sub.textContent='Play something in Spotify';status.textContent='';lstat.textContent=''}
 // how often to ask Spotify: often enough to stay in sync (the position is extrapolated in between), rarely enough
 // not to hit Spotify's rate limit; right after the song should end, to pick up the next one quickly
+// the pace adapts to Spotify's limit for this app: each refusal slows it (3 → 5 → 8 → 12 → 15 s while playing), and
+// after 30 minutes without one it speeds back up a step at a time. Kept in this browser, so a reload doesn't reset it.
+const SP_PACE=[3000,5000,8000,12000,15000];
+function spPaceGet(){try{const p=JSON.parse(localStorage.getItem('vv_sppace')||'{}');return{i:Math.max(0,Math.min(SP_PACE.length-1,p.i|0)),at:+p.at||0}}catch(e){return{i:0,at:0}}}
+function spPaceSet(p){try{localStorage.setItem('vv_sppace',JSON.stringify(p))}catch(e){}}
+function spPaceNow(){const p=spPaceGet();if(p.i>0&&Date.now()-p.at>1800000){p.i--;p.at=Date.now();spPaceSet(p)}return SP_PACE[p.i]}
+function spPaceSlower(){const p=spPaceGet();p.i=Math.min(SP_PACE.length-1,p.i+1);p.at=Date.now();spPaceSet(p)}
 function spSched(extra){
   clearTimeout(spTimer);if(src!=='spotify')return;
-  const slow=Date.now()-spRateAt<600000;   // for 10 minutes after Spotify said slow down, ask less often
-  let d=(document.hidden?15000:spPlaying()?(slow?5000:3000):(slow?10000:6000))+(extra||0);
+  const pace=spPaceNow();   // 3 s normally; slower after Spotify said slow down (remembered across reloads)
+  let d=(document.hidden?Math.max(15000,pace*2):spPlaying()?pace:pace*2)+(extra||0);
   if(spPlaying()&&spState){const left=spState.duration-curMs();if(left>0&&left+400<d)d=left+400}
   if(Date.now()<backoff)d=Math.max(d,backoff-Date.now()+50);
   spTimer=setTimeout(spPoll,d);
