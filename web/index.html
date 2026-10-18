@@ -3074,18 +3074,26 @@ function nextUpFly(m){
   $('stage').appendChild(f);   // inside the stage, under the cover: it flows behind it
   el.hidden=true;el.classList.remove('nin','nout');clearTimeout(el._t);
   artw.style.zIndex=2;
-  requestAnimationFrame(()=>{
-    const b=artw.getBoundingClientRect();if(!b.width){f.remove();artw.style.zIndex='';return}
-    const dx=(b.left+b.width/2)-(a.left+a.width/2),dy=(b.top+b.height/2)-(a.top+a.height/2),sx=b.width*.8/a.width,sy=b.height*.8/a.height;
-    f.animate([
-      {transform:'translate(0,0) scale(1,1)',filter:'blur(0)',opacity:1,borderRadius:'16px'},
-      {transform:'translate(0,6px) scale(1.06,.86)',filter:'blur(0)',opacity:1,offset:.18},   // squashes like a drop about to jump
-      {transform:'translate('+dx*.3+'px,'+dy*.3+'px) scale(.92,1.5)',filter:'blur(3px)',opacity:1,offset:.4},   // stretches up as it lifts
-      {transform:'translate('+dx*.8+'px,'+dy*.8+'px) scale('+sx*.8+','+sy*.8+')',filter:'blur(10px)',opacity:.9,offset:.7},   // flows under the cover
-      {transform:'translate('+dx+'px,'+dy+'px) scale('+sx+','+sy+')',filter:'blur(16px)',opacity:0,borderRadius:'40%'}],   // and is absorbed
-      {duration:1150,easing:'cubic-bezier(.45,0,.25,1)',fill:'forwards'}).onfinish=()=>{f.remove();artw.style.zIndex=''};
-    artw.animate([{transform:'scale(1)',filter:'brightness(1)'},{transform:'scale(1)',filter:'brightness(1)',offset:.55},{transform:'scale(1.035)',filter:'brightness(1.12)',offset:.8},{transform:'scale(1)',filter:'brightness(1)'}],{duration:1200,easing:'ease-out'});   // the cover swells a little as it takes it in
-  });
+  // follows the cover frame by frame: if the layout changes meanwhile (a Canvas layout ending, a new title), it still flows
+  // into wherever the cover is. Drawn by hand along the same path: squash, stretch up, flow under, absorbed.
+  const t0=performance.now(),dur=1150,ease=x=>x<.5?4*x*x*x:1-Math.pow(-2*x+2,3)/2,lerp=(p,q,k)=>p+(q-p)*k;
+  const step=now=>{
+    const k=Math.min(1,(now-t0)/dur),e=ease(k),b=artw.getBoundingClientRect();
+    if(!b.width||!document.body.contains(f)){f.remove();artw.style.zIndex='';return}
+    const dx=(b.left+b.width/2)-(a.left+a.width/2),dy=(b.top+b.height/2)-(a.top+a.height/2),SX=b.width*.8/a.width,SY=b.height*.8/a.height;
+    const K=[   // t: where in the motion · x,y: share of the way to the cover · px: extra drop · sx,sy: scale · bl: blur · op: opacity
+      {t:0,x:0,y:0,px:0,sx:1,sy:1,bl:0,op:1},
+      {t:.18,x:0,y:0,px:6,sx:1.06,sy:.86,bl:0,op:1},                 // squashes like a drop about to jump
+      {t:.4,x:.3,y:.3,px:0,sx:.92,sy:1.5,bl:3,op:1},                  // stretches up as it lifts
+      {t:.75,x:.8,y:.8,px:0,sx:lerp(1,SX,.8),sy:lerp(1,SY,.8),bl:10,op:.9},   // flows under the cover
+      {t:1,x:1,y:1,px:0,sx:SX,sy:SY,bl:16,op:0}];                     // and is absorbed
+    let i=0;while(i<K.length-2&&e>K[i+1].t)i++;const P=K[i],Q=K[i+1],u=(e-P.t)/(Q.t-P.t),v=n=>lerp(P[n],Q[n],u);
+    f.style.transform='translate('+(dx*v('x')).toFixed(1)+'px,'+(dy*v('y')+v('px')).toFixed(1)+'px) scale('+v('sx').toFixed(3)+','+v('sy').toFixed(3)+')';
+    f.style.filter='blur('+v('bl').toFixed(1)+'px)';f.style.opacity=v('op').toFixed(3);f.style.borderRadius=e>.6?'40%':'16px';
+    if(k<1)requestAnimationFrame(step);else{f.remove();artw.style.zIndex=''}
+  };
+  requestAnimationFrame(step);
+  artw.animate([{scale:'1',filter:'brightness(1)'},{scale:'1',filter:'brightness(1)',offset:.55},{scale:'1.035',filter:'brightness(1.12)',offset:.8},{scale:'1',filter:'brightness(1)'}],{duration:1200,easing:'ease-out'});   // the cover swells a little as it takes it in ('scale' on its own, so it never fights the layout glide's 'transform')
 }
 function nextUpTick(){
   const el=$('nextup');
