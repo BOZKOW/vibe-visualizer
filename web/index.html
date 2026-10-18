@@ -170,7 +170,7 @@ body.low .ll .w,body.low .ll .w .c{scale:1;transform:none}
 .lchip.on{background:#fff;color:#111;border-color:#fff}
 /* lyrics source priority list */
 #provlist{display:flex;flex-direction:column;gap:6px;margin-top:2px}
-.prow{display:grid;grid-template-columns:20px 1fr auto auto auto;align-items:center;gap:6px;padding:8px 10px;border-radius:12px;transition:opacity .3s,background .3s}
+.prow{display:grid;grid-template-columns:20px 1fr auto auto auto;align-items:center;gap:6px;padding:8px 10px;border-radius:12px;transition:opacity .3s,background .3s;border:1px solid var(--line);background:rgba(255,255,255,.04)}
 .prow.off{opacity:.45}
 .prow .pn{font-weight:800;color:var(--faint);text-align:center}
 .prow b{display:block;font-size:13px;color:#fff}.prow small{display:block;font-size:11px;font-weight:500;color:var(--faint)}
@@ -213,16 +213,16 @@ body.hl #lmsg,body[data-view=viz] #lmsg{display:none}
 .brand:hover{background:rgba(255,255,255,.08)}.brand:active{transform:scale(.95)}
 .brand i{width:10px;height:10px;border-radius:50%;background:var(--acc);box-shadow:0 0 14px var(--acc)}
 .grp{display:flex;align-items:center;gap:8px}
-#seg{position:relative;display:flex;padding:3px;border-radius:999px;}
+#seg{position:relative;display:flex;padding:3px;border-radius:999px;background:rgba(20,20,30,.45);border:1px solid var(--line);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
 #seg button{position:relative;z-index:1;border:0;background:transparent;padding:6px 14px;border-radius:999px;cursor:pointer;font-weight:600;font-size:13px;color:var(--dim)}
 #seg button.on{color:#111}
 #segpill{position:absolute;top:3px;bottom:3px;left:3px;width:0;border-radius:999px;background:#fff;box-shadow:0 2px 10px rgba(0,0,0,.25)}
 #segpill.ready{transition:left .45s cubic-bezier(.34,1.35,.64,1),width .45s cubic-bezier(.34,1.35,.64,1)}
-.chip{display:flex;align-items:center;gap:8px;padding:8px 14px;border-radius:999px;cursor:pointer;font-weight:600;font-size:13px}
+.chip{display:flex;align-items:center;gap:8px;padding:8px 14px;border-radius:999px;cursor:pointer;font-weight:600;font-size:13px;border:1px solid var(--line);background:rgba(20,20,30,.45);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
 .chip .dot{width:8px;height:8px;border-radius:50%;background:var(--faint)}
 .chip.live .dot{background:#1ed760;box-shadow:0 0 10px #1ed760}.chip.err .dot{background:#ff6b6b}
 .chip.on{border-color:rgba(255,255,255,.5)}
-.ib{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;cursor:pointer;flex:none;}.ib:active{transform:scale(.94)}
+.ib{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;cursor:pointer;flex:none;border:0;background:var(--glass)}.ib:active{transform:scale(.94)}
 .ib:disabled{opacity:.4;cursor:not-allowed}
 .ib svg{width:18px;height:18px;fill:currentColor}
 #fpsEl{position:fixed;bottom:6px;left:10px;font-size:11px;color:var(--faint);display:none;z-index:3}
@@ -232,7 +232,7 @@ body.hl #lmsg,body[data-view=viz] #lmsg{display:none}
 body.uihide #dock{opacity:0;transform:translate(-50%,12px);pointer-events:none;visibility:hidden;transition:opacity .35s,transform .35s,visibility 0s .35s}
 body.uihide #top{opacity:0;transform:translateY(-10px);pointer-events:none}
 body.idle{cursor:none}
-.glass{border-radius:22px;}
+.glass{border-radius:22px;background:rgba(20,20,30,.4);border:1px solid var(--line);backdrop-filter:blur(16px) saturate(1.3);-webkit-backdrop-filter:blur(16px) saturate(1.3)}
 #bar{display:flex;flex-wrap:wrap;align-items:center;gap:12px 14px;padding:14px 22px;border-radius:30px}
 #bar .ib svg{width:20px;height:20px}
 #prev,#next{width:44px;height:44px;background:transparent}#prev:hover,#next:hover{background:rgba(255,255,255,.14)}
@@ -267,20 +267,7 @@ input[type=range]::-moz-range-progress{height:4px;border-radius:2px;background:v
 input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;height:13px;border-radius:50%;background:#fff;margin-top:-4.5px}
 input[type=range]::-moz-range-thumb{width:13px;height:13px;border:0;border-radius:50%;background:#fff}
 input[type=range]:disabled{opacity:.5;cursor:default}
-/* the bottom bar's progress and volume sliders are glass: a frosted tube with a sheen on top, and a glass bead */
-#bar input[type=range]{height:26px}
-#bar input[type=range]::-webkit-slider-runnable-track{height:8px;border-radius:99px;
-  background:linear-gradient(180deg,rgba(255,255,255,.32),rgba(255,255,255,0) 65%),linear-gradient(90deg,var(--acc) var(--p,0%),rgba(255,255,255,.1) var(--p,0%));
-  box-shadow:inset 0 0 0 1px rgba(255,255,255,.16),inset 0 1px 2px rgba(0,0,0,.35),0 1px 0 rgba(255,255,255,.06)}
-#bar input[type=range]::-moz-range-track{height:8px;border-radius:99px;background:linear-gradient(180deg,rgba(255,255,255,.28),rgba(255,255,255,0) 65%),rgba(255,255,255,.1);box-shadow:inset 0 0 0 1px rgba(255,255,255,.16),inset 0 1px 2px rgba(0,0,0,.35)}
-#bar input[type=range]::-moz-range-progress{height:8px;border-radius:99px;background:linear-gradient(180deg,rgba(255,255,255,.32),rgba(255,255,255,0) 65%),var(--acc)}
-#bar input[type=range]::-webkit-slider-thumb{width:18px;height:18px;margin-top:-5px;border:1px solid rgba(255,255,255,.75);
-  background:radial-gradient(circle at 35% 30%,#fff 0,rgba(255,255,255,.9) 35%,rgba(225,225,240,.6) 100%);
-  box-shadow:0 2px 8px rgba(0,0,0,.35),0 0 0 4px rgba(255,255,255,.08),inset 0 -2px 3px rgba(0,0,0,.12);transition:transform .2s cubic-bezier(.34,1.56,.64,1),box-shadow .2s}
-#bar input[type=range]::-moz-range-thumb{width:18px;height:18px;border:1px solid rgba(255,255,255,.75);background:radial-gradient(circle at 35% 30%,#fff 0,rgba(255,255,255,.9) 35%,rgba(225,225,240,.6) 100%);box-shadow:0 2px 8px rgba(0,0,0,.35),0 0 0 4px rgba(255,255,255,.08)}
-#bar input[type=range]:hover::-webkit-slider-thumb,#bar input[type=range]:active::-webkit-slider-thumb{transform:scale(1.15);box-shadow:0 3px 12px rgba(0,0,0,.4),0 0 0 6px rgba(255,255,255,.12),inset 0 -2px 3px rgba(0,0,0,.12)}
-body.low #bar input[type=range]::-webkit-slider-thumb{transition:none}
-select{color:var(--fg);border-radius:12px;padding:7px 10px;font:inherit;font-size:13px;font-weight:600}
+select{color:var(--fg);border-radius:12px;padding:7px 10px;font:inherit;font-size:13px;font-weight:600;background:var(--glass);border:1px solid var(--line)}
 select option{background:#14141f}
 
 /* ---------- empty state ---------- */
@@ -300,16 +287,16 @@ body.home #empty #hback:not([hidden])+#pick{background:var(--glass);color:var(--
 
 /* ---------- settings drawer ---------- */
 /* Settings: a window in the middle, categories on the left, one page at a time on the right */
-#panel{position:fixed;inset:0;z-index:8;display:grid;place-items:center;padding:16px;opacity:0;visibility:hidden;transition:opacity .25s,visibility 0s .25s}
+#panel{position:fixed;inset:0;z-index:8;display:grid;place-items:center;padding:16px;opacity:0;visibility:hidden;transition:opacity .25s,visibility 0s .25s;background:rgba(4,4,10,.5);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
 #panel.open{opacity:1;visibility:visible;transition:opacity .25s}
-#pwin{position:relative;width:min(940px,100%);height:min(700px,100%);display:grid;grid-template-columns:220px 1fr;overflow:hidden;transform:translateY(14px) scale(.97);}
+#pwin{position:relative;width:min(940px,100%);height:min(700px,100%);display:grid;grid-template-columns:220px 1fr;overflow:hidden;transform:translateY(14px) scale(.97);background:rgba(16,16,26,.94);border:1px solid var(--line);border-radius:22px;box-shadow:0 40px 120px rgba(0,0,0,.65)}
 #panel.open #pwin{transform:none}
-#pnav{display:flex;flex-direction:column;gap:2px;padding:20px 12px;border-right:1px solid var(--line);overflow:auto}
+#pnav{display:flex;flex-direction:column;gap:2px;padding:20px 12px;border-right:1px solid var(--line);overflow:auto;background:rgba(255,255,255,.03)}
 #ptitle{font-weight:800;font-size:18px;letter-spacing:-.02em;padding:2px 10px 12px}
-#psearch{margin:0 0 10px;width:100%;border-radius:10px;padding:8px 10px;color:var(--fg);font:inherit;font-size:13px}
+#psearch{margin:0 0 10px;width:100%;border-radius:10px;padding:8px 10px;color:var(--fg);font:inherit;font-size:13px;background:rgba(255,255,255,.07);border:1px solid var(--line)}
 #pnav .pn{display:flex;align-items:center;gap:10px;text-align:left;padding:9px 10px;border-radius:10px;border:0;background:none;color:var(--dim);font:inherit;font-size:13.5px;font-weight:600;cursor:pointer;transition:background .15s,color .15s}
 #pnav .pn:hover{background:rgba(255,255,255,.06);color:#fff}
-#pnav .pn.on{color:#fff}
+#pnav .pn.on{color:#fff;background:rgba(255,255,255,.12)}
 #pnav .pn svg{width:17px;height:17px;flex:none;fill:currentColor;opacity:.85}
 #pbody{overflow:auto;padding:28px 34px 34px;display:flex;flex-direction:column;gap:14px;scrollbar-gutter:stable}
 #phead{margin:0 0 4px;font-size:24px;font-weight:800;letter-spacing:-.03em}
@@ -327,7 +314,7 @@ h4{margin:14px 0 -4px;font-size:11px;letter-spacing:.1em;text-transform:uppercas
 .f.chk label{display:flex;align-items:center;gap:8px;cursor:pointer}
 .f.plain{padding-right:0}
 .f .cols{display:flex;gap:8px}
-.tin,.f input[type=text],.f input[type=url],.f input[type=password]{width:100%;min-width:0;color:var(--fg);border-radius:10px;padding:8px 10px;font:inherit;font-weight:500}
+.tin,.f input[type=text],.f input[type=url],.f input[type=password]{width:100%;min-width:0;color:var(--fg);border-radius:10px;padding:8px 10px;font:inherit;font-weight:500;background:rgba(255,255,255,.08);border:1px solid var(--line)}
 input[type=color]{width:100%;height:28px;padding:0;border:1px solid var(--line);border-radius:8px;background:none;cursor:pointer}
 .rs{display:none;position:absolute;right:0;top:-1px;width:20px;height:20px;border-radius:50%;border:0;background:rgba(255,255,255,.18);font-size:12px;line-height:1;cursor:pointer;padding:0}
 .rs:hover{background:rgba(255,255,255,.34)}
@@ -377,13 +364,13 @@ body.novol #volwrap{display:none}
 
 /* ---------- toasts ---------- */
 
-.toast{pointer-events:auto;padding:11px 14px;border-radius:14px;border:1px solid var(--line);border-left:3px solid #ff6b6b;font-size:13px;line-height:1.4;cursor:pointer;animation:tin .25s ease-out}
+.toast{pointer-events:auto;padding:11px 14px;border-radius:14px;border:1px solid var(--line);border-left:3px solid #ff6b6b;font-size:13px;line-height:1.4;cursor:pointer;animation:tin .25s ease-out;background:rgba(20,20,30,.88);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
 .toast.warn{border-left-color:#ffc857}.toast.ok{border-left-color:#5be3a0}
 @keyframes tin{from{opacity:0;transform:translateY(-8px)}}
 
 /* ---------- first-run setup ---------- */
-#setup{position:fixed;inset:0;z-index:15;display:grid;place-items:center;padding:16px;animation:tin .3s ease-out}
-#setup .sw{width:min(580px,100%);max-height:calc(100vh - 32px);display:flex;flex-direction:column;overflow:hidden}
+#setup{position:fixed;inset:0;z-index:15;display:grid;place-items:center;padding:16px;animation:tin .3s ease-out;background:rgba(5,5,10,.6)}
+#setup .sw{width:min(580px,100%);max-height:calc(100vh - 32px);display:flex;flex-direction:column;overflow:hidden;background:rgba(16,16,24,.96);border:1px solid var(--line);border-radius:24px;box-shadow:0 30px 90px rgba(0,0,0,.6);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px)}
 .swh{display:flex;align-items:center;justify-content:space-between;padding:16px 20px 0}
 #wzdots{display:flex;gap:6px}#wzdots i{width:22px;height:4px;border-radius:2px;background:var(--line);transition:background .3s}#wzdots i.on{background:#fff}
 .lnk{border:0;background:none;color:var(--faint);cursor:pointer;font-size:13px;font-weight:600;padding:4px}.lnk:hover{color:#fff}
@@ -442,6 +429,11 @@ code,kbd{font:12px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;backgrou
 #dock{animation:dockin .7s .1s cubic-bezier(.2,.8,.2,1) backwards}
 #setup .sw{animation:pop .45s cubic-bezier(.2,.8,.2,1)}
 .step:not([hidden]){animation:up .45s cubic-bezier(.2,.8,.2,1)}
+/* more motion: settings pages, new lyrics and the device list come in one item after another */
+#pbody .ppage.enter>*{animation:up .42s cubic-bezier(.2,.8,.2,1) backwards;animation-delay:calc(var(--i,0)*22ms)}
+#ly.enter .ll{animation:lyin .7s cubic-bezier(.2,.8,.2,1) backwards;animation-delay:calc(var(--i,0)*45ms)}@keyframes lyin{from{opacity:0;translate:0 26px}}
+.drow{animation:up .35s cubic-bezier(.2,.8,.2,1) backwards}.drow:nth-child(2){animation-delay:40ms}.drow:nth-child(3){animation-delay:80ms}.drow:nth-child(4){animation-delay:120ms}.drow:nth-child(n+5){animation-delay:160ms}
+body.low #pbody .ppage.enter>*,body.low #ly.enter .ll,body.low .drow{animation:none}
 #info.anim #artw{animation:pop .7s cubic-bezier(.2,.8,.2,1)}
 #info.anim #txt>*{animation:up .6s cubic-bezier(.2,.8,.2,1) backwards}
 #info.anim #txt>:nth-child(2){animation-delay:.07s}#info.anim #txt>:nth-child(n+3){animation-delay:.14s}
@@ -473,7 +465,7 @@ select{transition:background .2s,border-color .2s}select:hover{border-color:rgba
 /* ---------- ping meter ---------- */
 #netbtn{padding:8px 12px;font-variant-numeric:tabular-nums}
 #netbtn.good .dot{background:#1ed760;box-shadow:0 0 10px #1ed760}#netbtn.ok .dot{background:#ffc857;box-shadow:0 0 10px #ffc857}#netbtn.bad .dot{background:#ff6b6b;box-shadow:0 0 10px #ff6b6b}
-#cappanel,#netpanel{position:fixed;top:64px;right:16px;z-index:9;width:min(380px,calc(100% - 32px));padding:14px 16px;animation:pop .3s cubic-bezier(.2,.8,.2,1);transform-origin:top right}
+#cappanel,#netpanel{position:fixed;top:64px;right:16px;z-index:9;width:min(380px,calc(100% - 32px));padding:14px 16px;animation:pop .3s cubic-bezier(.2,.8,.2,1);transform-origin:top right;background:rgba(16,16,24,.9)}
 .nph{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}.nph b{font-size:14px}.nph span{font-size:11px;color:var(--faint)}
 .nrow{display:grid;grid-template-columns:auto 1fr auto;gap:2px 10px;align-items:center;padding:8px 0;border-top:1px solid var(--line)}
 .nrow:first-child{border-top:0}
@@ -516,26 +508,6 @@ body.wz #empty,body.popen #empty{opacity:0;transition:opacity .3s}   /* nothing 
 
 
 /* ===== glassmorphism: every surface is frosted glass over the live background ===== */
-:root{--g-tint:rgba(22,22,38,.26);--g-grad:linear-gradient(145deg,rgba(255,255,255,.16),rgba(255,255,255,.04) 60%,rgba(255,255,255,.08));
-  --g-bd:rgba(255,255,255,.2);--g-hi:inset 0 1px 0 rgba(255,255,255,.28),inset 0 -1px 0 rgba(255,255,255,.05);--g-sh:0 18px 50px rgba(0,0,0,.35);
-  --g-blur:blur(28px) saturate(175%)}
-/* big panes */
-.glass,#pwin,#setup .sw,#cappanel,#netpanel{background:var(--g-grad),var(--g-tint);border:1px solid var(--g-bd);box-shadow:var(--g-sh),var(--g-hi);backdrop-filter:var(--g-blur);-webkit-backdrop-filter:var(--g-blur)}
-#pwin{border-radius:26px}#setup .sw{border-radius:26px}
-/* Settings and the setup guide: heavier frost so the text reads clearly over a busy background */
-#pwin,#setup .sw{background:var(--g-grad),rgba(14,14,26,.62);backdrop-filter:blur(48px) saturate(170%);-webkit-backdrop-filter:blur(48px) saturate(170%)}
-#panel{background:rgba(4,4,12,.4);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}#setup{background:rgba(4,4,12,.3);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
-#pnav{background:rgba(255,255,255,.04);border-right-color:rgba(255,255,255,.12)}
-#pnav .pn.on{background:rgba(255,255,255,.16);box-shadow:var(--g-hi)}
-/* controls */
-.ib,.chip,#seg,.btn:not(.pri),select,.tin,#psearch,.f input[type=text],.f input[type=url],.f input[type=password],.prow{
-  background:linear-gradient(145deg,rgba(255,255,255,.15),rgba(255,255,255,.05));border:1px solid rgba(255,255,255,.18);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.22);backdrop-filter:blur(18px) saturate(160%);-webkit-backdrop-filter:blur(18px) saturate(160%)}
-.ib:hover,.chip:hover,.btn:not(.pri):hover{background:linear-gradient(145deg,rgba(255,255,255,.24),rgba(255,255,255,.09))}
-.ib.on{background:linear-gradient(145deg,rgba(255,255,255,.34),rgba(255,255,255,.14));border-color:rgba(255,255,255,.35)}
-.btn.pri{box-shadow:0 6px 20px rgba(255,255,255,.15),inset 0 1px 0 #fff}
-.toast{background:var(--g-grad),rgba(22,22,38,.5);border-color:var(--g-bd);box-shadow:var(--g-sh),var(--g-hi);backdrop-filter:var(--g-blur);-webkit-backdrop-filter:var(--g-blur)}
-#psearch::placeholder,.tin::placeholder{color:rgba(255,255,255,.55)}
 #capbtn.bridge{box-shadow:inset 0 0 0 2px #1ed760,0 0 14px -4px #1ed760}   /* Vibe Bridge connected */
 #capbtn{gap:6px;padding:8px 13px 8px 11px}#capbtn svg{width:16px;height:16px;fill:currentColor;flex:none}
 #capt{max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -564,6 +536,35 @@ body.wz #empty,body.popen #empty{opacity:0;transition:opacity .3s}   /* nothing 
 /* Focus mode in Both: no box behind the bars; the lyrics fade out before them (see the #lyr mask) */
 /* ===== Liquid Glass behaviour: controls swell under the pointer, squish when pressed and spring back,
    and a highlight follows the pointer across the glass ===== */
+#pwin{transform-origin:var(--ox,50%) var(--oy,0%)}
+#panel:not(.open) #pwin{transform:scale(.35);opacity:0;filter:blur(8px)}
+#pwin{transition:transform .55s cubic-bezier(.34,1.3,.64,1),opacity .3s,filter .4s}
+/* low performance mode: no blur behind the glass, a bit more opaque instead */
+body.low .ib,body.low .chip,body.low select,body.low .prow,body.low #cappanel,body.low #netpanel,body.low #setup .sw,body.low #setup{backdrop-filter:none;-webkit-backdrop-filter:none}
+body.low #cappanel,body.low #netpanel,body.low #setup .sw{background:rgba(20,20,32,.95)}
+</style>
+<style id="glassui">
+/* ===== Design: Glass (Settings → Appearance → Design). Classic turns this whole sheet off. ===== */
+:root{--g-tint:rgba(22,22,38,.26);--g-grad:linear-gradient(145deg,rgba(255,255,255,.16),rgba(255,255,255,.04) 60%,rgba(255,255,255,.08));
+  --g-bd:rgba(255,255,255,.2);--g-hi:inset 0 1px 0 rgba(255,255,255,.28),inset 0 -1px 0 rgba(255,255,255,.05);--g-sh:0 18px 50px rgba(0,0,0,.35);
+  --g-blur:blur(28px) saturate(175%)}
+/* big panes */
+.glass,#pwin,#setup .sw,#cappanel,#netpanel{background:var(--g-grad),var(--g-tint);border:1px solid var(--g-bd);box-shadow:var(--g-sh),var(--g-hi);backdrop-filter:var(--g-blur);-webkit-backdrop-filter:var(--g-blur)}
+#pwin{border-radius:26px}#setup .sw{border-radius:26px}
+/* Settings and the setup guide: heavier frost so the text reads clearly over a busy background */
+#pwin,#setup .sw{background:var(--g-grad),rgba(14,14,26,.62);backdrop-filter:blur(48px) saturate(170%);-webkit-backdrop-filter:blur(48px) saturate(170%)}
+#panel{background:rgba(4,4,12,.4);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}#setup{background:rgba(4,4,12,.3);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+#pnav{background:rgba(255,255,255,.04);border-right-color:rgba(255,255,255,.12)}
+#pnav .pn.on{background:rgba(255,255,255,.16);box-shadow:var(--g-hi)}
+/* controls */
+.ib,.chip,#seg,.btn:not(.pri),select,.tin,#psearch,.f input[type=text],.f input[type=url],.f input[type=password],.prow{
+  background:linear-gradient(145deg,rgba(255,255,255,.15),rgba(255,255,255,.05));border:1px solid rgba(255,255,255,.18);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.22);backdrop-filter:blur(18px) saturate(160%);-webkit-backdrop-filter:blur(18px) saturate(160%)}
+.ib:hover,.chip:hover,.btn:not(.pri):hover{background:linear-gradient(145deg,rgba(255,255,255,.24),rgba(255,255,255,.09))}
+.ib.on{background:linear-gradient(145deg,rgba(255,255,255,.34),rgba(255,255,255,.14));border-color:rgba(255,255,255,.35)}
+.btn.pri{box-shadow:0 6px 20px rgba(255,255,255,.15),inset 0 1px 0 #fff}
+.toast{background:var(--g-grad),rgba(22,22,38,.5);border-color:var(--g-bd);box-shadow:var(--g-sh),var(--g-hi);backdrop-filter:var(--g-blur);-webkit-backdrop-filter:var(--g-blur)}
+#psearch::placeholder,.tin::placeholder{color:rgba(255,255,255,.55)}
 .lq{position:relative;transition:transform .5s cubic-bezier(.34,1.56,.64,1),background .25s,box-shadow .3s}
 .lq::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:0;transition:opacity .3s;
   background:radial-gradient(circle at var(--mx,50%) var(--my,50%),rgba(255,255,255,.32),rgba(255,255,255,0) 60%);mix-blend-mode:screen}
@@ -571,14 +572,21 @@ body.wz #empty,body.popen #empty{opacity:0;transition:opacity .3s}   /* nothing 
 .lq:hover{transform:scale(1.06)}
 .lq.press{transform:scale(.9,.86);transition:transform .12s cubic-bezier(.3,0,.5,1)}
 #pnav .pn.lq:hover,.prow.lq:hover,#seg button.lq:hover{transform:scale(1.02)}#pnav .pn.lq.press,.prow.lq.press{transform:scale(.97)}
-#pwin{transform-origin:var(--ox,50%) var(--oy,0%)}
-#panel:not(.open) #pwin{transform:scale(.35);opacity:0;filter:blur(8px)}
-#pwin{transition:transform .55s cubic-bezier(.34,1.3,.64,1),opacity .3s,filter .4s}
 body.low .lq{transition:background .2s}body.low .lq:hover,body.low .lq.press{transform:none}body.low .lq::after{display:none}
 @media(prefers-reduced-motion:reduce){.lq:hover,.lq.press{transform:none}}
-/* low performance mode: no blur behind the glass, a bit more opaque instead */
-body.low .ib,body.low .chip,body.low select,body.low .prow,body.low #cappanel,body.low #netpanel,body.low #setup .sw,body.low #setup{backdrop-filter:none;-webkit-backdrop-filter:none}
-body.low #cappanel,body.low #netpanel,body.low #setup .sw{background:rgba(20,20,32,.95)}
+/* the bottom bar's progress and volume sliders are glass: a frosted tube with a sheen on top, and a glass bead */
+#bar input[type=range]{height:26px}
+#bar input[type=range]::-webkit-slider-runnable-track{height:8px;border-radius:99px;
+  background:linear-gradient(180deg,rgba(255,255,255,.32),rgba(255,255,255,0) 65%),linear-gradient(90deg,var(--acc) var(--p,0%),rgba(255,255,255,.1) var(--p,0%));
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.16),inset 0 1px 2px rgba(0,0,0,.35),0 1px 0 rgba(255,255,255,.06)}
+#bar input[type=range]::-moz-range-track{height:8px;border-radius:99px;background:linear-gradient(180deg,rgba(255,255,255,.28),rgba(255,255,255,0) 65%),rgba(255,255,255,.1);box-shadow:inset 0 0 0 1px rgba(255,255,255,.16),inset 0 1px 2px rgba(0,0,0,.35)}
+#bar input[type=range]::-moz-range-progress{height:8px;border-radius:99px;background:linear-gradient(180deg,rgba(255,255,255,.32),rgba(255,255,255,0) 65%),var(--acc)}
+#bar input[type=range]::-webkit-slider-thumb{width:18px;height:18px;margin-top:-5px;border:1px solid rgba(255,255,255,.75);
+  background:radial-gradient(circle at 35% 30%,#fff 0,rgba(255,255,255,.9) 35%,rgba(225,225,240,.6) 100%);
+  box-shadow:0 2px 8px rgba(0,0,0,.35),0 0 0 4px rgba(255,255,255,.08),inset 0 -2px 3px rgba(0,0,0,.12);transition:transform .2s cubic-bezier(.34,1.56,.64,1),box-shadow .2s}
+#bar input[type=range]::-moz-range-thumb{width:18px;height:18px;border:1px solid rgba(255,255,255,.75);background:radial-gradient(circle at 35% 30%,#fff 0,rgba(255,255,255,.9) 35%,rgba(225,225,240,.6) 100%);box-shadow:0 2px 8px rgba(0,0,0,.35),0 0 0 4px rgba(255,255,255,.08)}
+#bar input[type=range]:hover::-webkit-slider-thumb,#bar input[type=range]:active::-webkit-slider-thumb{transform:scale(1.15);box-shadow:0 3px 12px rgba(0,0,0,.4),0 0 0 6px rgba(255,255,255,.12),inset 0 -2px 3px rgba(0,0,0,.12)}
+body.low #bar input[type=range]::-webkit-slider-thumb{transition:none}
 </style>
 </head>
 <body data-view="both" data-src="none">
@@ -677,6 +685,9 @@ body.low #cappanel,body.low #netpanel,body.low #setup .sw{background:rgba(20,20,
   <div id="ptitle">Settings</div>
   <button class="ib" id="pclose" aria-label="Close settings"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" fill="none"/></svg></button>
 
+  <h4>Design</h4>
+  <div class="f" data-k="design"><span class="lb">Design</span><select id="design"><option value="glass">Glass</option><option value="classic">Classic (the original look)</option></select><small class="hint">Glass: frosted glass everywhere, with controls that swell and squish like Liquid Glass. Classic: the original, simpler look.</small></div>
+  <div class="f" data-k="uiHide"><span class="lb">Top bar and controls</span><select id="uiHide"><option value="idle">Hide when the mouse is still</option><option value="never">Always visible</option></select><small class="hint">While music plays, the top bar and the bottom bar fade away after a few seconds without movement, and come back when you move the mouse.</small></div>
   <h4>Colors</h4>
   <div class="f" data-k="theme"><span class="lb">Theme</span><select id="theme"><option value="cover">Cover colors</option><option value="aurora">Aurora</option><option value="sunset">Sunset</option><option value="neon">Neon</option><option value="ice">Ice</option><option value="mono">Mono</option><option value="custom">Custom</option></select></div>
   <div class="f" data-k="c1 c2"><span class="lb">Custom colors</span><div class="cols"><input type="color" id="c1" aria-label="Color 1"><input type="color" id="c2" aria-label="Color 2"></div></div>
@@ -954,7 +965,7 @@ addEventListener('unhandledrejection',e=>toast('Something failed: '+((e.reason&&
 /* ================= settings (one store) ================= */
 const LANGS=[['en','English'],['cs','Czech'],['sk','Slovak'],['de','German'],['es','Spanish'],['fr','French'],['it','Italian'],['pt','Portuguese'],['pl','Polish'],['nl','Dutch'],['sv','Swedish'],['da','Danish'],['no','Norwegian'],['fi','Finnish'],['hu','Hungarian'],['ro','Romanian'],['el','Greek'],['tr','Turkish'],['uk','Ukrainian'],['ru','Russian'],['ar','Arabic'],['he','Hebrew'],['hi','Hindi'],['th','Thai'],['vi','Vietnamese'],['id','Indonesian'],['tl','Filipino'],['ja','Japanese'],['ko','Korean'],['zh-CN','Chinese (Simplified)'],['zh-TW','Chinese (Traditional)']];
 const navLang=(()=>{const l=(navigator.language||'en').toLowerCase(),m=LANGS.find(x=>x[0].toLowerCase()===l)||LANGS.find(x=>x[0].split('-')[0]===l.split('-')[0]);return m?m[0]:'en'})();
-const DEF={bridge:true,xFocus:false,bgStyle:'dynamic',sysFont:false,lsimple:false,lminimal:false,lhover:true,lduet:true,lcredLast:false,lsmooth:true,learly:false,learlyMs:250,lseekFade:true,lnotice:true,volshow:true,fpscap:'0',credPos:'corner',cvNoArt:false,capDev:'',romMode:'replace',tr:false,trTo:navLang,trSkip:'',theme:'cover',c1:'#ff5a5f',c2:'#4f8cff',auto:true,boost:100,resp:25,blur:0,bars:72,gap:28,glow:false,round:true,scale:'1',fps:false,bgblur:60,bri:70,sat:170,bgspeed:100,online:true,volume:100,view:'both',lprov:'spicy:1,spotify:1,lrclib:1,netease:1',loff:0,lsize:100,lblur:true,canvasOn:true,low:false,perfAsk:true,lDesync:'ask'};
+const DEF={bridge:true,xFocus:false,bgStyle:'dynamic',sysFont:false,lsimple:false,lminimal:false,lhover:true,lduet:true,lcredLast:false,lsmooth:true,learly:false,learlyMs:250,lseekFade:true,lnotice:true,volshow:true,fpscap:'0',credPos:'corner',cvNoArt:false,capDev:'',romMode:'replace',tr:false,trTo:navLang,trSkip:'',theme:'cover',c1:'#ff5a5f',c2:'#4f8cff',auto:true,boost:100,resp:25,blur:0,bars:72,gap:28,glow:false,round:true,scale:'1',fps:false,bgblur:60,bri:70,sat:170,bgspeed:100,online:true,volume:100,view:'both',lprov:'spicy:1,spotify:1,lrclib:1,netease:1',loff:0,lsize:100,lblur:true,canvasOn:true,low:false,perfAsk:true,lDesync:'ask',design:'glass',uiHide:'idle'};
 const CFGD={spotId:'',canvasUrl:''},OLDCFG=['spicyUrl','spicyHdr','spicyPfx','spicyKey'];   // old fields that kept a key in the browser: always removed
 // Everything (settings, API keys, Spotify login, setup progress) lives in sessionStorage:
 // it survives a reload and the Spotify login redirect, and the browser deletes it when the tab is closed.
@@ -1029,6 +1040,8 @@ function onSetting(k){
   else if(k==='bgspeed')bgSpeed();
   else if(k==='volume'){muted=false;applyVolume()}
   else if(k==='low')applyLow();
+  else if(k==='design')applyDesign();
+  else if(k==='uiHide')poke();
   else if(k==='lsize'){root.style.setProperty('--ls',S.lsize/100);place()}
   else if(k==='lblur')applyLB();
   else if(k==='canvasOn')applyCanvasMode();
@@ -1043,6 +1056,7 @@ function onSetting(k){
   dirty=true;
 }
 function bgSpeed(){root.style.setProperty('--dur',(4000/Math.max(S.bgspeed,1))+'s');$('bg').classList.toggle('still',S.bgspeed==0||S.low)}
+function applyDesign(){const c=S.design==='classic';$('glassui').disabled=c;body.classList.toggle('classic',c)}   // Classic: the glass sheet is switched off
 function applyLB(){body.classList.toggle('lb',!!S.lblur&&!S.low)}
 function movePill(){const b=$('seg').querySelector('button.on'),p=$('segpill');if(!b||!b.offsetWidth)return;p.style.left=b.offsetLeft+'px';p.style.width=b.offsetWidth+'px';requestAnimationFrame(()=>p.classList.add('ready'))}
 function applyView(){body.dataset.view=S.view;document.querySelectorAll('#seg button').forEach(b=>b.classList.toggle('on',b.dataset.v===S.view));movePill();if(S.view!=='viz')place();dirty=true}
@@ -1582,7 +1596,7 @@ async function spPoll(){
   }
 }
 function onSpTrack(m){
-  curArtistId=m.artistId||'';spMeta=m;spLikeCheck(m);
+  curArtistId=m.artistId||'';if(vals)vals.fill(0);   // the bars drop and grow back with the new songspMeta=m;spLikeCheck(m);
   const tok=++coverTok;peak=.3;clearCanvas(true);
   ttl.textContent=m.title;sub.textContent=m.artist;status.textContent='Spotify';animTrack();
   if(!m.cover)resetCover();
@@ -1806,6 +1820,10 @@ async function fromLrclib(m){
 }
 function findIdx(t){let a=0,b=L.length-1,r=-1;while(a<=b){const m=(a+b)>>1;if(L[m].t<=t){r=m;a=m+1}else b=m-1}return r}
 let lLabel='';
+function lyEnter(){   // new lyrics rise into place one line after another, starting from the line being sung
+  if(S.low)return;requestAnimationFrame(()=>{const c=Math.max(0,li);lEls.forEach((d,k)=>d.style.setProperty('--i',Math.min(Math.abs(k-c),12)));
+    ly.classList.remove('enter');void ly.offsetWidth;ly.classList.add('enter');setTimeout(()=>ly.classList.remove('enter'),1500)});
+}
 function renderLyrics(label,quiet){
   if(!quiet)lLabel=label||'';
   ly.textContent='';lEls=[];lAct=new Set();lActKey='';li=-2;lsi=-2;lfi=-2;lfo=false;lfn='';lfs='';lfnSet=new Set();lfsSet=new Set();moving.clear();ly.classList.toggle('duet',L.some(l=>l.opp));stPos=null;ly.style.translate='';if(!quiet)lyr.scrollTop=0;lyr.classList.toggle('st',!lsync&&L.length>0);
@@ -1936,7 +1954,7 @@ function checkPace(r,dur){
   if(!src&&last&&last.t>dur-.5)src=last.t+Math.max(2,dur*.03);   // a line after the end can't be right
   if(src&&Math.abs(src-dur)/dur<.12){lPace=src/dur;toast('Lyrics timing adjusted to this version of the song ('+(lPace>1?'+':'')+((lPace-1)*100).toFixed(1)+'% pace).','ok',4000)}
 }
-function applyLyrics(r){checkPace(r,curDur());dsSong();lCredit=r.credit||(r.label?{source:null}:null);L=(r.sync?interludes(r.lines):r.lines.filter(l=>!l.dots)).map(l=>Object.assign({},l));lsync=r.sync;renderLyrics(r.label);decorate()}
+function applyLyrics(r){checkPace(r,curDur());dsSong();lyEnter();lCredit=r.credit||(r.label?{source:null}:null);L=(r.sync?interludes(r.lines):r.lines.filter(l=>!l.dots)).map(l=>Object.assign({},l));lsync=r.sync;renderLyrics(r.label);decorate()}
 
 /* ---------- translation + romanization (Google Translate's free web endpoint, unofficial) ---------- */
 const GT='https://translate.googleapis.com/translate_a/single?client=dict-chrome-ex&sl=auto&dt=t&dt=rm&tl=';
@@ -2520,7 +2538,7 @@ async function load(f){
   try{setupAudio()}catch(e){toast(e.message);return}
   setSource('file');
   if(url)URL.revokeObjectURL(url);
-  url=URL.createObjectURL(f);audio.src=url;loaded=true;peak=.3;clearCanvas();
+  url=URL.createObjectURL(f);audio.src=url;loaded=true;peak=.3;clearCanvas();if(vals)vals.fill(0);
   ac.resume();audio.play().catch(e=>toast('Playback was blocked by the browser: '+e.message+'. Press play.','warn'));
   poke();
   const tok=++coverTok;resetCover();spId=null;
@@ -2723,7 +2741,7 @@ function fsToggle(){try{document.fullscreenElement?document.exitFullscreen():doc
 $('fs').onclick=fsToggle;
 // group the settings (each <h4> and what follows it) into pages, with a category list and a search box
 const PAGES=[
-  ['look','Appearance',['Colors','Background','Cover'],'M12 3a9 9 0 000 18c.8 0 1.5-.7 1.5-1.5 0-.4-.1-.7-.4-1-.2-.3-.4-.6-.4-1 0-.8.7-1.5 1.5-1.5H16a5 5 0 005-5c0-4.4-4-8-9-8zM6.5 12a1.5 1.5 0 110-3 1.5 1.5 0 010 3zm3-4a1.5 1.5 0 110-3 1.5 1.5 0 010 3zm5 0a1.5 1.5 0 110-3 1.5 1.5 0 010 3zm3 4a1.5 1.5 0 110-3 1.5 1.5 0 010 3z'],
+  ['look','Appearance',['Design','Colors','Background','Cover'],'M12 3a9 9 0 000 18c.8 0 1.5-.7 1.5-1.5 0-.4-.1-.7-.4-1-.2-.3-.4-.6-.4-1 0-.8.7-1.5 1.5-1.5H16a5 5 0 005-5c0-4.4-4-8-9-8zM6.5 12a1.5 1.5 0 110-3 1.5 1.5 0 010 3zm3-4a1.5 1.5 0 110-3 1.5 1.5 0 010 3zm5 0a1.5 1.5 0 110-3 1.5 1.5 0 010 3zm3 4a1.5 1.5 0 110-3 1.5 1.5 0 010 3z'],
   ['viz','Visualizer',['Visualizer'],'M4 14h3v6H4zm6.5-6h3v12h-3zM17 4h3v16h-3z'],
   ['lyrics','Lyrics',['Lyrics','Spicy Lyrics & files'],'M4 6h16v2H4zm0 5h12v2H4zm0 5h16v2H4z'],
   ['tr','Translation',['Translation & romanization'],'M12.9 15.1l-2.5-2.5A17.5 17.5 0 0014 6h3V4h-7V2H8v2H1v2h11.2A15.7 15.7 0 019 11.4 15.6 15.6 0 016.7 8H4.7a17.6 17.6 0 003 4.6l-5.1 5 1.4 1.4 5-5 3.1 3.1.8-2zM18.5 10h-2L12 22h2l1.1-3h4.8l1.1 3h2l-4.5-12zm-2.6 7l1.6-4.3 1.6 4.3h-3.2z'],
@@ -2772,6 +2790,7 @@ function showPage(id){
   $('pbody').querySelectorAll('.ppage').forEach(pg=>{pg.hidden=pg.dataset.p!==id;pg.querySelectorAll(':scope>*').forEach(el=>el.style.display='')});
   $('pnav').querySelectorAll('.pn').forEach(b=>b.classList.toggle('on',b.dataset.p===id));
   const pg=$('pbody').querySelector('.ppage[data-p="'+id+'"]');$('phead').textContent=pg?pg.dataset.name:'';$('pbody').scrollTop=0;
+  if(pg){[...pg.children].forEach((el,k)=>el.style.setProperty('--i',Math.min(k,14)));pg.classList.remove('enter');void pg.offsetWidth;pg.classList.add('enter')}   // the page's settings slide in one after another
 }
 function openPanel(page){
   const g=$('gear').getBoundingClientRect(),pw=$('pwin');   // grow out of the gear (layout position, not the shrunk one)
@@ -2816,7 +2835,7 @@ addEventListener('keydown',e=>{
 let tm;
 function poke(){
   body.classList.remove('uihide','idle');clearTimeout(tm);
-  if(playing()&&!$('panel').classList.contains('open'))tm=setTimeout(()=>{
+  if(playing()&&S.uiHide!=='never'&&!$('panel').classList.contains('open'))tm=setTimeout(()=>{
     const a=document.activeElement;
     if($('dock').matches(':hover')||$('top').matches(':hover')||(a&&a.tagName==='SELECT'))return poke();
     body.classList.add('uihide','idle');
@@ -3151,7 +3170,7 @@ addEventListener('keydown',e=>{if(e.key==='Escape'){devClose();$('netpanel').hid
 netLoop();
 
 /* ================= init ================= */
-syncInputs();refreshReset();volIcon();
+applyDesign();syncInputs();refreshReset();volIcon();
 root.style.setProperty('--ls',S.lsize/100);
 $('fpsEl').style.display=S.fps?'block':'none';
 body.classList.toggle('cvnoart',!!S.cvNoArt);applyCredPos();applyLyrOpts();bridgeConnect();updBridge();body.classList.toggle('sysfont',!!S.sysFont);applyBgStyle();setupBands();applyView();applyLow();resize();renderBg();updChips();updPlayIcon();updQuick();updNeed();

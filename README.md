@@ -68,6 +68,8 @@ domain is needed.
 - Desync detection: with real sound (Vibe Bridge, audio capture or a local file) it listens to the singing and, if the
   lyrics run ahead or behind, offers to fix them for that song (or fixes them by itself; Settings → Lyrics).
 - Song changes blend smoothly: the old cover melts into the new one and the colors fade over.
+- Two designs (Settings → Appearance): Glass, with Liquid Glass motion, or Classic, the original look. The top and
+  bottom bars can hide when the mouse is still or stay visible.
 - Settings in their own window, with categories and a search box.
 - A home screen (click the logo), a first-run setup guide, and a ping meter for every service the app uses.
 - Installable as an app on computers and phones.
