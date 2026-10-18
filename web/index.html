@@ -1025,7 +1025,7 @@ let appProb=null;   // the latest error, shown in place of the lyrics for a whil
 function toast(msg,type,ms){
   msg=String(msg);type=type||'err';
   if(type==='err'&&typeof reportError==='function')reportError('notice',msg);   // problems shown to you are saved in the error log too
-  if(type==='err'){appProb={t:'Something went wrong',s:msg,at:Date.now()};if(typeof renderProblem==='function')renderProblem();return}   // errors aren't notifications: they show where the lyrics go
+  if(type==='err'||type==='warn'){appProb={k:type==='err'?'err':'wait',t:type==='err'?'Something went wrong':'Heads up',s:msg,at:Date.now()};if(typeof renderProblem==='function')renderProblem();return}   // errors and warnings aren't notifications: they show where the lyrics go (an error replaces them, a warning is a small line above)
   for(const n of tbox.children)if(n.dataset.m===msg)return;
   const d=document.createElement('div');d.className='toast '+type;d.dataset.m=msg;d.textContent=msg;const bye=()=>{if(d._bye)return;d._bye=1;d.classList.add('bye');setTimeout(()=>d.remove(),260)};d.onclick=bye;
   tbox.appendChild(d);setTimeout(bye,ms||6500);
@@ -1697,7 +1697,7 @@ function problemNow(home){   // the most important thing that's wrong right now,
   if(src==='spotify'&&!SP.access)return{k:'err',t:'Spotify isn’t connected',s:'The Spotify login ended. Press Connect Spotify in the top bar to log in again.'};
   if(sp&&spErrMsg)return{k:'err',t:'Spotify isn’t answering',s:spErrMsg};
   if(PREFS&&$('netbtn').classList.contains('bad'))return{k:'err',t:'Your server can’t be reached',s:'Lyrics, Canvas and saved settings come from it. Check that the server is on and Tailscale is connected.'};
-  if(appProb&&Date.now()-appProb.at<12000)return{k:'err',t:appProb.t,s:appProb.s};   // a one-off error: shown for 12 s, then the lyrics come back
+  if(appProb&&Date.now()-appProb.at<12000)return{k:appProb.k||'err',t:appProb.t,s:appProb.s};   // a one-off error: shown for 12 s, then the lyrics come back
   return null;
 }
 function showProblem(el,p){
@@ -3303,7 +3303,7 @@ async function checkUpdate(manual){
       notify({key:'upd',kind:'ok',title:'Update available',sub:'Released '+new Date(lat.date).toLocaleDateString()+(ls.length>1?' · '+ls.length+' changes':''),list:ls.slice(0,5).concat(ls.length>5?['…and '+(ls.length-5)+' more (Settings → Help & about)']:[]),
         actions:[{label:'Later',fn:()=>{try{localStorage.setItem('vv_skip',lat.sha)}catch(e){}}},{label:'Update now',pri:true,fn:doUpdate}]});
     }
-  }catch(e){out.textContent='Couldn’t check for updates: '+e.message;if(manual)notify({key:'upd',kind:'err',title:'Couldn’t check for updates',msg:e.message})}
+  }catch(e){out.textContent='Couldn’t check for updates: '+e.message;if(manual)toast('Couldn’t check for updates: '+e.message,'err')}
 }
 async function doUpdate(){
   const out=$('updstat'),go=$('updgo');go.disabled=true;out.textContent='Downloading the new version…';
@@ -3315,7 +3315,7 @@ async function doUpdate(){
       try{localStorage.setItem('vv_whatsnew',JSON.stringify({v:v.version,notes:(updInfo&&updInfo.notes)||[]}))}catch(e){}
       out.textContent='Updated to '+fmtV(v.version)+'. Reloading…';setTimeout(()=>location.reload(),900);
     }else{n.remove();out.textContent='Already up to date.';notify({key:'upd',kind:'ok',title:'Already up to date',ms:4000})}
-  }catch(e){n.remove();out.textContent='Update failed: '+e.message;go.disabled=false;notify({key:'upd',kind:'err',title:'Update failed',msg:e.message,actions:[{label:'OK'},{label:'Try again',pri:true,fn:doUpdate}]});reportError('update',e.message)}
+  }catch(e){n.remove();out.textContent='Update failed: '+e.message;go.disabled=false;toast('Update failed: '+e.message+'. Press Update now in Settings → Help & about to try again.','err')}
 }
 $('updcheck').onclick=()=>checkUpdate(true);
 $('updgo').onclick=doUpdate;
