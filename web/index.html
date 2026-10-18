@@ -213,10 +213,12 @@ body[data-view=viz].credly #lcredit{display:none}
 #hprob i{flex:none;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-style:normal;font-weight:800;font-size:13px;background:#ffc857;color:#3a2600;margin-top:1px}
 #hprob b{display:block;font-size:14px}#hprob small{display:block;font-size:12.5px;line-height:1.45;opacity:.85;margin-top:3px;font-variant-numeric:tabular-nums}
 #hprob.err{background:rgba(255,107,107,.1);border-color:rgba(255,107,107,.4);color:#ffd6d6}#hprob.err i{background:#ff6b6b;color:#3a0000}
-#lprob{position:absolute;left:0;top:6px;z-index:4;max-width:min(560px,92%);padding:9px 14px;border-radius:14px;pointer-events:none;
-  background:rgba(20,20,30,.55);border:1px solid rgba(255,200,87,.4);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);color:#ffe8b8;animation:up .5s cubic-bezier(.2,.8,.2,1)}
+#lprob{position:absolute;left:0;top:-4px;z-index:4;display:flex;gap:10px;align-items:flex-start;max-width:min(560px,92%);padding:10px 14px;border-radius:14px;pointer-events:none;box-shadow:0 10px 30px rgba(0,0,0,.3);
+  background:rgba(16,16,26,.82);border:1px solid rgba(255,200,87,.4);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);color:#ffe8b8;animation:up .5s cubic-bezier(.2,.8,.2,1)}
 #lprob b{display:block;font-size:13px}#lprob small{display:block;font-size:12px;font-weight:500;opacity:.85;font-variant-numeric:tabular-nums}
 #lprob.err{border-color:rgba(255,107,107,.45);color:#ffd6d6}
+#lprob>i{flex:none;width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font-style:normal;font-weight:800;font-size:12px;background:#ffc857;color:#3a2600;margin-top:1px}#lprob.err>i{background:#ff6b6b;color:#3a0000}
+#lprob.big>i{display:none}
 #lprob.big{top:30%;padding:0 6% 0 0;max-width:none;background:none;border:0;backdrop-filter:none;-webkit-backdrop-filter:none}
 #lprob.big b{font-size:calc(clamp(22px,2.8vw,42px)*var(--ls));font-weight:800;letter-spacing:-.025em;line-height:1.15}
 #lprob.big small{font-size:15px;font-weight:600;margin-top:10px;max-width:46ch}
@@ -655,7 +657,7 @@ body.low #bar input[type=range]::-webkit-slider-thumb{transition:none}
   <section id="right">
     <div id="viz"><canvas id="c"></canvas></div>
     <div id="lyr"><div id="ly"></div><div id="lmsg"></div></div>
-    <div id="lprob" role="status" hidden><b></b><small></small></div>
+    <div id="lprob" role="status" hidden><i aria-hidden="true">!</i><div><b></b><small></small></div></div>
   </section>
 </div>
 
@@ -798,11 +800,13 @@ body.low #bar input[type=range]::-webkit-slider-thumb{transition:none}
   <div class="f" data-k="trSkip"><span class="lb">Don’t translate lines in (pick any)</span><div class="lchips" id="trSkipBox"></div></div>
   <p class="hint">Lines already in the language you translate into are never translated. Translation and romanization use Google Translate’s free web service (unofficial), so lyric lines are sent to Google.</p>
 
-  <h4>Spicy Lyrics &amp; files</h4>
+  <h4>Your lyrics files</h4>
   <div class="row2"><button class="btn sm" id="mladd">Add lyrics files…</button><button class="btn sm" id="lyrbtn">Use a file for this song…</button><button class="btn sm" id="mlclear">Remove all</button></div>
   <p class="stat" id="mlcount"></p>
   <p class="hint">Your own TTML or LRC files, kept in this browser. Name them <b>Artist - Title.ttml</b>, or include the Spotify track id, and they’re used whenever that song plays (Spotify or a local file). Dropping one file while a song plays saves it for that song; dropping a song together with a lyrics file of the same name pairs them. Turn “Your lyrics files” on or off, or move it, in the list of sources above.</p>
-  <div class="f plain"><span class="lb">Spicy Lyrics</span><p class="stat" id="lyrstatus">Checking…</p></div>
+
+  <h4>Spicy Lyrics</h4>
+  <div class="f plain"><span class="lb">Status</span><p class="stat" id="lyrstatus">Checking…</p></div>
   <div class="row2"><button class="btn sm" id="lyrtest">Test connection</button></div>
   <p class="hint">Spicy Lyrics needs your own API key. Create an application in the <a class="src" target="_blank" rel="noopener" href="https://developers.spicylyrics.org/dashboard">Spicy Lyrics developer dashboard</a>, copy its <b>secret key</b> (<b>sl_sk_…</b>, shown only once) and save it on your server as <b>config/spicy_key</b> (see the README). It stays there and never reaches the browser.</p>
   <p class="hint">Spicy Lyrics looks songs up by Spotify track, so local files are matched through your Spotify connection. Every lyric shown credits its source, and community syncs credit their uploader and maker, as the <a class="src" target="_blank" rel="noopener" href="https://developers.spicylyrics.org/docs/attribution">Spicy Lyrics attribution rules</a> require.</p>
@@ -2971,7 +2975,7 @@ $('fs').onclick=fsToggle;
 const PAGES=[
   ['look','Appearance',['Design','Colors','Background','Cover'],'M12 3a9 9 0 000 18c.8 0 1.5-.7 1.5-1.5 0-.4-.1-.7-.4-1-.2-.3-.4-.6-.4-1 0-.8.7-1.5 1.5-1.5H16a5 5 0 005-5c0-4.4-4-8-9-8zM6.5 12a1.5 1.5 0 110-3 1.5 1.5 0 010 3zm3-4a1.5 1.5 0 110-3 1.5 1.5 0 010 3zm5 0a1.5 1.5 0 110-3 1.5 1.5 0 010 3zm3 4a1.5 1.5 0 110-3 1.5 1.5 0 010 3z'],
   ['viz','Visualizer',['Visualizer'],'M4 14h3v6H4zm6.5-6h3v12h-3zM17 4h3v16h-3z'],
-  ['lyrics','Lyrics',['Lyrics','Spicy Lyrics & files'],'M4 6h16v2H4zm0 5h12v2H4zm0 5h16v2H4z'],
+  ['lyrics','Lyrics',['Lyrics','Your lyrics files','Spicy Lyrics'],'M4 6h16v2H4zm0 5h12v2H4zm0 5h16v2H4z'],
   ['tr','Translation',['Translation & romanization'],'M12.9 15.1l-2.5-2.5A17.5 17.5 0 0014 6h3V4h-7V2H8v2H1v2h11.2A15.7 15.7 0 019 11.4 15.6 15.6 0 016.7 8H4.7a17.6 17.6 0 003 4.6l-5.1 5 1.4 1.4 5-5 3.1 3.1.8-2zM18.5 10h-2L12 22h2l1.1-3h4.8l1.1 3h2l-4.5-12zm-2.6 7l1.6-4.3 1.6 4.3h-3.2z'],
   ['cache','Lyrics cache',['Lyrics cache'],'M12 3C7.6 3 4 4.3 4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6c0-1.7-3.6-3-8-3zm0 2c3.9 0 6 1.1 6 1s-2.1 1-6 1-6-.9-6-1 2.1-1 6-1zm6 13c0 .1-2.1 1-6 1s-6-.9-6-1v-2.3c1.5.8 3.6 1.3 6 1.3s4.5-.5 6-1.3V18zm0-5c0 .1-2.1 1-6 1s-6-.9-6-1v-2.3c1.5.8 3.6 1.3 6 1.3s4.5-.5 6-1.3V13z'],
   ['spotify','Spotify & Canvas',['Spotify','Canvas'],'M12 2a10 10 0 100 20 10 10 0 000-20zm4.6 14.4a.6.6 0 01-.9.2c-2.4-1.5-5.4-1.8-8.9-1a.6.6 0 11-.3-1.2c3.9-.9 7.2-.5 9.9 1.1.3.2.4.6.2.9zm1.2-2.7a.8.8 0 01-1.1.3c-2.7-1.7-6.9-2.2-10.1-1.2a.8.8 0 11-.5-1.5c3.7-1.1 8.3-.6 11.4 1.3.4.3.5.8.3 1.1zm.1-2.8C14.7 9 9.4 8.8 6.3 9.7a1 1 0 11-.6-1.9c3.5-1.1 9.4-.9 13.1 1.3a1 1 0 01-.9 1.8z'],
