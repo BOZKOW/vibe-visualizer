@@ -73,7 +73,7 @@ body.cvmode.cvnoart #left{justify-content:flex-end}   /* no cover: the text drop
 /* 3D through light, not movement: a fixed glossy highlight from the top-left, a bright top edge and a darker
    bottom edge, so the cover reads as a raised card floating above its shadow */
 #artw::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:1;
-  background:linear-gradient(155deg,rgba(255,255,255,.22) 0%,rgba(255,255,255,.06) 28%,rgba(255,255,255,0) 45%,rgba(0,0,0,0) 70%,rgba(0,0,0,.18) 100%);mix-blend-mode:soft-light}
+  background:linear-gradient(155deg,rgba(255,255,255,.13) 0%,rgba(255,255,255,.035) 28%,rgba(255,255,255,0) 45%,rgba(0,0,0,0) 70%,rgba(0,0,0,.1) 100%)}   /* plain alpha, no blend mode: a blend mode here walls the whole stage off, so nothing in it (the Next up card) could blur what's behind */
 #artw::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:2;
   box-shadow:inset 0 1.5px 0 rgba(255,255,255,.35),inset 1px 0 0 rgba(255,255,255,.12),inset 0 -2px 0 rgba(0,0,0,.3),inset -1px 0 0 rgba(0,0,0,.15)}
 body.cvmode #ttl{transform-origin:center}
@@ -81,14 +81,14 @@ body.flip #stage,body.flip #artw,body.flip #ttl{transition:none!important}
 #art{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none}
 #artw.has #art{display:block}
 /* song change: the old cover melts away (fades, grows a little, blurs) while the new one settles in */
-.artghost{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;pointer-events:none;transition:opacity .75s ease,transform .75s cubic-bezier(.2,.8,.2,1),filter .75s ease}
-.artghost.go{opacity:0;transform:scale(1.08);filter:blur(12px) saturate(1.3)}
+.artghost{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;pointer-events:none;transform-origin:50% 30%;transition:opacity 1s cubic-bezier(.4,0,.2,1),transform 1.1s cubic-bezier(.3,.7,.2,1),filter 1s ease}
+.artghost.go{opacity:0;transform:translateY(7%) scale(1.14,1.2);filter:blur(22px) saturate(1.6) brightness(1.15)}   /* the old cover dissolves: swells, sinks and blurs away like melting glass */
 .artghost.lite.go{transform:none;filter:none}
 /* hiding the cover while a Canvas plays: it melts away first, then the layout closes the gap; coming back it settles in */
 #artw.melt{animation:artmelt .55s cubic-bezier(.5,0,.75,0) forwards}@keyframes artmelt{to{opacity:0;transform:scale(1.08);filter:blur(14px) saturate(1.3)}}
 #artw.unmelt{animation:artin .7s cubic-bezier(.2,.8,.2,1)}
 body.low #artw.melt,body.low #artw.unmelt{animation:none}
-#art.swap{animation:artin .75s cubic-bezier(.2,.8,.2,1)}@keyframes artin{from{transform:scale(.94);filter:blur(8px) brightness(1.15)}}
+#art.swap{animation:artin 1.1s cubic-bezier(.2,.8,.2,1)}@keyframes artin{0%{transform:scale(.9);filter:blur(16px) brightness(1.25) saturate(1.4)}60%{transform:scale(1.015);filter:blur(0) brightness(1)}100%{transform:none}}   /* the new one condenses out of the blur with a soft spring */
 body.low .artghost{display:none}body.low #art.swap{animation:none}
 #ph{position:absolute;inset:0;display:grid;place-items:center;font-size:64px;color:var(--dim)}
 #artw.has #ph{display:none}
@@ -235,18 +235,15 @@ body[data-view=viz].credly #lcredit{display:none}
 .pok{display:block;margin-top:12px;pointer-events:auto;text-shadow:none}#lprob.big .pr:first-child .pok{margin-top:18px}
 #lprob{position:absolute;left:0;top:4px;z-index:4;display:flex;flex-direction:column;gap:8px;max-width:min(560px,92%);pointer-events:none;text-shadow:0 1px 10px rgba(0,0,0,.6);animation:up .5s cubic-bezier(.2,.8,.2,1)}
 /* "Next up": the queue's next song, shown in the last 10 seconds of a Spotify song */
-#nextup{display:flex;align-items:center;gap:10px;margin-top:14px;padding:7px 14px 7px 7px;border-radius:14px;max-width:min(360px,100%);text-align:left;
-  background:rgba(20,20,30,.35);border:1px solid rgba(255,255,255,.16);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);animation:nuin .5s cubic-bezier(.2,.8,.2,1)}
+#nextup{display:flex;align-items:center;gap:10px;margin-top:14px;padding:7px 14px 7px 7px;border-radius:14px;max-width:min(360px,100%);text-align:left;animation:nuin .5s cubic-bezier(.2,.8,.2,1)}   /* look: the .glass class */
 #nextup[hidden]{display:none}#nextup img{width:40px;height:40px;border-radius:8px;object-fit:cover;flex:none;background:rgba(255,255,255,.1)}
 #nextup div{min-width:0;display:flex;flex-direction:column}
 #nextup small{font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--faint)}
 #nextup b,#nextup span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#nextup b{font-size:13.5px}#nextup span{font-size:12px;color:var(--dim)}
 @keyframes nuin{from{opacity:0;transform:translateY(8px)}}
 body:not(.classic) #nextup.lq:hover{transform:translate(calc(var(--dx,0)*2px),calc(var(--dy,0)*2px)) scale(1.025)}   /* a big card leans less than a button */
-body:not(.classic) #nextup{cursor:default;background:linear-gradient(145deg,rgba(255,255,255,.16),rgba(255,255,255,.05)),rgba(22,22,38,.3);border-color:rgba(255,255,255,.22);
-  box-shadow:0 14px 34px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.28),inset 0 -1px 0 rgba(255,255,255,.05);backdrop-filter:blur(26px) saturate(175%);-webkit-backdrop-filter:blur(26px) saturate(175%);border-radius:16px}
+body:not(.classic) #nextup{cursor:default;border-radius:16px}   /* the bottom bar's glass (.glass), so it looks exactly the same */
 #nextup img{box-shadow:0 4px 12px rgba(0,0,0,.35)}
-body.low #nextup{backdrop-filter:none;-webkit-backdrop-filter:none;background:rgba(20,20,30,.8)}
 body.cvmode #nextup{margin-left:auto;margin-right:auto}   /* centred under a centred title */
 #lprob .pr b{font-size:13px}#lprob .pr small{font-size:12px;font-weight:500}
 /* an error: its text replaces the lyrics. The most important one large, like a lyric line; the others smaller below */
@@ -686,7 +683,7 @@ body.low #bar input[type=range]::-webkit-slider-thumb{transition:none}
   <section id="left">
     <div id="info">
       <div id="artw"><img id="art" alt="Album cover"><div id="ph">♪</div></div>
-      <div id="txt"><h1 id="ttl"></h1><div id="sub"></div><div id="status"></div><div id="lstat"></div><div id="nextup" hidden><img alt=""><div><small>Next up</small><b></b><span></span></div></div></div>
+      <div id="txt"><h1 id="ttl"></h1><div id="sub"></div><div id="status"></div><div id="lstat"></div><div id="nextup" class="glass" hidden><img alt=""><div><small>Next up</small><b></b><span></span></div></div></div>
     </div>
   </section>
   <section id="right">
@@ -1363,10 +1360,10 @@ let coverAnimEnd=0,cvRevealEnd=0;
 function coverSwap(){   // keep the old cover on top for a moment and let it melt into the new one
   if(S.low||!artw.classList.contains('has')||!art.getAttribute('src'))return;
   const lite=performance.now()<cvRevealEnd;   // a Canvas is fading in right now: a light melt (fade only), so neither stutters
-  if(!lite)coverAnimEnd=performance.now()+800;
+  if(!lite)coverAnimEnd=performance.now()+1100;
   const g=document.createElement('img');g.className='artghost'+(lite?' lite':'');g.alt='';g.src=art.src;artw.appendChild(g);
   if(!lite){art.classList.remove('swap');void art.offsetWidth;art.classList.add('swap')}
-  requestAnimationFrame(()=>requestAnimationFrame(()=>g.classList.add('go')));setTimeout(()=>g.remove(),900);
+  requestAnimationFrame(()=>requestAnimationFrame(()=>g.classList.add('go')));setTimeout(()=>g.remove(),1200);
 }
 function resetCover(){coverSwap();rawCols=barCols=DEF_COLS;curImg=null;artw.classList.remove('has');art.removeAttribute('src');palDirty=true;dirty=true;fadeBake()}
 const getJSON=async u=>{const r=await fetch(u);if(!r.ok)throw new Error('HTTP '+r.status);return r.json()};
