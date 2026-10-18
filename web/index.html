@@ -1634,7 +1634,7 @@ async function spCallback(){
 let spWaitKnown=0;
 const clockLeft=s=>{s=Math.max(0,Math.ceil(s));const h=Math.floor(s/3600),m=Math.floor(s%3600/60),x=String(s%60).padStart(2,'0');return h?h+':'+String(m).padStart(2,'0')+':'+x:m+':'+x};   // 4:59, 1:02:03
 const fmtWait=s=>s<90?Math.round(s)+' s':s<5400?Math.round(s/60)+' min':(s/3600).toFixed(1)+' h';
-async function spApi(path,method,body,raw){
+async function spApi(path,method,body,raw,again){
   if(!SP.access)throw new Error('Not connected to Spotify.');
   if(Date.now()>SP.exp){
     if(!SP.refresh){SP={};spSave();throw new Error('Spotify session expired. Reconnect.')}
@@ -1644,7 +1644,9 @@ async function spApi(path,method,body,raw){
   let r;try{r=await timed('spotify',()=>fetch((via?'/api/spweb':'https://api.spotify.com/v1')+path,{method:method||'GET',headers:Object.assign({Authorization:'Bearer '+SP.access},body?{'Content-Type':'application/json'}:{}),body:body?JSON.stringify(body):undefined}))}catch(e){throw new Error('Could not reach Spotify (offline?).')}
   if(via&&spRelay==null){spRelay=r.headers.get('X-Via')==='vv-helper';if(!spRelay)return spApi(path,method,body,raw)}   // an older server helper: go direct
   if(r.status===204)return null;
-  if(r.status===401){SP={};spSave();updSpPanel();throw new Error('Spotify session expired. Reconnect.')}
+  if(r.status===401){
+    if(!again&&SP.refresh){try{await spToken({grant_type:'refresh_token',refresh_token:SP.refresh});return spApi(path,method,body,raw,true)}catch(e){}}   // renew the login once first
+    SP={};spSave();updSpPanel();throw new Error('Spotify session expired. Reconnect.')}
   if(raw)return r;
   if(r.status===403&&method&&method!=='GET'){   // playback control refused: Premium or permission missing
     const j=await r.json().catch(()=>null),why=(j&&j.error&&(j.error.reason||j.error.message))||'';
@@ -1678,6 +1680,7 @@ function problemNow(home){   // the most important thing that's wrong right now,
   const sp=SP.access&&(home||src==='spotify');
   if(sp&&Date.now()<backoff)return{k:'wait',t:'Spotify is making Vibe Visualizer wait',
     s:'It asked Spotify too often, so Spotify paused it. It carries on by itself in '+clockLeft((backoff-Date.now())/1000)+(home?'.':'; the lyrics keep running meanwhile.')};
+  if(src==='spotify'&&!SP.access)return{k:'err',t:'Spotify isn’t connected',s:'The Spotify login ended. Press Connect Spotify in the top bar to log in again.'};
   if(sp&&spErrMsg)return{k:'err',t:'Spotify isn’t answering',s:spErrMsg};
   if(PREFS&&$('netbtn').classList.contains('bad'))return{k:'err',t:'Your server can’t be reached',s:'Lyrics, Canvas and saved settings come from it. Check that the server is on and Tailscale is connected.'};
   return null;
@@ -1755,6 +1758,7 @@ function updChips(err){
   updSpPanel();
 }
 function updSpPanel(){
+  if(!$('empty').classList.contains('gone'))homeButtons();
   $('redir').value=redirectUri()||'(serve this page over http://127.0.0.1 first)';
   $('spstatus').textContent=!SP.access?(C.spotId.trim()?'Client ID saved. Press Connect.':'Not connected.'):src==='spotify'?(spState?'Connected · '+(spPlaying()?'playing':'paused'):'Connected · nothing playing'):'Connected. Click the Spotify chip to use it.';
   $('spconnect').hidden=!!SP.access;$('spdisc').hidden=!SP.access;
@@ -1762,7 +1766,7 @@ function updSpPanel(){
 $('spchip').onclick=()=>{if(!SP.access)spLogin();else if(src!=='spotify')setSource('spotify');else openPanel('spotify')};
 $('spstart').onclick=()=>{if(SP.access){setSource('spotify');leaveHome()}else spLogin()};
 $('spconnect').onclick=()=>spLogin();
-$('spdisc').onclick=()=>{SP={};spSave();if(src==='spotify'){setSource('none');ttl.textContent='';sub.textContent='';clearLyrics('');clearCanvas();$('empty').classList.remove('gone')}updChips();toast('Spotify disconnected.','ok',2500)};
+$('spdisc').onclick=()=>{SP={};spSave();if(src==='spotify'){setSource('none');ttl.textContent='';sub.textContent='';clearLyrics('');clearCanvas();goHome()}updChips();toast('Spotify disconnected.','ok',2500)};
 $('copyredir').onclick=async()=>{try{await navigator.clipboard.writeText(redirectUri());toast('Redirect URI copied.','ok',2000)}catch(e){toast('Could not copy. Select the field and copy manually.','warn')}};
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&src==='spotify')spPoll()});
 
@@ -3260,9 +3264,9 @@ async function loadErrors(){
 $('errload').onclick=loadErrors;
 $('errclear').onclick=async()=>{try{await fetch('/api/report',{method:'DELETE'})}catch(e){}$('errlog').textContent='Cleared.'};
 // the logo opens the home screen: the start page, with a way back to the player
-function goHome(){
-  closePanel();body.classList.add('home');$('empty').classList.remove('gone');
-  const playing_=src!=='none'||loaded;$('hback').hidden=!playing_;
+function goHome(){closePanel();body.classList.add('home');$('empty').classList.remove('gone');homeButtons()}
+function homeButtons(){   // the home screen's buttons follow what's going on (also while it's open)
+  $('hback').hidden=!(src!=='none'||loaded);
   $('spstart').textContent=SP.access?(src==='spotify'?'Spotify is connected':'Use Spotify'):'Connect Spotify';$('spstart').disabled=!!SP.access&&src==='spotify';
 }
 function leaveHome(){if(!body.classList.contains('home'))return;body.classList.remove('home');if(src!=='none'||loaded)$('empty').classList.add('gone')}
