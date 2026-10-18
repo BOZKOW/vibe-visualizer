@@ -488,6 +488,9 @@ body.low .ll{transition:opacity .25s}
   #seg button{padding:6px 10px}
 }
 #lyr::-webkit-scrollbar{display:none}
+@media(min-width:1360px){#seg{position:absolute;left:50%;translate:-50% 0}}   /* the view switch sits in the real middle */
+body.wz #empty{opacity:0;transition:opacity .3s}   /* nothing from the home page shows through the setup window */
+#spvolval{font-size:12px;font-weight:600;color:var(--dim);min-width:4ch;text-align:right}
 
 
 /* ===== glassmorphism: every surface is frosted glass over the live background ===== */
@@ -627,7 +630,7 @@ body.low #cappanel,body.low #netpanel,body.low #setup .sw{background:rgba(20,20,
       <button class="ib" id="like" aria-label="Save to Liked Songs" aria-pressed="false" title="Save to Liked Songs (L)"><svg viewBox="0 0 24 24" id="likei"></svg></button>
       <button class="ib" id="devbtn" aria-label="Spotify devices" aria-haspopup="dialog" title="Choose where Spotify plays"><svg viewBox="0 0 24 24"><path d="M4 6h18V4H4a2 2 0 00-2 2v11H0v3h14v-3H4V6zm19 2h-6a1 1 0 00-1 1v10a1 1 0 001 1h6a1 1 0 001-1V9a1 1 0 00-1-1zm-1 9h-4v-7h4v7z"/></svg></button>
       <button class="ib" id="spmute" aria-label="Mute Spotify"><svg viewBox="0 0 24 24" id="spvi"></svg></button>
-      <input type="range" id="spvol" min="0" max="100" value="50" aria-label="Spotify volume">
+      <input type="range" id="spvol" min="0" max="100" value="50" aria-label="Spotify volume"><span id="spvolval"></span>
     </div>
     <div id="volwrap">
       <button class="ib" id="mute" aria-label="Mute"><svg viewBox="0 0 24 24" id="vi"></svg></button>
@@ -2440,7 +2443,7 @@ function updSpx(){
   const canVol=!!d&&d.supports_volume!==false&&vol!=null;
   sv.disabled=$('spmute').disabled=!canVol;
   if(canVol&&document.activeElement!==sv)sv.value=vol;
-  fill(sv);$('spvi').innerHTML=volPaths(!canVol||+sv.value===0,+sv.value);
+  fill(sv);$('spvi').innerHTML=volPaths(!canVol||+sv.value===0,+sv.value);$('spvolval').textContent=canVol?sv.value+'%':'';
   $('spmute').title=canVol?'Mute Spotify':'This device doesn’t let apps change its volume';
   $('devbtn').title=d?'Playing on '+d.name+' · choose where Spotify plays':'Choose where Spotify plays';
 }
@@ -2475,7 +2478,7 @@ async function spLike(){
 }
 function spSetVol(v,now){
   v=Math.max(0,Math.min(100,Math.round(v)));if(spx.dev)spx.dev.volume_percent=v;spxHold=performance.now()+1500;
-  const sv=$('spvol');sv.value=v;fill(sv);$('spvi').innerHTML=volPaths(v===0,v);
+  const sv=$('spvol');sv.value=v;fill(sv);$('spvi').innerHTML=volPaths(v===0,v);$('spvolval').textContent=v+'%';
   clearTimeout(spVolT);spVolT=setTimeout(()=>spCtl('PUT','/me/player/volume?volume_percent='+v),now?0:180);   // one request per pause in dragging
 }
 $('shuf').onclick=spShuffle;$('rep').onclick=spRepeat;$('like').onclick=spLike;
@@ -2716,7 +2719,7 @@ function drawBars(mirror){
     for(let i=0;i<N;i++){const h=Math.max(2,vals[i]*maxH),x=i*step+gp/2-gr,y=by-h-gr,hh=(mirror?h*2:h)+gr*2,ww=bw+gr*2;
       rd?ctx.roundRect(x,y,ww,hh,Math.min(r+gr,hh/2)):ctx.rect(x,y,ww,hh)}
     ctx.fill()};
-  if(!S.low){ctx.save();ctx.beginPath();ctx.rect(0,0,W,H);ctx.clip();ctx.fillStyle='#000';pass(Math.max(1,bw*.18),.22);ctx.fillStyle=barsGrad();   // a soft dark edge, so the bars never melt into the background
+  if(!S.low){ctx.save();ctx.beginPath();ctx.rect(0,0,W,H);ctx.clip();ctx.fillStyle='#000';pass(Math.max(1,bw*.14),.14);ctx.fillStyle=barsGrad();   // a soft dark edge, so the bars never melt into the background
     if(glowOn())pass(bw*.4,.16);ctx.restore()}   // glow stays inside the canvas
   pass(0,.95);ctx.globalAlpha=1;
 }
@@ -2788,8 +2791,8 @@ async function wzLyrics(){   // live check of what the server has set up
   }catch(e){box.innerHTML=chip('Couldn’t reach the server helper','n')}
 }
 function wzSeg(){$('wzseg').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.v===S.view))}
-function wzOpen(){wzI=0;closePanel();WZ.hidden=false;wzRender();setTimeout(()=>$('wznext').focus(),50)}
-function wzDone(){store.set('pulse_setup',1);WZ.hidden=true;pushPrefs()}
+function wzOpen(){wzI=0;closePanel();WZ.hidden=false;body.classList.add('wz');wzRender();setTimeout(()=>$('wznext').focus(),50)}
+function wzDone(){store.set('pulse_setup',1);WZ.hidden=true;body.classList.remove('wz');pushPrefs()}
 WZ.querySelectorAll('.opt').forEach(o=>o.onclick=()=>{wzUse[o.dataset.u]=!wzUse[o.dataset.u];wzRender()});
 $('wznext').onclick=()=>{if(wzI>=wzSteps().length-1)wzDone();else{wzI++;wzRender()}};
 $('wzback').onclick=()=>{wzI--;wzRender()};
