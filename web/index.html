@@ -531,7 +531,14 @@ body.wz #empty{opacity:0;transition:opacity .3s}   /* nothing from the home page
 #capbtn.idle #capt{color:var(--dim)}#capbtn.on{border-color:#1ed760}
 @media(max-width:1180px){#capt{max-width:90px}}
 /* notification cards (updates, what's new, errors) */
-#notes{position:fixed;top:70px;right:16px;z-index:12;display:flex;flex-direction:column;gap:10px;width:min(360px,calc(100% - 32px));pointer-events:none}
+/* every notification lives in one stack in the top-right corner: cards with buttons first, short notes under them */
+#corner{position:fixed;top:70px;right:16px;z-index:20;display:flex;flex-direction:column;gap:10px;width:min(360px,calc(100% - 32px));pointer-events:none}
+#notes,#toasts{position:static;transform:none;width:auto;display:flex;flex-direction:column;gap:10px;pointer-events:none}
+#notes:empty,#toasts:empty{display:none}
+#notes .note{margin:0}
+#corner .toast{animation:cin .35s cubic-bezier(.2,.8,.2,1);transform-origin:top right;border-radius:16px}
+@keyframes cin{from{opacity:0;transform:translateX(24px) scale(.97)}}
+.note .nact{flex-wrap:wrap}.note .nact .btn{white-space:nowrap}
 .note{pointer-events:auto;padding:14px 16px 12px;border-radius:18px;background:linear-gradient(145deg,rgba(255,255,255,.16),rgba(255,255,255,.05)),rgba(20,20,34,.62);
   border:1px solid rgba(255,255,255,.2);box-shadow:0 18px 50px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.25);backdrop-filter:blur(30px) saturate(170%);-webkit-backdrop-filter:blur(30px) saturate(170%);
   animation:pop .4s cubic-bezier(.2,.8,.2,1);transform-origin:top right}
@@ -888,8 +895,7 @@ body.low #cappanel,body.low #netpanel,body.low #setup .sw{background:rgba(20,20,
   </div>
 </div>
 
-<div id="toasts" aria-live="polite"></div>
-<div id="notes" aria-live="polite"></div>
+<div id="corner"><div id="notes" aria-live="polite"></div><div id="toasts" aria-live="polite"></div></div>
 <input type="file" id="file" accept="audio/*" hidden>
 <input type="file" id="coverfile" accept="image/*" hidden>
 <input type="file" id="cvfile" accept="video/*" hidden>
