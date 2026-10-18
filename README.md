@@ -48,6 +48,7 @@ domain is needed.
 - Click any line to jump there.
 - **Focus mode** (*Settings → Experiments*): only the line being sung, sharp in the middle. The next line flies in
   from the bottom 200 ms before it's sung, finished lines fly up and disappear, and lines sung together stack.
+  Lyrics without timing keep scrolling slowly, as in Spicy Lyrics.
 
 **Visuals**
 - Bar visualizer that reacts to local files, or to everything your computer plays (the Spotify app too) through the
