@@ -471,6 +471,7 @@ body.low .ll{transition:opacity .25s}
 .btn.pri{box-shadow:0 6px 20px rgba(255,255,255,.15),inset 0 1px 0 #fff}
 .toast{background:var(--g-grad),rgba(22,22,38,.5);border-color:var(--g-bd);box-shadow:var(--g-sh),var(--g-hi);backdrop-filter:var(--g-blur);-webkit-backdrop-filter:var(--g-blur)}
 #psearch::placeholder,.tin::placeholder{color:rgba(255,255,255,.55)}
+#capbtn.bridge{box-shadow:inset 0 0 0 2px #1ed760,0 0 14px -4px #1ed760}   /* Vibe Bridge connected */
 /* notification cards (updates, what's new, errors) */
 #notes{position:fixed;top:70px;right:16px;z-index:12;display:flex;flex-direction:column;gap:10px;width:min(360px,calc(100% - 32px));pointer-events:none}
 .note{pointer-events:auto;padding:14px 16px 12px;border-radius:18px;background:linear-gradient(145deg,rgba(255,255,255,.16),rgba(255,255,255,.05)),rgba(20,20,34,.62);
@@ -601,6 +602,8 @@ body.low #cappanel,body.low #netpanel,body.low #setup .sw{background:rgba(20,20,
   <div class="row2"><button class="btn sm" id="coverbtn">Choose cover image…</button></div>
 
   <h4>Visualizer</h4>
+  <div class="f chk" data-k="bridge"><label><input type="checkbox" id="bridge"> Vibe Bridge<small>Use the Vibe Bridge app on this computer for the bars: it hears everything the computer plays, the Spotify app included, with no sharing prompt.</small></label></div>
+  <p class="stat" id="bridgestat"></p>
   <div class="f chk" data-k="auto"><label><input type="checkbox" id="auto"> Auto sensitivity</label></div>
   <div class="f" data-k="boost"><span class="lb">Sensitivity / boost</span><input type="range" id="boost" min="30" max="300"></div>
   <div class="f" data-k="resp"><span class="lb">Smoothness (low = snappier)</span><input type="range" id="resp" min="0" max="100"></div>
@@ -856,7 +859,7 @@ addEventListener('unhandledrejection',e=>toast('Something failed: '+((e.reason&&
 /* ================= settings (one store) ================= */
 const LANGS=[['en','English'],['cs','Czech'],['sk','Slovak'],['de','German'],['es','Spanish'],['fr','French'],['it','Italian'],['pt','Portuguese'],['pl','Polish'],['nl','Dutch'],['sv','Swedish'],['da','Danish'],['no','Norwegian'],['fi','Finnish'],['hu','Hungarian'],['ro','Romanian'],['el','Greek'],['tr','Turkish'],['uk','Ukrainian'],['ru','Russian'],['ar','Arabic'],['he','Hebrew'],['hi','Hindi'],['th','Thai'],['vi','Vietnamese'],['id','Indonesian'],['tl','Filipino'],['ja','Japanese'],['ko','Korean'],['zh-CN','Chinese (Simplified)'],['zh-TW','Chinese (Traditional)']];
 const navLang=(()=>{const l=(navigator.language||'en').toLowerCase(),m=LANGS.find(x=>x[0].toLowerCase()===l)||LANGS.find(x=>x[0].split('-')[0]===l.split('-')[0]);return m?m[0]:'en'})();
-const DEF={xFocus:false,bgStyle:'dynamic',sysFont:false,lsimple:false,lminimal:false,lhover:true,lduet:true,lcredLast:false,lsmooth:true,learly:false,learlyMs:250,lseekFade:true,lnotice:true,volshow:true,fpscap:'0',credPos:'corner',cvNoArt:false,capDev:'',romMode:'replace',tr:false,trTo:navLang,trSkip:'',theme:'cover',c1:'#ff5a5f',c2:'#4f8cff',auto:true,boost:100,resp:25,blur:0,bars:72,gap:28,glow:false,round:true,scale:'1',fps:false,bgblur:60,bri:70,sat:170,bgspeed:100,online:true,volume:100,view:'both',lprov:'spicy:1,spotify:1,lrclib:1,netease:1',loff:0,lsize:100,lblur:true,canvasOn:true,low:false};
+const DEF={bridge:true,xFocus:false,bgStyle:'dynamic',sysFont:false,lsimple:false,lminimal:false,lhover:true,lduet:true,lcredLast:false,lsmooth:true,learly:false,learlyMs:250,lseekFade:true,lnotice:true,volshow:true,fpscap:'0',credPos:'corner',cvNoArt:false,capDev:'',romMode:'replace',tr:false,trTo:navLang,trSkip:'',theme:'cover',c1:'#ff5a5f',c2:'#4f8cff',auto:true,boost:100,resp:25,blur:0,bars:72,gap:28,glow:false,round:true,scale:'1',fps:false,bgblur:60,bri:70,sat:170,bgspeed:100,online:true,volume:100,view:'both',lprov:'spicy:1,spotify:1,lrclib:1,netease:1',loff:0,lsize:100,lblur:true,canvasOn:true,low:false};
 const CFGD={spotId:'',canvasUrl:''},OLDCFG=['spicyUrl','spicyHdr','spicyPfx','spicyKey'];   // old fields that kept a key in the browser: always removed
 // Everything (settings, API keys, Spotify login, setup progress) lives in sessionStorage:
 // it survives a reload and the Spotify login redirect, and the browser deletes it when the tab is closed.
@@ -936,6 +939,7 @@ function onSetting(k){
   else if(k==='canvasOn')applyCanvasMode();
   else if(k==='view')applyView();
   else if(k==='credPos')applyCredPos();
+  else if(k==='bridge'){if(S.bridge)bridgeConnect();else bridgeStop()}
   else if(/^(xFocus|lsimple|lminimal|lhover|lduet|lcredLast|lsmooth|volshow)$/.test(k)){applyLyrOpts();if(k==='xFocus')setTimeout(place,60)}
   else if(k==='lnotice'&&!S.lnotice&&lmsg.className==='none')lyrMsg('');
   else if(k==='cvNoArt')flipLayout(()=>body.classList.toggle('cvnoart',!!S.cvNoArt));
@@ -1166,6 +1170,29 @@ const filePlaying=()=>loaded&&!audio.paused&&!audio.ended;
 const spPlaying=()=>!!(spState&&spState.playing);
 const playing=()=>src==='file'?filePlaying():src==='spotify'?spPlaying():false;
 const liveAudio=()=>!!capStream||(src==='file'&&filePlaying());
+/* ---- Vibe Bridge: a small app on the computer that plays the music (Linux and Windows) listens to everything it plays
+   and sends the analyser data here over a local WebSocket, so the bars follow the Spotify app with no sharing prompt */
+const BRIDGE_URL='ws://127.0.0.1:47120';
+let bws=null,bridgeOn=false,bridgeAt=0,bridgeDev='',bridgeT=0;const bridgeBuf=new Uint8Array(1024);
+const bridgeLive=()=>bridgeOn&&performance.now()-bridgeAt<600;
+function bridgeConnect(){
+  clearTimeout(bridgeT);if(!S.bridge||bws)return;
+  try{bws=new WebSocket(BRIDGE_URL)}catch(e){bws=null;bridgeT=setTimeout(bridgeConnect,15000);return}
+  bws.binaryType='arraybuffer';
+  bws.onopen=()=>{bridgeOn=true;updBridge();toast('Vibe Bridge connected: the bars follow your computer’s sound.','ok',3500)};
+  bws.onmessage=e=>{
+    if(typeof e.data==='string'){try{const m=JSON.parse(e.data);if(m.device)bridgeDev=m.device;updBridge()}catch(x){}return}
+    const a=new Uint8Array(e.data);bridgeBuf.set(a.length>1024?a.subarray(0,1024):a);bridgeAt=performance.now();
+  };
+  bws.onclose=()=>{const was=bridgeOn;bws=null;bridgeOn=false;updBridge();if(was)toast('Vibe Bridge closed. The bars go back to the other sources.','warn',3500);
+    if(S.bridge)bridgeT=setTimeout(bridgeConnect,was?2000:15000)};   // keep looking for it quietly
+  bws.onerror=()=>{};
+}
+function bridgeStop(){clearTimeout(bridgeT);if(bws){const w=bws;bws=null;bridgeOn=false;w.onclose=null;w.close()}updBridge()}
+function updBridge(){
+  const el=$('bridgestat');if(el)el.textContent=!S.bridge?'Off.':bridgeOn?'Connected'+(bridgeDev?' · listening to '+bridgeDev:'')+'.':'Not running on this computer. Start the Vibe Bridge app (see the README).';
+  $('capbtn').classList.toggle('bridge',bridgeOn);
+}
 let spSlew=null,spSnap=false;
 async function resyncNow(){   // manual resync: fresh position from Spotify, snapped (no gliding), lyrics re-placed
   const b=$('syncbtn');b.classList.remove('spin');void b.offsetWidth;b.classList.add('spin');
@@ -2460,8 +2487,9 @@ function poke(){
 /* ================= analysis ================= */
 function sample(dt,now){
   const aA=1-Math.exp(-dt/(6+S.resp*.5)),aR=1-Math.exp(-dt/(30+S.resp*3.5)),boost=S.boost/100;
-  if(liveAudio()){
-    analyser.getByteFrequencyData(data);
+  const viaBridge=!liveAudio()&&bridgeLive();   // the Vibe Bridge app: the sound of the whole computer (the Spotify app too)
+  if(liveAudio()||viaBridge){
+    if(viaBridge)data.set(bridgeBuf);else analyser.getByteFrequencyData(data);
     if(capStream&&!capHeard){for(let k=0;k<64;k++)if(data[k]){capHeard=true;break}}
     let mx=0;
     for(let i=0;i<N;i++){
@@ -2756,7 +2784,7 @@ netLoop();
 syncInputs();refreshReset();volIcon();
 root.style.setProperty('--ls',S.lsize/100);
 $('fpsEl').style.display=S.fps?'block':'none';
-body.classList.toggle('cvnoart',!!S.cvNoArt);applyCredPos();applyLyrOpts();body.classList.toggle('sysfont',!!S.sysFont);applyBgStyle();setupBands();applyView();applyLow();resize();renderBg();updChips();updPlayIcon();updQuick();updNeed();
+body.classList.toggle('cvnoart',!!S.cvNoArt);applyCredPos();applyLyrOpts();bridgeConnect();updBridge();body.classList.toggle('sysfont',!!S.sysFont);applyBgStyle();setupBands();applyView();applyLow();resize();renderBg();updChips();updPlayIcon();updQuick();updNeed();
 requestAnimationFrame(frame);
 poke();
 (async()=>{

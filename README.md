@@ -21,6 +21,7 @@ domain is needed.
 - [Spicy Lyrics integration](#spicy-lyrics-integration)
 - [How it fits together](#how-it-fits-together)
 - [Setup](#setup)
+- [Vibe Bridge: bars from the Spotify app](#vibe-bridge-bars-from-the-spotify-app)
 - [Updating](#updating)
 - [Using it on Linux](#using-it-on-linux)
 - [Using it on Windows](#using-it-on-windows)
@@ -49,8 +50,9 @@ domain is needed.
   from the bottom 200 ms before it's sung, finished lines fly up and disappear, and lines sung together stack.
 
 **Visuals**
-- Bar visualizer that reacts to local files, or to Spotify through your computer's sound (a "Monitor of …" input on
-  Linux, a screen share with system audio on Windows, or a browser tab).
+- Bar visualizer that reacts to local files, or to everything your computer plays (the Spotify app too) through the
+  small [Vibe Bridge](#vibe-bridge-bars-from-the-spotify-app) app, a "Monitor of …" input on Linux, a screen share
+  with system audio on Windows, or a browser tab.
 - Live background made from the cover art, drifting at the music's pace. Or, as in Spicy Lyrics: the artist's photo,
   the still cover art, a color from the cover, or none.
 - Spotify Canvas videos (optional, see [Third-party services](#third-party-services)), with a smooth layout change when
@@ -222,6 +224,49 @@ Remove-Variable k
 
 Docker Desktop has to be running for the app to be up: turn on *Start Docker Desktop when you sign in* in its
 settings, and set Windows not to sleep while you use it.
+
+## Vibe Bridge: bars from the Spotify app
+
+Spotify doesn't share its sound with other programs, so the browser can't hear the Spotify app by itself.
+**Vibe Bridge** is a small program for the computer that plays your music (Linux or Windows). It listens to
+everything that computer plays, the Spotify app included, and sends the bars' data to Vibe Visualizer on the same
+computer, with no sharing prompt and no device to pick. It only accepts connections from that same computer, and no
+sound or data leaves it.
+
+Download it from the [Releases page](https://github.com/BOZKOW/vibe-visualizer/releases) (look for "Vibe Bridge").
+Vibe Visualizer finds it by itself; *Settings → Visualizer → Vibe Bridge* shows whether it's connected and which
+output it's listening to, and the sound button in the top bar gets a green ring.
+
+**Windows**
+1. Download `vibe-bridge-windows.exe` and run it. Windows may say *Windows protected your PC*, because the program
+   isn't signed: choose *More info → Run anyway*.
+2. Leave its window open (minimize it) while you listen.
+3. To start it automatically: press `Win + R`, type `shell:startup`, and put a shortcut to `vibe-bridge-windows.exe`
+   in the folder that opens.
+
+**Linux**
+1. Download `vibe-bridge-linux-x86_64`, then make it a program you can run:
+   ```sh
+   mkdir -p ~/.local/bin
+   mv ~/Downloads/vibe-bridge-linux-x86_64 ~/.local/bin/vibe-bridge
+   chmod +x ~/.local/bin/vibe-bridge
+   vibe-bridge
+   ```
+   It needs PipeWire (with its PulseAudio layer) or PulseAudio, which almost every desktop has.
+2. To start it automatically when you log in, use the service file from the `bridge` folder:
+   ```sh
+   mkdir -p ~/.config/systemd/user
+   cp bridge/vibe-bridge.service ~/.config/systemd/user/
+   systemctl --user daemon-reload && systemctl --user enable --now vibe-bridge
+   ```
+
+**Good to know**
+- `vibe-bridge --list` lists your outputs, and `vibe-bridge --device "Headphones"` follows a specific one instead of
+  the default. By default it follows whichever output is the default, also after you switch.
+- Your browser may ask once whether Vibe Visualizer can *access other apps and services on this device*. Allow it;
+  that's the connection to the bridge.
+- Local audio files you play in Vibe Visualizer itself still use the browser's own sound.
+- From source instead: `pip install -r bridge/requirements.txt` and `python bridge/vibe_bridge.py`.
 
 ## Updating
 
