@@ -62,8 +62,9 @@ domain is needed.
   back.
 
 **App**
-- Spotify "now playing" through the official Web API (PKCE login, no client secret), with previous, play/pause, next
-  and seeking (Spotify Premium).
+- Spotify "now playing" through the official Web API (PKCE login, no client secret), with previous, play/pause, next,
+  seeking, shuffle, repeat, Spotify's own volume and a device picker to choose where it plays (Spotify Premium), and a
+  heart to save the song to your Liked Songs. Logged in before these were added? Reconnect Spotify once to allow them.
 - Settings in their own window, with categories and a search box.
 - A home screen (click the logo), a first-run setup guide, and a ping meter for every service the app uses.
 - Installable as an app on computers and phones.
@@ -361,8 +362,10 @@ time, and you're responsible for whether using them is acceptable to you:
 | --- | --- |
 | `Space` | Play / pause |
 | `←` `→` | Seek 5 seconds |
-| `↑` `↓` | Volume |
+| `↑` `↓` | Volume (Spotify's own volume while Spotify is playing) |
 | `N` `P` | Next / previous |
+| `S` | Shuffle (Spotify) |
+| `L` | Save to / remove from Liked Songs (Spotify) |
 | `M` | Mute |
 | `F` | Fullscreen |
 | `1` `2` `3` | Visualizer / lyrics / both |

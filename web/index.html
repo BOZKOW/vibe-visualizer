@@ -105,7 +105,7 @@ body[data-view=both]:is(.hl,.lm) #lyr{bottom:calc(26% + 24px)}
 body[data-view=both]:is(.hl,.lm) #viz{top:74%}
 
 /* ---------- lyrics ---------- */
-#lyr{left:-20px;overflow:hidden;-webkit-mask-image:linear-gradient(transparent,#000 14%,#000 80%,transparent);mask-image:linear-gradient(transparent,#000 14%,#000 80%,transparent)}
+#lyr{left:-20px;overflow:hidden;scrollbar-width:none;-webkit-mask-image:linear-gradient(transparent,#000 14%,#000 80%,transparent);mask-image:linear-gradient(transparent,#000 14%,#000 80%,transparent)}
 body[data-view=viz] #lyr{display:none}
 #ly{position:absolute;left:0;right:0;top:0;padding:0 6% 0 20px;transition:transform .55s cubic-bezier(.2,.8,.2,1);will-change:transform}
 #lyr.st{overflow-y:auto}
@@ -235,6 +235,24 @@ body.idle{cursor:none}
 #seekwrap{flex:1 1 200px;display:flex;align-items:center;gap:10px;min-width:0}
 #time{font-variant-numeric:tabular-nums;color:var(--dim);font-size:12px;white-space:nowrap}
 #volwrap{display:flex;align-items:center;gap:4px}
+/* more Spotify controls: only while Spotify is the source */
+body:not([data-src=spotify]) .spx{display:none!important}
+#shuf,#rep{width:34px;height:34px;background:transparent;color:var(--dim)}#shuf:hover,#rep:hover{background:rgba(255,255,255,.14);color:#fff}
+#shuf.on,#rep.on{color:#1ed760;background-image:radial-gradient(circle at 50% 90%,#1ed760 1.5px,transparent 2px)}
+#spx{display:flex;align-items:center;gap:2px}
+#spx .ib{width:34px;height:34px;background:transparent;color:var(--dim)}#spx .ib:hover,#spx .ib.on{background:rgba(255,255,255,.14);color:#fff}
+#spx #like.on,#spx #like.on:hover{color:#1ed760}#like.pop svg{animation:likepop .45s cubic-bezier(.3,1.6,.5,1)}
+@keyframes likepop{0%{transform:scale(.7)}60%{transform:scale(1.25)}100%{transform:none}}
+#spvol{width:80px}
+#devpanel{position:fixed;right:max(12px,calc(50% - 440px));bottom:110px;z-index:9;width:min(320px,calc(100% - 24px));padding:14px 16px;animation:pop .3s cubic-bezier(.2,.8,.2,1);transform-origin:bottom right}
+.drow{display:grid;grid-template-columns:22px 1fr auto;gap:0 10px;align-items:center;width:100%;padding:9px 10px;margin:0 -10px;border:0;border-radius:12px;background:none;color:inherit;font:inherit;text-align:left;cursor:pointer;transition:background .2s}
+.drow:hover{background:rgba(255,255,255,.1)}.drow:disabled{opacity:.45;cursor:not-allowed}
+.drow svg{width:20px;height:20px;fill:currentColor;grid-row:span 2;opacity:.85}
+.drow b{font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.drow small{font-size:11px;color:var(--faint);grid-column:2}
+.drow em{font-style:normal;font-size:11px;color:var(--faint);grid-row:span 2;font-variant-numeric:tabular-nums}
+.drow.on{color:#1ed760}.drow.on small{color:#1ed760;opacity:.8}
+#devpanel .hint{margin-top:8px}
+body.low #devpanel{backdrop-filter:none;-webkit-backdrop-filter:none;background:rgba(20,20,32,.95)}
 #volwrap .ib{width:34px;height:34px;background:transparent}
 #volume{width:80px}
 input[type=range]{-webkit-appearance:none;appearance:none;background:transparent;height:20px;margin:0;width:100%;min-width:0;cursor:pointer}
@@ -426,7 +444,7 @@ body:not([data-view=viz]) #lyr{animation:fadein .5s}
 .bump{animation:bump .45s cubic-bezier(.34,1.56,.64,1)}
 #pi.bump{transform-origin:center;transform-box:fill-box}
 .ib{transition:background .25s,transform .15s,box-shadow .3s}
-.ib.gone{width:0;margin:0 -4px;opacity:0;transform:scale(.5);pointer-events:none}
+.ib.gone{width:0;padding:0!important;border-width:0!important;margin:0 -4px;opacity:0;transform:scale(.5);pointer-events:none}   /* takes no room at all */
 #trbtn,#rombtn{transition:width .4s cubic-bezier(.34,1.3,.64,1),margin .4s cubic-bezier(.34,1.3,.64,1),opacity .3s,transform .4s cubic-bezier(.34,1.56,.64,1),background .25s,box-shadow .3s}
 .ib.on{box-shadow:0 0 0 1px rgba(255,255,255,.35),0 0 18px -4px var(--acc)}
 .chip .dot{transition:background .3s,box-shadow .3s}
@@ -469,6 +487,8 @@ body.low .ll{transition:opacity .25s}
   .brand span,#spt{display:none}
   #seg button{padding:6px 10px}
 }
+#lyr::-webkit-scrollbar{display:none}
+
 
 /* ===== glassmorphism: every surface is frosted glass over the live background ===== */
 :root{--g-tint:rgba(22,22,38,.26);--g-grad:linear-gradient(145deg,rgba(255,255,255,.16),rgba(255,255,255,.04) 60%,rgba(255,255,255,.08));
@@ -579,6 +599,12 @@ body.low #cappanel,body.low #netpanel,body.low #setup .sw{background:rgba(20,20,
   <p class="hint">Your server is pinged live. Outside services are timed on real requests only, so they show the last one.</p>
 </div>
 
+<div id="devpanel" class="glass" hidden role="dialog" aria-label="Spotify devices">
+  <div class="nph"><b>Play on</b><span id="devnote"></span></div>
+  <div id="devrows"></div>
+  <p class="hint">Only devices with Spotify open show up. Switching keeps the song going.</p>
+</div>
+
 <div id="empty">
   <img class="hero-logo" src="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22 role=%22img%22 aria-label=%22Vibe Visualizer%22%3E%3Cdefs%3E%3ClinearGradient id=%22vv-bg%22 x1=%220%22 y1=%220%22 x2=%221%22 y2=%221%22%3E%3Cstop offset=%220%22 stop-color=%22%238b7cff%22/%3E%3Cstop offset=%22.55%22 stop-color=%22%23ff5fa2%22/%3E%3Cstop offset=%221%22 stop-color=%22%2336c9ff%22/%3E%3C/linearGradient%3E%3ClinearGradient id=%22vv-shine%22 x1=%220%22 y1=%220%22 x2=%220%22 y2=%221%22%3E%3Cstop offset=%220%22 stop-color=%22%23fff%22 stop-opacity=%22.28%22/%3E%3Cstop offset=%22.5%22 stop-color=%22%23fff%22 stop-opacity=%220%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width=%2264%22 height=%2264%22 rx=%2216%22 fill=%22url(%23vv-bg)%22/%3E%3Crect width=%2264%22 height=%2264%22 rx=%2216%22 fill=%22url(%23vv-shine)%22/%3E%3Cg fill=%22%23fff%22%3E%3Crect x=%229.5%22 y=%2213%22 width=%226.5%22 height=%2220%22 rx=%223.25%22 opacity=%22.78%22/%3E%3Crect x=%2219%22 y=%2219%22 width=%226.5%22 height=%2222%22 rx=%223.25%22 opacity=%22.9%22/%3E%3Crect x=%2228.75%22 y=%2225%22 width=%226.5%22 height=%2226%22 rx=%223.25%22/%3E%3Crect x=%2238.5%22 y=%2219%22 width=%226.5%22 height=%2222%22 rx=%223.25%22 opacity=%22.9%22/%3E%3Crect x=%2248%22 y=%2213%22 width=%226.5%22 height=%2220%22 rx=%223.25%22 opacity=%22.78%22/%3E%3C/g%3E%3C/svg%3E" alt="">
   <h1>Vibe Visualizer</h1>
@@ -591,10 +617,18 @@ body.low #cappanel,body.low #netpanel,body.low #setup .sw{background:rgba(20,20,
 <div id="lcredit" hidden></div>
 <div id="dock">
   <div id="bar" class="glass">
+    <button class="ib spx" id="shuf" aria-label="Shuffle" aria-pressed="false" title="Shuffle (S)"><svg viewBox="0 0 24 24"><path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/></svg></button>
     <button class="ib" id="prev" aria-label="Previous" title="Previous (P)"><svg viewBox="0 0 24 24"><path d="M6 5h2v14H6zm3.5 7L19 5v14z"/></svg></button>
     <button class="ib" id="play" aria-label="Play or pause"><svg viewBox="0 0 24 24" id="pi"><path d="M8 5v14l11-7z"/></svg></button>
     <button class="ib" id="next" aria-label="Next" title="Next (N)" disabled><svg viewBox="0 0 24 24"><path d="M16 5h2v14h-2zM5 5l9.5 7L5 19z"/></svg></button>
+    <button class="ib spx" id="rep" aria-label="Repeat: off" title="Repeat"><svg viewBox="0 0 24 24" id="repi"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></svg></button>
     <div id="seekwrap"><input type="range" id="seek" min="0" max="1000" value="0" aria-label="Seek"><span id="time">0:00 / 0:00</span></div>
+    <div id="spx" class="spx">
+      <button class="ib" id="like" aria-label="Save to Liked Songs" aria-pressed="false" title="Save to Liked Songs (L)"><svg viewBox="0 0 24 24" id="likei"></svg></button>
+      <button class="ib" id="devbtn" aria-label="Spotify devices" aria-haspopup="dialog" title="Choose where Spotify plays"><svg viewBox="0 0 24 24"><path d="M4 6h18V4H4a2 2 0 00-2 2v11H0v3h14v-3H4V6zm19 2h-6a1 1 0 00-1 1v10a1 1 0 001 1h6a1 1 0 001-1V9a1 1 0 00-1-1zm-1 9h-4v-7h4v7z"/></svg></button>
+      <button class="ib" id="spmute" aria-label="Mute Spotify"><svg viewBox="0 0 24 24" id="spvi"></svg></button>
+      <input type="range" id="spvol" min="0" max="100" value="50" aria-label="Spotify volume">
+    </div>
     <div id="volwrap">
       <button class="ib" id="mute" aria-label="Mute"><svg viewBox="0 0 24 24" id="vi"></svg></button>
       <input type="range" id="volume" min="0" max="100" aria-label="Volume" title="Double-click to reset">
@@ -1004,7 +1038,11 @@ function extract(img){
   const out=[];
   for(const k of cand){if(out.every(o=>Math.hypot(o.c[0]-k.c[0],o.c[1]-k.c[1],o.c[2]-k.c[2])>70))out.push(k);if(out.length>=4)break}
   if(out.length<2){const o=out[0]||{h:250,s:.5,l:.5,c:[120,100,220]},h=(o.h+40)%360,l=Math.min(.8,o.l+.15);out.push({c:hsl2rgb(h,o.s,l),h,s:o.s,l})}
-  return{raw:out.map(o=>o.c.map(Math.round)),bar:out.map(o=>hsl2rgb(o.h,o.s<.12?o.s:Math.max(o.s,.5),Math.min(.72,Math.max(.52,o.l))))};
+  // the bars sit on this same cover, blurred: keep them clearly lighter and more colorful than it, so a grey or
+  // pale cover doesn't give bars the color of the background
+  let lum=0;for(let i=0;i<d.length;i+=4)lum+=(.2126*d[i]+.7152*d[i+1]+.0722*d[i+2])/255;lum/=d.length/4;
+  const floor=Math.min(.86,Math.max(.6,lum+.3));
+  return{raw:out.map(o=>o.c.map(Math.round)),bar:out.map(o=>o.s<.12?hsl2rgb(o.h,.18,Math.max(.88,floor)):hsl2rgb(o.h,Math.max(o.s,.62),Math.min(.86,Math.max(floor,o.l))))};
 }
 
 /* ================= background (blur baked in JS, GPU only rotates) ================= */
@@ -1231,12 +1269,26 @@ function updBridge(){
   $('capbtn').classList.toggle('bridge',bridgeOn);
 }
 let spSlew=null,spSnap=false;
-async function resyncNow(){   // manual resync: fresh position from Spotify, snapped (no gliding), lyrics re-placed
+let spRtt=0,resyncing=false;
+async function resyncNow(){   // manual resync: three fresh readings from Spotify, the most exact one wins, snapped (no gliding)
+  if(resyncing)return;resyncing=true;
   const b=$('syncbtn');b.classList.remove('spin');void b.offsetWidth;b.classList.add('spin');
-  if(src==='spotify'){spSlew=null;spSnap=true;try{await spPoll()}finally{spSnap=false}}
-  moving.forEach(k=>{if(k!==li&&lEls[k])restLine(lEls[k])});
-  if(lsync&&L.length){li=-2;setActive(findIdx(curTime()*lPace+S.loff/1000))}
-  toast('Lyrics re-synced'+(src==='spotify'?' with Spotify':'')+'.','ok',1800);
+  let moved=null;
+  try{
+    if(src==='spotify'){
+      const before=spState?curMs():null,id=spId;spSlew=null;spSnap=true;let best=null;
+      try{for(let k=0;k<3;k++){   // the position is counted from the middle of each request; the shortest one errs least
+        await spPoll();if(!spState||spId!==id)break;
+        if(!best||spRtt<best.rtt)best={rtt:spRtt,p:spState.progress,at:spFetched,pl:spState.playing};
+        if(k<2)await new Promise(r=>setTimeout(r,150));
+      }}finally{spSnap=false}
+      if(best&&spState&&spId===id){spState.progress=best.p;spFetched=best.at;spState.playing=best.pl;spSlew=null;if(before!=null)moved=curMs()-before}
+    }
+    moving.forEach(k=>{if(lEls[k])restLine(lEls[k])});moving.clear();lastWT=0;   // the words start again from the right pose
+    if(lsync&&L.length){li=-2;lsi=-2;lActKey='';lyricsTick()}
+    toast(moved==null?'Lyrics re-synced.':Math.abs(moved)<40?'Lyrics are in sync with Spotify.':'Lyrics re-synced: moved '+(moved>0?'ahead ':'back ')+(Math.abs(moved)/1000).toFixed(2)+' s.','ok',2200);
+  }catch(e){toast('Couldn’t resync: '+e.message,'warn',4000)}
+  finally{resyncing=false}
 }
 function curMs(){   // Spotify position in ms, with any resync correction still gliding in
   const now=performance.now();let t=spState.progress+(spState.playing?now-spFetched:0);
@@ -1259,7 +1311,7 @@ function setSource(s){
   }else{
     clearInterval(spTimer);spTimer=0;spState=null;spId=null;src=s;
   }
-  body.dataset.src=src;$('play').disabled=false;$('seek').disabled=false;$('volwrap').hidden=src==='spotify';$('next').disabled=src!=='spotify';
+  body.dataset.src=src;$('play').disabled=false;$('seek').disabled=false;$('volwrap').hidden=src==='spotify';updSpx();$('next').disabled=src!=='spotify';
   hideEmpty();updChips();updPlayIcon();
 }
 function resize(){
@@ -1279,8 +1331,7 @@ new ResizeObserver(placeCredit).observe($('dock'));addEventListener('resize',pla
 /* ================= audio graph + volume + capture ================= */
 function volIcon(){
   const off=muted||S.volume==0;
-  $('vi').innerHTML=off?'<path d="M3 9v6h4l5 5V4L7 9H3z"/><path d="M15 9.5l5 5M20 9.5l-5 5" stroke="currentColor" stroke-width="2" fill="none"/>'
-    :'<path d="M3 9v6h4l5 5V4L7 9H3z"/><path d="M15.5 8.5a5 5 0 010 7" stroke="currentColor" stroke-width="2" fill="none"/>'+(S.volume>50?'<path d="M18 5.5a9 9 0 010 13" stroke="currentColor" stroke-width="2" fill="none"/>':'');
+  $('vi').innerHTML=volPaths(off,S.volume);
 }
 function applyVolume(){volIcon();if(gainNode)gainNode.gain.setTargetAtTime(muted?0:Math.pow(S.volume/100,2),ac.currentTime,.02)}
 $('mute').onclick=()=>{muted=!muted;applyVolume()};
@@ -1376,7 +1427,7 @@ $('capbtn').onclick=e=>{e.stopPropagation();toggleCapture()};
 document.addEventListener('click',e=>{const p=$('cappanel');if(!p.hidden&&!p.contains(e.target)&&!$('capbtn').contains(e.target))p.hidden=true});
 
 /* ================= Spotify (official Web API, PKCE login) ================= */
-const SPS='user-read-currently-playing user-read-playback-state user-modify-playback-state';
+const SPS='user-read-currently-playing user-read-playback-state user-modify-playback-state user-library-read user-library-modify';
 let SP=store.get('pulse_sp')||{};
 const spSave=()=>{store.set('pulse_sp',SP);pushPrefs()};
 const b64u=b=>btoa(String.fromCharCode(...new Uint8Array(b))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
@@ -1407,15 +1458,16 @@ async function spCallback(){
   try{await spToken({grant_type:'authorization_code',code:q.get('code'),redirect_uri:redirectUri(),code_verifier:sessionStorage.getItem('sp_v')||''});toast('Spotify connected.','ok',3000);return true}
   catch(e){toast(e.message);return false}
 }
-async function spApi(path,method){
+async function spApi(path,method,body,raw){
   if(!SP.access)throw new Error('Not connected to Spotify.');
   if(Date.now()>SP.exp){
     if(!SP.refresh){SP={};spSave();throw new Error('Spotify session expired. Reconnect.')}
     await spToken({grant_type:'refresh_token',refresh_token:SP.refresh});
   }
-  let r;try{r=await timed('spotify',()=>fetch('https://api.spotify.com/v1'+path,{method:method||'GET',headers:{Authorization:'Bearer '+SP.access}}))}catch(e){throw new Error('Could not reach Spotify (offline?).')}
+  let r;try{r=await timed('spotify',()=>fetch('https://api.spotify.com/v1'+path,{method:method||'GET',headers:Object.assign({Authorization:'Bearer '+SP.access},body?{'Content-Type':'application/json'}:{}),body:body?JSON.stringify(body):undefined}))}catch(e){throw new Error('Could not reach Spotify (offline?).')}
   if(r.status===204)return null;
   if(r.status===401){SP={};spSave();updSpPanel();throw new Error('Spotify session expired. Reconnect.')}
+  if(raw)return r;
   if(r.status===403&&method&&method!=='GET'){   // playback control refused: Premium or permission missing
     const j=await r.json().catch(()=>null),why=(j&&j.error&&(j.error.reason||j.error.message))||'';
     const e=new Error(/PREMIUM/i.test(why)?'Playback control needs Spotify Premium.':/scope/i.test(why)?'scope':'Spotify refused that ('+(why||'403')+').');throw e;
@@ -1431,12 +1483,13 @@ async function spPoll(){
   if(src!=='spotify'||document.hidden||Date.now()<backoff)return;
   try{
     const t0=performance.now(),before=spState&&spState.playing?curMs():null,oldId=spId;
-    const d=await spApi('/me/player/currently-playing?additional_types=track,episode');
+    const d=await spApi('/me/player?additional_types=track,episode');
     if(src!=='spotify')return;
-    const t1=performance.now();
+    const t1=performance.now();spRtt=t1-t0;
     spFetched=t0+(t1-t0)/2;   // auto resync: Spotify read the position somewhere during the request, so count it from the midpoint
     const it=d&&d.item;
-    if(!it){spState=null;if(spId!==null||!ttl.textContent){spId=null;setIdle();clearLyrics('');clearCanvas()}updChips();syncCanvasPlay();return}
+    spxFrom(d);
+    if(!it){spState=null;if(spId!==null||!ttl.textContent){spId=null;spMeta=null;setIdle();clearLyrics('');clearCanvas()}updChips();syncCanvasPlay();updSpx();return}
     const ep=it.type==='episode',imgs=(ep?it.images:(it.album&&it.album.images))||[];
     const m={ep,id:it.id,uri:it.uri,title:it.name,artist:ep?((it.show&&it.show.name)||''):(it.artists||[]).map(a=>a.name).join(', '),album:ep?'':((it.album&&it.album.name)||''),duration:it.duration_ms/1000,cover:imgs[0]?imgs[0].url:'',artistId:ep?'':((it.artists&&it.artists[0]&&it.artists[0].id)||'')};
     spState={playing:!!d.is_playing,progress:d.progress_ms||0,duration:it.duration_ms};
@@ -1444,14 +1497,14 @@ async function spPoll(){
     const after=spState.progress+(spState.playing?t1-spFetched:0),err=before==null?null:before+(t1-t0)-after;
     spSlew=!spSnap&&err!=null&&it.id===oldId&&spState.playing&&Math.abs(err)<1500&&Math.abs(err)>15?{e:err,at:t1}:null;
     if(m.id!==spId){spId=m.id;onSpTrack(m)}
-    updChips();syncCanvasPlay();updPlayIcon();
+    updChips();updSpx();syncCanvasPlay();updPlayIcon();
   }catch(e){
     if(Date.now()-spErrAt>20000){spErrAt=Date.now();toast(e.message)}
     updChips(true);
   }
 }
 function onSpTrack(m){
-  curArtistId=m.artistId||'';
+  curArtistId=m.artistId||'';spMeta=m;spLikeCheck(m);
   const tok=++coverTok;peak=.3;clearCanvas(true);
   ttl.textContent=m.title;sub.textContent=m.artist;status.textContent='Spotify';animTrack();
   if(!m.cover)resetCover();
@@ -2349,12 +2402,116 @@ addEventListener('drop',e=>{e.preventDefault();[...e.dataTransfer.files].slice(0
 let lastPI=null;
 function updPlayIcon(){const p=playing();if(p===lastPI)return;lastPI=p;$('pi').innerHTML=p?'<path d="M7 5h4v14H7zm6 0h4v14h-4z"/>':'<path d="M8 5v14l11-7z"/>';bump($('pi'))}
 // control Spotify itself (needs the playback-control permission; Spotify only allows it with Premium)
-async function spCtl(method,path){
+async function spCtl(method,path,body){
   if(SP.access&&SP.scope&&!/user-modify-playback-state/.test(SP.scope)){spAskScope();return false}
-  try{await spApi(path,method);setTimeout(spPoll,450);return true}
+  try{await spApi(path,method,body);setTimeout(spPoll,450);return true}
   catch(e){if(e.message==='scope')spAskScope();else toast(e.message,'warn',5000);return false}
 }
-function spAskScope(){if(confirm('To control playback, Spotify needs one more permission. Reconnect Spotify now?'))spLogin()}
+function spAskScope(what){if(confirm((what||'To control playback')+', Spotify needs one more permission. Reconnect Spotify now?'))spLogin()}
+/* more Spotify controls: shuffle, repeat, Liked Songs, devices and Spotify's own volume */
+let spMeta=null,spxHold=0,spVolT=0,spPrevVol=50,likeTok=0;
+const spx={shuffle:false,repeat:'off',dis:{},dev:null,liked:null};
+const REPI={off:'<path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/>',
+  one:'<path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4zm-4-2V9h-1l-2 1v1h1.5v4H13z"/>'};
+const HEART={off:'<path d="M16.5 3A6 6 0 0012 5.1 6 6 0 007.5 3 5.5 5.5 0 002 8.5c0 3.8 3.4 6.9 8.6 11.5l1.4 1.4 1.4-1.3C18.6 15.4 22 12.3 22 8.5A5.5 5.5 0 0016.5 3zm-4.4 15.6l-.1.1-.1-.1C7.1 14.2 4 11.4 4 8.5 4 6.5 5.5 5 7.5 5c1.5 0 3 1 3.6 2.4h1.8C13.5 6 15 5 16.5 5c2 0 3.5 1.5 3.5 3.5 0 2.9-3.1 5.7-7.9 10.1z"/>',
+  on:'<path d="M12 21.4l-1.4-1.4C5.4 15.4 2 12.3 2 8.5A5.5 5.5 0 017.5 3 6 6 0 0112 5.1 6 6 0 0116.5 3 5.5 5.5 0 0122 8.5c0 3.8-3.4 6.9-8.6 11.5z"/>'};
+const volPaths=(off,v)=>off?'<path d="M3 9v6h4l5 5V4L7 9H3z"/><path d="M15 9.5l5 5M20 9.5l-5 5" stroke="currentColor" stroke-width="2" fill="none"/>'
+  :'<path d="M3 9v6h4l5 5V4L7 9H3z"/><path d="M15.5 8.5a5 5 0 010 7" stroke="currentColor" stroke-width="2" fill="none"/>'+(v>50?'<path d="M18 5.5a9 9 0 010 13" stroke="currentColor" stroke-width="2" fill="none"/>':'');
+const hasScope=x=>!SP.scope||SP.scope.split(' ').includes(x);   // unknown (older logins): just try
+function spxFrom(d){   // what Spotify says, unless the person just changed it here (the next poll can still be stale)
+  if(performance.now()<spxHold)return;
+  spx.shuffle=!!(d&&d.shuffle_state);spx.repeat=(d&&d.repeat_state)||'off';
+  spx.dis=(d&&d.actions&&d.actions.disallows)||{};spx.dev=(d&&d.device)||null;
+}
+let spxKey='';
+function updSpx(){
+  if(src!=='spotify')return;
+  const d=spx.dev,vol=d&&d.volume_percent!=null?d.volume_percent:null,live=!!spState,
+    key=[spx.shuffle,spx.repeat,spx.liked,!!(spMeta&&!spMeta.ep),live,spx.dis.toggling_shuffle,spx.dis.toggling_repeat_context,d&&d.id,d&&d.name,vol,d&&d.supports_volume].join('|');
+  if(key===spxKey)return;spxKey=key;
+  const sh=$('shuf'),rp=$('rep'),lk=$('like'),sv=$('spvol');
+  sh.classList.toggle('on',spx.shuffle);sh.setAttribute('aria-pressed',spx.shuffle);sh.disabled=!live||!!spx.dis.toggling_shuffle;
+  sh.title=(spx.shuffle?'Shuffle on':'Shuffle')+' (S)';
+  const r=spx.repeat;rp.classList.toggle('on',r!=='off');rp.disabled=!live||!!(spx.dis.toggling_repeat_context&&spx.dis.toggling_repeat_track);
+  $('repi').innerHTML=REPI[r==='track'?'one':'off'];
+  rp.title=rp.ariaLabel='Repeat: '+(r==='context'?'all':r==='track'?'this song':'off');
+  lk.disabled=!spMeta||spMeta.ep;lk.classList.toggle('on',!!spx.liked);lk.setAttribute('aria-pressed',!!spx.liked);
+  $('likei').innerHTML=HEART[spx.liked?'on':'off'];lk.title=(spx.liked?'Remove from Liked Songs':'Save to Liked Songs')+' (L)';
+  const canVol=!!d&&d.supports_volume!==false&&vol!=null;
+  sv.disabled=$('spmute').disabled=!canVol;
+  if(canVol&&document.activeElement!==sv)sv.value=vol;
+  fill(sv);$('spvi').innerHTML=volPaths(!canVol||+sv.value===0,+sv.value);
+  $('spmute').title=canVol?'Mute Spotify':'This device doesn’t let apps change its volume';
+  $('devbtn').title=d?'Playing on '+d.name+' · choose where Spotify plays':'Choose where Spotify plays';
+}
+function spShuffle(){
+  if(src!=='spotify'||!spState)return;const v=!spx.shuffle;spx.shuffle=v;spxHold=performance.now()+1500;updSpx();bump($('shuf'));
+  spCtl('PUT','/me/player/shuffle?state='+v).then(ok=>{if(!ok){spx.shuffle=!v;updSpx()}});
+}
+function spRepeat(){   // off → all → this song → off, as in Spotify
+  if(src!=='spotify'||!spState)return;const was=spx.repeat,v=was==='off'?'context':was==='context'?'track':'off';
+  spx.repeat=v;spxHold=performance.now()+1500;updSpx();bump($('rep'));
+  spCtl('PUT','/me/player/repeat?state='+v).then(ok=>{if(!ok){spx.repeat=was;updSpx()}});
+}
+// Liked Songs: Spotify's newer library endpoint first, the older one if this app can't use it
+async function spLib(m,method){
+  let r=await spApi('/me/library'+(method==='GET'?'/contains':'')+'?uris='+encodeURIComponent(m.uri),method,null,true);
+  if([400,404,405,410].includes(r.status))r=await spApi('/me/tracks'+(method==='GET'?'/contains':'')+'?ids='+encodeURIComponent(m.id),method,null,true);
+  if(r.status===403)throw new Error('scope');
+  if(!r.ok)throw new Error('Spotify error (HTTP '+r.status+').');
+  return method==='GET'?r.json():null;
+}
+async function spLikeCheck(m){
+  const tok=++likeTok;spx.liked=null;updSpx();
+  if(!m||m.ep||!m.uri||!hasScope('user-library-read'))return;
+  try{const j=await spLib(m,'GET');if(tok===likeTok&&Array.isArray(j)){spx.liked=!!j[0];updSpx()}}catch(e){}
+}
+async function spLike(){
+  const m=spMeta;if(src!=='spotify'||!m||m.ep)return;
+  if(!hasScope('user-library-modify')){spAskScope('To save songs to your Liked Songs');return}
+  const v=!spx.liked;spx.liked=v;updSpx();const lk=$('like');lk.classList.remove('pop');void lk.offsetWidth;if(v)lk.classList.add('pop');
+  try{await spLib(m,v?'PUT':'DELETE');if(m===spMeta)toast(v?'Saved to Liked Songs.':'Removed from Liked Songs.','ok',2000)}
+  catch(e){if(m===spMeta){spx.liked=!v;updSpx()}if(e.message==='scope')spAskScope('To save songs to your Liked Songs');else toast(e.message,'warn',4000)}
+}
+function spSetVol(v,now){
+  v=Math.max(0,Math.min(100,Math.round(v)));if(spx.dev)spx.dev.volume_percent=v;spxHold=performance.now()+1500;
+  const sv=$('spvol');sv.value=v;fill(sv);$('spvi').innerHTML=volPaths(v===0,v);
+  clearTimeout(spVolT);spVolT=setTimeout(()=>spCtl('PUT','/me/player/volume?volume_percent='+v),now?0:180);   // one request per pause in dragging
+}
+$('shuf').onclick=spShuffle;$('rep').onclick=spRepeat;$('like').onclick=spLike;
+$('spvol').addEventListener('input',()=>spSetVol(+$('spvol').value));
+$('spmute').onclick=()=>{const v=+$('spvol').value;if(v>0){spPrevVol=v;spSetVol(0,true)}else spSetVol(spPrevVol||50,true)};
+// choosing where Spotify plays
+const DEVI={Computer:'M4 6h16v10H4zm-2-2v14h8v2H7v1h10v-1h-3v-2h8V4z',Smartphone:'M16 1H8a2 2 0 00-2 2v18a2 2 0 002 2h8a2 2 0 002-2V3a2 2 0 00-2-2zm0 18H8V5h8v14z',
+  Speaker:'M17 2H7a2 2 0 00-2 2v16a2 2 0 002 2h10a2 2 0 002-2V4a2 2 0 00-2-2zm-5 2a2 2 0 110 4 2 2 0 010-4zm0 16a4 4 0 110-8 4 4 0 010 8zm0-6a2 2 0 100 4 2 2 0 000-4z',
+  TV:'M21 3H3a2 2 0 00-2 2v12a2 2 0 002 2h5v2h8v-2h5a2 2 0 002-2V5a2 2 0 00-2-2zm0 14H3V5h18v12z'};
+function placeDev(){const r=$('dock').getBoundingClientRect();$('devpanel').style.bottom=Math.max(16,innerHeight-r.top+10)+'px'}
+function devClose(){$('devpanel').hidden=true;$('devbtn').classList.remove('on')}
+async function devOpen(){
+  const p=$('devpanel'),rows=$('devrows');
+  if(!p.hidden){devClose();return}
+  p.hidden=false;$('devbtn').classList.add('on');placeDev();$('devnote').textContent='';
+  rows.innerHTML='<p class="hint">Looking for devices…</p>';
+  let list;try{list=((await spApi('/me/player/devices'))||{}).devices||[]}catch(e){rows.innerHTML='';const x=document.createElement('p');x.className='hint';x.textContent=e.message;rows.appendChild(x);return}
+  rows.innerHTML='';
+  if(!list.length){rows.innerHTML='<p class="hint">No devices found. Open Spotify on a phone, computer or speaker.</p>';return}
+  $('devnote').textContent=list.length+(list.length>1?' devices':' device');
+  list.forEach(dv=>{
+    const b=document.createElement('button');b.type='button';b.className='drow'+(dv.is_active?' on':'');b.disabled=!!dv.is_restricted;
+    b.innerHTML='<svg viewBox="0 0 24 24"><path d="'+(DEVI[dv.type]||DEVI.Speaker)+'"/></svg><b></b><em></em><small></small>';
+    b.querySelector('b').textContent=dv.name;   // names come from Spotify: set as text, never as HTML
+    b.querySelector('small').textContent=dv.is_active?'Playing here':dv.is_restricted?'Can’t be controlled':dv.type;
+    b.querySelector('em').textContent=dv.volume_percent!=null&&dv.supports_volume!==false?dv.volume_percent+'%':'';
+    b.onclick=async()=>{if(dv.is_active){devClose();return}
+      b.querySelector('small').textContent='Switching…';
+      if(await spCtl('PUT','/me/player',{device_ids:[dv.id],play:spPlaying()})){toast('Playing on '+dv.name+'.','ok',2500);devClose()}
+      else b.querySelector('small').textContent=dv.type};
+    rows.appendChild(b);
+  });
+}
+$('devbtn').onclick=e=>{e.stopPropagation();devOpen()};
+document.addEventListener('click',e=>{const p=$('devpanel');if(!p.hidden&&!p.contains(e.target)&&!$('devbtn').contains(e.target))devClose()});
+addEventListener('resize',()=>{if(!$('devpanel').hidden)placeDev()});
 function prevTrack(){
   if(src==='spotify'){spCtl('POST','/me/player/previous');return}
   if(loaded){audio.currentTime=0;bump($('prev'))}
@@ -2483,7 +2640,7 @@ const liquidAll=()=>document.querySelectorAll('.ib,.chip,.btn,#seg button,#pnav 
 liquidAll();new MutationObserver(liquidAll).observe(document.body,{childList:true,subtree:true});
 $('gear').onclick=()=>$('panel').classList.contains('open')?closePanel():openPanel();
 $('pclose').onclick=closePanel;
-function nudgeVol(d){S.volume=Math.max(0,Math.min(100,S.volume+d));syncInputs();onSetting('volume');save()}
+function nudgeVol(d){if(src==='spotify'){if(!$('spvol').disabled)spSetVol(+$('spvol').value+d);return}S.volume=Math.max(0,Math.min(100,S.volume+d));syncInputs();onSetting('volume');save()}
 addEventListener('keydown',e=>{
   if(!WZ.hidden){if(e.key==='Escape')wzDone();return}
   const tg=e.target.tagName;if(tg==='SELECT'||(tg==='INPUT'&&e.target.type!=='range'&&e.target.type!=='checkbox'))return;
@@ -2491,6 +2648,8 @@ addEventListener('keydown',e=>{
   else if(e.code==='Space'&&tg!=='BUTTON'){e.preventDefault();toggle()}
   else if(e.key==='f')fsToggle();
   else if(e.key==='n')nextTrack();
+  else if(e.key==='s'&&src==='spotify')spShuffle();
+  else if(e.key==='l'&&src==='spotify')spLike();
   else if(e.key==='p')prevTrack();
   else if(e.key==='m'){muted=!muted;applyVolume()}
   else if(e.key==='t')toggleTr();
@@ -2557,7 +2716,8 @@ function drawBars(mirror){
     for(let i=0;i<N;i++){const h=Math.max(2,vals[i]*maxH),x=i*step+gp/2-gr,y=by-h-gr,hh=(mirror?h*2:h)+gr*2,ww=bw+gr*2;
       rd?ctx.roundRect(x,y,ww,hh,Math.min(r+gr,hh/2)):ctx.rect(x,y,ww,hh)}
     ctx.fill()};
-  if(glowOn()){ctx.save();ctx.beginPath();ctx.rect(0,0,W,H);ctx.clip();pass(bw*.4,.16);ctx.restore()}   // glow stays inside the canvas
+  if(!S.low){ctx.save();ctx.beginPath();ctx.rect(0,0,W,H);ctx.clip();ctx.fillStyle='#000';pass(Math.max(1,bw*.18),.22);ctx.fillStyle=barsGrad();   // a soft dark edge, so the bars never melt into the background
+    if(glowOn())pass(bw*.4,.16);ctx.restore()}   // glow stays inside the canvas
   pass(0,.95);ctx.globalAlpha=1;
 }
 let last=performance.now(),fc=0,ft=last;
@@ -2810,7 +2970,7 @@ function netLoop(){clearTimeout(netT);netPing();netT=setTimeout(netLoop,$('netpa
 $('netbtn').onclick=e=>{e.stopPropagation();const p=$('netpanel');p.hidden=!p.hidden;$('netbtn').classList.toggle('on',!p.hidden);if(!p.hidden){netRender();netLoop()}};
 document.addEventListener('click',e=>{const p=$('netpanel');if(!p.hidden&&!p.contains(e.target)&&e.target!==$('netbtn')){p.hidden=true;$('netbtn').classList.remove('on')}});
 $('syncbtn').onclick=resyncNow;
-addEventListener('keydown',e=>{if(e.key==='Escape'){$('netpanel').hidden=true;$('cappanel').hidden=true;$('netbtn').classList.remove('on')}});
+addEventListener('keydown',e=>{if(e.key==='Escape'){devClose();$('netpanel').hidden=true;$('cappanel').hidden=true;$('netbtn').classList.remove('on')}});
 netLoop();
 
 /* ================= init ================= */
