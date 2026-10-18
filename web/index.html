@@ -55,7 +55,7 @@ body.cvlive #bg{opacity:0}
 body.cvmode #cvpane{opacity:1}
 
 /* ---------- layout ---------- */
-#stage{position:fixed;inset:0;display:grid;grid-template-columns:clamp(220px,28vw,380px) 1fr;gap:calc(var(--pad)*1.1);align-items:stretch;padding:78px var(--pad) 118px;opacity:0;transition:opacity .8s,grid-template-columns .6s cubic-bezier(.2,.8,.2,1)}
+#stage{position:fixed;inset:0;display:grid;grid-template-columns:clamp(220px,28vw,380px) 1fr;gap:calc(var(--pad)*1.1);align-items:stretch;padding:78px var(--pad) 136px;opacity:0;transition:opacity .8s,grid-template-columns .6s cubic-bezier(.2,.8,.2,1)}
 body.loaded #stage{opacity:1}
 body.cvmode #stage{grid-template-columns:calc(50vw - var(--pad) - var(--pad)*.55) 1fr}
 #left{display:flex;flex-direction:column;justify-content:center;min-width:0}
@@ -228,26 +228,27 @@ body.hl #lmsg,body[data-view=viz] #lmsg{display:none}
 #fpsEl{position:fixed;bottom:6px;left:10px;font-size:11px;color:var(--faint);display:none;z-index:3}
 
 /* ---------- bottom bar ---------- */
-#dock{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);width:min(880px,calc(100% - 24px));z-index:5;transition:opacity .35s,transform .35s}
+#dock{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);width:min(1080px,calc(100% - 32px));z-index:5;transition:opacity .35s,transform .35s}
 body.uihide #dock{opacity:0;transform:translate(-50%,12px);pointer-events:none;visibility:hidden;transition:opacity .35s,transform .35s,visibility 0s .35s}
 body.uihide #top{opacity:0;transform:translateY(-10px);pointer-events:none}
 body.idle{cursor:none}
 .glass{border-radius:22px;}
-#bar{display:flex;flex-wrap:wrap;align-items:center;gap:10px 12px;padding:10px 14px}
-#prev,#next{width:36px;height:36px;background:transparent}#prev:hover,#next:hover{background:rgba(255,255,255,.14)}
-#play{background:#fff;color:#111}#play:hover{background:#eee}
-#seekwrap{flex:1 1 200px;display:flex;align-items:center;gap:10px;min-width:0}
-#time{font-variant-numeric:tabular-nums;color:var(--dim);font-size:12px;white-space:nowrap}
-#volwrap{display:flex;align-items:center;gap:4px}
+#bar{display:flex;flex-wrap:wrap;align-items:center;gap:12px 14px;padding:14px 22px;border-radius:30px}
+#bar .ib svg{width:20px;height:20px}
+#prev,#next{width:44px;height:44px;background:transparent}#prev:hover,#next:hover{background:rgba(255,255,255,.14)}
+#play{width:52px;height:52px;background:#fff;color:#111}#play svg{width:24px;height:24px}#play:hover{background:#eee}
+#seekwrap{flex:1 1 200px;display:flex;align-items:center;gap:14px;min-width:0;margin:0 10px}
+#time{font-variant-numeric:tabular-nums;color:var(--dim);font-size:13px;white-space:nowrap}
+#volwrap{display:flex;align-items:center;gap:8px}
 /* more Spotify controls: only while Spotify is the source */
 body:not([data-src=spotify]) .spx{display:none!important}
-#shuf,#rep{width:34px;height:34px;background:transparent;color:var(--dim)}#shuf:hover,#rep:hover{background:rgba(255,255,255,.14);color:#fff}
+#shuf,#rep{width:42px;height:42px;background:transparent;color:var(--dim)}#shuf:hover,#rep:hover{background:rgba(255,255,255,.14);color:#fff}
 #shuf.on,#rep.on{color:#1ed760;background-image:radial-gradient(circle at 50% 90%,#1ed760 1.5px,transparent 2px)}
-#spx{display:flex;align-items:center;gap:2px}
-#spx .ib{width:34px;height:34px;background:transparent;color:var(--dim)}#spx .ib:hover,#spx .ib.on{background:rgba(255,255,255,.14);color:#fff}
+#spx{display:flex;align-items:center;gap:8px}
+#spx .ib{width:42px;height:42px;background:transparent;color:var(--dim)}#spx .ib:hover,#spx .ib.on{background:rgba(255,255,255,.14);color:#fff}
 #spx #like.on,#spx #like.on:hover{color:#1ed760}#like.pop svg{animation:likepop .45s cubic-bezier(.3,1.6,.5,1)}
 @keyframes likepop{0%{transform:scale(.7)}60%{transform:scale(1.25)}100%{transform:none}}
-#spvol{width:80px}
+#spvol{width:110px}
 #devpanel{position:fixed;right:max(12px,calc(50% - 440px));bottom:110px;z-index:9;width:min(320px,calc(100% - 24px));padding:14px 16px;animation:pop .3s cubic-bezier(.2,.8,.2,1);transform-origin:bottom right}
 .drow{display:grid;grid-template-columns:22px 1fr auto;gap:0 10px;align-items:center;width:100%;padding:9px 10px;margin:0 -10px;border:0;border-radius:12px;background:none;color:inherit;font:inherit;text-align:left;cursor:pointer;transition:background .2s}
 .drow:hover{background:rgba(255,255,255,.1)}.drow:disabled{opacity:.45;cursor:not-allowed}
@@ -257,8 +258,8 @@ body:not([data-src=spotify]) .spx{display:none!important}
 .drow.on{color:#1ed760}.drow.on small{color:#1ed760;opacity:.8}
 #devpanel .hint{margin-top:8px}
 body.low #devpanel{backdrop-filter:none;-webkit-backdrop-filter:none;background:rgba(20,20,32,.95)}
-#volwrap .ib{width:34px;height:34px;background:transparent}
-#volume{width:80px}
+#volwrap .ib{width:42px;height:42px;background:transparent}
+#volume{width:110px}
 input[type=range]{-webkit-appearance:none;appearance:none;background:transparent;height:20px;margin:0;width:100%;min-width:0;cursor:pointer}
 input[type=range]::-webkit-slider-runnable-track{height:4px;border-radius:2px;background:linear-gradient(90deg,var(--acc) var(--p,0%),var(--line) var(--p,0%))}
 input[type=range]::-moz-range-track{height:4px;border-radius:2px;background:var(--line)}
