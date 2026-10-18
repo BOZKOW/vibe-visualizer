@@ -1300,8 +1300,12 @@ async function setCover(s,label,tok,remote){
   palDirty=true;dirty=true;fadeBake();return true;
 }
 function animTrack(){const i=$('info');i.classList.remove('anim');void i.offsetWidth;i.classList.add('anim')}
+// one big animation at a time, so neither stutters the other: the cover's change first, then the Canvas
+let coverAnimEnd=0,cvRevealEnd=0;
 function coverSwap(){   // keep the old cover on top for a moment and let it melt into the new one
   if(S.low||!artw.classList.contains('has')||!art.getAttribute('src'))return;
+  if(performance.now()<cvRevealEnd)return;   // a Canvas is fading in right now: the cover just switches
+  coverAnimEnd=performance.now()+800;
   const g=document.createElement('img');g.className='artghost';g.alt='';g.src=art.src;artw.appendChild(g);
   art.classList.remove('swap');void art.offsetWidth;art.classList.add('swap');
   requestAnimationFrame(()=>requestAnimationFrame(()=>g.classList.add('go')));setTimeout(()=>g.remove(),900);
@@ -1430,9 +1434,10 @@ async function resyncNow(){   // manual resync: three fresh readings from Spotif
       }}finally{spSnap=false}
       if(best&&spState&&spId===id){spState.progress=best.p;spFetched=best.at;spState.playing=best.pl;spSlew=null;if(before!=null)moved=curMs()-before}
     }
+    const undo=lAdj!==0;lAdj=0;DS.fixes=0;DS.asked=false;dsReset();   // back to the plain timing: undo any automatic desync fix
     moving.forEach(k=>{if(lEls[k])restLine(lEls[k])});moving.clear();lastWT=0;   // the words start again from the right pose
     if(lsync&&L.length){li=-2;lsi=-2;lActKey='';lyricsTick()}
-    toast(moved==null?'Lyrics re-synced.':Math.abs(moved)<40?'Lyrics are in sync with Spotify.':'Lyrics re-synced: moved '+(moved>0?'ahead ':'back ')+(Math.abs(moved)/1000).toFixed(2)+' s.','ok',2200);
+    toast((moved==null?'Lyrics re-synced':Math.abs(moved)<40?'Lyrics are in sync with Spotify':'Lyrics re-synced: moved '+(moved>0?'ahead ':'back ')+(Math.abs(moved)/1000).toFixed(2)+' s')+(undo?' (the automatic desync fix was undone)':'')+'.','ok',2600);
   }catch(e){toast('Couldn’t resync: '+e.message,'warn',4000)}
   finally{resyncing=false}
 }
@@ -1810,10 +1815,14 @@ function setCanvas(u,remote,blob){
   cvv.src=u;cvv.load();
 }
 function syncCanvasPlay(){
-  if(!cvv.getAttribute('src')||!S.canvasOn)return;
+  if(!cvv.getAttribute('src')||!S.canvasOn||performance.now()<coverAnimEnd)return;   // waits for the cover's animation (called again after it)
   if(playing()||(src==='none'))cvv.play().catch(()=>{});else cvv.pause();
 }
-cvv.addEventListener('loadeddata',()=>{applyCanvasMode();syncCanvasPlay()});
+cvv.addEventListener('loadeddata',()=>{
+  const wait=coverAnimEnd-performance.now(),u=cvv.getAttribute('src');
+  const go=()=>{if(cvv.getAttribute('src')!==u)return;if(!body.classList.contains('cvlive'))cvRevealEnd=performance.now()+900;applyCanvasMode();syncCanvasPlay()};
+  if(wait>0)setTimeout(go,wait+60);else go();   // the cover is still changing: the Canvas comes right after
+});
 cvv.addEventListener('error',()=>{if(cvv.getAttribute('src')){clearCanvas();toast('The canvas video could not be loaded (blocked or unsupported).','warn')}});
 async function canvasFor(m,tok){
   await canvasLookup(m,tok);
@@ -2550,12 +2559,17 @@ function dsAnalyze(){
   const best=sc[bi],e=lags[bi];let second=-1;
   sc.forEach((x,k)=>{if(Math.abs(lags[k]-e)>.2&&x>second)second=x});
   if(best<.12||best-second<.02){DS.est.length=0;dsStat('Listening… (no clear match yet)');return}
-  if(Math.abs(e)<.25){DS.est.length=0;DS.ok=performance.now();dsStat('In sync ✓');return}
-  DS.est.push(e);if(DS.est.length>3)DS.est.shift();
+  // the sound reaches the app a little after it plays (Vibe Bridge more so through the server): that delay isn't a
+  // desync. Only a clear, real offset counts: 0.6 s+ with word timing, 1 s+ with line timing, early or late alike,
+  // and only when it fits clearly better than the lyrics as they are
+  const ec=e-dsLag(),words=L.some(l=>l.words&&l.words.length),min=words?.6:1,zero=sc[60];
+  if(Math.abs(ec)<min||best-zero<.08){DS.est.length=0;DS.ok=performance.now();dsStat('In sync ✓');return}
+  DS.est.push(ec);if(DS.est.length>3)DS.est.shift();
   if(DS.est.length<3){dsStat('Checking a possible desync…');return}
   const lo=Math.min(...DS.est),hi=Math.max(...DS.est);if(hi-lo>.1){DS.est.shift();return}   // three checks in a row (15 s) must agree
   dsFound((lo+hi)/2);
 }
+function dsLag(){return bridgeLive()&&!liveAudio()?(bridgeVia==='relay'?.22:.08):capStream?.06:0}   // seconds the measured sound lags behind what you hear
 function dsFound(e){   // e > 0: the singing comes e seconds after the lyrics' time, so the lyrics are ahead
   DS.est.length=0;
   const txt='about '+Math.abs(e).toFixed(1)+' s '+(e>0?'ahead of':'behind')+' the singing';
@@ -3110,7 +3124,7 @@ function frame(now){
   const dt=Math.min(now-last,50);last=now;
   const pl=playing();sample(dt,now);beatTick(now,dt);drawLiveBg(now,dt);
   lyricsTick();desyncTick(now);uiTick(now);if(palDirty)buildPal();palTick(now);
-  if(body.classList.contains('cvlive')&&now-lastCv>90&&cvv.readyState>=2&&!document.hidden){lastCv=now;cvFrame()}
+  if(body.classList.contains('cvlive')&&now-lastCv>90&&now>coverAnimEnd&&cvv.readyState>=2&&!document.hidden){lastCv=now;cvFrame()}   // not during the cover's animation
   const active=pl||mxv>.003||!!capStream||idleK>.005;
   // the cover and title stay still (no beat pulse)
   if(!active&&!wasActive&&!dirty)return;
