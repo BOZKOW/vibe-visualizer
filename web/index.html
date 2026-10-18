@@ -141,13 +141,19 @@ body.lb .ll.dp,body.lb .ll.d1{--fb:3px}body.lb .ll.d2{--fb:4.5px}body.lb .ll.d3{
 body.lb #lyr:not(.st) .ll:is(.dp,.d1,.d2,.d3,.d4,.d5,.dx){filter:blur(var(--fb))}   /* only blurred lines get a filter */
 
 /* words rest a little small and low; the springs lift them as they're sung */
-.ll .w,.ll .w .c{display:inline-block;white-space:pre;padding:.14em .06em .22em;margin:-.14em -.06em -.22em}   /* extra paint room so tails (g, y, j) and accents aren't cut off by the text fill */
-.ll .w .c{padding:.14em 0 .22em;margin:-.14em 0 -.22em}
+/* paint room: the glow (a text-shadow) gets cut off at the edge of a background-clip:text box on GPU-drawn pages,
+   so every word and letter is padded wide enough for it to fade out inside; the fill gradient keeps its old box
+   (the word plus .06em at each side, the letter itself), so the fill timing doesn't change. Tails (g, y, j) and
+   accents stay inside the box too */
+.ll .w,.ll .w .c{display:inline-block;white-space:pre;padding:.4em .45em .48em;margin:-.4em -.45em -.48em;
+  background-size:calc(100% - .78em) 100%;background-position:.39em 0;background-repeat:no-repeat}
+.ll .w .c{background-size:calc(100% - .9em) 100%;background-position:.45em 0}
 .ll .w{scale:.95;transform:translateY(.01em)}.ll .w.lg,.ll .w .c{scale:.95;transform:translateY(.02em)}
 body.low .ll .w,body.low .ll .w .c{scale:1;transform:none}
 .ll.a .w,.ll.a .w .c{will-change:transform,scale}
 .ll.p.dx .w,.ll.p.dx .w .c{scale:none!important;transform:none!important}   /* lines sung long ago rest at exactly their sung pose (full size, no offset): no transform, so the browser stops tracking every word of them */
-.ll .w.one{display:inline;white-space:normal;-webkit-box-decoration-break:clone;box-decoration-break:clone}   /* a whole romanized line: wraps like normal text */
+.ll .w.one{display:inline;white-space:normal;-webkit-box-decoration-break:clone;box-decoration-break:clone;   /* a whole romanized line: wraps like normal text */
+  padding:.14em .06em .22em;margin:-.14em -.06em -.22em;background-size:auto;background-position:0 0;background-repeat:repeat}
 /* instrumental breaks, as in Spicy Lyrics (Mixed.css, AGPL-3.0): three dots that swell, rise and glow one after
    another; the line takes no room until it's active, and the group pops away half a second before the singing */
 .ll.dots{height:0;padding:0;margin:0;overflow:hidden;opacity:0;line-height:0;transition:transform .14s,opacity .14s!important;transform-origin:center center}
@@ -159,7 +165,8 @@ body.low .ll .w,body.low .ll .w .c{scale:1;transform:none}
   text-shadow:0 0 var(--text-shadow-blur-radius,4px) rgba(255,255,255,var(--text-shadow-opacity,0%))}
 
 /* romanization + translation under each line */
-.ll .lt{display:block}
+.ll .lt{display:block;padding:.5em;margin:-.5em;   /* room for the line's glow (see the words above); the fill keeps the text's box */
+  background-size:calc(100% - 1em) calc(100% - 1em);background-position:.5em .5em;background-repeat:no-repeat}
 .ll .sub{display:block;font-size:.46em;font-weight:700;letter-spacing:0;line-height:1.3;margin-top:.22em;color:rgba(255,255,255,.75)}
 .ll .sub.tr{font-weight:600;color:rgba(255,255,255,.58)}
 .ll.a .sub{animation:up .5s cubic-bezier(.2,.8,.2,1) backwards}.ll.a .sub.tr{animation-delay:.06s}
