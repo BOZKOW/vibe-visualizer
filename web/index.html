@@ -169,7 +169,7 @@ body.low .ll .w,body.low .ll .w .c{scale:1;transform:none}
 
 /* romanization + translation under each line */
 .ll .lt{display:block;padding:.5em;margin:-.5em;   /* room for the line's glow (see the words above); the fill keeps the text's box */
-  background-size:calc(100% - 1em) calc(100% - 1em);background-position:.5em .5em;background-repeat:no-repeat}
+  background-size:calc(100% - 1em) calc(100% - .3em);background-position:.5em .15em;background-repeat:no-repeat}   /* the fill reaches .35em above and below the text: tails (g, y, j, p) and accents of fonts that go below the line (Segoe UI) are painted too */
 .ll .sub{display:block;font-size:.46em;font-weight:700;letter-spacing:0;line-height:1.3;margin-top:.22em;color:rgba(255,255,255,.75)}
 .ll .sub.tr{font-weight:600;color:rgba(255,255,255,.58)}
 .ll.a .sub{animation:up .5s cubic-bezier(.2,.8,.2,1) backwards}.ll.a .sub.tr{animation-delay:.06s}
@@ -245,6 +245,8 @@ body[data-view=viz].credly #lcredit{display:none}
 #nextup b,#nextup span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#nextup b{font-size:13.5px}#nextup span{font-size:12px;color:var(--dim)}
 @keyframes nuin{0%{opacity:0;transform:translateY(22px) scale(.7,.55);filter:blur(12px)}55%{opacity:1;transform:translateY(-3px) scale(1.04,1.08);filter:blur(0)}78%{transform:translateY(1px) scale(.99,.97)}100%{transform:none}}   /* rises in like a drop */
 body.low #nextup.nin,body.low #nextup.nout{animation:none}
+body:not(.classic) #bar.lq:hover{transform:translate(calc(var(--dx,0)*1px),calc(var(--dy,0)*1px)) scale(1.004)}   /* the big bar leans only a hair */
+body:not(.classic) #bar.lq.press{transform:scale(.995)}
 body:not(.classic) #nextup.lq:hover{transform:translate(calc(var(--dx,0)*2px),calc(var(--dy,0)*2px)) scale(1.025)}   /* a big card leans less than a button */
 body:not(.classic) #nextup{cursor:default;border-radius:18px}   /* the bottom bar's glass (.glass), so it looks exactly the same */
 #nextup img{box-shadow:0 4px 12px rgba(0,0,0,.35)}
@@ -3205,14 +3207,14 @@ function liquid(el){
   el.addEventListener('pointerenter',()=>{r=el.getBoundingClientRect()},{passive:true});
   el.addEventListener('pointermove',e=>{if(S.design==='classic'||S.low)return;px=e.clientX;py=e.clientY;if(!r)r=el.getBoundingClientRect();if(!q)q=requestAnimationFrame(paint)},{passive:true});
   el.addEventListener('pointerdown',e=>{el.classList.add('press');
-    if(S.design==='classic'||S.low)return;   // a droplet ripple from where it was pressed
+    if(S.design==='classic'||S.low||(el.id==='bar'&&e.target!==el))return;   // a droplet ripple from where it was pressed (the bar: only on the bar itself, its buttons have their own)
     const b=r||el.getBoundingClientRect(),d=document.createElement('span');d.className='lqr';d.setAttribute('aria-hidden','true');
     d.style.setProperty('--rx',(e.clientX-b.left)+'px');d.style.setProperty('--ry',(e.clientY-b.top)+'px');d.style.setProperty('--rs',(Math.max(b.width,b.height)*2.2)+'px');
     el.appendChild(d);setTimeout(()=>d.remove(),700)});
   const up=()=>el.classList.remove('press');el.addEventListener('pointerup',up);el.addEventListener('pointercancel',up);
   el.addEventListener('pointerleave',()=>{up();r=null;cancelAnimationFrame(q);q=0;['--dx','--dy','--ax','--ay'].forEach(k=>{delete last[k];el.style.removeProperty(k)})});
 }
-const LQ_SEL='.ib,.chip,.btn,#seg button,#pnav .pn,.prow,.opt,#nextup';
+const LQ_SEL='.ib,.chip,.btn,#seg button,#pnav .pn,.prow,.opt,#nextup,#bar';
 document.querySelectorAll(LQ_SEL).forEach(liquid);
 // controls added later (panels, rows): only look at what was added, not the whole page on every change
 new MutationObserver(ms=>{for(const m of ms)for(const n of m.addedNodes){if(n.nodeType!==1||n.classList.contains('lqr'))continue;
