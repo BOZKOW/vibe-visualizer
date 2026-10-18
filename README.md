@@ -167,7 +167,26 @@ are for Linux and assume Docker and Tailscale are already installed; if they are
    read -rs K && printf '%s' "$K" > config/spicy_key && chmod 600 config/spicy_key && unset K
    ```
    Then press *Settings → Lyrics → Test connection*. No restart is needed.
-5. **Install it as an app (optional).** Open your `https://…ts.net/` address in Chrome, Edge or Brave and choose
+5. **Spotify Canvas and Spotify's own lyrics (optional).** Canvas is the short looping video Spotify shows for many
+   songs. The server gets it, and Spotify's own lyrics, by opening Spotify's web player in a hidden browser logged in
+   with your account. It needs your Spotify login cookie, `sp_dc`:
+   1. In Chrome, Edge or Brave on any computer, go to [open.spotify.com](https://open.spotify.com) and log in.
+   2. Press **F12** to open the developer tools, then go to **Application** → **Cookies** → `https://open.spotify.com`
+      (in Firefox: **Storage** → **Cookies**).
+   3. Find the row named **`sp_dc`** and copy its **Value** (a long string of letters and numbers).
+   4. On the server, in the `vibe-visualizer` folder, save it without showing it on screen, and restart the helper:
+      ```sh
+      read -rs C && printf '%s' "$C" > config/sp_dc && chmod 600 config/sp_dc && unset C
+      docker compose restart helper
+      ```
+   5. Check it: in the app, open the **ping meter** (the `ms` button in the top bar). *Spotify Canvas* should no
+      longer say "Canvas off". Play a song that has a Canvas on your phone's Spotify app; it now plays behind the cover.
+      You can switch it off or on in **Settings → Spotify & Canvas → Canvas**.
+
+   Keep the cookie private: it works like your Spotify password. It lasts about a year; if you log out of Spotify on
+   the web ("Sign out everywhere" included), copy a new one. This uses Spotify's web player in a way Spotify doesn't
+   officially offer (see [Third-party services](#third-party-services)); leave `config/sp_dc` out to keep it off.
+6. **Install it as an app (optional).** Open your `https://…ts.net/` address in Chrome, Edge or Brave and choose
    *Install Vibe Visualizer* (the install icon in the address bar, or the ⋮ menu). It then runs in its own window with
    its own icon. On Android use Chrome's *Add to Home screen*; on iPhone, Safari's *Share → Add to Home Screen*.
 
@@ -232,6 +251,15 @@ To save the Spicy Lyrics key without showing it on screen:
 $k = Read-Host "Spicy Lyrics key" -AsSecureString
 [Net.NetworkCredential]::new('', $k).Password | Set-Content -NoNewline config\spicy_key
 Remove-Variable k
+```
+
+For Spotify Canvas (step 5 of [Setup](#setup)), save the `sp_dc` cookie the same way and restart the helper:
+
+```powershell
+$c = Read-Host "sp_dc cookie" -AsSecureString
+[Net.NetworkCredential]::new('', $c).Password | Set-Content -NoNewline config\sp_dc
+Remove-Variable c
+docker compose restart helper
 ```
 
 Docker Desktop has to be running for the app to be up: turn on *Start Docker Desktop when you sign in* in its
