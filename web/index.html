@@ -840,7 +840,7 @@ body.low #bar input[type=range]::-webkit-slider-thumb{transition:none}
   <h4>Performance</h4>
   <div class="f chk" data-k="low"><label><input type="checkbox" id="low"> Low performance mode</label></div>
   <div class="f chk" data-k="perfAsk"><label><input type="checkbox" id="perfAsk"> Suggest Low performance mode when needed<small>Watches how smoothly the app runs while a song plays. If your computer can’t keep up, or the battery is low and not charging, a pop-up offers to turn Low performance mode on.</small></label></div>
-  <div class="f" data-k="fpscap"><span class="lb">Limit frame rate</span><select id="fpscap"><option value="0">Off</option><option value="30">30 fps</option><option value="60">60 fps</option><option value="120">120 fps</option></select><small class="hint">Caps how often the animations redraw, to save power.</small></div>
+  <div class="f" data-k="fpscap"><span class="lb">Limit frame rate</span><select id="fpscap"><option value="0">Off (up to 240 fps)</option><option value="30">30 fps</option><option value="60">60 fps</option><option value="120">120 fps</option><option value="144">144 fps</option><option value="165">165 fps</option><option value="240">240 fps</option></select><small class="hint">Caps how often the animations redraw, to save power. High refresh rate screens run up to 240 fps.</small></div>
   <div class="f chk" data-k="fps"><label><input type="checkbox" id="fps"> Show FPS</label></div>
   <div class="row2"><button class="btn sm" id="reset">Reset all settings</button></div>
 
@@ -2591,7 +2591,7 @@ function lyricsTick(){
    show up as sudden rises in the voice range (300-3400 Hz); they're compared with where the lyrics expect words to
    start (or lines, without word timing), trying every shift from -3 to +3 s. Only a clear, repeated answer counts.
    Needs real sound (Vibe Bridge, audio capture, a local file); Spotify's ambient bars carry none. ---- */
-const DS={prev:new Uint8Array(1024),acc:0,lv:0,ln:0,bt:0,t:[],f:[],v:[],lastT:null,off:0,est:[],fixes:0,asked:false,ign:false,next:0,stat:'',ok:0};
+const DS={prev:new Uint8Array(1024),ft:0,acc:0,lv:0,ln:0,bt:0,t:[],f:[],v:[],lastT:null,off:0,est:[],fixes:0,asked:false,ign:false,next:0,stat:'',ok:0};
 function dsReset(){DS.t.length=DS.f.length=DS.v.length=0;DS.lastT=null;DS.est.length=0}
 function dsSong(){dsReset();DS.fixes=0;DS.asked=false;DS.ign=false;DS.ok=0;lAdj=0}
 function dsStat(m){if(m===DS.stat)return;DS.stat=m;const e=$('dsstat');if(e)e.textContent=m}
@@ -2602,6 +2602,7 @@ function desyncTick(now){
   const t=lyrT();
   if((DS.lastT!=null&&Math.abs(t-DS.lastT)>.35)||DS.off!==S.loff){dsReset();DS.off=S.loff}   // a seek, a jump or a new offset: start over
   DS.lastT=t;
+  if(now-DS.ft<15)return;DS.ft=now;   // rises measured at most ~60 times a second, so they're the same size at any frame rate
   const bw=((ac&&!bridgeLive()?ac.sampleRate:48000)/2)/1024,a=Math.round(300/bw),b=Math.round(3400/bw);
   let fl=0,lv=0;for(let k=a;k<b;k++){const d=data[k]-DS.prev[k];if(d>0)fl+=d;lv+=data[k]}DS.prev.set(data);
   if(fl>DS.acc)DS.acc=fl;DS.lv+=lv;DS.ln++;
@@ -3136,7 +3137,8 @@ function sample(dt,now){
   const aA=1-Math.exp(-dt/(6+S.resp*.5)),aR=1-Math.exp(-dt/(30+S.resp*3.5)),boost=S.boost/100;
   const viaBridge=!liveAudio()&&bridgeLive();realAudio=liveAudio()||viaBridge;   // the Vibe Bridge app: the sound of the whole computer (the Spotify app too)
   if(liveAudio()||viaBridge){
-    if(viaBridge)data.set(bridgeBuf);else analyser.getByteFrequencyData(data);
+    // the analyser smooths once per read: scaled to the frame time, so the bars move the same at 60 and 240 fps
+    if(viaBridge)data.set(bridgeBuf);else{analyser.smoothingTimeConstant=Math.pow(.35,dt/16.7);analyser.getByteFrequencyData(data)}
     if(capStream&&!capHeard){for(let k=0;k<64;k++)if(data[k]){capHeard=true;break}}
     let mx=0;
     for(let i=0;i<N;i++){
@@ -3208,11 +3210,15 @@ if(navigator.getBattery)navigator.getBattery().then(b=>{
   const chk=()=>{if(!b.charging&&b.level<=.2)perfSuggest('battery',b.level)};
   b.addEventListener('levelchange',chk);b.addEventListener('chargingchange',chk);chk();
 }).catch(()=>{});
-let last=performance.now(),fc=0,ft=last;
+let last=performance.now(),fc=0,ft=last,fAcc=0,fPrev=last;
+const HZMAX=240;   // high refresh rate screens: draw at the screen's pace, up to 240 fps
 function frame(now){
   requestAnimationFrame(frame);perfTick(now);
-  if(S.low&&now-last<30)return;
-  const cap=+S.fpscap;if(cap&&now-last<1000/cap-1)return;   // Limit frame rate
+  // Limit frame rate: time adds up between screen refreshes and a frame is drawn once a whole frame's worth has
+  // passed, so 120 on a 144 Hz screen really gives 120 (comparing each gap alone would give 72)
+  const iv=1000/Math.min(+S.fpscap||HZMAX,S.low?30:HZMAX);
+  fAcc+=Math.min(now-fPrev,100);fPrev=now;
+  if(fAcc<iv-.5)return;fAcc=Math.min(fAcc-iv,iv);
   const dt=Math.min(now-last,50);last=now;
   const pl=playing();sample(dt,now);beatTick(now,dt);drawLiveBg(now,dt);
   lyricsTick();desyncTick(now);uiTick(now);if(palDirty)buildPal();palTick(now);
