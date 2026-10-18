@@ -246,7 +246,7 @@ body[data-view=viz].credly #lcredit{display:none}
 @keyframes nuin{0%{opacity:0;transform:translateY(22px) scale(.7,.55);filter:blur(12px)}55%{opacity:1;transform:translateY(-3px) scale(1.04,1.08);filter:blur(0)}78%{transform:translateY(1px) scale(.99,.97)}100%{transform:none}}   /* rises in like a drop */
 body.low #nextup.nin,body.low #nextup.nout{animation:none}
 body:not(.classic) #nextup.lq:hover{transform:translate(calc(var(--dx,0)*2px),calc(var(--dy,0)*2px)) scale(1.025)}   /* a big card leans less than a button */
-body:not(.classic) #nextup{cursor:default;border-radius:16px}   /* the bottom bar's glass (.glass), so it looks exactly the same */
+body:not(.classic) #nextup{cursor:default;border-radius:18px}   /* the bottom bar's glass (.glass), so it looks exactly the same */
 #nextup img{box-shadow:0 4px 12px rgba(0,0,0,.35)}
 body.cvmode #nextup{margin-left:auto;margin-right:auto}   /* centred under a centred title */
 #lprob .pr b{font-size:13px}#lprob .pr small{font-size:12px;font-weight:500}
@@ -675,6 +675,19 @@ body.rm .lq:hover,body.rm .lq.press{transform:none}
 #bar input[type=range]::-moz-range-thumb{width:18px;height:18px;border:1px solid rgba(255,255,255,.75);background:radial-gradient(circle at 35% 30%,#fff 0,rgba(255,255,255,.9) 35%,rgba(225,225,240,.6) 100%);box-shadow:0 2px 8px rgba(0,0,0,.35),0 0 0 4px rgba(255,255,255,.08)}
 #bar input[type=range]:hover::-webkit-slider-thumb,#bar input[type=range]:active::-webkit-slider-thumb{transform:scale(1.15);box-shadow:0 3px 12px rgba(0,0,0,.4),0 0 0 6px rgba(255,255,255,.12),inset 0 -2px 3px rgba(0,0,0,.12)}
 body.low #bar input[type=range]::-webkit-slider-thumb{transition:none}
+/* ===== one design system: three kinds of glass, one radius scale =====
+   floating (pop-up panels, cards, messages): readable tint, 20 px corners · resting (bottom bar, Next up): lighter tint ·
+   windows (Settings, setup): heaviest frost, 28 px corners. Small controls stay pills or 12 px. */
+:root{--r-sm:12px;--r-md:20px;--r-lg:28px;--g-float:rgba(22,22,38,.5)}
+#cappanel,#netpanel,#devpanel,#notes .note,#corner .toast{border-radius:var(--r-md);background:var(--g-grad),var(--g-float);border-color:var(--g-bd);
+  box-shadow:var(--g-sh),var(--g-hi);backdrop-filter:blur(30px) saturate(170%);-webkit-backdrop-filter:blur(30px) saturate(170%)}
+#notes .note.err,#corner .toast{border-left-color:#ff6b6b}#notes .note.warn,#corner .toast.warn{border-left-color:#ffc857}#notes .note.ok,#corner .toast.ok{border-left-color:#1ed760}   /* the type colour stays on the left edge */
+#nextup{border-radius:18px}
+#bar{border-radius:var(--r-lg)}
+#pwin,#setup .sw{border-radius:var(--r-lg)}
+#hprob{border-radius:var(--r-md);background:var(--g-grad),rgba(40,32,14,.4);box-shadow:var(--g-sh),var(--g-hi);backdrop-filter:var(--g-blur);-webkit-backdrop-filter:var(--g-blur)}
+#hprob.err{background:var(--g-grad),rgba(44,16,20,.42)}
+.drow,#pnav .pn,#pnavpill,.prow,select,#psearch,.tin,.f input[type=text],.f input[type=url],.f input[type=password]{border-radius:var(--r-sm)}
 </style>
 </head>
 <body data-view="both" data-src="none">
