@@ -83,6 +83,11 @@ body.flip #stage,body.flip #artw,body.flip #ttl{transition:none!important}
 /* song change: the old cover melts away (fades, grows a little, blurs) while the new one settles in */
 .artghost{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;pointer-events:none;transition:opacity .75s ease,transform .75s cubic-bezier(.2,.8,.2,1),filter .75s ease}
 .artghost.go{opacity:0;transform:scale(1.08);filter:blur(12px) saturate(1.3)}
+.artghost.lite.go{transform:none;filter:none}
+/* hiding the cover while a Canvas plays: it melts away first, then the layout closes the gap; coming back it settles in */
+#artw.melt{animation:artmelt .55s cubic-bezier(.5,0,.75,0) forwards}@keyframes artmelt{to{opacity:0;transform:scale(1.08);filter:blur(14px) saturate(1.3)}}
+#artw.unmelt{animation:artin .7s cubic-bezier(.2,.8,.2,1)}
+body.low #artw.melt,body.low #artw.unmelt{animation:none}
 #art.swap{animation:artin .75s cubic-bezier(.2,.8,.2,1)}@keyframes artin{from{transform:scale(.94);filter:blur(8px) brightness(1.15)}}
 body.low .artghost{display:none}body.low #art.swap{animation:none}
 #ph{position:absolute;inset:0;display:grid;place-items:center;font-size:64px;color:var(--dim)}
@@ -237,6 +242,9 @@ body[data-view=viz].credly #lcredit{display:none}
 #nextup small{font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--faint)}
 #nextup b,#nextup span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#nextup b{font-size:13.5px}#nextup span{font-size:12px;color:var(--dim)}
 @keyframes nuin{from{opacity:0;transform:translateY(8px)}}
+body:not(.classic) #nextup{background:linear-gradient(145deg,rgba(255,255,255,.16),rgba(255,255,255,.05)),rgba(22,22,38,.3);border-color:rgba(255,255,255,.22);
+  box-shadow:0 14px 34px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.28),inset 0 -1px 0 rgba(255,255,255,.05);backdrop-filter:blur(26px) saturate(175%);-webkit-backdrop-filter:blur(26px) saturate(175%);border-radius:16px}
+#nextup img{box-shadow:0 4px 12px rgba(0,0,0,.35)}
 body.low #nextup{backdrop-filter:none;-webkit-backdrop-filter:none;background:rgba(20,20,30,.8)}
 body.cvmode #nextup{margin-left:auto;margin-right:auto}   /* centred under a centred title */
 #lprob .pr b{font-size:13px}#lprob .pr small{font-size:12px;font-weight:500}
@@ -1150,7 +1158,7 @@ function onSetting(k){
   else if(k==='bridge'){if(S.bridge)bridgeConnect();else bridgeStop()}
   else if(/^(xFocus|lsimple|lminimal|lhover|lduet|lcredLast|lsmooth|volshow)$/.test(k)){applyLyrOpts();if(k==='xFocus')setTimeout(place,60)}
   else if(k==='lnotice'&&!S.lnotice&&lmsg.className==='none')lyrMsg('');
-  else if(k==='cvNoArt')flipLayout(()=>body.classList.toggle('cvnoart',!!S.cvNoArt));
+  else if(k==='cvNoArt')coverHide(!!S.cvNoArt&&body.classList.contains('cvmode'),()=>body.classList.toggle('cvnoart',!!S.cvNoArt));
   else if(k==='lprov'){renderProv();lcache.clear()}
   else if(k==='tr'||k==='trTo'||k==='trSkip'||k==='romMode'){decorate();updQuick()}
   dirty=true;
@@ -1341,10 +1349,10 @@ function animTrack(){const i=$('info');i.classList.remove('anim');void i.offsetW
 let coverAnimEnd=0,cvRevealEnd=0;
 function coverSwap(){   // keep the old cover on top for a moment and let it melt into the new one
   if(S.low||!artw.classList.contains('has')||!art.getAttribute('src'))return;
-  if(performance.now()<cvRevealEnd)return;   // a Canvas is fading in right now: the cover just switches
-  coverAnimEnd=performance.now()+800;
-  const g=document.createElement('img');g.className='artghost';g.alt='';g.src=art.src;artw.appendChild(g);
-  art.classList.remove('swap');void art.offsetWidth;art.classList.add('swap');
+  const lite=performance.now()<cvRevealEnd;   // a Canvas is fading in right now: a light melt (fade only), so neither stutters
+  if(!lite)coverAnimEnd=performance.now()+800;
+  const g=document.createElement('img');g.className='artghost'+(lite?' lite':'');g.alt='';g.src=art.src;artw.appendChild(g);
+  if(!lite){art.classList.remove('swap');void art.offsetWidth;art.classList.add('swap')}
   requestAnimationFrame(()=>requestAnimationFrame(()=>g.classList.add('go')));setTimeout(()=>g.remove(),900);
 }
 function resetCover(){coverSwap();rawCols=barCols=DEF_COLS;curImg=null;artw.classList.remove('has');art.removeAttribute('src');palDirty=true;dirty=true;fadeBake()}
@@ -1835,7 +1843,14 @@ const textBox=el=>{if(!el||el.hidden||!el.textContent)return null;const r=docume
 // switch the Canvas layout; the cover glides and shrinks to the middle (and back), the text follows
 function setCv(on){
   if(body.classList.contains('cvmode')===on)return;
-  flipLayout(()=>body.classList.toggle('cvmode',on));
+  coverHide(on&&S.cvNoArt,()=>body.classList.toggle('cvmode',on));
+}
+function coverHide(hiding,change){   // the cover melts away before a change that hides it, and settles in when one shows it again
+  const shown=()=>artw.offsetParent!==null;
+  if(S.low||matchMedia('(prefers-reduced-motion: reduce)').matches){flipLayout(change);return}
+  if(hiding&&shown()){artw.classList.remove('unmelt');artw.classList.add('melt');setTimeout(()=>{flipLayout(change);artw.classList.remove('melt')},560);return}
+  const was=shown();flipLayout(change);
+  if(!was&&shown()){artw.classList.remove('unmelt');void artw.offsetWidth;artw.classList.add('unmelt');setTimeout(()=>artw.classList.remove('unmelt'),750)}
 }
 // run a layout change (class toggle) and glide the cover and text from their old places to the new ones
 function flipLayout(change){
