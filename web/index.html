@@ -515,6 +515,10 @@ body.wz #empty{opacity:0;transition:opacity .3s}   /* nothing from the home page
 .toast{background:var(--g-grad),rgba(22,22,38,.5);border-color:var(--g-bd);box-shadow:var(--g-sh),var(--g-hi);backdrop-filter:var(--g-blur);-webkit-backdrop-filter:var(--g-blur)}
 #psearch::placeholder,.tin::placeholder{color:rgba(255,255,255,.55)}
 #capbtn.bridge{box-shadow:inset 0 0 0 2px #1ed760,0 0 14px -4px #1ed760}   /* Vibe Bridge connected */
+#capbtn{gap:6px;padding:8px 13px 8px 11px}#capbtn svg{width:16px;height:16px;fill:currentColor;flex:none}
+#capt{max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#capbtn.idle #capt{color:var(--dim)}#capbtn.on{border-color:#1ed760}
+@media(max-width:1180px){#capt{max-width:90px}}
 /* notification cards (updates, what's new, errors) */
 #notes{position:fixed;top:70px;right:16px;z-index:12;display:flex;flex-direction:column;gap:10px;width:min(360px,calc(100% - 32px));pointer-events:none}
 .note{pointer-events:auto;padding:14px 16px 12px;border-radius:18px;background:linear-gradient(145deg,rgba(255,255,255,.16),rgba(255,255,255,.05)),rgba(20,20,34,.62);
@@ -575,7 +579,7 @@ body.low #cappanel,body.low #netpanel,body.low #setup .sw{background:rgba(20,20,
   <div class="grp">
     <button class="ib" id="openbtn" aria-label="Open audio file" title="Open audio file"><svg viewBox="0 0 24 24"><path d="M10 4H4a2 2 0 00-2 2v12a2 2 0 002 2h16a2 2 0 002-2V8a2 2 0 00-2-2h-8l-2-2z"/></svg></button>
     <button class="chip" id="spchip" aria-label="Spotify"><i class="dot"></i><span id="spt">Connect Spotify</span></button>
-    <button class="ib" id="capbtn" aria-label="Audio for the visualizer" title="Make the bars react to your computer’s sound (Spotify app, browser tab…)"><svg viewBox="0 0 24 24"><path d="M12 14a3 3 0 003-3V5a3 3 0 00-6 0v6a3 3 0 003 3zm5-3a5 5 0 01-10 0H5a7 7 0 006 6.9V21h2v-3.1A7 7 0 0019 11h-2z"/></svg></button>
+    <button class="chip" id="capbtn" aria-label="Audio for the visualizer" title="Make the bars react to your computer’s sound (Spotify app, browser tab…)"><svg viewBox="0 0 24 24"><path d="M12 14a3 3 0 003-3V5a3 3 0 00-6 0v6a3 3 0 003 3zm5-3a5 5 0 01-10 0H5a7 7 0 006 6.9V21h2v-3.1A7 7 0 0019 11h-2z"/></svg><span id="capt">No audio</span></button>
     <button class="ib" id="trbtn" aria-label="Translate lyrics" title="Translate lyrics (T)"><svg viewBox="0 0 24 24"><path d="M12.87 15.07l-2.54-2.51.03-.03A17.52 17.52 0 0014.07 6H17V4h-7V2H8v2H1v2h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11.76-2.04zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z"/></svg></button>
     <button class="ib" id="rombtn" aria-label="Romanize lyrics" title="Romanize lyrics (R)"><svg viewBox="0 0 24 24"><text x="1" y="15" font-size="13" font-weight="800" font-family="system-ui,sans-serif">あ</text><text x="14" y="21" font-size="11" font-weight="800" font-family="system-ui,sans-serif">a</text></svg></button>
     <button class="ib gone" id="syncbtn" aria-label="Resync lyrics" title="Resync lyrics now"><svg viewBox="0 0 24 24"><path d="M12 4V1L8 5l4 4V6a6 6 0 016 6 6 6 0 01-.7 2.8l1.46 1.46A8 8 0 0020 12a8 8 0 00-8-8zm0 14a6 6 0 01-6-6c0-1 .25-1.97.7-2.8L5.24 7.74A8 8 0 004 12a8 8 0 008 8v3l4-4-4-4v3z"/></svg></button>
@@ -1225,7 +1229,7 @@ function buildPal(){
 }
 
 /* ================= state + sources ================= */
-let ac,analyser,gainNode,data=new Uint8Array(1024),url=null,muted=false,capStream=null,capNode=null,capFull=null,capHeard=false;
+let capKind='',ac,analyser,gainNode,data=new Uint8Array(1024),url=null,muted=false,capStream=null,capNode=null,capFull=null,capHeard=false;
 let loaded=false,src='none',spState=null,spFetched=0,spTimer=0,spId=null,backoff=0,spErrAt=0;
 let W=0,H=0,dpr=1,bass=0,mxv=0,peak=.3,dirty=true,wasActive=false,lastSc=0;
 const filePlaying=()=>loaded&&!audio.paused&&!audio.ended;
@@ -1269,7 +1273,7 @@ function bridgeStop(){['local','relay'].forEach(k=>{const b=bl[k];clearTimeout(b
 function updBridge(){
   const el=$('bridgestat');
   if(el)el.textContent=!S.bridge?'Off.':bridgeOn?'Connected '+(bridgeVia==='relay'?'through your server':'on this computer')+(bridgeDev?' · listening to '+bridgeDev:'')+'.':'Not connected. On the computer that plays the music, start Vibe Bridge'+(PREFS&&location.protocol==='https:'?' with:  vibe-bridge --server '+location.host:'')+'  (see the README).';
-  $('capbtn').classList.toggle('bridge',bridgeOn);
+  $('capbtn').classList.toggle('bridge',bridgeOn);updCapLabel();
 }
 let spSlew=null,spSnap=false;
 let spRtt=0,resyncing=false;
@@ -1356,13 +1360,30 @@ function stopCapture(quiet){
   if(capNode){try{capNode.disconnect()}catch(e){}capNode=null}
   if(capFull){capFull.getTracks().forEach(t=>t.stop());capFull=null}
   if(capStream){capStream.getTracks().forEach(t=>t.stop());capStream=null}
-  $('capbtn').classList.remove('on');if(!quiet)toast('Audio capture stopped.','ok',2500);
+  $('capbtn').classList.remove('on');updCapLabel();if(!quiet)toast('Audio capture stopped.','ok',2500);
 }
+// the mic button says what the bars follow right now, in the same order sample() picks it
+let capLabelKey='';
+function updCapLabel(){
+  let t,tip;
+  const tr=capStream&&capStream.getAudioTracks()[0];
+  if(capStream){const n=(tr&&tr.label||'').replace(/^Monitor of /i,'');
+    t=capKind==='device'?(n||'Input device'):'Tab audio';
+    tip='Bars follow: '+(capKind==='device'?(tr&&tr.label||'an input device'):isWin?'shared computer sound':'a shared tab or screen')+'. Click to stop.'}
+  else if(src==='file'&&filePlaying()){t='This file';tip='Bars follow: the file that’s playing. Click to use your computer’s sound instead.'}
+  else if(bridgeOn){t='Vibe Bridge';tip='Bars follow: Vibe Bridge '+(bridgeVia==='relay'?'through your server':'on this computer')+(bridgeDev?' · listening to '+bridgeDev:'')+'.'}
+  else if(src==='spotify'&&spPlaying()){t='Ambient';tip='Bars follow: a gentle ambient motion (Spotify’s audio can’t be read). Click to capture your computer’s sound, or start Vibe Bridge.'}
+  else{t='No audio';tip='Nothing for the bars to follow. Click to capture your computer’s sound (Spotify app, browser tab…).'}
+  const key=t+'|'+tip;if(key===capLabelKey)return;capLabelKey=key;
+  $('capt').textContent=t;const b=$('capbtn');b.title=tip;b.setAttribute('aria-label','Audio for the visualizer: '+t);
+  b.classList.toggle('idle',t==='No audio'||t==='Ambient');
+}
+setInterval(updCapLabel,1000);
 function attachCapture(s,kind){
-  capFull=s;capStream=new MediaStream(s.getAudioTracks());capHeard=false;
+  capKind=kind;capFull=s;capStream=new MediaStream(s.getAudioTracks());capHeard=false;
   capNode=ac.createMediaStreamSource(capStream);capNode.connect(analyser);ac.resume();
   capStream.getAudioTracks()[0].onended=()=>{if(capStream){stopCapture(true);toast('Audio capture ended.','warn')}};
-  $('capbtn').classList.add('on');bump($('capbtn'));toast('Capturing audio: the bars now react to what is playing.','ok',3500);
+  $('capbtn').classList.add('on');updCapLabel();bump($('capbtn'));toast('Capturing audio: the bars now react to what is playing.','ok',3500);
   setTimeout(()=>{if(capStream&&!capHeard)toast(kind==='device'
     ?'No sound is coming from that device. Pick the “Monitor of …” device for the output you listen on (headphones or speakers), and make sure something is playing.'
     :isWin?'The share has no sound coming through. Share again, pick “Entire screen” and turn on “Also share system audio”, and make sure something is playing.'
@@ -2532,7 +2553,7 @@ function toggle(){
   if(audio.paused||audio.ended){if(audio.ended)audio.currentTime=0;audio.play().catch(e=>toast('Playback failed: '+e.message))}else audio.pause();
 }
 $('play').onclick=toggle;
-audio.onplay=audio.onpause=audio.onended=()=>{updPlayIcon();syncCanvasPlay();poke();updMediaSession()};
+audio.onplay=audio.onpause=audio.onended=()=>{updPlayIcon();updCapLabel();syncCanvasPlay();poke();updMediaSession()};
 // local files: show title, artist and cover in the system media controls (the Windows media flyout, lock screens)
 // and let the keyboard's media keys control playback
 function updMediaSession(){
