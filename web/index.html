@@ -530,7 +530,7 @@ body:not([data-view=viz]) #lyr{animation:fadein .5s}
 .chip .dot{transition:background .3s,box-shadow .3s}
 select{transition:background .2s,border-color .2s}select:hover{border-color:rgba(255,255,255,.35)}
 .toast{transform-origin:top center}
-@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-delay:0s!important;transition-duration:.01ms!important}}
+body.rm *,body.rm *::before,body.rm *::after{animation-duration:.01ms!important;animation-delay:0s!important;transition-duration:.01ms!important}   /* reduced motion (Settings → Performance → Animations) */
 
 /* ---------- ping meter ---------- */
 #netbtn{padding:8px 12px;font-variant-numeric:tabular-nums}
@@ -660,7 +660,7 @@ body.low #cappanel,body.low #netpanel,body.low #setup .sw{background:rgba(20,20,
 #bar input[type=range]:active::-webkit-slider-thumb{transform:scale(1.4,1.06)}
 body.low .lq::before,body.low .lqr{display:none}body.low #cappanel,body.low #netpanel,body.low #devpanel,body.low #notes .note{animation:none}
 body.low .lq{transition:background .2s}body.low .lq:hover,body.low .lq.press{transform:none}body.low .lq::after{display:none}
-@media(prefers-reduced-motion:reduce){.lq:hover,.lq.press{transform:none}}
+body.rm .lq:hover,body.rm .lq.press{transform:none}
 /* the bottom bar's progress and volume sliders are glass: a frosted tube with a sheen on top, and a glass bead */
 #bar input[type=range]{height:26px}
 #bar input[type=range]::-webkit-slider-runnable-track{height:8px;border-radius:99px;
@@ -871,6 +871,7 @@ body.low #bar input[type=range]::-webkit-slider-thumb{transition:none}
   <div class="f chk" data-k="low"><label><input type="checkbox" id="low"> Low performance mode</label></div>
   <div class="f chk" data-k="perfAsk"><label><input type="checkbox" id="perfAsk"> Suggest Low performance mode when needed<small>Watches how smoothly the app runs while a song plays. If your computer can’t keep up, or the battery is low and not charging, a pop-up offers to turn Low performance mode on.</small></label></div>
   <div class="f" data-k="fpscap"><span class="lb">Limit frame rate</span><select id="fpscap"><option value="0">Off (up to 240 fps)</option><option value="30">30 fps</option><option value="60">60 fps</option><option value="120">120 fps</option><option value="144">144 fps</option><option value="165">165 fps</option><option value="240">240 fps</option></select><small class="hint">Caps how often the animations redraw, to save power. High refresh rate screens run up to 240 fps.</small></div>
+  <div class="f" data-k="anim"><span class="lb">Animations</span><select id="anim"><option value="system">Follow the system setting</option><option value="on">Always on</option><option value="off">Off</option></select><small class="hint">“Follow the system setting” turns the animations off when your computer asks apps to reduce motion (on Windows: Settings → Accessibility → Visual effects → Animation effects). <span id="animstat"></span></small></div>
   <div class="f chk" data-k="fps"><label><input type="checkbox" id="fps"> Show FPS</label></div>
   <div class="row2"><button class="btn sm" id="reset">Reset all settings</button></div>
 
@@ -1071,7 +1072,7 @@ addEventListener('unhandledrejection',e=>toast('Something failed: '+((e.reason&&
 /* ================= settings (one store) ================= */
 const LANGS=[['en','English'],['cs','Czech'],['sk','Slovak'],['de','German'],['es','Spanish'],['fr','French'],['it','Italian'],['pt','Portuguese'],['pl','Polish'],['nl','Dutch'],['sv','Swedish'],['da','Danish'],['no','Norwegian'],['fi','Finnish'],['hu','Hungarian'],['ro','Romanian'],['el','Greek'],['tr','Turkish'],['uk','Ukrainian'],['ru','Russian'],['ar','Arabic'],['he','Hebrew'],['hi','Hindi'],['th','Thai'],['vi','Vietnamese'],['id','Indonesian'],['tl','Filipino'],['ja','Japanese'],['ko','Korean'],['zh-CN','Chinese (Simplified)'],['zh-TW','Chinese (Traditional)']];
 const navLang=(()=>{const l=(navigator.language||'en').toLowerCase(),m=LANGS.find(x=>x[0].toLowerCase()===l)||LANGS.find(x=>x[0].split('-')[0]===l.split('-')[0]);return m?m[0]:'en'})();
-const DEF={bridge:true,xFocus:false,bgStyle:'dynamic',lfont:'vv',lsimple:false,lminimal:false,lhover:true,lduet:true,lcredLast:false,lsmooth:true,learly:false,learlyMs:250,lseekFade:true,lnotice:true,volshow:true,fpscap:'0',credPos:'corner',cvNoArt:false,capDev:'',romMode:'replace',tr:false,trTo:navLang,trSkip:'',theme:'cover',c1:'#ff5a5f',c2:'#4f8cff',auto:true,boost:100,resp:25,blur:0,bars:72,gap:28,glow:false,round:true,scale:'1',fps:false,bgblur:60,bri:70,sat:170,bgspeed:100,online:true,volume:100,view:'both',lprov:'spicy:1,spotify:1,lrclib:1,netease:1',loff:0,lsize:100,lblur:true,canvasOn:true,low:false,perfAsk:true,lDesync:'ask',design:'glass',uiHide:'idle'};
+const DEF={bridge:true,xFocus:false,bgStyle:'dynamic',lfont:'vv',lsimple:false,lminimal:false,lhover:true,lduet:true,lcredLast:false,lsmooth:true,learly:false,learlyMs:250,lseekFade:true,lnotice:true,volshow:true,fpscap:'0',credPos:'corner',cvNoArt:false,capDev:'',romMode:'replace',tr:false,trTo:navLang,trSkip:'',theme:'cover',c1:'#ff5a5f',c2:'#4f8cff',auto:true,boost:100,resp:25,blur:0,bars:72,gap:28,glow:false,round:true,scale:'1',fps:false,bgblur:60,bri:70,sat:170,bgspeed:100,online:true,volume:100,view:'both',lprov:'spicy:1,spotify:1,lrclib:1,netease:1',loff:0,lsize:100,lblur:true,canvasOn:true,low:false,perfAsk:true,anim:'system',lDesync:'ask',design:'glass',uiHide:'idle'};
 const CFGD={spotId:'',canvasUrl:''},OLDCFG=['spicyUrl','spicyHdr','spicyPfx','spicyKey'];   // old fields that kept a key in the browser: always removed
 // Everything (settings, API keys, Spotify login, setup progress) lives in sessionStorage:
 // it survives a reload and the Spotify login redirect, and the browser deletes it when the tab is closed.
@@ -1150,6 +1151,7 @@ function onSetting(k){
   else if(k==='volume'){muted=false;applyVolume()}
   else if(k==='low')applyLow();
   else if(k==='design')applyDesign();
+  else if(k==='anim')applyAnim();
   else if(k==='uiHide')poke();
   else if(k==='lsize'){root.style.setProperty('--ls',S.lsize/100);place()}
   else if(k==='lblur')applyLB();
@@ -1165,6 +1167,16 @@ function onSetting(k){
   dirty=true;
 }
 function bgSpeed(){root.style.setProperty('--dur',(4000/Math.max(S.bgspeed,1))+'s');$('bg').classList.toggle('still',S.bgspeed==0||S.low)}
+const rmMq=matchMedia('(prefers-reduced-motion: reduce)');
+const rmOn=()=>S.anim==='off'||(S.anim!=='on'&&rmMq.matches);
+function applyAnim(){body.classList.toggle('rm',rmOn());const e=$('animstat');if(e)e.textContent=S.anim==='system'?(rmMq.matches?'Your system asks to reduce motion right now, so they’re off.':'Your system allows animations, so they’re on.'):''}
+rmMq.addEventListener&&rmMq.addEventListener('change',applyAnim);
+function animAsk(){   // once per browser: say why there are no animations, and offer to turn them on anyway
+  let asked=false;try{asked=!!localStorage.getItem('vv_animask')}catch(e){}
+  if(asked||S.anim!=='system'||!rmMq.matches)return;try{localStorage.setItem('vv_animask','1')}catch(e){}
+  notify({key:'anim',kind:'warn',title:'Animations are off',msg:'Your computer asks apps to reduce motion (on Windows: Settings → Accessibility → Visual effects → Animation effects), so Vibe Visualizer’s animations are off.',
+    actions:[{label:'Keep them off'},{label:'Turn animations on',pri:true,fn:()=>{S.anim='on';applyAnim();save();syncInputs();refreshReset()}}]});
+}
 function applyDesign(){const c=S.design==='classic';$('glassui').disabled=c;body.classList.toggle('classic',c)}   // Classic: the glass sheet is switched off
 function applyLB(){body.classList.toggle('lb',!!S.lblur&&!S.low)}
 // liquid tabs: a highlight stretches over both places like a drop of liquid, then lets go of the old one
@@ -1848,14 +1860,14 @@ function setCv(on){
 }
 function coverHide(hiding,change){   // the cover melts away before a change that hides it, and settles in when one shows it again
   const shown=()=>artw.offsetParent!==null;
-  if(S.low||matchMedia('(prefers-reduced-motion: reduce)').matches){flipLayout(change);return}
+  if(S.low||rmOn()){flipLayout(change);return}
   if(hiding&&shown()){artw.classList.remove('unmelt');artw.classList.add('melt');setTimeout(()=>{flipLayout(change);artw.classList.remove('melt')},560);return}
   const was=shown();flipLayout(change);
   if(!was&&shown()){artw.classList.remove('unmelt');void artw.offsetWidth;artw.classList.add('unmelt');setTimeout(()=>artw.classList.remove('unmelt'),750)}
 }
 // run a layout change (class toggle) and glide the cover and text from their old places to the new ones
 function flipLayout(change){
-  if(S.low||matchMedia('(prefers-reduced-motion: reduce)').matches||!body.classList.contains('loaded')){change();return}
+  if(S.low||rmOn()||!body.classList.contains('loaded')){change();return}
   const texts=[ttl,sub,status];
   artw.style.transform='';ttl.style.transform='';
   const a0=artw.offsetParent?artw.getBoundingClientRect():null,t0=texts.map(textBox);
@@ -3188,7 +3200,7 @@ function poke(){
 
 /* ================= analysis ================= */
 // no sound: a soft wave rolls across the resting dots instead of a flat row; it fades away as soon as music comes in
-let silentFor=0,idleK=0;const reduceMotion=matchMedia('(prefers-reduced-motion: reduce)');
+let silentFor=0,idleK=0;const reduceMotion={get matches(){return rmOn()}};
 function idleWave(dt,now){
   if(idleK<.005||reduceMotion.matches)return;
   const t=now/1000,a=1-Math.exp(-dt/140);
@@ -3533,7 +3545,7 @@ addEventListener('keydown',e=>{if(e.key==='Escape'){devClose();closePop($('netpa
 netLoop();
 
 /* ================= init ================= */
-applyDesign();syncInputs();refreshReset();volIcon();
+applyDesign();applyAnim();syncInputs();refreshReset();volIcon();setTimeout(animAsk,2500);
 root.style.setProperty('--ls',S.lsize/100);
 $('fpsEl').style.display=S.fps?'block':'none';
 body.classList.toggle('cvnoart',!!S.cvNoArt);applyCredPos();applyLyrOpts();bridgeConnect();updBridge();applyFont();applyBgStyle();setupBands();applyView();applyLow();resize();renderBg();updChips();updPlayIcon();updQuick();updNeed();
