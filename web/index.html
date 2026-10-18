@@ -386,10 +386,8 @@ body.novol #volwrap{display:none}
 
 /* ---------- toasts ---------- */
 
-.toast{pointer-events:auto;padding:11px 14px;border-radius:14px;border:1px solid var(--line);position:relative;padding-left:20px;--ac:#ff6b6b;font-size:13px;line-height:1.4;cursor:pointer;animation:tin .25s ease-out;background:rgba(20,20,30,.88);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
-.toast.warn{--ac:#ffc857}.toast.ok{--ac:#5be3a0}
-/* the colour mark is a straight stripe inside the card: a thick left border bends oddly around rounded corners */
-.toast::before,.note.err::before,.note.warn::before,.note.ok::before{content:"";position:absolute;left:7px;top:10px;bottom:10px;width:3px;border-radius:3px;background:var(--ac);box-shadow:0 0 10px var(--ac)}
+.toast{pointer-events:auto;padding:11px 14px;border-radius:14px;border:1px solid var(--line);border-left:3px solid #ff6b6b;font-size:13px;line-height:1.4;cursor:pointer;animation:tin .25s ease-out;background:rgba(20,20,30,.88);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+.toast.warn{border-left-color:#ffc857}.toast.ok{border-left-color:#5be3a0}
 @keyframes tin{from{opacity:0;transform:translateY(-8px)}}
 
 /* ---------- first-run setup ---------- */
@@ -564,7 +562,7 @@ body.wz #empty,body.popen #empty{opacity:0;transition:opacity .3s}   /* nothing 
   animation:pop .4s cubic-bezier(.2,.8,.2,1);transform-origin:top right}
 .note.bye{animation:none;opacity:0;transform:translateX(30px) scale(.96);transition:opacity .25s,transform .25s}
 .note b{display:block;font-size:14px;font-weight:800}.note .nsub{font-size:11.5px;color:var(--faint);margin-top:2px}
-.note{position:relative}.note.err,.note.warn,.note.ok{padding-left:22px}.note.err{--ac:#ff6b6b}.note.warn{--ac:#ffc857}.note.ok{--ac:#1ed760}
+.note.err{border-left:3px solid #ff6b6b}.note.warn{border-left:3px solid #ffc857}.note.ok{border-left:3px solid #1ed760}
 .note ul{margin:8px 0 0;padding-left:16px;font-size:12.5px;line-height:1.45;color:var(--dim);max-height:220px;overflow:auto}
 .note .nmsg{margin-top:6px;font-size:12.5px;color:var(--dim);word-break:break-word}
 .note .nact{display:flex;gap:8px;margin-top:10px;justify-content:flex-end}
