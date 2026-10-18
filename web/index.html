@@ -109,7 +109,7 @@ body[data-view=both]:is(.hl,.lm) #viz{top:74%}
 body[data-view=viz] #lyr{display:none}
 #ly{position:absolute;left:0;right:0;top:0;padding:0 6% 0 20px;transition:transform .55s cubic-bezier(.2,.8,.2,1);will-change:transform}
 #lyr.st{overflow-y:auto}
-#lyr.st #ly{position:relative;transform:none!important;padding:30vh 6% 30vh 20px}
+#lyr.st #ly{position:relative;transform:none!important;padding:9vh 6% 40vh 20px}   /* untimed: start near the top, clear of the faded lower edge */
 .ll{font-size:calc(clamp(24px,3.3vw,52px)*var(--ls));font-weight:700;line-height:1.18;letter-spacing:0;padding:.2em 0;opacity:.51;transform-origin:left center;transition:opacity .2s cubic-bezier(.61,1,.88,1),filter .35s ease-out;--bl:0px;
   /* Spicy Lyrics' look (ported from its Mixed.css, AGPL-3.0): text is transparent and drawn by a text-shadow, so
      lines away from the current one blur cheaply (--bl); the line being sung paints a gradient that fills */
@@ -122,7 +122,9 @@ body[data-view=viz] #lyr{display:none}
   background-image:linear-gradient(var(--gradient-degrees),rgba(255,255,255,var(--gradient-alpha)) var(--gradient-position),rgba(255,255,255,var(--gradient-alpha-end)) calc(var(--gradient-position) + 20% + var(--gradient-offset)))}
 .ll.a .lt.wt,.ll.a .w.lg{background-image:none;text-shadow:none}   /* words and split letters paint their own fill */
 #lyr:not(.st) .ll:not(.dots){cursor:pointer}#lyr:not(.st) .ll:not(.a):not(.dots):hover{opacity:1;--bl:0px;--fb:0px}   /* synced lines can be clicked to jump there */
-#lyr.st .ll{opacity:.85}#lyr.st .ll .lt{text-shadow:0 0 0 rgba(255,255,255,.85)}
+/* untimed lyrics: plain bright text (they never blur, so no shadow trick), with a soft shadow for depth */
+#lyr.st .ll{opacity:1}
+#lyr.st .ll .lt,#lyr.st .ll .lt .w{-webkit-text-fill-color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.3),0 4px 18px rgba(0,0,0,.28)}
 /* every line but the one being sung is blurred, more the further away it is; the line being sung is always sharp */
 body.lb .ll.dp,body.lb .ll.d1{--fb:3px}body.lb .ll.d2{--fb:4.5px}body.lb .ll.d3{--fb:6px}body.lb .ll.d4{--fb:7px}body.lb .ll.d5,body.lb .ll.dx{--fb:8px}
 body.lb #lyr:not(.st) .ll:is(.dp,.d1,.d2,.d3,.d4,.d5,.dx){filter:blur(var(--fb))}   /* only blurred lines get a filter */
