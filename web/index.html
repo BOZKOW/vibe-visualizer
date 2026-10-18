@@ -220,7 +220,8 @@ body[data-view=viz].credly #lcredit{display:none}
 #lprob{position:absolute;left:0;top:4px;z-index:4;display:flex;flex-direction:column;gap:8px;max-width:min(560px,92%);pointer-events:none;text-shadow:0 1px 10px rgba(0,0,0,.6);animation:up .5s cubic-bezier(.2,.8,.2,1)}
 #lprob .pr b{font-size:13px}#lprob .pr small{font-size:12px;font-weight:500}
 /* an error: its text replaces the lyrics. The most important one large, like a lyric line; the others smaller below */
-#lprob.big{top:30%;padding:0 6% 0 0;max-width:none;gap:22px}
+#lprob.big{top:max(4%,calc(30% - var(--extra,0px)));padding:0 6% 0 0;max-width:none;gap:22px;transition:top .5s cubic-bezier(.2,.8,.2,1)}
+#lprob .pr.more{animation:up .45s cubic-bezier(.2,.8,.2,1) backwards}
 #lprob.big .pr:first-child>i{display:none}
 #lprob.big .pr:first-child b{font-size:calc(clamp(22px,2.8vw,42px)*var(--ls));font-weight:800;letter-spacing:-.025em;line-height:1.15}
 #lprob.big .pr:first-child small{font-size:15px;font-weight:600;margin-top:10px;max-width:46ch}
@@ -1704,7 +1705,7 @@ function problemsNow(home){
     else if(sp&&spErrMsg)add(70,'err','Spotify isn’t answering',spErrMsg);
     if(sp&&Date.now()<backoff)add(40,'wait','Spotify is making Vibe Visualizer wait','It asked Spotify too often, so Spotify paused it. It carries on by itself in '+clockLeft((backoff-Date.now())/1000)+(home||out.some(x=>x.k==='err')?'.':'; the lyrics keep running meanwhile.'));
   }
-  if(appProb&&Date.now()-appProb.at<10000){add(appProb.k==='err'?60:30,appProb.k||'err',appProb.t,appProb.s);out[out.length-1].ok=1}   // one-off errors and warnings: 10 s or until OK. The serious ones above stay until they're solved
+  if(appProb&&Date.now()-appProb.at<10000&&!out.some(x=>x.s===appProb.s)){add(appProb.k==='err'?60:30,appProb.k||'err',appProb.t,appProb.s);out[out.length-1].ok=1}   // one-off errors and warnings: 10 s or until OK. The serious ones above stay until they're solved
   return out.sort((a,b)=>b.pr-a.pr);
 }
 function showProblems(el,list,max){
@@ -1723,6 +1724,8 @@ function renderProblem(){
   showProblems($('hprob'),problemsNow(true),3);
   const ps=problemsNow(false),lp=$('lprob'),big=!!ps.length&&S.view!=='viz'&&(ps[0].k==='err'||!L.length);
   lp.classList.toggle('big',big);body.classList.toggle('prob',big);showProblems(lp,ps,big?4:2);
+  // the list grows upward: the first problem sits where a lyric line would, and the block slides up as more stack
+  if(big&&!lp.hidden){const f=lp.firstElementChild;lp.style.setProperty('--extra',Math.max(0,lp.offsetHeight-(f?f.offsetHeight:0))+'px')}
 }
 addEventListener('online',renderProblem);addEventListener('offline',renderProblem);
 function spSched(extra){
