@@ -2407,7 +2407,9 @@ function place(){
   if(!lEls.length||lyr.classList.contains('st'))return;
   const el=lEls[Math.max(lsi>=0?lsi:li,0)];if(!el)return;
   const hh=S.xFocus&&S.view==='both'?lyr.clientHeight*.74-24:lyr.clientHeight;   // Focus mode in Both: same middle as before
-  ly.style.transform='translateY('+(hh*.38-(el.offsetTop+el.offsetHeight/2))+'px)';
+  let y=hh*.38-(el.offsetTop+el.offsetHeight/2);
+  const top=hh*.16;if(el.offsetTop+y<top)y=top-el.offsetTop;   // a tall line (long text, a translation under it) moves down so its top stays out of the fade
+  ly.style.transform='translateY('+y+'px)';
 }
 /* ==== Lyrics animation, ported from Spicy Lyrics ====
    Source: https://github.com/Spikerko/spicy-lyrics (src/utils/Lyrics/Animator/Lyrics/LyricsAnimator.ts,
