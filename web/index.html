@@ -220,8 +220,8 @@ body[data-view=viz].credly #lcredit{display:none}
 #lprob{position:absolute;left:0;top:4px;z-index:4;display:flex;flex-direction:column;gap:8px;max-width:min(560px,92%);pointer-events:none;text-shadow:0 1px 10px rgba(0,0,0,.6);animation:up .5s cubic-bezier(.2,.8,.2,1)}
 #lprob .pr b{font-size:13px}#lprob .pr small{font-size:12px;font-weight:500}
 /* an error: its text replaces the lyrics. The most important one large, like a lyric line; the others smaller below */
-#lprob.big{top:max(4%,calc(30% - var(--extra,0px)));padding:0 6% 0 0;max-width:none;gap:22px;transition:top .5s cubic-bezier(.2,.8,.2,1)}
-#lprob .pr.more{animation:up .45s cubic-bezier(.2,.8,.2,1) backwards}
+#lprob.big{top:max(4%,calc(30% - var(--extra,0px)));padding:0 6% 0 0;max-width:none;gap:22px;transition:top .3s cubic-bezier(.2,.8,.2,1)}
+#lprob .pr.more{animation:up .3s cubic-bezier(.2,.8,.2,1) backwards}
 #lprob.big .pr:first-child>i{display:none}
 #lprob.big .pr:first-child b{font-size:calc(clamp(22px,2.8vw,42px)*var(--ls));font-weight:800;letter-spacing:-.025em;line-height:1.15}
 #lprob.big .pr:first-child small{font-size:15px;font-weight:600;margin-top:10px;max-width:46ch}
@@ -1649,7 +1649,7 @@ async function spCallback(){
   try{await spToken({grant_type:'authorization_code',code:q.get('code'),redirect_uri:redirectUri(),code_verifier:sessionStorage.getItem('sp_v')||''});toast('Spotify connected.','ok',3000);return true}
   catch(e){toast(e.message);return false}
 }
-let spWaitKnown=0;
+let spWaitKnown=0,spRelayDown=0,spErrRetry=false;
 const clockLeft=s=>{s=Math.max(0,Math.ceil(s));const h=Math.floor(s/3600),m=Math.floor(s%3600/60),x=String(s%60).padStart(2,'0');return h?h+':'+String(m).padStart(2,'0')+':'+x:m+':'+x};   // 4:59, 1:02:03
 const fmtWait=s=>s<90?Math.round(s)+' s':s<5400?Math.round(s/60)+' min':(s/3600).toFixed(1)+' h';
 async function spApi(path,method,body,raw,again){
@@ -1658,9 +1658,9 @@ async function spApi(path,method,body,raw,again){
     if(!SP.refresh){SP={};spSave();throw new Error('Spotify session expired. Reconnect.')}
     await spToken({grant_type:'refresh_token',refresh_token:SP.refresh});
   }
-  const via=PREFS&&spRelay!==false;   // through your server when opened from it: Spotify's Retry-After becomes readable
-  let r;try{r=await timed('spotify',()=>fetch((via?'/api/spweb':'https://api.spotify.com/v1')+path,{method:method||'GET',headers:Object.assign({Authorization:'Bearer '+SP.access},body?{'Content-Type':'application/json'}:{}),body:body?JSON.stringify(body):undefined}))}catch(e){throw new Error('Could not reach Spotify (offline?).')}
-  if(via&&spRelay==null){spRelay=r.headers.get('X-Via')==='vv-helper';if(!spRelay)return spApi(path,method,body,raw)}   // an older server helper: go direct
+  const via=PREFS&&spRelay!==false&&Date.now()-spRelayDown>60000;   // (straight to Spotify for a minute after the server failed)   // through your server when opened from it: Spotify's Retry-After becomes readable
+  let r;try{r=await timed('spotify',()=>fetch((via?'/api/spweb':'https://api.spotify.com/v1')+path,{method:method||'GET',headers:Object.assign({Authorization:'Bearer '+SP.access},body?{'Content-Type':'application/json'}:{}),body:body?JSON.stringify(body):undefined}))}catch(e){if(via){spRelayDown=Date.now();netKick();return spApi(path,method,body,raw,again)}throw new Error('Could not reach Spotify (offline?).')}   // your server is down: ask Spotify directly
+  if(via&&(spRelay==null||(r.status>=502&&r.status<=504&&r.headers.get('X-Via')!=='vv-helper'))){if(r.status>=502&&r.status<=504){spRelayDown=Date.now();netKick();return spApi(path,method,body,raw,again)}spRelay=r.headers.get('X-Via')==='vv-helper';if(!spRelay)return spApi(path,method,body,raw)}   // an older server helper: go direct
   if(r.status===204)return null;
   if(r.status===401){
     if(!again&&SP.refresh){try{await spToken({grant_type:'refresh_token',refresh_token:SP.refresh});return spApi(path,method,body,raw,true)}catch(e){}}   // renew the login once first
@@ -1727,7 +1727,7 @@ function renderProblem(){
   // the list grows upward: the first problem sits where a lyric line would, and the block slides up as more stack
   if(big&&!lp.hidden){const f=lp.firstElementChild;lp.style.setProperty('--extra',Math.max(0,lp.offsetHeight-(f?f.offsetHeight:0))+'px')}
 }
-addEventListener('online',renderProblem);addEventListener('offline',renderProblem);
+addEventListener('online',()=>{renderProblem();netKick();if(src==='spotify')spPoll()});addEventListener('offline',renderProblem);
 function spSched(extra){
   clearTimeout(spTimer);if(src!=='spotify')return;
   const pace=spPaceNow();   // 3 s normally; slower after Spotify said slow down (remembered across reloads)
@@ -1751,8 +1751,8 @@ async function spPoll(){
     spApply(d,mid);spRateN=0;spRateSaid=false;backoff=0;spErrMsg='';
   }catch(e){
     if(e.rate){if(spBC)spBC.postMessage({until:backoff});if(!spRateSaid){spRateSaid=true;toast(e.message,'warn',6000)}}   // a rate limit isn't an error: one calm note, no red dot
-    else{spErrMsg=e.message;if(Date.now()-spErrAt>20000){spErrAt=Date.now();toast(e.message)}updChips(true)}
-  }finally{spSched()}
+    else{spErrMsg=e.message;spErrRetry=true;if(Date.now()-spErrAt>20000){spErrAt=Date.now();toast(e.message)}updChips(true)}
+  }finally{if(spErrRetry){spErrRetry=false;clearTimeout(spTimer);spTimer=setTimeout(spPoll,3000)}else spSched()}   // after an error, try again in 3 s so it clears quickly
 }
 if(spBC)spBC.onmessage=e=>{const m=e.data||{};
   if(m.until){backoff=Math.max(backoff,m.until);return}   // another copy was told to slow down: so is this one
@@ -3426,7 +3426,7 @@ async function netPing(){
   const a=NET.app,b=$('netbtn'),up=(a&&a.ms!=null&&a.status<400)||!!netHealth;   // the server answered one of the two
   netFails=up?0:netFails+1;
   if(up){b.classList.remove('good','ok','bad');if(a&&a.ms!=null&&a.status<400){$('netms').textContent=a.ms+' ms';b.classList.add(lvl(a.ms,true))}else{$('netms').textContent='–';b.classList.add('ok')}}
-  else if(netFails>=2){b.classList.remove('good','ok');$('netms').textContent='offline';b.classList.add('bad')}   // one lost request isn't "offline"
+  else if(netFails>=2||!navigator.onLine){b.classList.remove('good','ok');$('netms').textContent='offline';b.classList.add('bad')}   // one lost request isn't "offline"
   if(!$('netpanel').hidden)netRender();
 }
 function netRender(){
@@ -3455,7 +3455,8 @@ function netRender(){
 }
 let netT=0;
 let netFails=0;
-async function netLoop(){clearTimeout(netT);await netPing();netT=setTimeout(netLoop,netFails?5000:$('netpanel').hidden?30000:3000)}   // after a failure, check again soon
+async function netLoop(){clearTimeout(netT);await netPing();netT=setTimeout(netLoop,netFails?2000:$('netpanel').hidden?10000:3000)}   // every 10 s; 2 s after a failure, so problems show and clear quickly
+let netKickAt=0;function netKick(){if(Date.now()-netKickAt>2000){netKickAt=Date.now();netLoop()}}   // something just failed: check now
 $('netbtn').onclick=e=>{e.stopPropagation();const p=$('netpanel'),open=!popOpen(p);if(open){closePop($('cappanel'));openPop(p,$('netbtn'))}else closePop(p);$('netbtn').classList.toggle('on',open);if(open){netRender();netLoop()}};
 document.addEventListener('click',e=>{const p=$('netpanel');if(popOpen(p)&&!p.contains(e.target)&&!$('netbtn').contains(e.target)){closePop(p);$('netbtn').classList.remove('on')}});
 $('syncbtn').onclick=resyncNow;
