@@ -242,7 +242,8 @@ body[data-view=viz].credly #lcredit{display:none}
 #nextup small{font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--faint)}
 #nextup b,#nextup span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#nextup b{font-size:13.5px}#nextup span{font-size:12px;color:var(--dim)}
 @keyframes nuin{from{opacity:0;transform:translateY(8px)}}
-body:not(.classic) #nextup{background:linear-gradient(145deg,rgba(255,255,255,.16),rgba(255,255,255,.05)),rgba(22,22,38,.3);border-color:rgba(255,255,255,.22);
+body:not(.classic) #nextup.lq:hover{transform:translate(calc(var(--dx,0)*2px),calc(var(--dy,0)*2px)) scale(1.025)}   /* a big card leans less than a button */
+body:not(.classic) #nextup{cursor:default;background:linear-gradient(145deg,rgba(255,255,255,.16),rgba(255,255,255,.05)),rgba(22,22,38,.3);border-color:rgba(255,255,255,.22);
   box-shadow:0 14px 34px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.28),inset 0 -1px 0 rgba(255,255,255,.05);backdrop-filter:blur(26px) saturate(175%);-webkit-backdrop-filter:blur(26px) saturate(175%);border-radius:16px}
 #nextup img{box-shadow:0 4px 12px rgba(0,0,0,.35)}
 body.low #nextup{backdrop-filter:none;-webkit-backdrop-filter:none;background:rgba(20,20,30,.8)}
@@ -503,7 +504,7 @@ body.low .tsw,body.low .chip.live .dot,body.low .nrow.good i,body.low #capbtn.br
 #ly.enter .ll{animation:lyin .7s cubic-bezier(.2,.8,.2,1) backwards;animation-delay:calc(var(--i,0)*45ms)}@keyframes lyin{from{opacity:0;translate:0 26px}}
 .drow{animation:up .35s cubic-bezier(.2,.8,.2,1) backwards}.drow:nth-child(2){animation-delay:40ms}.drow:nth-child(3){animation-delay:80ms}.drow:nth-child(4){animation-delay:120ms}.drow:nth-child(n+5){animation-delay:160ms}
 body.low #pbody .ppage.enter>*,body.low #ly.enter .ll,body.low .drow{animation:none}
-#info.anim #artw{animation:pop .7s cubic-bezier(.2,.8,.2,1)}
+#info.anim:not(.keepart) #artw{animation:pop .7s cubic-bezier(.2,.8,.2,1)}   /* only when there was no cover: an existing one melts into the next instead */
 #info.anim #txt>*{animation:up .6s cubic-bezier(.2,.8,.2,1) backwards}
 #info.anim #txt>:nth-child(2){animation-delay:.07s}#info.anim #txt>:nth-child(n+3){animation-delay:.14s}
 body:not([data-view=viz]) #lyr{animation:fadein .5s}
@@ -1344,7 +1345,7 @@ async function setCover(s,label,tok,remote){
   if(cols){rawCols=cols.raw;barCols=cols.bar}else{rawCols=barCols=DEF_COLS;toast('Cover colors could not be read (image blocked by the browser); using default colors.','warn')}
   palDirty=true;dirty=true;fadeBake();return true;
 }
-function animTrack(){const i=$('info');i.classList.remove('anim');void i.offsetWidth;i.classList.add('anim')}
+function animTrack(){const i=$('info');i.classList.toggle('keepart',artw.classList.contains('has'));i.classList.remove('anim');void i.offsetWidth;i.classList.add('anim')}
 // one big animation at a time, so neither stutters the other: the cover's change first, then the Canvas
 let coverAnimEnd=0,cvRevealEnd=0;
 function coverSwap(){   // keep the old cover on top for a moment and let it melt into the new one
@@ -3141,7 +3142,7 @@ function liquid(el){
   const up=()=>el.classList.remove('press');el.addEventListener('pointerup',up);el.addEventListener('pointercancel',up);
   el.addEventListener('pointerleave',()=>{up();r=null;cancelAnimationFrame(q);q=0;['--dx','--dy','--ax','--ay'].forEach(k=>{delete last[k];el.style.removeProperty(k)})});
 }
-const LQ_SEL='.ib,.chip,.btn,#seg button,#pnav .pn,.prow,.opt';
+const LQ_SEL='.ib,.chip,.btn,#seg button,#pnav .pn,.prow,.opt,#nextup';
 document.querySelectorAll(LQ_SEL).forEach(liquid);
 // controls added later (panels, rows): only look at what was added, not the whole page on every change
 new MutationObserver(ms=>{for(const m of ms)for(const n of m.addedNodes){if(n.nodeType!==1||n.classList.contains('lqr'))continue;
