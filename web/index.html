@@ -234,7 +234,7 @@ body[data-view=viz].credly #lcredit{display:none}
 .prx{font-size:12px;opacity:.7;padding-left:30px}
 .pok{display:block;margin-top:12px;pointer-events:auto;text-shadow:none}#lprob.big .pr:first-child .pok{margin-top:18px}
 #lprob{position:absolute;left:0;top:4px;z-index:4;display:flex;flex-direction:column;gap:8px;max-width:min(560px,92%);pointer-events:none;text-shadow:0 1px 10px rgba(0,0,0,.6);animation:up .5s cubic-bezier(.2,.8,.2,1)}
-/* "Next up": the queue's next song, shown in the last 10 seconds of a Spotify song */
+/* "Next up": the queue's next song, shown in the last 30 seconds of a Spotify song */
 #nextup{display:flex;align-items:center;gap:10px;margin-top:14px;padding:7px 14px 7px 7px;border-radius:14px;max-width:min(360px,100%);text-align:left;transform-origin:30% 100%}   /* look: the .glass class */
 #nextup.nin{animation:nuin .75s cubic-bezier(.2,.8,.2,1) both}
 #nextup.nout{animation:nuout .45s cubic-bezier(.4,0,.6,1) forwards;pointer-events:none}
@@ -502,6 +502,7 @@ body[data-src=spotify] .spx{animation:pop .45s cubic-bezier(.2,.8,.2,1) backward
 body.low .tsw,body.low .chip.live .dot,body.low .nrow.good i,body.low #capbtn.bridge svg,body.low #lmsg>*,body.low #lcredit>*,body.low .ll .sub,body.low[data-src=spotify] .spx{animation:none}
 /* more motion: settings pages, new lyrics and the device list come in one item after another */
 #pbody .ppage.enter>*{animation:up .42s cubic-bezier(.2,.8,.2,1) backwards;animation-delay:calc(var(--i,0)*22ms)}
+#ly.leave{opacity:0;transition:opacity .35s ease}   /* the old song's lyrics fade out while the new ones load */
 #ly.enter .ll{animation:lyin .7s cubic-bezier(.2,.8,.2,1) backwards;animation-delay:calc(var(--i,0)*45ms)}@keyframes lyin{from{opacity:0;translate:0 26px}}
 .drow{animation:up .35s cubic-bezier(.2,.8,.2,1) backwards}.drow:nth-child(2){animation-delay:40ms}.drow:nth-child(3){animation-delay:80ms}.drow:nth-child(4){animation-delay:120ms}.drow:nth-child(n+5){animation-delay:160ms}
 body.low #pbody .ppage.enter>*,body.low #ly.enter .ll,body.low .drow{animation:none}
@@ -2226,7 +2227,15 @@ function lyrMsg(msg,sub,kind){
     if(sub){const s=document.createElement('small');s.textContent=sub;lmsg.appendChild(s)}}
   body.classList.toggle('lm',!!msg);
 }
-function clearLyrics(msg,sub,kind){L=[];lsync=false;lCredit=null;renderLyrics();if(kind==='none'&&!S.lnotice)lyrMsg('');else lyrMsg(msg,sub,kind)}
+function clearLyrics(msg,sub,kind){clearTimeout(lyLoadT);L=[];lsync=false;lCredit=null;renderLyrics();if(kind==='none'&&!S.lnotice)lyrMsg('');else lyrMsg(msg,sub,kind)}
+// a song change: the old lyrics fade out, and "Looking for lyrics…" only shows if finding the new ones takes a while
+// (saved lyrics come back at once, so there's no flash of the message and no jump)
+let lyLoadT=0;
+function lyricsLoading(){
+  clearTimeout(lyLoadT);
+  if(L.length&&!S.low&&!rmOn()){ly.classList.remove('enter');ly.classList.add('leave')}else clearLyrics('','','');
+  lyLoadT=setTimeout(()=>{ly.classList.remove('leave');clearLyrics('Looking for lyrics…','','load')},500);
+}
 // add "• • •" lines for the intro and for long instrumental gaps; drop short or trailing ones
 function interludes(ls){
   const out=[],real=ls.filter(l=>!l.dots);if(!real.length)return real;
@@ -2252,7 +2261,7 @@ function checkPace(r,dur){
   if(!src&&last&&last.t>dur-.5)src=last.t+Math.max(2,dur*.03);   // a line after the end can't be right
   if(src&&Math.abs(src-dur)/dur<.12){lPace=src/dur;toast('Lyrics timing adjusted to this version of the song ('+(lPace>1?'+':'')+((lPace-1)*100).toFixed(1)+'% pace).','ok',4000)}
 }
-function applyLyrics(r){checkPace(r,curDur());dsSong();lyEnter();lCredit=r.credit||(r.label?{source:null}:null);L=(r.sync?interludes(r.lines):r.lines.filter(l=>!l.dots)).map(l=>Object.assign({},l));lsync=r.sync;renderLyrics(r.label);decorate()}
+function applyLyrics(r){clearTimeout(lyLoadT);ly.classList.remove('leave');checkPace(r,curDur());dsSong();lyEnter();lCredit=r.credit||(r.label?{source:null}:null);L=(r.sync?interludes(r.lines):r.lines.filter(l=>!l.dots)).map(l=>Object.assign({},l));lsync=r.sync;renderLyrics(r.label);decorate()}
 
 /* ---------- translation + romanization (Google Translate's free web endpoint, unofficial) ---------- */
 const GT='https://translate.googleapis.com/translate_a/single?client=dict-chrome-ex&sl=auto&dt=t&dt=rm&tl=';
@@ -2796,7 +2805,7 @@ async function fromNetease(m){
   return{lines,sync:true,label:'NetEase',credit:{source:'netease'}};
 }
 async function loadLyrics(m,tok){
-  clearLyrics('Looking for lyrics…','','load');
+  lyricsLoading();
   const order=provList().filter(p=>p.on).map(p=>p.k);
   if(!order.length){clearLyrics('All lyrics sources are off','Turn one on in Settings → Lyrics.','none');return}
   const key=[m.id||'',m.artist,m.title,Math.round(m.duration||0),order.join()].join('|').toLowerCase();
@@ -2859,7 +2868,7 @@ async function load(f){
   const tok=++coverTok;resetCover();spId=null;
   const parts=clean(n).split(/\s[-–]\s/);
   ttl.textContent=parts.length>1?parts.slice(1).join(' - '):clean(n);sub.textContent=parts.length>1?parts[0]:'';status.textContent='';animTrack();
-  clearLyrics('Looking for lyrics…','','load');
+  lyricsLoading();
   const tags=await readTags(f);if(tok!==coverTok)return;
   if(tags.title)ttl.textContent=tags.title;
   if(tags.artist)sub.textContent=tags.artist;
@@ -3062,7 +3071,7 @@ $('seek').onchange=()=>{
   if(src==='spotify'&&spState){const ms=Math.round($('seek').value/1000*spState.duration);
     spCtl('PUT','/me/player/seek?position_ms='+ms).then(ok=>{if(ok){spState.progress=ms;spFetched=performance.now();spSlew=null}})}
 };
-// Next up: in the last 10 seconds of a Spotify song, ask once what's next in the queue and show it
+// Next up: in the last 30 seconds of a Spotify song, ask once what's next in the queue and show it
 let nuFor=null,nuItem=null;
 // the song Next up announced starts: the whole card flows up behind the cover, stretching and blurring like liquid, and
 // is absorbed into it while the cover melts into the new song's picture
@@ -3098,7 +3107,7 @@ function nextUpFly(m){
 function nextUpTick(){
   const el=$('nextup');
   const left=src==='spotify'&&spState&&spPlaying()?(spState.duration-curMs())/1000:Infinity;
-  const show=left<=10&&left>-8&&spx.repeat!=='track';   // stays past the end until the next song is in (then it flows into the cover)
+  const show=left<=30&&left>-8&&spx.repeat!=='track';   // stays past the end until the next song is in (then it flows into the cover)
   if(show&&nuFor!==spId&&Date.now()>=backoff){nuFor=spId;nuItem=null;const id=spId;
     spApi('/me/player/queue').then(q=>{if(spId!==id)return;const it=q&&q.queue&&q.queue[0];if(!it)return;
       const ep=it.type==='episode',imgs=(ep?it.images:(it.album&&it.album.images))||[];
