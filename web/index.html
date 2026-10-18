@@ -232,7 +232,6 @@ body.hl #lmsg,body[data-view=viz] #lmsg{display:none}
 
 /* ---------- bottom bar ---------- */
 #dock{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);width:min(1080px,calc(100% - 32px));z-index:5;transition:opacity .35s,transform .35s}
-body.hascred #dock{width:min(1080px,max(880px,calc(100% - 2*(var(--pad) + 190px))),calc(100% - 32px))}   /* room for the credits beside it */
 body.uihide #dock{opacity:0;transform:translate(-50%,12px);pointer-events:none;visibility:hidden;transition:opacity .35s,transform .35s,visibility 0s .35s}
 body.uihide #top{opacity:0;transform:translateY(-10px);pointer-events:none}
 body.idle{cursor:none}
@@ -1449,16 +1448,13 @@ function resize(){
 new ResizeObserver(()=>{resize();place()}).observe(viz);
 // keep the lyrics credit in the bottom-left corner: beside the dock if it fits, otherwise just above it
 function placeCredit(){
-  // the credits sit beside the bottom bar when they fit there (the bar narrows a little to make room); when they
-  // don't, they go above the bar, as before
+  // the credits sit beside the bottom bar when they fit there; when they'd overlap it, they move up above it
   const cr=$('lcredit'),k=$('dock'),iw=innerWidth,pad=Math.min(56,Math.max(20,iw*.04));
   const show=!cr.hidden&&!body.classList.contains('credly')&&!!cr.textContent.trim();
   let need=0;if(show){const mw=cr.style.maxWidth;cr.style.maxWidth='none';cr.classList.add('tight');need=cr.offsetWidth;cr.style.maxWidth=mw}   // its natural width
-  const dw=Math.min(1080,Math.max(880,iw-2*(pad+190)),iw-32),fits=show&&need<=(iw-dw)/2-pad-16;
-  body.classList.toggle('hascred',fits);
   const left=k.offsetLeft-k.offsetWidth/2,top=k.offsetTop,bottom=innerHeight-top-k.offsetHeight,room=left-pad-16;
   cr.classList.toggle('tight',room<230);   // little room beside the bar: slightly smaller text, so it still fits there
-  if(fits&&room>=need){const mid=Math.max(0,(k.offsetHeight-cr.offsetHeight)/2);   // centred against the bar
+  if(show&&room>=need){const mid=Math.max(0,(k.offsetHeight-cr.offsetHeight)/2);   // centred against the bar
     root.style.setProperty('--credb',Math.max(12,bottom+mid)+'px');root.style.setProperty('--credw',Math.min(420,room)+'px')}
   else{root.style.setProperty('--credb',(innerHeight-top+10)+'px');root.style.setProperty('--credw',(iw-pad*2)+'px')}
 }
