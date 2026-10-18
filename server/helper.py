@@ -14,6 +14,8 @@ GET  /version                      ->  installed web app version, the newest one
 POST /report, GET /report, DELETE /report  ->  error reports from the app, kept on this server (errors.jsonl in PREFS_DIR)
 WS   /bridge/push, /bridge/listen  ->  relay for Vibe Bridge: a bridge pushes its bar data, the app's pages listen
 POST /update                       ->  download the newest web app files from GitHub into WEB_DIR
+*    /spweb/<path>                  ->  relay to Spotify's Web API with the app's own login, so the app can read
+                                       Spotify's Retry-After (browsers can't: Spotify doesn't expose it)
 """
 import asyncio, base64, hashlib, ipaddress, json, os, re, struct, time, urllib.error, urllib.parse, urllib.request
 from playwright.async_api import async_playwright
@@ -36,6 +38,7 @@ WEB_DIR = os.environ.get("WEB_DIR", "/www")
 WEB_FILES = ["index.html", "sw.js", "manifest.webmanifest", "logo.svg", "icon-192.png", "icon-512.png",
              "icon-maskable-512.png", "apple-touch-icon.png"]
 ID_RE = re.compile(r"^[0-9A-Za-z]{22}$")
+SPWEB_RE = re.compile(r"^/spweb/(me(/[A-Za-z0-9_/-]*)?|artists/[0-9A-Za-z]{22}|tracks/[0-9A-Za-z]{22}|search)$")
 HASH_RE = re.compile(r'"canvas","query","([0-9a-f]{64})"')
 
 timing = {}          # service -> {"ms", "status", "at"}: timings of real requests, for the ping meter
@@ -516,8 +519,21 @@ async def bridge_ws(reader, writer, headers, role):
         pass
 
 
+def spweb(method, sub, qs, headers, body):
+    # the app's own Spotify Web API request, sent from here so its Retry-After can be passed back
+    req = urllib.request.Request("https://api.spotify.com/v1/" + sub + ("?" + qs if qs else ""), data=body or None, method=method)
+    req.add_header("Authorization", headers.get("authorization", ""))
+    if headers.get("content-type"):
+        req.add_header("Content-Type", headers["content-type"])
+    try:
+        with urllib.request.urlopen(req, timeout=15) as r:
+            return r.status, r.read(), r.headers.get("Retry-After")
+    except urllib.error.HTTPError as e:
+        return e.code, e.read(), e.headers.get("Retry-After")
+
+
 async def handle(reader, writer):
-    status, out = 500, {"error": "internal"}
+    status, out, raw, xh = 500, {"error": "internal"}, None, {}
     try:
         line = (await asyncio.wait_for(reader.readline(), 10)).decode("latin-1")
         headers = {}
@@ -540,6 +556,19 @@ async def handle(reader, writer):
                 status, out = 403, {"error": "only for Vibe Visualizer on your tailnet"}
             else:
                 return await bridge_ws(reader, writer, headers, "push" if route.endswith("/push") else "listen")
+        elif SPWEB_RE.match(route[route.find("/spweb/"):] if "/spweb/" in route else ""):
+            if not client_ip(headers):
+                status, out = 403, {"error": "only for Vibe Visualizer on your tailnet"}
+            elif not headers.get("authorization", "").startswith("Bearer "):
+                status, out = 401, {"error": "no Spotify login"}
+            elif method not in ("GET", "PUT", "POST", "DELETE"):
+                status, out = 405, {"error": "method not allowed"}
+            else:
+                sub = route[route.find("/spweb/") + 7:]
+                status, raw, ra = await asyncio.to_thread(spweb, method, sub, qs, headers, body)
+                xh["X-Via"] = "vv-helper"
+                if ra:
+                    xh["Retry-After"] = re.sub(r"[^0-9]", "", ra)[:10]
         elif route.endswith("/prefs"):
             ip = client_ip(headers)
             status, out = prefs(method, ip, body) if ip else (403, {"error": "open Vibe Visualizer through its Tailscale HTTPS address to save preferences"})
@@ -612,10 +641,11 @@ async def handle(reader, writer):
         state["error"] = str(e)[:300]
         log("error:", e)
         status, out = 502, {"error": str(e)[:300]}
-    data = json.dumps(out).encode()
-    reason = {200: "OK", 400: "Bad Request", 401: "Unauthorized", 403: "Forbidden", 404: "Not Found", 405: "Method Not Allowed", 501: "Not Implemented", 429: "Too Many Requests", 500: "Internal Server Error", 502: "Bad Gateway", 503: "Service Unavailable"}.get(status, "Error")
-    writer.write(("HTTP/1.1 %d %s\r\nContent-Type: application/json\r\nCache-Control: no-store\r\nContent-Length: %d\r\nConnection: close\r\n\r\n"
-                  % (status, reason, len(data))).encode() + data)
+    data = raw if raw is not None else json.dumps(out).encode()
+    reason = {200: "OK", 201: "Created", 202: "Accepted", 204: "No Content", 400: "Bad Request", 401: "Unauthorized", 403: "Forbidden", 404: "Not Found", 405: "Method Not Allowed", 501: "Not Implemented", 429: "Too Many Requests", 500: "Internal Server Error", 502: "Bad Gateway", 503: "Service Unavailable"}.get(status, "Error")
+    extra = "".join("%s: %s\r\n" % (k, v) for k, v in xh.items())
+    writer.write(("HTTP/1.1 %d %s\r\nContent-Type: application/json\r\nCache-Control: no-store\r\n%sContent-Length: %d\r\nConnection: close\r\n\r\n"
+                  % (status, reason, extra, len(data))).encode() + data)
     try:
         await writer.drain()
     finally:

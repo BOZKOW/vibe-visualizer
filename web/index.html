@@ -1350,7 +1350,7 @@ function palTick(now){
 
 /* ================= state + sources ================= */
 let capKind='',ac,analyser,gainNode,data=new Uint8Array(1024),url=null,muted=false,capStream=null,capNode=null,capFull=null,capHeard=false;
-let loaded=false,src='none',spState=null,spFetched=0,spTimer=0,spId=null,backoff=0,spErrAt=0,spRateN=0,spRateSaid=false,spRateAt=0;
+let loaded=false,src='none',spState=null,spFetched=0,spTimer=0,spId=null,backoff=0,spErrAt=0,spRateN=0,spRateSaid=false,spRateAt=0,spRelay=null;
 let W=0,H=0,dpr=1,bass=0,mxv=0,peak=.3,dirty=true,wasActive=false;
 const filePlaying=()=>loaded&&!audio.paused&&!audio.ended;
 const spPlaying=()=>!!(spState&&spState.playing);
@@ -1612,13 +1612,17 @@ async function spCallback(){
   try{await spToken({grant_type:'authorization_code',code:q.get('code'),redirect_uri:redirectUri(),code_verifier:sessionStorage.getItem('sp_v')||''});toast('Spotify connected.','ok',3000);return true}
   catch(e){toast(e.message);return false}
 }
+let spWaitKnown=0;
+const fmtWait=s=>s<90?Math.round(s)+' s':s<5400?Math.round(s/60)+' min':(s/3600).toFixed(1)+' h';
 async function spApi(path,method,body,raw){
   if(!SP.access)throw new Error('Not connected to Spotify.');
   if(Date.now()>SP.exp){
     if(!SP.refresh){SP={};spSave();throw new Error('Spotify session expired. Reconnect.')}
     await spToken({grant_type:'refresh_token',refresh_token:SP.refresh});
   }
-  let r;try{r=await timed('spotify',()=>fetch('https://api.spotify.com/v1'+path,{method:method||'GET',headers:Object.assign({Authorization:'Bearer '+SP.access},body?{'Content-Type':'application/json'}:{}),body:body?JSON.stringify(body):undefined}))}catch(e){throw new Error('Could not reach Spotify (offline?).')}
+  const via=PREFS&&spRelay!==false;   // through your server when opened from it: Spotify's Retry-After becomes readable
+  let r;try{r=await timed('spotify',()=>fetch((via?'/api/spweb':'https://api.spotify.com/v1')+path,{method:method||'GET',headers:Object.assign({Authorization:'Bearer '+SP.access},body?{'Content-Type':'application/json'}:{}),body:body?JSON.stringify(body):undefined}))}catch(e){throw new Error('Could not reach Spotify (offline?).')}
+  if(via&&spRelay==null){spRelay=r.headers.get('X-Via')==='vv-helper';if(!spRelay)return spApi(path,method,body,raw)}   // an older server helper: go direct
   if(r.status===204)return null;
   if(r.status===401){SP={};spSave();updSpPanel();throw new Error('Spotify session expired. Reconnect.')}
   if(raw)return r;
@@ -1628,10 +1632,12 @@ async function spApi(path,method,body,raw){
   }
   if(r.status===403)throw new Error('Spotify refused access (403). In development mode your account must be added under the app’s User Management.');
   if(method&&method!=='GET'){if(r.status===404)throw new Error('No active Spotify device. Start playing in Spotify first.');if(r.ok)return null}
-  if(r.status===429){   // Spotify doesn't let pages read its Retry-After, so the real wait is unknown: back off hard
-    spRateN=Math.min(spRateN+1,6);spRateAt=Date.now();const wait=Math.max(+r.headers.get('Retry-After')||0,Math.min(300,10*2**(spRateN-1)));   // 10, 20, 40, 80, 160, 300 s
-    backoff=Date.now()+wait*1000;updChips();
-    const e=new Error('Spotify asked Vibe Visualizer to slow down, so it waits a little longer each time until Spotify answers again. The lyrics keep running meanwhile.');e.rate=true;throw e}
+  if(r.status===429){   // through your server Spotify's Retry-After is known; directly it isn't (Spotify hides it from pages): then back off hard
+    spRateN=Math.min(spRateN+1,6);spRateAt=Date.now();const ra=+r.headers.get('Retry-After')||0;
+    const wait=ra||Math.min(300,10*2**(spRateN-1));   // known wait, or 10, 20, 40, 80, 160, 300 s
+    backoff=Date.now()+wait*1000;spWaitKnown=ra?wait:0;updChips();
+    const e=new Error(ra?'Spotify asked Vibe Visualizer to wait '+fmtWait(ra)+' before asking again. It will carry on by itself then; the lyrics keep running meanwhile.'
+      :'Spotify asked Vibe Visualizer to slow down, so it waits a little longer each time until Spotify answers again. The lyrics keep running meanwhile.');e.rate=true;throw e}
   if(!r.ok)throw new Error('Spotify error (HTTP '+r.status+').');
   return r.json();
 }
@@ -1697,7 +1703,7 @@ function onSpTrack(m){
 function updChips(err){
   const c=$('spchip'),t=$('spt');
   c.classList.toggle('on',src==='spotify');c.classList.toggle('live',src==='spotify'&&spPlaying());c.classList.toggle('err',!!err);
-  swapText(t,!SP.access?'Connect Spotify':src!=='spotify'?'Spotify':Date.now()<backoff?'Spotify · waiting':spPlaying()?'Spotify · playing':spState?'Spotify · paused':'Spotify · idle');
+  swapText(t,!SP.access?'Connect Spotify':src!=='spotify'?'Spotify':Date.now()<backoff?'Spotify · waiting'+(spWaitKnown>=60?' '+fmtWait((backoff-Date.now())/1000):''):spPlaying()?'Spotify · playing':spState?'Spotify · paused':'Spotify · idle');
   updSpPanel();
 }
 function updSpPanel(){
