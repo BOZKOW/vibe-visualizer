@@ -231,8 +231,8 @@ body.hl #lmsg,body[data-view=viz] #lmsg{display:none}
 #fpsEl{position:fixed;bottom:6px;left:10px;font-size:11px;color:var(--faint);display:none;z-index:3}
 
 /* ---------- bottom bar ---------- */
-#dock{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);width:min(1080px,calc(100% - 32px));z-index:5;transition:opacity .35s,transform .35s}
-body.uihide #dock{opacity:0;transform:translate(-50%,12px);pointer-events:none;visibility:hidden;transition:opacity .35s,transform .35s,visibility 0s .35s}
+#dock{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(calc(-50% + var(--dockx,0px)));width:min(1080px,calc(100% - 32px));z-index:5;transition:opacity .35s,transform .35s}
+body.uihide #dock{opacity:0;transform:translate(calc(-50% + var(--dockx,0px)),12px);pointer-events:none;visibility:hidden;transition:opacity .35s,transform .35s,visibility 0s .35s}
 body.uihide #top{opacity:0;transform:translateY(-10px);pointer-events:none}
 body.idle{cursor:none}
 .glass{border-radius:22px;background:rgba(20,20,30,.4);border:1px solid var(--line);backdrop-filter:blur(16px) saturate(1.3);-webkit-backdrop-filter:blur(16px) saturate(1.3)}
@@ -420,7 +420,7 @@ code,kbd{font:12px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;backgrou
 @keyframes down{from{opacity:0;transform:translateY(-14px)}}
 @keyframes pop{from{opacity:0;transform:scale(.9)}}
 @keyframes fadein{from{opacity:0}}
-@keyframes dockin{from{opacity:0;transform:translate(-50%,24px)}}
+@keyframes dockin{from{opacity:0;transform:translate(calc(-50% + var(--dockx,0px)),24px)}}
 #empty>*{animation:up .7s cubic-bezier(.2,.8,.2,1) backwards}
 #empty>:nth-child(2){animation-delay:.08s}#empty>:nth-child(3){animation-delay:.16s}#empty>:nth-child(4){animation-delay:.24s}#empty>:nth-child(5){animation-delay:.32s}
 /* logo */
@@ -1448,13 +1448,16 @@ function resize(){
 new ResizeObserver(()=>{resize();place()}).observe(viz);
 // keep the lyrics credit in the bottom-left corner: beside the dock if it fits, otherwise just above it
 function placeCredit(){
-  // the credits sit beside the bottom bar when they fit there; when they'd overlap it, they move up above it
+  // the credits stay in the bottom-left corner beside the bar; if they'd overlap it, the bar slides right to make room.
+  // Only when it can't slide far enough (a narrow window) do the credits move above it
   const cr=$('lcredit'),k=$('dock'),iw=innerWidth,pad=Math.min(56,Math.max(20,iw*.04));
   const show=!cr.hidden&&!body.classList.contains('credly')&&!!cr.textContent.trim();
   let need=0;if(show){const mw=cr.style.maxWidth;cr.style.maxWidth='none';cr.classList.add('tight');need=cr.offsetWidth;cr.style.maxWidth=mw}   // its natural width
-  const left=k.offsetLeft-k.offsetWidth/2,top=k.offsetTop,bottom=innerHeight-top-k.offsetHeight,room=left-pad-16;
-  cr.classList.toggle('tight',room<230);   // little room beside the bar: slightly smaller text, so it still fits there
-  if(show&&room>=need){const mid=Math.max(0,(k.offsetHeight-cr.offsetHeight)/2);   // centred against the bar
+  const left=k.offsetLeft-k.offsetWidth/2,top=k.offsetTop,bottom=innerHeight-top-k.offsetHeight,slack=Math.max(0,left-16);   // layout box: left of the centred bar
+  let shift=show?Math.max(0,pad+need+24-left):0;if(shift>slack)shift=0;   // how far the bar moves right
+  root.style.setProperty('--dockx',shift+'px');const room=left+shift-pad-16;
+  cr.classList.toggle('tight',shift>0||room<230);   // little room beside the bar: slightly smaller text, so it still fits there
+  if(show&&room>=need-1){const mid=Math.max(0,(k.offsetHeight-cr.offsetHeight)/2);   // centred against the bar
     root.style.setProperty('--credb',Math.max(12,bottom+mid)+'px');root.style.setProperty('--credw',Math.min(420,room)+'px')}
   else{root.style.setProperty('--credb',(innerHeight-top+10)+'px');root.style.setProperty('--credw',(iw-pad*2)+'px')}
 }
