@@ -377,7 +377,7 @@ def do_update():
         return 501, {"error": "updates need the web folder mounted writable into the helper at %s (see the README)" % WEB_DIR}
     new = latest_version()
     cur = installed_version()
-    if cur and cur.get("sha") == new["sha"]:
+    if cur and cur.get("sha") == new["sha"] and all(os.path.exists(os.path.join(WEB_DIR, f)) for f in WEB_FILES):   # also install files a newer helper knows about
         return 200, {"updated": False, "version": cur}
     files = {}
     for f in WEB_FILES:   # download everything first, so a failed download leaves the installed app untouched
