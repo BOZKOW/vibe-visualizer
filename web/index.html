@@ -2960,6 +2960,14 @@ function poke(){
 ['mousemove','pointerdown','touchstart','keydown'].forEach(ev=>addEventListener(ev,poke,{passive:true}));
 
 /* ================= analysis ================= */
+// no sound: a soft wave rolls across the resting dots instead of a flat row; it fades away as soon as music comes in
+let silentFor=0,idleK=0;const reduceMotion=matchMedia('(prefers-reduced-motion: reduce)');
+function idleWave(dt,now){
+  if(idleK<.005||reduceMotion.matches)return;
+  const t=now/1000,a=1-Math.exp(-dt/140);
+  for(let i=0;i<N;i++){const x=N>1?i/(N-1):0,w=(.035+.1*(.5+.5*Math.sin(t*2.1-x*10)))*(.72+.28*Math.sin(t*.8+x*5))*idleK;
+    if(vals[i]<w)vals[i]+=(w-vals[i])*a}
+}
 function sample(dt,now){
   const aA=1-Math.exp(-dt/(6+S.resp*.5)),aR=1-Math.exp(-dt/(30+S.resp*3.5)),boost=S.boost/100;
   const viaBridge=!liveAudio()&&bridgeLive();realAudio=liveAudio()||viaBridge;   // the Vibe Bridge app: the sound of the whole computer (the Spotify app too)
@@ -2972,6 +2980,7 @@ function sample(dt,now){
       for(let k=e0;k<e1;k++)s+=data[k];
       const r=Math.pow(s/(e1-e0)/255,1.5)*(1+Math.pow(i/N,1.4)*2.2);raw[i]=r;if(r>mx)mx=r;   // treble lifted, it's much quieter
     }
+    silentFor=mx<.004?silentFor+dt:0;   // a source that's connected but silent
     let gain=1.3;
     if(S.auto){peak+=(mx-peak)*(1-Math.exp(-dt/(mx>peak?50:2500)));gain=Math.min(8,.8/Math.max(peak,.1))}
     gain*=boost;
@@ -2980,9 +2989,12 @@ function sample(dt,now){
     const t=now/1000;                                    // ambient motion: Spotify audio is not accessible
     for(let i=0;i<N;i++){const x=i/N,v=(.12+.5*(1-x*.75))*(.55+.45*Math.sin(t*1.7+i*.42))*(.6+.4*Math.sin(t*.6+i*.17+1.3))*boost;vals[i]+=(v-vals[i])*aA}
   }else{const d=Math.exp(-dt/180);for(let i=0;i<N;i++)vals[i]*=d}
+  const live=liveAudio()||viaBridge,idle=live?silentFor>900:!(src==='spotify'&&spPlaying());
+  if(!live)silentFor=0;
+  idleK+=((idle?1:0)-idleK)*(1-Math.exp(-dt/(idle?700:200)));idleWave(dt,now);
   let b=0,bn=Math.max(3,N/12|0),m=0;
   for(let i=0;i<N;i++){if(vals[i]>m)m=vals[i];if(i<bn)b+=vals[i]}
-  mxv=m;bass+=(b/bn-bass)*(1-Math.exp(-dt/60));
+  mxv=m;bass+=((idleK>.5?0:b/bn)-bass)*(1-Math.exp(-dt/60));   // the wave isn't music: it doesn't move the background or count as beats
 }
 
 /* ================= drawing ================= */
@@ -3041,7 +3053,7 @@ function frame(now){
   const pl=playing();sample(dt,now);beatTick(now,dt);drawLiveBg(now,dt);
   lyricsTick();desyncTick(now);uiTick(now);if(palDirty)buildPal();palTick(now);
   if(body.classList.contains('cvlive')&&now-lastCv>90&&cvv.readyState>=2&&!document.hidden){lastCv=now;cvFrame()}
-  const active=pl||mxv>.003||!!capStream;
+  const active=pl||mxv>.003||!!capStream||idleK>.005;
   // the cover and title stay still (no beat pulse)
   if(!active&&!wasActive&&!dirty)return;
   wasActive=active;dirty=false;
