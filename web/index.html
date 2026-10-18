@@ -799,7 +799,9 @@ body.low #bar input[type=range]::-webkit-slider-thumb{transition:none}
   <p class="hint">Lines already in the language you translate into are never translated. Translation and romanization use Google Translate’s free web service (unofficial), so lyric lines are sent to Google.</p>
 
   <h4>Spicy Lyrics &amp; files</h4>
-  <div class="row2"><button class="btn sm" id="lyrbtn">Load lyrics file…</button></div>
+  <div class="row2"><button class="btn sm" id="mladd">Add lyrics files…</button><button class="btn sm" id="lyrbtn">Use a file for this song…</button><button class="btn sm" id="mlclear">Remove all</button></div>
+  <p class="stat" id="mlcount"></p>
+  <p class="hint">Your own TTML or LRC files, kept in this browser. Name them <b>Artist - Title.ttml</b>, or include the Spotify track id, and they’re used whenever that song plays (Spotify or a local file). Dropping one file while a song plays saves it for that song; dropping a song together with a lyrics file of the same name pairs them. Turn “Your lyrics files” on or off, or move it, in the list of sources above.</p>
   <div class="f plain"><span class="lb">Spicy Lyrics</span><p class="stat" id="lyrstatus">Checking…</p></div>
   <div class="row2"><button class="btn sm" id="lyrtest">Test connection</button></div>
   <p class="hint">Spicy Lyrics needs your own API key. Create an application in the <a class="src" target="_blank" rel="noopener" href="https://developers.spicylyrics.org/dashboard">Spicy Lyrics developer dashboard</a>, copy its <b>secret key</b> (<b>sl_sk_…</b>, shown only once) and save it on your server as <b>config/spicy_key</b> (see the README). It stays there and never reaches the browser.</p>
@@ -977,7 +979,7 @@ body.low #bar input[type=range]::-webkit-slider-thumb{transition:none}
 <input type="file" id="file" accept="audio/*" hidden>
 <input type="file" id="coverfile" accept="image/*" hidden>
 <input type="file" id="cvfile" accept="video/*" hidden>
-<input type="file" id="lyrfile" accept=".lrc,.ttml,.xml,.txt" hidden>
+<input type="file" id="lyrfile" accept=".lrc,.ttml,.xml,.txt" hidden><input type="file" id="mlfiles" accept=".lrc,.ttml,.xml" multiple hidden>
 
 <script>window.__tagFail=false</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jsmediatags/3.9.5/jsmediatags.min.js" onerror="window.__tagFail=true"></script>
@@ -1866,6 +1868,45 @@ const lcPut=(key,r)=>lcStore('readwrite',st=>st.put({at:Date.now(),r},key)).then
 const lcDel=key=>lcStore('readwrite',st=>st.delete(key));
 async function lcShow(){let n=0;await lcStore('readonly',st=>{const q=st.openCursor();q.onsuccess=()=>{const c=q.result;if(c){if(c.value.r&&lcFresh(c.value))n++;c.continue()}};return null});const el=$('lccount');if(el)el.textContent=n==null?'':n===1?'1 song’s lyrics saved on this device.':(n||'No')+' songs’ lyrics saved on this device.'}
 let curLyr=null;   // the song whose lyrics are showing: {m, key}
+/* ---- your lyrics files (TTML or LRC), kept in this browser and used for the songs they belong to. A file is found by
+   the Spotify track id in its name, by "Artist - Title", by the title alone, or by the audio file it was dropped with ---- */
+let mlDb=null;
+const mlOpen=()=>mlDb||(mlDb=new Promise((ok,no)=>{const q=indexedDB.open('vv-mylyrics',1);q.onupgradeneeded=()=>q.result.createObjectStore('f');q.onsuccess=()=>ok(q.result);q.onerror=()=>no(q.error)}).catch(()=>null));
+async function mlStore(mode,fn){try{const db=await mlOpen();if(!db)return;return await new Promise(ok=>{const tx=db.transaction('f',mode),q=fn(tx.objectStore('f'));tx.oncomplete=()=>ok(q&&q.result);tx.onerror=tx.onabort=()=>ok(undefined)})}catch(e){}}
+const mlGet=k=>mlStore('readonly',st=>st.get(k));
+const mlPutKeys=(keys,v)=>mlStore('readwrite',st=>{keys.forEach(k=>st.put(v,k));return null}).then(mlShow);
+const baseName=n=>String(n||'').replace(/\.[^.]+$/,'');
+const fnorm=s=>String(s||'').toLowerCase().replace(/[^\p{L}\p{N}]+/gu,' ').trim();   // a whole file name, nothing cut off
+const firstArtist=a=>String(a||'').split(/,|&| feat\.? | ft\.? /i)[0].trim();
+function songKeys(m){   // where a song's own file would be filed
+  const k=[];if(m.id)k.push('id:'+m.id);if(m.file)k.push('f:'+fnorm(baseName(m.file)));
+  if(m.title){if(m.artist)k.push('n:'+norm(firstArtist(m.artist))+'|'+norm(m.title));k.push('t:'+norm(m.title))}
+  return k;
+}
+function nameKeys(name){   // what a file's name says about its song
+  const b=baseName(name),k=[],id=b.match(/(?:^|[^0-9A-Za-z])([0-9A-Za-z]{22})(?:$|[^0-9A-Za-z])/);
+  if(id&&/\d/.test(id[1])&&/[A-Z]/.test(id[1]))k.push('id:'+id[1]);
+  const parts=b.replace(/_/g,' ').split(/\s[-–]\s/);
+  if(parts.length>1){const t=parts.slice(1).join(' - ');k.push('n:'+norm(firstArtist(parts[0]))+'|'+norm(t))}else k.push('t:'+norm(b));   // title alone only for files named by title alone
+  k.push('f:'+fnorm(b));return k.filter(x=>!/:\|?$/.test(x));
+}
+async function fromLocal(m){
+  for(const k of songKeys(m)){const v=await mlGet(k);if(!v)continue;
+    const r=fromText(v.text);if(!r.lines.length)continue;
+    r.label=v.name;r.credit={source:'file',name:v.name,writers:r.writers};return r}
+  return null;
+}
+async function mlShow(){let n=0;const names=new Set();await mlStore('readonly',st=>{const q=st.openCursor();q.onsuccess=()=>{const c=q.result;if(c){names.add(c.value.name+'|'+c.value.at);c.continue()}};return null});n=names.size;
+  const el=$('mlcount');if(el)el.textContent=n?(n===1?'1 lyrics file saved in this browser.':n+' lyrics files saved in this browser.'):'No lyrics files added yet.'}
+async function addLyricsFiles(files,forSong){   // forSong: also file it under the song that's playing
+  let ok=0,bad=0;
+  for(const f of files){
+    try{const text=await f.text(),r=fromText(text);if(!r.lines.length)throw 0;
+      const keys=nameKeys(f.name).concat(forSong?songKeys(forSong):[]);
+      await mlPutKeys([...new Set(keys)],{name:f.name,text,at:Date.now()});ok++}catch(e){bad++}
+  }
+  return{ok,bad};
+}
 const lcClear=()=>lcStore('readwrite',st=>st.clear());
 const lcPrune=()=>lcStore('readwrite',st=>{const q=st.openCursor();q.onsuccess=()=>{const c=q.result;if(!c)return;if(!lcFresh(c.value))c.delete();c.continue()};return null});
 function parseLRC(t){
@@ -1882,8 +1923,13 @@ function parseTTML(x){
   const d=new DOMParser().parseFromString(x,'application/xml');
   if(d.querySelector('parsererror'))throw new Error('The TTML file is not valid XML.');
   const out=[];
+  // duets: who sings each line (ttm:agent on the line or its block). The first singer stays left, other singers go right
+  const people=[...d.querySelectorAll('agent')].filter(a=>(a.getAttribute('type')||'person')==='person').map(a=>a.getAttribute('xml:id')||a.getAttribute('id'));
+  const agentOf=p=>p.getAttribute('ttm:agent')||(p.parentElement&&p.parentElement.getAttribute('ttm:agent'))||'';
+  let main=people[0]||'';
   d.querySelectorAll('p').forEach(p=>{
     const b=p.getAttribute('begin');if(b==null)return;
+    const ag=agentOf(p);if(!main&&ag)main=ag;
     const isBg=n=>n.nodeType===1&&/x-bg/.test(n.getAttribute('ttm:role')||n.getAttribute('role')||'');
     const take=(par,words)=>par.childNodes.forEach(n=>{
       if(isBg(n))return;
@@ -1895,12 +1941,15 @@ function parseTTML(x){
     const bg=[...p.children].filter(isBg).map(n=>{const ws=[];take(n,ws);fix(ws);return{text:n.textContent.replace(/\s+/g,' ').trim(),words:ws.length?ws:null}}).filter(x=>x.text);
     let text='';p.childNodes.forEach(n=>{if(!isBg(n))text+=n.textContent});text=text.replace(/\s+/g,' ').trim();if(!text)return;
     const e=p.getAttribute('end');
-    out.push({t:ttSec(b),end:e!=null?ttSec(e):null,text,words:words.length>1?words:null,bg:bg.length?bg:null});
+    const opp=!!ag&&ag!==main&&(!people.length||people.includes(ag));
+    out.push({t:ttSec(b),end:e!=null?ttSec(e):null,text,words:words.length>1?words:null,bg:bg.length?bg:null,opp:opp||undefined});
   });
-  return out.sort((a,b)=>a.t-b.t);
+  out.sort((a,b)=>a.t-b.t);
+  out.writers=[...d.querySelectorAll('songwriter')].map(x=>x.textContent.trim()).filter(Boolean);   // credits
+  return out;
 }
 function fromText(t){
-  if(/<tt[\s>]/i.test(t))return{lines:parseTTML(t),sync:true};
+  if(/<tt[\s>]/i.test(t)){const l=parseTTML(t);return{lines:l,sync:true,writers:l.writers}}
   if(/\[\d+:\d+/.test(t)){const l=parseLRC(t);if(l.length)return{lines:l,sync:true}}
   return{lines:t.split(/\r?\n/).map(s=>s.trim()).filter(Boolean).map(text=>({t:null,text})),sync:false};
 }
@@ -2583,14 +2632,14 @@ function dsFound(e){   // e > 0: the singing comes e seconds after the lyrics' t
       {label:'Not now',fn:()=>{DS.asked=false;DS.next=performance.now()+60000}}]});
 }
 // lyrics sources, tried in the order set in Settings
-const PROVS={spicy:{name:'Spicy Lyrics',desc:'community word-synced lyrics · needs your API key'},
+const PROVS={local:{name:'Your lyrics files',desc:'TTML or LRC files you added · kept in this browser'},spicy:{name:'Spicy Lyrics',desc:'community word-synced lyrics · needs your API key'},
   spotify:{name:'Spotify',desc:'Spotify’s own lyrics · needs the sp_dc cookie · unofficial'},
   lrclib:{name:'LRCLIB',desc:'free, open lyrics database'},
   netease:{name:'NetEase Cloud Music',desc:'strong for Japanese, Chinese, Korean · unofficial'}};
 function provList(){
   const out=[],seen=new Set();
   S.lprov.split(',').forEach(x=>{const[k,v]=x.split(':');if(PROVS[k]&&!seen.has(k)){seen.add(k);out.push({k,on:v!=='0'})}});
-  Object.keys(PROVS).forEach(k=>{if(!seen.has(k))out.push({k,on:true})});
+  Object.keys(PROVS).forEach(k=>{if(!seen.has(k)){if(k==='local')out.unshift({k,on:true});else out.push({k,on:true})}});   // your own files come first
   return out;
 }
 function setProv(list){S.lprov=list.map(p=>p.k+':'+(p.on?1:0)).join(',');save();refreshReset();renderProv();lcache.clear()}
@@ -2650,10 +2699,11 @@ async function loadLyrics(m,tok){
   if(!order.length){clearLyrics('All lyrics sources are off','Turn one on in Settings → Lyrics.','none');return}
   const key=[m.id||'',m.artist,m.title,Math.round(m.duration||0),order.join()].join('|').toLowerCase();
   curLyr={m,key};
+  if(order[0]==='local'){const r=await fromLocal(m).catch(()=>null);if(tok!==coverTok)return;if(r){applyLyrics(r);return}}   // your own file wins, also over saved lyrics
   if(lcache.has(key)){applyLyrics(lcache.get(key));return}
   const saved=await lcGet(key);if(tok!==coverTok)return;
   if(saved){if(saved.r){lcache.set(key,saved.r);applyLyrics(saved.r)}else clearLyrics('No lyrics for this song','None of your lyrics sources had it recently. Settings → Lyrics → Clear saved lyrics looks again.','none');return}
-  const FN={spicy:fromSpicy,spotify:fromSpotifyLyrics,lrclib:fromLrclib,netease:fromNetease},errs=[];
+  const FN={local:fromLocal,spicy:fromSpicy,spotify:fromSpotifyLyrics,lrclib:fromLrclib,netease:fromNetease},errs=[];
   for(const p of order){
     try{
       const r=await FN[p](m);
@@ -2690,7 +2740,10 @@ async function load(f){
   if(t.startsWith('image/')){const tok=++coverTok;if(!await setCover(URL.createObjectURL(f),'Custom cover',tok,false))toast('That image could not be read.');return}
   if(t.startsWith('video/')||/\.(mp4|webm|mov|m4v)$/i.test(n)){setCanvas(URL.createObjectURL(f),false,true);toast('Canvas video loaded.','ok',2500);return}
   if(/\.(lrc|ttml|xml|txt)$/i.test(n)){
-    try{const r=fromText(await f.text());if(!r.lines.length)throw new Error('no lyrics found in that file');r.label=n;r.credit={source:'file',name:n};applyLyrics(r)}
+    try{const r=fromText(await f.text());if(!r.lines.length)throw new Error('no lyrics found in that file');r.label=n;r.credit={source:'file',name:n,writers:r.writers};
+      const song=curLyr&&curLyr.m;applyLyrics(r);
+      await addLyricsFiles([f],song);if(song)lcDel(curLyr.key);
+      toast(song?'Lyrics file saved for “'+song.title+'”: it’s used every time this song plays.':'Lyrics file added to your lyrics files.','ok',4000)}
     catch(e){toast('Could not read the lyrics file: '+e.message)}
     return;
   }
@@ -2708,7 +2761,7 @@ async function load(f){
   const tags=await readTags(f);if(tok!==coverTok)return;
   if(tags.title)ttl.textContent=tags.title;
   if(tags.artist)sub.textContent=tags.artist;
-  const meta={title:tags.title||ttl.textContent,artist:tags.artist||sub.textContent,album:tags.album||'',duration:0,id:''};
+  const meta={title:tags.title||ttl.textContent,artist:tags.artist||sub.textContent,album:tags.album||'',duration:0,id:'',file:n};
   getDur().then(d=>{if(tok===coverTok){meta.duration=d;loadLyrics(meta,tok)}});
   const p=tags.picture;
   if(p&&await setCover(URL.createObjectURL(new Blob([new Uint8Array(p.data)],{type:p.format||'image/jpeg'})),'Embedded cover',tok,false))return;
@@ -2721,9 +2774,21 @@ $('pick').onclick=$('openbtn').onclick=()=>$('file').click();
 $('file').onchange=e=>{load(e.target.files[0]);e.target.value=''};
 $('coverbtn').onclick=()=>$('coverfile').click();$('coverfile').onchange=e=>{load(e.target.files[0]);e.target.value=''};
 $('cvbtn').onclick=()=>$('cvfile').click();$('cvfile').onchange=e=>{load(e.target.files[0]);e.target.value=''};
+$('mladd').onclick=()=>$('mlfiles').click();
+$('mlfiles').onchange=async e=>{const fs=[...e.target.files];e.target.value='';if(!fs.length)return;const r=await addLyricsFiles(fs,null);
+  toast(r.ok+(r.ok===1?' lyrics file':' lyrics files')+' added'+(r.bad?' ('+r.bad+' couldn’t be read)':'')+'.','ok',3500);if(curLyr)loadLyrics(curLyr.m,coverTok)};
+$('mlclear').onclick=async()=>{if(!confirm('Remove all your lyrics files from this browser?'))return;await mlStore('readwrite',st=>st.clear());mlShow();toast('Your lyrics files were removed.','ok',2500)};
+mlShow();
 $('lyrbtn').onclick=()=>$('lyrfile').click();$('lyrfile').onchange=e=>{load(e.target.files[0]);e.target.value=''};
 addEventListener('dragover',e=>e.preventDefault());
-addEventListener('drop',e=>{e.preventDefault();[...e.dataTransfer.files].slice(0,3).forEach(load)});
+addEventListener('drop',async e=>{e.preventDefault();
+  const all=[...e.dataTransfer.files],lyr=all.filter(f=>/\.(lrc|ttml|xml)$/i.test(f.name)),rest=all.filter(f=>!lyr.includes(f));
+  if(lyr.length>1||(lyr.length&&rest.some(f=>isAudio(f)))){   // several lyrics files, or lyrics dropped with their song
+    const res=await addLyricsFiles(lyr,null);
+    toast(res.ok+(res.ok===1?' lyrics file':' lyrics files')+' added'+(res.bad?' ('+res.bad+' couldn’t be read)':'')+'. They’re used whenever their song plays.','ok',4500);
+  }else lyr.forEach(load);
+  rest.slice(0,3).forEach(load);
+});
 
 /* ================= transport + UI ================= */
 let lastPI=null;

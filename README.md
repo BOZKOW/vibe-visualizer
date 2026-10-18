@@ -65,6 +65,9 @@ domain is needed.
 - Spotify "now playing" through the official Web API (PKCE login, no client secret), with previous, play/pause, next,
   seeking, shuffle, repeat, Spotify's own volume and a device picker to choose where it plays (Spotify Premium), and a
   heart to save the song to your Liked Songs. Logged in before these were added? Reconnect Spotify once to allow them.
+- Your own lyrics files: add TTML or LRC files (Settings → Lyrics → Add lyrics files, or drop them on the page). Named
+  `Artist - Title.ttml`, or with the Spotify track id in the name, they're used whenever that song plays, with word timing,
+  duet sides, background vocals and songwriter credits. A file dropped while a song plays is kept for that song.
 - Desync detection: with real sound (Vibe Bridge, audio capture or a local file) it listens to the singing and, if the
   lyrics run ahead or behind, offers to fix them for that song (or fixes them by itself; Settings → Lyrics).
 - Song changes blend smoothly: the old cover melts into the new one and the colors fade over.
