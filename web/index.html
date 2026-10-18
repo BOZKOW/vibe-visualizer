@@ -207,22 +207,24 @@ body[data-view=viz].credly #lcredit{display:none}
 #lmsg.load b{animation:breathe2 1.8s ease-in-out infinite}
 /* something's wrong (Spotify waiting or failing, the server unreachable): said on the home screen, and in the app
    where the lyrics go: big when there are none on screen, a small note above them when there are */
-#hprob{display:flex;gap:12px;align-items:flex-start;max-width:min(460px,92vw);margin:4px auto 0;padding:12px 16px;border-radius:16px;text-align:left;
+#hprob{display:flex;flex-direction:column;gap:10px;max-width:min(480px,92vw);margin:4px auto 0;padding:12px 16px;border-radius:16px;text-align:left;
   background:rgba(255,200,87,.1);border:1px solid rgba(255,200,87,.38);color:#ffe8b8;animation:up .5s cubic-bezier(.2,.8,.2,1)}
-#hprob[hidden]{display:none}
-#hprob i{flex:none;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-style:normal;font-weight:800;font-size:13px;background:#ffc857;color:#3a2600;margin-top:1px}
-#hprob b{display:block;font-size:14px}#hprob small{display:block;font-size:12.5px;line-height:1.45;opacity:.85;margin-top:3px;font-variant-numeric:tabular-nums}
-#hprob.err{background:rgba(255,107,107,.1);border-color:rgba(255,107,107,.4);color:#ffd6d6}#hprob.err i{background:#ff6b6b;color:#3a0000}
-#lprob{position:absolute;left:0;top:4px;z-index:4;display:flex;gap:10px;align-items:flex-start;max-width:min(560px,92%);pointer-events:none;color:#ffe8b8;text-shadow:0 1px 10px rgba(0,0,0,.6);animation:up .5s cubic-bezier(.2,.8,.2,1)}
-#lprob b{display:block;font-size:13px}#lprob small{display:block;font-size:12px;font-weight:500;opacity:.85;font-variant-numeric:tabular-nums}
-#lprob.err{color:#ffd6d6}
-#lprob.big>div{display:flex;flex-direction:column}
-#lprob>i{flex:none;width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font-style:normal;font-weight:800;font-size:12px;background:#ffc857;color:#3a2600;margin-top:1px}#lprob.err>i{background:#ff6b6b;color:#3a0000}
-#lprob.big>i{display:none}
-#lprob.big{top:30%;padding:0 6% 0 0;max-width:none}
-body.prob #ly{opacity:0;pointer-events:none;transition:opacity .4s}   /* an error: its text replaces the lyrics */
-#lprob.big b{font-size:calc(clamp(22px,2.8vw,42px)*var(--ls));font-weight:800;letter-spacing:-.025em;line-height:1.15}
-#lprob.big small{font-size:15px;font-weight:600;margin-top:10px;max-width:46ch}
+#hprob[hidden],#lprob[hidden]{display:none}
+#hprob.err{background:rgba(255,107,107,.1);border-color:rgba(255,107,107,.4);color:#ffd6d6}
+.pr{display:flex;gap:10px;align-items:flex-start;color:#ffe8b8}.pr.err{color:#ffd6d6}
+.pr>i{flex:none;width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font-style:normal;font-weight:800;font-size:12px;background:#ffc857;color:#3a2600;margin-top:1px}
+.pr.err>i{background:#ff6b6b;color:#3a0000}
+.pr b{display:block;font-size:14px}.pr small{display:block;font-size:12.5px;line-height:1.45;opacity:.85;margin-top:2px;font-variant-numeric:tabular-nums}
+.prx{font-size:12px;opacity:.7;padding-left:30px}
+#lprob{position:absolute;left:0;top:4px;z-index:4;display:flex;flex-direction:column;gap:8px;max-width:min(560px,92%);pointer-events:none;text-shadow:0 1px 10px rgba(0,0,0,.6);animation:up .5s cubic-bezier(.2,.8,.2,1)}
+#lprob .pr b{font-size:13px}#lprob .pr small{font-size:12px;font-weight:500}
+/* an error: its text replaces the lyrics. The most important one large, like a lyric line; the others smaller below */
+#lprob.big{top:30%;padding:0 6% 0 0;max-width:none;gap:22px}
+#lprob.big .pr:first-child>i{display:none}
+#lprob.big .pr:first-child b{font-size:calc(clamp(22px,2.8vw,42px)*var(--ls));font-weight:800;letter-spacing:-.025em;line-height:1.15}
+#lprob.big .pr:first-child small{font-size:15px;font-weight:600;margin-top:10px;max-width:46ch}
+#lprob.big .pr.more b{font-size:16px}#lprob.big .pr.more small{font-size:13px;max-width:52ch}
+body.prob #ly{opacity:0;pointer-events:none;transition:opacity .4s}
 body.prob #lmsg{opacity:0}
 body.home #lprob,body.low #lprob{backdrop-filter:none;-webkit-backdrop-filter:none}
 @keyframes breathe2{50%{opacity:.45}}
@@ -658,7 +660,7 @@ body.low #bar input[type=range]::-webkit-slider-thumb{transition:none}
   <section id="right">
     <div id="viz"><canvas id="c"></canvas></div>
     <div id="lyr"><div id="ly"></div><div id="lmsg"></div></div>
-    <div id="lprob" role="status" hidden><i aria-hidden="true">!</i><div><b></b><small></small></div></div>
+    <div id="lprob" role="status" hidden></div>
   </section>
 </div>
 
@@ -709,7 +711,7 @@ body.low #bar input[type=range]::-webkit-slider-thumb{transition:none}
   <h1>Vibe Visualizer</h1>
   <p>Play a local file, or connect Spotify to see what you’re listening to with its cover and lyrics.</p>
   <div class="row"><button class="btn pri" id="hback" hidden>Back to player</button><button class="btn pri" id="pick">Choose audio file</button><button class="btn" id="spstart">Connect Spotify</button></div>
-  <div id="hprob" role="status" hidden><i aria-hidden="true">!</i><div><b></b><small></small></div></div>
+  <div id="hprob" role="status" hidden></div>
   <p class="hint">You can also drop an audio file, a cover image, a canvas video or a .lrc/.ttml lyrics file onto the page.</p>
   <div class="hlinks"><button class="lnk" id="hsetup">Setup guide</button><span>·</span><button class="lnk" id="hset">Settings</button><span>·</span><button class="lnk" id="hnew">What’s new</button></div>
 </div>
@@ -1690,25 +1692,36 @@ function spPaceSlower(){const p=spPaceGet();p.i=Math.min(SP_PACE.length-1,p.i+1)
 // the waiting countdown on the Spotify chip ticks every second, and switches back when the wait is over
 let spWaitShown=false;setInterval(()=>{renderProblem();if(src!=='spotify')return;const w=Date.now()<backoff;if(w||spWaitShown){spWaitShown=w;updChips()}},1000);
 let spErrMsg='';
-function problemNow(home){   // the most important thing that's wrong right now, if anything
-  const sp=SP.access&&(home||src==='spotify');
-  if(sp&&Date.now()<backoff)return{k:'wait',t:'Spotify is making Vibe Visualizer wait',
-    s:'It asked Spotify too often, so Spotify paused it. It carries on by itself in '+clockLeft((backoff-Date.now())/1000)+(home?'.':'; the lyrics keep running meanwhile.')};
-  if(src==='spotify'&&!SP.access)return{k:'err',t:'Spotify isn’t connected',s:'The Spotify login ended. Press Connect Spotify in the top bar to log in again.'};
-  if(sp&&spErrMsg)return{k:'err',t:'Spotify isn’t answering',s:spErrMsg};
-  if(PREFS&&$('netbtn').classList.contains('bad'))return{k:'err',t:'Your server can’t be reached',s:'Lyrics, Canvas and saved settings come from it. Check that the server is on and Tailscale is connected.'};
-  if(appProb&&Date.now()-appProb.at<12000)return{k:appProb.k||'err',t:appProb.t,s:appProb.s};   // a one-off error: shown for 12 s, then the lyrics come back
-  return null;
+// everything that's wrong right now, most important first: what stops the most comes first, errors before waits
+function problemsNow(home){
+  const out=[],sp=SP.access&&(home||src==='spotify'),add=(pr,k,t,x)=>out.push({pr,k,t,s:x});
+  if(!navigator.onLine){   // no internet at all: say that once instead of every service failing
+    add(100,'err','You’re offline','This computer has no internet connection. Lyrics, Spotify and Canvas come back by themselves when it’s back.');
+  }else{
+    if(PREFS&&$('netbtn').classList.contains('bad'))add(90,'err','Your server can’t be reached','Lyrics, Canvas and saved settings come from it. Check that the server is on and Tailscale is connected.');
+    if(src==='spotify'&&!SP.access)add(80,'err','Spotify isn’t connected','The Spotify login ended. Press Connect Spotify in the top bar to log in again.');
+    else if(sp&&spErrMsg)add(70,'err','Spotify isn’t answering',spErrMsg);
+    if(sp&&Date.now()<backoff)add(40,'wait','Spotify is making Vibe Visualizer wait','It asked Spotify too often, so Spotify paused it. It carries on by itself in '+clockLeft((backoff-Date.now())/1000)+(home||out.some(x=>x.k==='err')?'.':'; the lyrics keep running meanwhile.'));
+  }
+  if(appProb&&Date.now()-appProb.at<12000)add(appProb.k==='err'?60:30,appProb.k||'err',appProb.t,appProb.s);   // a one-off: shown for 12 s
+  return out.sort((a,b)=>b.pr-a.pr);
 }
-function showProblem(el,p){
-  if(!p){if(!el.hidden)el.hidden=true;return}
-  el.classList.toggle('err',p.k==='err');el.querySelector('b').textContent=p.t;el.querySelector('small').textContent=p.s;el.hidden=false;
+function showProblems(el,list,max){
+  if(!list.length){if(!el.hidden)el.hidden=true;el._k='';return}
+  const key=JSON.stringify(list.slice(0,max));if(el._k===key&&!el.hidden)return;el._k=key;   // only redraw when something changed
+  el.classList.toggle('err',list[0].k==='err');el.textContent='';
+  list.slice(0,max).forEach((p,i)=>{const r=document.createElement('div');r.className='pr'+(i?' more':'')+(p.k==='err'?' err':'');
+    const ic=document.createElement('i');ic.setAttribute('aria-hidden','true');ic.textContent='!';
+    const tx=document.createElement('div'),b=document.createElement('b'),sm=document.createElement('small');b.textContent=p.t;sm.textContent=p.s;tx.append(b,sm);r.append(ic,tx);el.appendChild(r)});
+  if(list.length>max){const x=document.createElement('small');x.className='prx';x.textContent='+ '+(list.length-max)+' more';el.appendChild(x)}
+  el.hidden=false;
 }
 function renderProblem(){
-  showProblem($('hprob'),problemNow(true));
-  const p=problemNow(false),lp=$('lprob'),big=!!p&&S.view!=='viz'&&(p.k==='err'||!L.length);
-  lp.classList.toggle('big',big);body.classList.toggle('prob',big);showProblem(lp,p);
+  showProblems($('hprob'),problemsNow(true),3);
+  const ps=problemsNow(false),lp=$('lprob'),big=!!ps.length&&S.view!=='viz'&&(ps[0].k==='err'||!L.length);
+  lp.classList.toggle('big',big);body.classList.toggle('prob',big);showProblems(lp,ps,big?4:2);
 }
+addEventListener('online',renderProblem);addEventListener('offline',renderProblem);
 function spSched(extra){
   clearTimeout(spTimer);if(src!=='spotify')return;
   const pace=spPaceNow();   // 3 s normally; slower after Spotify said slow down (remembered across reloads)
