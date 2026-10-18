@@ -301,10 +301,31 @@ def installed_version():
         return None
 
 
+latest_cache = {"at": 0, "v": None}
+
+
 def latest_version():
-    """The newest commit on GitHub that changed the web app."""
-    c = gh_get("https://api.github.com/repos/%s/commits?sha=%s&path=web&per_page=1" % (UPDATE_REPO, UPDATE_BRANCH))[0]
-    return {"sha": c["sha"], "date": c["commit"]["committer"]["date"], "message": c["commit"]["message"].splitlines()[0]}
+    """The newest commit on GitHub that changed the web app. Remembered for 10 minutes: GitHub allows only 60 API
+    requests an hour without a login (shared by everything on the same internet connection). When the API says no,
+    the repository's public commit feed (not rate limited) gives the newest commit instead."""
+    if latest_cache["v"] and time.time() - latest_cache["at"] < 600:
+        return latest_cache["v"]
+    try:
+        c = gh_get("https://api.github.com/repos/%s/commits?sha=%s&path=web&per_page=1" % (UPDATE_REPO, UPDATE_BRANCH))[0]
+        v = {"sha": c["sha"], "date": c["commit"]["committer"]["date"], "message": c["commit"]["message"].splitlines()[0]}
+    except urllib.error.HTTPError as e:
+        if e.code not in (403, 429):
+            raise
+        feed = gh_get("https://github.com/%s/commits/%s.atom" % (UPDATE_REPO, UPDATE_BRANCH), raw=True).decode("utf-8", "replace")
+        e1 = re.search(r"<entry>(.*?)</entry>", feed, re.S)
+        sha = e1 and re.search(r"Commit/([0-9a-f]{40})<", e1.group(1))
+        if not sha:
+            raise RuntimeError("GitHub is busy right now (too many requests); try again in a few minutes")
+        upd, title = re.search(r"<updated>([^<]+)</updated>", e1.group(1)), re.search(r"<title>\s*(.*?)\s*</title>", e1.group(1), re.S)
+        import html as _h
+        v = {"sha": sha.group(1), "date": upd.group(1) if upd else "", "message": _h.unescape(title.group(1)).splitlines()[0] if title else ""}
+    latest_cache.update(at=time.time(), v=v)
+    return v
 
 
 def note_of(c):

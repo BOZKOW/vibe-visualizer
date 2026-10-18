@@ -3429,7 +3429,7 @@ async function checkUpdate(manual){
   try{
     const r=await fetch('/api/version',{cache:'no-store'}),v=await r.json().catch(()=>({}));
     if(!r.ok)throw new Error(r.status===404?'your server’s helper is too old for updates (see the README)':v.error||'HTTP '+r.status);
-    const cur=v.installed,lat=v.latest;if(!lat||lat.error)throw new Error((lat&&lat.error)||'GitHub didn’t answer');
+    const cur=v.installed,lat=v.latest;if(!lat||lat.error)throw new Error(/403|429|rate limit|busy/i.test((lat&&lat.error)||'')?'GitHub is busy right now (too many requests from your connection). Try again in a few minutes':((lat&&lat.error)||'GitHub didn’t answer'));
     const newer=!cur||cur.sha!==lat.sha;updInfo=v;
     out.textContent=(cur?'Installed: '+fmtV(cur)+'. ':'')+(newer?'New version: '+fmtV(lat)+'.':'You have the newest version.');
     go.hidden=!newer;go.disabled=!v.can_update;
