@@ -185,6 +185,7 @@ body.low .ll .w,body.low .ll .w .c{scale:1;transform:none}
 .cwho{font-weight:700;opacity:.55;transition:opacity .21s;display:inline-flex;align-items:center}.cwho:hover{opacity:1}
 .cwho img{width:1.3em;height:1.3em;border-radius:50%;margin-left:.3em;object-fit:cover}
 /* "Under the lyrics": pinned below the lyrics panel, the lyrics make room for it */
+#lcredit.tight{font-size:11px;gap:2px}#lcredit.tight img{width:15px;height:15px}
 body.credly #lcredit{position:absolute;left:0;bottom:4px;max-width:100%;z-index:2;font-size:13px}
 body.credly.hl #lyr{bottom:70px}
 body[data-view=both].credly.hl #lyr{bottom:calc(26% + 24px + 70px)}
@@ -231,6 +232,7 @@ body.hl #lmsg,body[data-view=viz] #lmsg{display:none}
 
 /* ---------- bottom bar ---------- */
 #dock{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);width:min(1080px,calc(100% - 32px));z-index:5;transition:opacity .35s,transform .35s}
+body.hascred #dock{width:min(1080px,max(880px,calc(100% - 2*(var(--pad) + 190px))),calc(100% - 32px))}   /* room for the credits beside it */
 body.uihide #dock{opacity:0;transform:translate(-50%,12px);pointer-events:none;visibility:hidden;transition:opacity .35s,transform .35s,visibility 0s .35s}
 body.uihide #top{opacity:0;transform:translateY(-10px);pointer-events:none}
 body.idle{cursor:none}
@@ -431,6 +433,7 @@ code,kbd{font:12px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;backgrou
 #dock{animation:dockin .7s .1s cubic-bezier(.2,.8,.2,1) backwards}
 #setup .sw{animation:pop .45s cubic-bezier(.2,.8,.2,1)}
 .step:not([hidden]){animation:up .45s cubic-bezier(.2,.8,.2,1)}
+.closing{animation:popout .22s ease-in forwards!important;pointer-events:none}@keyframes popout{to{opacity:0;transform:scale(.94) translateY(4px)}}
 .tsw{animation:tsw .4s cubic-bezier(.2,.8,.2,1)}@keyframes tsw{from{opacity:0;filter:blur(3px)}}
 #corner .toast.bye{opacity:0;transform:translateX(24px) scale(.97);transition:opacity .25s,transform .25s}
 .chip.live .dot,.nrow.good i,#capbtn.bridge svg{animation:livedot 2.6s ease-in-out infinite}@keyframes livedot{50%{opacity:.6;filter:brightness(.8)}}
@@ -599,6 +602,7 @@ body.low #cappanel,body.low #netpanel,body.low #setup .sw{background:rgba(20,20,
   background:radial-gradient(circle,rgba(255,255,255,.6),rgba(255,255,255,.2) 45%,rgba(255,255,255,0) 70%);mix-blend-mode:screen;animation:lqr .65s cubic-bezier(.2,.8,.2,1) forwards}
 @keyframes lqr{to{transform:translate(-50%,-50%) scale(1);opacity:0}}
 #cappanel:not([hidden]),#netpanel:not([hidden]),#devpanel:not([hidden]),#notes .note{animation:liquidin .6s cubic-bezier(.2,.8,.2,1)}
+#cappanel.closing,#netpanel.closing,#devpanel.closing{animation:liquidout .24s cubic-bezier(.5,0,.75,0) forwards!important}@keyframes liquidout{to{opacity:0;transform:scale(.62,.45);filter:blur(10px)}}
 @keyframes liquidin{0%{opacity:0;transform:scale(.55,.35);filter:blur(12px)}55%{opacity:1;transform:scale(1.03,1.06);filter:blur(0)}78%{transform:scale(.99,.98)}100%{transform:none}}
 #bar input[type=range]:active::-webkit-slider-thumb{transform:scale(1.4,1.06)}
 body.low .lq::before,body.low .lqr{display:none}body.low #cappanel,body.low #netpanel,body.low #devpanel,body.low #notes .note{animation:none}
@@ -981,6 +985,11 @@ function notify(o){
   box.prepend(n);while(box.children.length>3)box.lastChild.remove();
   if(o.ms)setTimeout(close,o.ms);return n;
 }
+// pop-up panels close with an animation instead of vanishing
+function closePop(el){if(el.hidden||el.classList.contains('closing'))return;if(S.low){el.hidden=true;return}
+  el.classList.add('closing');clearTimeout(el._ct);el._ct=setTimeout(()=>{el.hidden=true;el.classList.remove('closing')},240)}
+function openPop(el){clearTimeout(el._ct);el.classList.remove('closing');el.hidden=false}
+const popOpen=el=>!el.hidden&&!el.classList.contains('closing');
 function swapText(el,t){if(el.textContent===t)return;el.textContent=t;el.classList.remove('tsw');void el.offsetWidth;el.classList.add('tsw')}   // a label that changes fades in
 function toast(msg,type,ms){
   msg=String(msg);type=type||'err';
@@ -1435,12 +1444,21 @@ function resize(){
 new ResizeObserver(()=>{resize();place()}).observe(viz);
 // keep the lyrics credit in the bottom-left corner: beside the dock if it fits, otherwise just above it
 function placeCredit(){
-  const k=$('dock'),pad=Math.min(56,Math.max(20,innerWidth*.04));   // layout box (offset*), so the dock's slide-in transform doesn't matter
+  // the credits sit beside the bottom bar when they fit there (the bar narrows a little to make room); when they
+  // don't, they go above the bar, as before
+  const cr=$('lcredit'),k=$('dock'),iw=innerWidth,pad=Math.min(56,Math.max(20,iw*.04));
+  const show=!cr.hidden&&!body.classList.contains('credly')&&!!cr.textContent.trim();
+  let need=0;if(show){const mw=cr.style.maxWidth;cr.style.maxWidth='none';cr.classList.add('tight');need=cr.offsetWidth;cr.style.maxWidth=mw}   // its natural width
+  const dw=Math.min(1080,Math.max(880,iw-2*(pad+190)),iw-32),fits=show&&need<=(iw-dw)/2-pad-16;
+  body.classList.toggle('hascred',fits);
   const left=k.offsetLeft-k.offsetWidth/2,top=k.offsetTop,bottom=innerHeight-top-k.offsetHeight,room=left-pad-16;
-  if(room>=200){root.style.setProperty('--credb',Math.max(12,bottom)+'px');root.style.setProperty('--credw',Math.min(420,room)+'px')}
-  else{root.style.setProperty('--credb',(innerHeight-top+10)+'px');root.style.setProperty('--credw',(innerWidth-pad*2)+'px')}
+  cr.classList.toggle('tight',room<230);   // little room beside the bar: slightly smaller text, so it still fits there
+  if(fits&&room>=need){const mid=Math.max(0,(k.offsetHeight-cr.offsetHeight)/2);   // centred against the bar
+    root.style.setProperty('--credb',Math.max(12,bottom+mid)+'px');root.style.setProperty('--credw',Math.min(420,room)+'px')}
+  else{root.style.setProperty('--credb',(innerHeight-top+10)+'px');root.style.setProperty('--credw',(iw-pad*2)+'px')}
 }
-new ResizeObserver(placeCredit).observe($('dock'));addEventListener('resize',placeCredit);
+{let q=0;const ro=new ResizeObserver(()=>{cancelAnimationFrame(q);q=requestAnimationFrame(placeCredit)});   // next frame: resizing the bar here would loop
+ro.observe($('dock'));ro.observe($('lcredit'))}addEventListener('resize',placeCredit);
 
 /* ================= audio graph + volume + capture ================= */
 function volIcon(){
@@ -1510,7 +1528,7 @@ async function listInputs(){
     .sort((a,b)=>(LOOP.test(b.label)-LOOP.test(a.label)));
 }
 async function openCapPanel(){
-  const p=$('cappanel'),sel=$('capsel');$('netpanel').hidden=true;p.hidden=false;
+  const p=$('cappanel'),sel=$('capsel');closePop($('netpanel'));$('netbtn').classList.remove('on');openPop(p);
   $('capbr').hidden=!bridgeOn;if(bridgeOn)$('capbr').textContent='✓ Vibe Bridge is connected'+(bridgeDev?' ('+bridgeDev+')':'')+', so the bars already follow your computer’s sound. Capturing here is only needed without it.';
   sel.innerHTML='<option>Looking for devices…</option>';$('capgo').disabled=true;
   $('captab').textContent=isWin?'Share all computer sound (Spotify app too)':'Share a browser tab or screen instead';$('captab').classList.toggle('pri',isWin);
@@ -1529,12 +1547,12 @@ async function openCapPanel(){
 async function toggleCapture(){
   if(capStream){stopCapture();return}
   if(!navigator.mediaDevices){toast('Audio capture is not supported in this browser. Use Chrome or Edge.');return}
-  const p=$('cappanel');if(!p.hidden){p.hidden=true;return}
+  const p=$('cappanel');if(popOpen(p)){closePop(p);return}
   try{setupAudio()}catch(e){toast(e.message);return}
   openCapPanel();
 }
 $('capgo').onclick=async()=>{
-  const id=$('capsel').value;$('cappanel').hidden=true;
+  const id=$('capsel').value;closePop($('cappanel'));
   try{
     await ac.resume();
     const s=await navigator.mediaDevices.getUserMedia({audio:{deviceId:{exact:id},echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
@@ -1542,7 +1560,7 @@ $('capgo').onclick=async()=>{
   }catch(e){toast('Could not use that device: '+(e.message||e.name))}
 };
 $('captab').onclick=async()=>{
-  $('cappanel').hidden=true;
+  closePop($('cappanel'));
   if(!navigator.mediaDevices.getDisplayMedia){toast('Tab sharing is not supported in this browser.');return}
   try{
     await ac.resume();
@@ -1556,7 +1574,7 @@ $('captab').onclick=async()=>{
   }catch(e){if(e&&e.name==='NotAllowedError')toast('Audio capture was cancelled.','warn');else toast('Audio capture failed: '+(e.message||e))}
 };
 $('capbtn').onclick=e=>{e.stopPropagation();toggleCapture()};
-document.addEventListener('click',e=>{const p=$('cappanel');if(!p.hidden&&!p.contains(e.target)&&!$('capbtn').contains(e.target))p.hidden=true});
+document.addEventListener('click',e=>{const p=$('cappanel');if(popOpen(p)&&!p.contains(e.target)&&!$('capbtn').contains(e.target))closePop(p)});
 
 /* ================= Spotify (official Web API, PKCE login) ================= */
 const SPS='user-read-currently-playing user-read-playback-state user-modify-playback-state user-library-read user-library-modify';
@@ -2694,11 +2712,11 @@ const DEVI={Computer:'M4 6h16v10H4zm-2-2v14h8v2H7v1h10v-1h-3v-2h8V4z',Smartphone
   Speaker:'M17 2H7a2 2 0 00-2 2v16a2 2 0 002 2h10a2 2 0 002-2V4a2 2 0 00-2-2zm-5 2a2 2 0 110 4 2 2 0 010-4zm0 16a4 4 0 110-8 4 4 0 010 8zm0-6a2 2 0 100 4 2 2 0 000-4z',
   TV:'M21 3H3a2 2 0 00-2 2v12a2 2 0 002 2h5v2h8v-2h5a2 2 0 002-2V5a2 2 0 00-2-2zm0 14H3V5h18v12z'};
 function placeDev(){const r=$('dock').getBoundingClientRect();$('devpanel').style.bottom=Math.max(16,innerHeight-r.top+10)+'px'}
-function devClose(){$('devpanel').hidden=true;$('devbtn').classList.remove('on')}
+function devClose(){closePop($('devpanel'));$('devbtn').classList.remove('on')}
 async function devOpen(){
   const p=$('devpanel'),rows=$('devrows');
-  if(!p.hidden){devClose();return}
-  p.hidden=false;$('devbtn').classList.add('on');placeDev();$('devnote').textContent='';
+  if(popOpen(p)){devClose();return}
+  openPop(p);$('devbtn').classList.add('on');placeDev();$('devnote').textContent='';
   rows.innerHTML='<p class="hint">Looking for devices…</p>';
   let list;try{list=((await spApi('/me/player/devices'))||{}).devices||[]}catch(e){rows.innerHTML='';const x=document.createElement('p');x.className='hint';x.textContent=e.message;rows.appendChild(x);return}
   rows.innerHTML='';
@@ -2718,7 +2736,7 @@ async function devOpen(){
   });
 }
 $('devbtn').onclick=e=>{e.stopPropagation();devOpen()};
-document.addEventListener('click',e=>{const p=$('devpanel');if(!p.hidden&&!p.contains(e.target)&&!$('devbtn').contains(e.target))devClose()});
+document.addEventListener('click',e=>{const p=$('devpanel');if(popOpen(p)&&!p.contains(e.target)&&!$('devbtn').contains(e.target))devClose()});
 addEventListener('resize',()=>{if(!$('devpanel').hidden)placeDev()});
 function prevTrack(){
   if(src==='spotify'){spCtl('POST','/me/player/previous');return}
@@ -2892,7 +2910,7 @@ function poke(){
   body.classList.remove('uihide','idle');clearTimeout(tm);
   if(playing()&&S.uiHide!=='never'&&!$('panel').classList.contains('open'))tm=setTimeout(()=>{
     const a=document.activeElement;
-    if($('dock').matches(':hover')||$('top').matches(':hover')||(a&&a.tagName==='SELECT'))return poke();
+    if($('dock').matches(':hover')||$('top').matches(':hover')||(a&&a.tagName==='SELECT')||['devpanel','cappanel','netpanel'].some(id=>popOpen($(id))))return poke();   // not while a panel is open
     body.classList.add('uihide','idle');
   },2800);
 }
@@ -3218,10 +3236,10 @@ function netRender(){
 }
 let netT=0;
 function netLoop(){clearTimeout(netT);netPing();netT=setTimeout(netLoop,$('netpanel').hidden?30000:3000)}
-$('netbtn').onclick=e=>{e.stopPropagation();const p=$('netpanel');p.hidden=!p.hidden;$('netbtn').classList.toggle('on',!p.hidden);if(!p.hidden){netRender();netLoop()}};
-document.addEventListener('click',e=>{const p=$('netpanel');if(!p.hidden&&!p.contains(e.target)&&e.target!==$('netbtn')){p.hidden=true;$('netbtn').classList.remove('on')}});
+$('netbtn').onclick=e=>{e.stopPropagation();const p=$('netpanel'),open=!popOpen(p);if(open){closePop($('cappanel'));openPop(p)}else closePop(p);$('netbtn').classList.toggle('on',open);if(open){netRender();netLoop()}};
+document.addEventListener('click',e=>{const p=$('netpanel');if(popOpen(p)&&!p.contains(e.target)&&!$('netbtn').contains(e.target)){closePop(p);$('netbtn').classList.remove('on')}});
 $('syncbtn').onclick=resyncNow;
-addEventListener('keydown',e=>{if(e.key==='Escape'){devClose();$('netpanel').hidden=true;$('cappanel').hidden=true;$('netbtn').classList.remove('on')}});
+addEventListener('keydown',e=>{if(e.key==='Escape'){devClose();closePop($('netpanel'));closePop($('cappanel'));$('netbtn').classList.remove('on')}});
 netLoop();
 
 /* ================= init ================= */
