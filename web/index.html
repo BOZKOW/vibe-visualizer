@@ -470,7 +470,7 @@ select{transition:background .2s,border-color .2s}select:hover{border-color:rgba
 .nrow b{font-size:13px}.nrow em{font-style:normal;font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;text-align:right;grid-row:span 2}
 .nrow small{font-size:11px;color:var(--faint);grid-column:2}
 #netpanel .hint{margin-top:8px}
-#cappanel .hint{margin:8px 0 12px}#cappanel select{flex:1;min-width:0}.caplbl{display:block;font-size:12px;font-weight:600;color:var(--dim);margin-top:4px}
+#cappanel .hint{margin:8px 0 12px}#cappanel .okline{margin:0 0 10px;padding:8px 10px;border-radius:10px;background:rgba(30,215,96,.1);border:1px solid rgba(30,215,96,.3);color:#c9f5d8}#cappanel select{flex:1;min-width:0}.caplbl{display:block;font-size:12px;font-weight:600;color:var(--dim);margin-top:4px}
 body.low #cappanel,body.low #netpanel{backdrop-filter:none;-webkit-backdrop-filter:none}
 @media(max-width:760px){#netms{display:none}#netbtn{padding:8px 11px}}
 
@@ -500,7 +500,7 @@ body.low .ll{transition:opacity .25s}
 #top{display:grid;grid-template-columns:1fr auto 1fr}#top .brand{justify-self:start}#top .grp{justify-self:end}
 .chip{white-space:nowrap;flex:none}.brand span{white-space:nowrap}
 @media(max-width:1150px){#top .brand span{display:none}}   /* narrow window: just the logo, so every button fits */
-body.wz #empty{opacity:0;transition:opacity .3s}   /* nothing from the home page shows through the setup window */
+body.wz #empty,body.popen #empty{opacity:0;transition:opacity .3s}   /* nothing from the home page shows through the setup or Settings window */
 #spvolval{font-size:12px;font-weight:600;color:var(--dim);min-width:4ch;text-align:right}
 
 
@@ -612,6 +612,7 @@ body.low #cappanel,body.low #netpanel,body.low #setup .sw{background:rgba(20,20,
 
 <div id="cappanel" class="glass" hidden role="dialog" aria-label="Audio for the visualizer">
   <div class="nph"><b>Make the bars react to…</b></div>
+  <p class="hint okline" id="capbr" hidden></p>
   <label class="caplbl" for="capsel">Computer sound or input device</label>
   <div class="inl"><select id="capsel"></select><button class="btn sm pri" id="capgo">Start</button></div>
   <p class="hint" id="capnote">“Monitor of …” devices carry everything your speakers or headphones play, including the Spotify desktop app. Pick the one you listen on.</p>
@@ -741,7 +742,7 @@ body.low #cappanel,body.low #netpanel,body.low #setup .sw{background:rgba(20,20,
   <div class="row2"><button class="btn sm" id="copyredir">Copy URI</button><button class="btn sm pri" id="spconnect">Connect</button><button class="btn sm" id="spdisc">Disconnect</button></div>
   <p class="stat" id="spstatus">Not connected.</p>
   <p class="hint"><b>Setup:</b> run <b>python -m http.server 8000</b> in this folder, open <b>http://127.0.0.1:8000/index.html</b>, create an app in the Spotify dashboard, add the URI above as a Redirect URI, paste the Client ID and press Connect. In development mode, add your own account under the app’s User Management.</p>
-  <p class="hint">Spotify doesn’t allow other apps to read its audio, so with Spotify the bars use a gentle ambient motion. Press the microphone button in the top bar and share a tab or screen with audio to make them react for real.</p>
+  <p class="hint">Spotify doesn’t let other apps read its audio, so on its own the bars only use a gentle ambient motion with Spotify. To make them react for real, run <a class="src" target="_blank" rel="noopener" href="https://github.com/BOZKOW/vibe-visualizer#vibe-bridge-bars-from-the-spotify-app">Vibe Bridge</a> on the computer playing the music (Linux and Windows), or press the microphone button in the top bar to capture your computer’s sound.</p>
 
   <h4>Canvas</h4>
   <div class="f chk" data-k="canvasOn"><label><input type="checkbox" id="canvasOn"> Canvas split layout</label></div>
@@ -851,15 +852,16 @@ body.low #cappanel,body.low #netpanel,body.low #setup .sw{background:rgba(20,20,
 
       <section class="step" data-s="sound">
         <h2>Sound for the bars</h2>
-        <p>The bars react to sound. Local files work straight away. For Spotify, the browser needs to hear what your computer plays: press the <b>microphone button</b> in the top bar.</p>
+        <p>The bars react to sound. Local files work straight away. For Spotify, the bars need to hear what your computer plays. The easiest way is <b>Vibe Bridge</b>; otherwise press the <b>microphone button</b> in the top bar.</p>
         <ol class="steps">
+          <li><b>Vibe Bridge</b> (Linux and Windows, recommended): a small app that sends everything your computer plays, the Spotify app included, straight to the bars. No sharing, nothing to press each time. Download it from the GitHub releases and start it; the microphone button then turns green and says <b>Vibe Bridge</b>.</li>
           <li class="os" data-os="win"><b>Windows</b> (Chrome or Edge): choose <b>Share all computer sound</b>, then in the window that opens pick <b>Entire screen</b> and turn on <b>Also share system audio</b>. That includes the Spotify app. Nothing is recorded or sent anywhere; the picture is ignored.</li>
           <li class="os" data-os="linux"><b>Linux</b> (Chrome, Edge, Brave): pick a <b>🔊 Monitor of …</b> device for the speakers or headphones you listen on, then <b>Start</b>. It carries everything your computer plays, the Spotify app included. Allow microphone access when asked; that’s only how browsers list these devices.</li>
           <li class="os" data-os="mac"><b>macOS</b>: Chrome can only share a browser tab’s sound. Play Spotify in the web player at <code>open.spotify.com</code>, choose <b>Share a browser tab</b>, pick that tab and turn on <b>Share tab audio</b>.</li>
           <li><b>Firefox</b> can’t share sound this way; use Chrome, Edge or Brave for the bars.</li>
           <li><b>Without shared sound</b>, the bars still move with Spotify, but only as an imitation, not to the real music.</li>
         </ol>
-        <div class="srcl"><a class="src" target="_blank" rel="noopener" href="https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getDisplayMedia">MDN: screen and audio sharing</a></div>
+        <div class="srcl"><a class="src" target="_blank" rel="noopener" href="https://github.com/BOZKOW/vibe-visualizer#vibe-bridge-bars-from-the-spotify-app">How to set up Vibe Bridge</a> <a class="src" target="_blank" rel="noopener" href="https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getDisplayMedia">MDN: screen and audio sharing</a></div>
       </section>
 
       <section class="step" data-s="app">
@@ -1442,6 +1444,7 @@ async function listInputs(){
 }
 async function openCapPanel(){
   const p=$('cappanel'),sel=$('capsel');$('netpanel').hidden=true;p.hidden=false;
+  $('capbr').hidden=!bridgeOn;if(bridgeOn)$('capbr').textContent='✓ Vibe Bridge is connected'+(bridgeDev?' ('+bridgeDev+')':'')+', so the bars already follow your computer’s sound. Capturing here is only needed without it.';
   sel.innerHTML='<option>Looking for devices…</option>';$('capgo').disabled=true;
   $('captab').textContent=isWin?'Share all computer sound (Spotify app too)':'Share a browser tab or screen instead';$('captab').classList.toggle('pri',isWin);
   if(isWin)$('capnote').textContent='The button below shares all computer sound, the Spotify app included. Devices marked 🔊 (like Stereo Mix) work too.';
@@ -2759,8 +2762,8 @@ function showPage(id){
 function openPanel(page){
   const g=$('gear').getBoundingClientRect(),pw=$('pwin');   // grow out of the gear (layout position, not the shrunk one)
   pw.style.setProperty('--ox',(g.left+g.width/2-pw.offsetLeft)+'px');pw.style.setProperty('--oy',(g.top+g.height/2-pw.offsetTop)+'px');
-  showPage(page||pageNow);$('panel').classList.add('open');$('gear').classList.add('on');updSpPanel();poke();setTimeout(()=>$('psearch').focus({preventScroll:true}),60)}
-function closePanel(){$('panel').classList.remove('open');$('gear').classList.remove('on')}
+  showPage(page||pageNow);$('panel').classList.add('open');body.classList.add('popen');$('gear').classList.add('on');updSpPanel();poke();setTimeout(()=>$('psearch').focus({preventScroll:true}),60)}
+function closePanel(){$('panel').classList.remove('open');body.classList.remove('popen');$('gear').classList.remove('on')}
 // Liquid Glass behaviour for every control: pointer-following highlight, squish on press, springy release
 function liquid(el){
   if(el._lq)return;el._lq=1;el.classList.add('lq');
