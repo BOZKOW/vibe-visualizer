@@ -332,6 +332,7 @@ body.xfocus #ly.duet .ll.fu{transform:translate(-6vw,-34vh)}body.xfocus #ly.duet
 body.xfocus #ly.duet .ll:not(.opp):not(.dots){padding-right:22%}body.xfocus #ly.duet .ll.opp{padding-left:22%}
 body.xfocus #ly.duet .ll.opp .sub{margin-left:auto}
 /* in "Both" the lyrics reach down behind the bars, which are drawn on top */
+body.low.xfocus #lyr:not(.st) .ll{filter:none!important;--bl:0px;--fb:0px;transition-property:opacity,transform}   /* Low performance mode: Focus lyrics move and fade, never blur */
 body.xfocus[data-view=both] #viz{z-index:2}body.xfocus[data-view=both] #lyr{z-index:1}
 body.xfocus[data-view=both]:is(.hl,.lm) #lyr{bottom:0;-webkit-mask-image:linear-gradient(transparent,#000 12%,#000 58%,transparent 74%);mask-image:linear-gradient(transparent,#000 12%,#000 58%,transparent 74%)}   /* lines fade in from where the bars are, nothing shows between them */
 body.novol #volwrap{display:none}
@@ -1090,17 +1091,18 @@ function beatTick(now,dt){
   bassSlow+=(bass-bassSlow)*(1-Math.exp(-dt/350));
   if(bass-bassSlow>.07&&now-lastOnset>240){
     if(lastOnset&&now-lastOnset<1500){onsetGaps.push(now-lastOnset);if(onsetGaps.length>16)onsetGaps.shift()}
-    lastOnset=now;bgKick=1;
+    lastOnset=now;bgKick=1;bgTempo=0;
   }
   bgKick*=Math.exp(-dt/260);
 }
+let bgTempo=0;
 function drawLiveBg(now,dt){
   if(S.low||document.hidden||body.classList.contains('cvlive')||S.bgStyle!=='dynamic')return;
   // the background moves at the music's pace: faster when it's loud and busy, a push on every bass hit,
   // and the overall speed follows the tempo estimated from those hits
-  let tempo=1;
-  if(onsetGaps.length>5){const g=[...onsetGaps].sort((a,b)=>a-b),med=g[g.length>>1];tempo=Math.max(.6,Math.min(1.7,(60000/med)/120))}   // 120 BPM = normal speed
-  if(now-lastOnset>4000)onsetGaps.length=0;
+  if(!bgTempo){bgTempo=1;if(onsetGaps.length>5){const g=[...onsetGaps].sort((a,b)=>a-b),med=g[g.length>>1];bgTempo=Math.max(.6,Math.min(1.7,(60000/med)/120))}}   // 120 BPM = normal speed
+  if(now-lastOnset>4000&&onsetGaps.length){onsetGaps.length=0;bgTempo=0}
+  const tempo=bgTempo;
   bgT+=dt/1000*(S.bgspeed/100)*(.35+bgEnergy*1.8+bgKick*2.2)*tempo;
   bgPulse+=(bass-bgPulse)*(1-Math.exp(-dt/120));
   if(now-lastBgF<33)return;lastBgF=now;                       // ~30 fps is plenty for a blur
@@ -2089,8 +2091,8 @@ function animateWord(el,w,pos,dt){   // one syllable (and its letters); returns 
   }
   return moving;
 }
-function animateLineGlow(d,l,pos,dt){   // lines without word timing (Spicy's "Line" type): top-to-bottom fill and a glow
-  const end=l.end!=null?l.end:(L[lEls.indexOf(d)+1]||{}).t??l.t+4;
+function animateLineGlow(d,l,pos,dt,k){   // lines without word timing (Spicy's "Line" type): top-to-bottom fill and a glow
+  const end=l.end!=null?l.end:(L[k+1]||{}).t??l.t+4;
   const state=getElementState(pos,l.t,end),pct=getProgressPercentage(pos,l.t,end);
   if(!d._lg)d._lg={Glow:new Spring(LineGlowSpline.at(0),1,.5)};
   d._lg.Glow.SetGoal(state==='Active'?LineGlowSpline.at(pct):LineGlowSpline.at(state==='Sung'?1:0));
@@ -2110,7 +2112,7 @@ function animateDots(d,l,pos,dt){   // the three dots each take a third of the b
   const e1=Math.max(0,base+pad),e2=Math.max(e1,base*2+pad*2),e3=Math.max(e2,total+InterludeTimePadding),span=[[0,e1],[e1,e2],[e2,e3]];
   d.classList.toggle('ph',pos>l.end-preHiddenDotLine);
   let moving=false;
-  [...d._w.children].forEach((el,k)=>{
+  const ch=d._w.children;for(let k=0;k<ch.length&&k<3;k++){const el=ch[k];
     const a=l.t+span[k][0],b=l.t+span[k][1],st=getElementState(pos,a,b),pc=getProgressPercentage(pos,a,b),q=st==='Active'?pc:st==='NotSung'?0:1;
     if(!el._sp)el._sp=createDotSprings();
     const sp=el._sp;sp.Scale.SetGoal(DotScaleSpline.at(q));sp.YOffset.SetGoal(DotYOffsetSpline.at(q));sp.Glow.SetGoal(DotGlowSpline.at(q));sp.Opacity.SetGoal(DotOpacitySpline.at(q));
@@ -2119,12 +2121,12 @@ function animateDots(d,l,pos,dt){   // the three dots each take a third of the b
     el.style.scale=cS.toFixed(4);el.style.opacity=Math.max(0,Math.min(1,cO)).toFixed(3);
     el.style.setProperty('--text-shadow-blur-radius',(4+6*cG).toFixed(1)+'px');el.style.setProperty('--text-shadow-opacity',Math.max(0,cG*90).toFixed(1)+'%');
     if(!(sp.Scale.CanSleep()&&sp.YOffset.CanSleep()&&sp.Glow.CanSleep()&&sp.Opacity.CanSleep()))moving=true;
-  });
+  }
   return moving;
 }
 const moving=new Set();let lastWT=0;
 function restLine(d){d.querySelectorAll('.w,.c,.dot').forEach(idle);if(d._w)idle(d._w);d._lg=null}
-const groups=d=>{const g=[];if(d._ts)g.push([d._w.children,d._ts]);(d._bg||[]).forEach(b=>g.push([b.el.children,b.ts]));return g};
+const groups=d=>d._gr||(d._gr=(()=>{const g=[];if(d._ts)g.push([d._w.children,d._ts]);(d._bg||[]).forEach(b=>g.push([b.el.children,b.ts]));return g})());
 function wordsTick(pos){
   const now=performance.now(),dt=Math.min(.1,Math.max(0,(now-(lastWT||now))/1000));lastWT=now;
   if(li>=0&&lEls[li])moving.add(li);
@@ -2141,10 +2143,10 @@ function wordsTick(pos){
     if(S.low||S.lsimple){groups(d).forEach(([sp,ts])=>{for(let j=0;j<sp.length&&j<ts.length;j++){const el=sp[j];
       if(el._sp){idle(el);if(el._lt)el._lt.forEach(lt=>{idle(lt.el);lt._sp=null})}   // switched to simple mid-song: drop the spring pose
       if(el._lt)el._lt.forEach(lt=>lt.el.style.setProperty('--gradient-position',fillAt(pos,lt).toFixed(1)+'%'));else el.style.setProperty('--gradient-position',fillAt(pos,ts[j]).toFixed(1)+'%')}});
-      if(!d._ts&&d._w)animateLineGlow(d,L[k],pos,dt)}
+      if(!d._ts&&d._w)animateLineGlow(d,L[k],pos,dt,k)}
     else{
       if(d._ts||d._bg)groups(d).forEach(([sp,ts])=>{for(let j=0;j<sp.length&&j<ts.length;j++)m=animateWord(sp[j],ts[j],pos,dt)||m});
-      if(!d._ts&&d._w)m=animateLineGlow(d,L[k],pos,dt)||m;   // line-synced: the line itself fills, also when it has a translation under it
+      if(!d._ts&&d._w)m=animateLineGlow(d,L[k],pos,dt,k)||m;   // line-synced: the line itself fills, also when it has a translation under it
     }
     if(!m&&k!==li&&!lAct.has(k))moving.delete(k);   // settled; the words keep their final pose, as in Spicy Lyrics
   });
@@ -2190,14 +2192,14 @@ function lyricsTick(){
     fi=f;fo=f>=0&&t>=en(f);si=Math.max(f,0);   // fo: sung to the end, it leaves; the middle stays empty until the next is due
     // every line due (200 ms before it's sung) while the middle line still holds waits underneath, stacked in
     // order, and turns sharp once it starts: two, three or more lines sung together all show
-    const due=[],sung=[];for(let k=Math.max(f+1,0);k<L.length&&L[k].t!=null&&t>=L[k].t-.2;k++)if(!L[k].dots){due.push(k);if(t>=L[k].t)sung.push(k)}
-    fn=due.join();fs=sung.join();lfnSet=new Set(due);lfsSet=new Set(sung);
+    for(let k=Math.max(f+1,0);k<L.length&&L[k].t!=null&&t>=L[k].t-.2;k++)if(!L[k].dots){fn+=k+',';if(t>=L[k].t)fs+=k+','}
+    if(fn!==lfn)lfnSet=new Set(fn.split(',').filter(Boolean).map(Number));
+    if(fs!==lfs)lfsSet=new Set(fs.split(',').filter(Boolean).map(Number));
   }
   // every line still being sung is active, not just the newest: a duet line can start while another is going
-  const act=new Set();if(i>=0&&!out)act.add(i);
-  for(let k=i-1;k>=0&&k>=i-6;k--){const l=L[k];if(l.dots)continue;const ek=lineEnd(l);if(ek!=null&&t>=l.t&&t<ek)act.add(k)}
-  const ak=[...act].join();
-  if(i!==li||out!==lOut||fi!==lfi||fo!==lfo||fn!==lfn||fs!==lfs||ak!==lActKey){lOut=out;lsi=si;lfi=fi;lfo=fo;lfn=fn;lfs=fs;lAct=act;lActKey=ak;setActive(i)}else if(si!==lsi){lsi=si;place()}
+  let ak=i>=0&&!out?i+',':'';
+  for(let k=i-1;k>=0&&k>=i-6;k--){const l=L[k];if(l.dots)continue;const ek=lineEnd(l);if(ek!=null&&t>=l.t&&t<ek)ak+=k+','}
+  if(i!==li||out!==lOut||fi!==lfi||fo!==lfo||fn!==lfn||fs!==lfs||ak!==lActKey){lOut=out;lsi=si;lfi=fi;lfo=fo;lfn=fn;lfs=fs;lAct=new Set(ak.split(',').filter(Boolean).map(Number));lActKey=ak;setActive(i)}else if(si!==lsi){lsi=si;place()}
   wordsTick(t);
 }
 // lyrics sources, tried in the order set in Settings

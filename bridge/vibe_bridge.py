@@ -63,23 +63,25 @@ class Analyser:
     def __init__(self):
         n = np.arange(FFT)
         a = 0.16            # Blackman window, as the Web Audio spec defines it
-        self.win = (1 - a) / 2 - 0.5 * np.cos(2 * np.pi * n / FFT) + a / 2 * np.cos(4 * np.pi * n / FFT)
+        self.win = ((1 - a) / 2 - 0.5 * np.cos(2 * np.pi * n / FFT) + a / 2 * np.cos(4 * np.pi * n / FFT)).astype(np.float32) / FFT
         self.buf = np.zeros(FFT, dtype=np.float32)
-        self.smooth = np.zeros(FFT // 2)
+        self.smooth = np.zeros(FFT // 2, dtype=np.float32)
+        self.scale = np.float32(255.0 / (MAX_DB - MIN_DB))
 
     def push(self, mono):
         k = len(mono)
         if k >= FFT:
             self.buf[:] = mono[-FFT:]
         else:
-            self.buf = np.roll(self.buf, -k)
+            self.buf[:-k] = self.buf[k:]   # shift in place, no new array for every block
             self.buf[-k:] = mono
 
     def bytes(self):
-        mag = np.abs(np.fft.rfft(self.buf * self.win))[:FFT // 2] / FFT
-        self.smooth = SMOOTHING * self.smooth + (1 - SMOOTHING) * mag
+        mag = np.abs(np.fft.rfft(self.buf * self.win)[:FFT // 2]).astype(np.float32)   # the window carries the 1/FFT
+        self.smooth *= SMOOTHING
+        self.smooth += (1 - SMOOTHING) * mag
         db = 20 * np.log10(np.maximum(self.smooth, 1e-12))
-        return np.clip((db - MIN_DB) * (255.0 / (MAX_DB - MIN_DB)), 0, 255).astype(np.uint8).tobytes()
+        return np.clip((db - MIN_DB) * self.scale, 0, 255).astype(np.uint8).tobytes()
 
 
 class Capture(threading.Thread):
