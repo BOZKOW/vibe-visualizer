@@ -173,7 +173,10 @@ async def spicy_lyrics(track_id):
     status, body = await asyncio.to_thread(spicy_fetch, track_id, key)
     timing["spicy"] = {"ms": int((time.time() - t0) * 1000), "status": status, "at": time.time()}
     if status in (200, 404):
-        lyrics_cache[track_id] = (status, body, time.time() + (SPICY_TTL if status == 200 else SPICY_MISS_TTL))
+        now = time.time()
+        for k in [k for k, v in lyrics_cache.items() if v[2] <= now]:   # out-of-date answers are dropped, not kept around
+            lyrics_cache.pop(k, None)                                     # (Spicy Lyrics terms: 30 days at most; we keep 7)
+        lyrics_cache[track_id] = (status, body, now + (SPICY_TTL if status == 200 else SPICY_MISS_TTL))
         if len(lyrics_cache) > 2000:   # keep it a small cache, never a mirror
             for k in sorted(lyrics_cache, key=lambda k: lyrics_cache[k][2])[:500]:
                 lyrics_cache.pop(k, None)

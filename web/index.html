@@ -2107,7 +2107,7 @@ function creditNodes(c,full){
     const m=c.maker&&c.maker.username?c.maker:null,u=c.uploader&&c.uploader.username?c.uploader:null;
     if(full&&(m||u))row('cinfo',dim('These lyrics have been provided by our community'));
     if(m)row('cinfo',dim('Made by '),who(m));
-    if(u)row('cinfo',dim((m?'Uploaded by':'Made by')+' '),who(u));
+    if(u)row('cinfo',dim('Uploaded by '),who(u));   // the uploader is credited as the uploader, the maker only when one is given (Spicy Lyrics terms s.6)
   }
   return box;
 }
@@ -3369,7 +3369,7 @@ $('lcsong').onclick=async()=>{const c=songNow();if(!c)return;lcache.delete(c.key
   toast('This song’s cache cleared. Fetching its lyrics again…','ok',2500);loadLyrics(c.m,coverTok)};
 $('lcreset').onclick=()=>{const c=songNow();if(!c)return;lcache.delete(c.key);toast('Lyrics reset.','ok',1800);loadLyrics(c.m,coverTok)};
 $('lyrclear').onclick=async()=>{await lcClear();lcache.clear();trCache.clear();lcShow();toast('Stored lyrics cleared. They’re fetched again as songs play.','ok',3000)};
-lcPrune().then(lcShow);
+lcPrune().then(lcShow);setInterval(lcPrune,6*3600e3);   // saved lyrics are dropped once out of date, also in a tab left open for weeks (the terms allow 30 days at most)
 $('forget').onclick=async()=>{
   if(!confirm('Delete everything Vibe Visualizer saved for this device (settings, API keys, Spotify login, saved lyrics)?'))return;
   prefsReady=false;clearTimeout(prefT);
