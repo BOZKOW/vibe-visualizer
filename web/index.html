@@ -1021,9 +1021,11 @@ function placeCorner(){   // notifications make way: under an open top panel ins
   const o=['cappanel','netpanel'].map(id=>$(id)).find(popOpen);$('corner').style.top=o?(o.offsetTop+o.offsetHeight+12)+'px':''}
 {const ro=new ResizeObserver(()=>requestAnimationFrame(placeCorner));['cappanel','netpanel'].forEach(id=>ro.observe($(id)))}
 function swapText(el,t){if(el.textContent===t)return;el.textContent=t;el.classList.remove('tsw');void el.offsetWidth;el.classList.add('tsw')}   // a label that changes fades in
+let appProb=null;   // the latest error, shown in place of the lyrics for a while
 function toast(msg,type,ms){
   msg=String(msg);type=type||'err';
   if(type==='err'&&typeof reportError==='function')reportError('notice',msg);   // problems shown to you are saved in the error log too
+  if(type==='err'){appProb={t:'Something went wrong',s:msg,at:Date.now()};if(typeof renderProblem==='function')renderProblem();return}   // errors aren't notifications: they show where the lyrics go
   for(const n of tbox.children)if(n.dataset.m===msg)return;
   const d=document.createElement('div');d.className='toast '+type;d.dataset.m=msg;d.textContent=msg;const bye=()=>{if(d._bye)return;d._bye=1;d.classList.add('bye');setTimeout(()=>d.remove(),260)};d.onclick=bye;
   tbox.appendChild(d);setTimeout(bye,ms||6500);
@@ -1695,6 +1697,7 @@ function problemNow(home){   // the most important thing that's wrong right now,
   if(src==='spotify'&&!SP.access)return{k:'err',t:'Spotify isn’t connected',s:'The Spotify login ended. Press Connect Spotify in the top bar to log in again.'};
   if(sp&&spErrMsg)return{k:'err',t:'Spotify isn’t answering',s:spErrMsg};
   if(PREFS&&$('netbtn').classList.contains('bad'))return{k:'err',t:'Your server can’t be reached',s:'Lyrics, Canvas and saved settings come from it. Check that the server is on and Tailscale is connected.'};
+  if(appProb&&Date.now()-appProb.at<12000)return{k:'err',t:appProb.t,s:appProb.s};   // a one-off error: shown for 12 s, then the lyrics come back
   return null;
 }
 function showProblem(el,p){
@@ -3332,8 +3335,7 @@ function reportError(kind,msg,where,stack){
 function appError(msg,where,stack){
   reportError('error',msg,where,stack);
   const now=Date.now();if(now-errSeen<8000)return;errSeen=now;   // at most one card every few seconds
-  notify({key:'err',kind:'err',title:'Something went wrong',msg:String(msg).slice(0,200),sub:PREFS?'It was saved on your server so it can be fixed.':'',
-    actions:[{label:'Details',fn:()=>{openPanel('help');loadErrors()}},{label:'OK',pri:true}],ms:15000});
+  appProb={t:'Something went wrong',s:String(msg).slice(0,200)+(PREFS?' (saved on your server, see Settings → Help & about)':''),at:now};renderProblem();
 }
 addEventListener('error',e=>{if(e.message)appError(e.message,(e.filename||'').split('/').pop()+':'+e.lineno,e.error&&e.error.stack)});
 addEventListener('unhandledrejection',e=>{const r=e.reason;appError(r&&r.message||String(r),'promise',r&&r.stack)});
