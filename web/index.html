@@ -429,6 +429,18 @@ code,kbd{font:12px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;backgrou
 #dock{animation:dockin .7s .1s cubic-bezier(.2,.8,.2,1) backwards}
 #setup .sw{animation:pop .45s cubic-bezier(.2,.8,.2,1)}
 .step:not([hidden]){animation:up .45s cubic-bezier(.2,.8,.2,1)}
+.tsw{animation:tsw .4s cubic-bezier(.2,.8,.2,1)}@keyframes tsw{from{opacity:0;filter:blur(3px)}}
+#corner .toast.bye{opacity:0;transform:translateX(24px) scale(.97);transition:opacity .25s,transform .25s}
+.chip.live .dot,.nrow.good i,#capbtn.bridge svg{animation:livedot 2.6s ease-in-out infinite}@keyframes livedot{50%{opacity:.6;filter:brightness(.8)}}
+#pnav{position:relative}#pnav>.pn{position:relative;z-index:1}
+#pnavpill{position:absolute;z-index:0;border-radius:10px;background:rgba(255,255,255,.12);pointer-events:none;transition:top .4s cubic-bezier(.34,1.3,.64,1),left .4s cubic-bezier(.34,1.3,.64,1),width .4s,height .4s,opacity .2s}
+#pnav.haspill .pn.on{background:transparent;box-shadow:none}
+#lmsg>*{animation:up .5s cubic-bezier(.2,.8,.2,1) backwards}#lmsg>small{animation-delay:.08s}
+#lcredit>*{animation:fadein .6s ease backwards}
+.ll .sub{animation:fadein .5s ease backwards}
+body[data-src=spotify] .spx{animation:pop .45s cubic-bezier(.2,.8,.2,1) backwards}
+.f input[type=range]::-webkit-slider-thumb{transition:transform .2s cubic-bezier(.34,1.56,.64,1)}.f input[type=range]:hover::-webkit-slider-thumb,.f input[type=range]:active::-webkit-slider-thumb{transform:scale(1.25)}
+body.low .tsw,body.low .chip.live .dot,body.low .nrow.good i,body.low #capbtn.bridge svg,body.low #lmsg>*,body.low #lcredit>*,body.low .ll .sub,body.low[data-src=spotify] .spx{animation:none}
 /* more motion: settings pages, new lyrics and the device list come in one item after another */
 #pbody .ppage.enter>*{animation:up .42s cubic-bezier(.2,.8,.2,1) backwards;animation-delay:calc(var(--i,0)*22ms)}
 #ly.enter .ll{animation:lyin .7s cubic-bezier(.2,.8,.2,1) backwards;animation-delay:calc(var(--i,0)*45ms)}@keyframes lyin{from{opacity:0;translate:0 26px}}
@@ -555,7 +567,7 @@ body.low #cappanel,body.low #netpanel,body.low #setup .sw{background:rgba(20,20,
 #pwin,#setup .sw{background:var(--g-grad),rgba(14,14,26,.62);backdrop-filter:blur(48px) saturate(170%);-webkit-backdrop-filter:blur(48px) saturate(170%)}
 #panel{background:rgba(4,4,12,.4);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}#setup{background:rgba(4,4,12,.3);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
 #pnav{background:rgba(255,255,255,.04);border-right-color:rgba(255,255,255,.12)}
-#pnav .pn.on{background:rgba(255,255,255,.16);box-shadow:var(--g-hi)}
+#pnav .pn.on,#pnavpill{background:rgba(255,255,255,.16);box-shadow:var(--g-hi)}
 /* controls */
 .ib,.chip,#seg,.btn:not(.pri),select,.tin,#psearch,.f input[type=text],.f input[type=url],.f input[type=password],.prow{
   background:linear-gradient(145deg,rgba(255,255,255,.15),rgba(255,255,255,.05));border:1px solid rgba(255,255,255,.18);
@@ -951,12 +963,13 @@ function notify(o){
   box.prepend(n);while(box.children.length>3)box.lastChild.remove();
   if(o.ms)setTimeout(close,o.ms);return n;
 }
+function swapText(el,t){if(el.textContent===t)return;el.textContent=t;el.classList.remove('tsw');void el.offsetWidth;el.classList.add('tsw')}   // a label that changes fades in
 function toast(msg,type,ms){
   msg=String(msg);type=type||'err';
   if(type==='err'&&typeof reportError==='function')reportError('notice',msg);   // problems shown to you are saved in the error log too
   for(const n of tbox.children)if(n.dataset.m===msg)return;
-  const d=document.createElement('div');d.className='toast '+type;d.dataset.m=msg;d.textContent=msg;d.onclick=()=>d.remove();
-  tbox.appendChild(d);setTimeout(()=>d.remove(),ms||6500);
+  const d=document.createElement('div');d.className='toast '+type;d.dataset.m=msg;d.textContent=msg;const bye=()=>{if(d._bye)return;d._bye=1;d.classList.add('bye');setTimeout(()=>d.remove(),260)};d.onclick=bye;
+  tbox.appendChild(d);setTimeout(bye,ms||6500);
   while(tbox.children.length>4)tbox.firstChild.remove();
 }
 // errors are shown as a notification card and saved on the server: see appError() below
@@ -1408,7 +1421,7 @@ function volIcon(){
   $('vi').innerHTML=volPaths(off,S.volume);
 }
 function applyVolume(){volIcon();if(gainNode)gainNode.gain.setTargetAtTime(muted?0:Math.pow(S.volume/100,2),ac.currentTime,.02)}
-$('mute').onclick=()=>{muted=!muted;applyVolume()};
+$('mute').onclick=()=>{muted=!muted;applyVolume();bump($('mute'))};
 function setupAudio(){
   if(ac)return;
   const AC=window.AudioContext||window.webkitAudioContext;
@@ -1442,7 +1455,7 @@ function updCapLabel(){
   else if(src==='spotify'&&spPlaying()){t='Ambient';tip='Bars follow: a gentle ambient motion (Spotify’s audio can’t be read). Click to capture your computer’s sound, or start Vibe Bridge.'}
   else{t='No audio';tip='Nothing for the bars to follow. Click to capture your computer’s sound (Spotify app, browser tab…).'}
   const key=t+'|'+tip;if(key===capLabelKey)return;capLabelKey=key;
-  $('capt').textContent=t;const b=$('capbtn');b.title=tip;b.setAttribute('aria-label','Audio for the visualizer: '+t);
+  swapText($('capt'),t);const b=$('capbtn');b.title=tip;b.setAttribute('aria-label','Audio for the visualizer: '+t);
   b.classList.toggle('idle',t==='No audio'||t==='Ambient');
 }
 setInterval(updCapLabel,1000);
@@ -1596,7 +1609,8 @@ async function spPoll(){
   }
 }
 function onSpTrack(m){
-  curArtistId=m.artistId||'';if(vals)vals.fill(0);   // the bars drop and grow back with the new songspMeta=m;spLikeCheck(m);
+  curArtistId=m.artistId||'';spMeta=m;spLikeCheck(m);
+  if(vals)vals.fill(0);   // the bars drop and grow back with the new song
   const tok=++coverTok;peak=.3;clearCanvas(true);
   ttl.textContent=m.title;sub.textContent=m.artist;status.textContent='Spotify';animTrack();
   if(!m.cover)resetCover();
@@ -1609,7 +1623,7 @@ function onSpTrack(m){
 function updChips(err){
   const c=$('spchip'),t=$('spt');
   c.classList.toggle('on',src==='spotify');c.classList.toggle('live',src==='spotify'&&spPlaying());c.classList.toggle('err',!!err);
-  t.textContent=!SP.access?'Connect Spotify':src!=='spotify'?'Spotify':spPlaying()?'Spotify · playing':spState?'Spotify · paused':'Spotify · idle';
+  swapText(t,!SP.access?'Connect Spotify':src!=='spotify'?'Spotify':spPlaying()?'Spotify · playing':spState?'Spotify · paused':'Spotify · idle');
   updSpPanel();
 }
 function updSpPanel(){
@@ -2647,7 +2661,7 @@ function spSetVol(v,now){
 }
 $('shuf').onclick=spShuffle;$('rep').onclick=spRepeat;$('like').onclick=spLike;
 $('spvol').addEventListener('input',()=>spSetVol(+$('spvol').value));
-$('spmute').onclick=()=>{const v=+$('spvol').value;if(v>0){spPrevVol=v;spSetVol(0,true)}else spSetVol(spPrevVol||50,true)};
+$('spmute').onclick=()=>{bump($('spmute'));const v=+$('spvol').value;if(v>0){spPrevVol=v;spSetVol(0,true)}else spSetVol(spPrevVol||50,true)};
 // choosing where Spotify plays
 const DEVI={Computer:'M4 6h16v10H4zm-2-2v14h8v2H7v1h10v-1h-3v-2h8V4z',Smartphone:'M16 1H8a2 2 0 00-2 2v18a2 2 0 002 2h8a2 2 0 002-2V3a2 2 0 00-2-2zm0 18H8V5h8v14z',
   Speaker:'M17 2H7a2 2 0 00-2 2v16a2 2 0 002 2h10a2 2 0 002-2V4a2 2 0 00-2-2zm-5 2a2 2 0 110 4 2 2 0 010-4zm0 16a4 4 0 110-8 4 4 0 010 8zm0-6a2 2 0 100 4 2 2 0 000-4z',
@@ -2785,17 +2799,23 @@ let pageNow='look';
     none.hidden=!!hits;nav.querySelectorAll('.pn').forEach(b=>b.classList.remove('on'));
   });
 })();
+function pnavPill(){   // the highlight glides to the chosen category instead of jumping
+  const nav=$('pnav'),on=nav.querySelector('.pn.on');let p=$('pnavpill');
+  if(!p){p=document.createElement('i');p.id='pnavpill';nav.prepend(p);nav.classList.add('haspill')}
+  if(!on||!on.offsetHeight){p.style.opacity=0;return}
+  p.style.opacity=1;p.style.top=on.offsetTop+'px';p.style.height=on.offsetHeight+'px';p.style.left=on.offsetLeft+'px';p.style.width=on.offsetWidth+'px';
+}
 function showPage(id){
   pageNow=id;$('pnone').hidden=true;$('pbody').classList.remove('searching');
   $('pbody').querySelectorAll('.ppage').forEach(pg=>{pg.hidden=pg.dataset.p!==id;pg.querySelectorAll(':scope>*').forEach(el=>el.style.display='')});
-  $('pnav').querySelectorAll('.pn').forEach(b=>b.classList.toggle('on',b.dataset.p===id));
+  $('pnav').querySelectorAll('.pn').forEach(b=>b.classList.toggle('on',b.dataset.p===id));pnavPill();
   const pg=$('pbody').querySelector('.ppage[data-p="'+id+'"]');$('phead').textContent=pg?pg.dataset.name:'';$('pbody').scrollTop=0;
   if(pg){[...pg.children].forEach((el,k)=>el.style.setProperty('--i',Math.min(k,14)));pg.classList.remove('enter');void pg.offsetWidth;pg.classList.add('enter')}   // the page's settings slide in one after another
 }
 function openPanel(page){
   const g=$('gear').getBoundingClientRect(),pw=$('pwin');   // grow out of the gear (layout position, not the shrunk one)
   pw.style.setProperty('--ox',(g.left+g.width/2-pw.offsetLeft)+'px');pw.style.setProperty('--oy',(g.top+g.height/2-pw.offsetTop)+'px');
-  showPage(page||pageNow);$('panel').classList.add('open');body.classList.add('popen');$('gear').classList.add('on');updSpPanel();poke();setTimeout(()=>$('psearch').focus({preventScroll:true}),60)}
+  showPage(page||pageNow);$('panel').classList.add('open');requestAnimationFrame(pnavPill);body.classList.add('popen');$('gear').classList.add('on');updSpPanel();poke();setTimeout(()=>$('psearch').focus({preventScroll:true}),60)}
 function closePanel(){$('panel').classList.remove('open');body.classList.remove('popen');$('gear').classList.remove('on')}
 // Liquid Glass behaviour for every control: pointer-following highlight, squish on press, springy release
 function liquid(el){
