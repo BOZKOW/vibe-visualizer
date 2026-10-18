@@ -1675,7 +1675,7 @@ function findIdx(t){let a=0,b=L.length-1,r=-1;while(a<=b){const m=(a+b)>>1;if(L[
 let lLabel='';
 function renderLyrics(label,quiet){
   if(!quiet)lLabel=label||'';
-  ly.textContent='';lEls=[];lAct=new Set();lActKey='';li=-2;lsi=-2;lfi=-2;lfo=false;lfn='';lfs='';lfnSet=new Set();lfsSet=new Set();moving.clear();ly.classList.toggle('duet',L.some(l=>l.opp));stPos=null;if(!quiet)lyr.scrollTop=0;lyr.classList.toggle('st',!lsync&&L.length>0);
+  ly.textContent='';lEls=[];lAct=new Set();lActKey='';li=-2;lsi=-2;lfi=-2;lfo=false;lfn='';lfs='';lfnSet=new Set();lfsSet=new Set();moving.clear();ly.classList.toggle('duet',L.some(l=>l.opp));stPos=null;ly.style.translate='';if(!quiet)lyr.scrollTop=0;lyr.classList.toggle('st',!lsync&&L.length>0);
   L.forEach((l,idx)=>{
     const d=document.createElement('div');d.className=l.dots?'ll dots':l.opp?'ll opp':'ll';
     if(l.dots){d.innerHTML='<div class="dg"><span class="dot">•</span><span class="dot">•</span><span class="dot">•</span></div>';d._w=d.firstChild}
@@ -2160,16 +2160,23 @@ function lineEnd(l){
 // untimed lyrics (just text) scroll slowly by themselves, following the song: the top as it starts, the end as it
 // ends, so skipping around keeps them in the right place. Scrolling by hand pauses this for a few seconds.
 let stPos=null,stUser=0,stLast=0;
-['wheel','touchmove','pointerdown','keydown'].forEach(ev=>lyr.addEventListener(ev,()=>{stUser=performance.now();stPos=null},{passive:true}));
+let stVel=0;
+['wheel','touchmove','pointerdown','keydown'].forEach(ev=>lyr.addEventListener(ev,()=>{stUser=performance.now();stPos=null;ly.style.translate=''},{passive:true}));
 function staticScroll(){
   const now=performance.now(),dt=Math.min(.1,(now-(stLast||now))/1000);stLast=now;
   // untimed lyrics: Focus mode falls back to the normal slow scroll, as Spicy Lyrics does
   if(!lyr.classList.contains('st')||now-stUser<4000)return;
   const d=curDur(),max=lyr.scrollHeight-lyr.clientHeight;if(!d||max<=0)return;
   const target=Math.max(0,Math.min(1,curTime()/d))*max;   // top when the song starts, the end when it ends
-  if(stPos==null)stPos=lyr.scrollTop;
-  stPos+=(target-stPos)*Math.min(1,dt*1.5);   // glide toward where the song is
-  if(Math.abs(Math.round(stPos)-lyr.scrollTop)>=1)lyr.scrollTop=Math.round(stPos);
+  if(stPos==null){stPos=lyr.scrollTop;stVel=0}
+  // smooth scrolling: follow the song exactly once caught up; after a jump (seek, scrolling by hand) glide there on
+  // a soft spring. Sub-pixel: whole pixels go to scrollTop, the fraction to a translate, so it never steps.
+  const gap=target-stPos;
+  if(Math.abs(gap)<1.5&&Math.abs(stVel)<20){stPos=target;stVel=0}
+  else{const w=2*Math.PI*.9;stVel+=(w*w*gap-2*w*stVel)*dt;stPos+=stVel*dt}
+  const ip=Math.max(0,Math.floor(stPos));
+  if(lyr.scrollTop!==ip)lyr.scrollTop=ip;
+  ly.style.translate='0 '+(-(stPos-ip)).toFixed(2)+'px';
 }
 function lyricsTick(){
   if(!L.length||S.view==='viz')return;
