@@ -1461,7 +1461,7 @@ async function resyncNow(){   // manual resync: three fresh readings from Spotif
       }}finally{spSnap=false}
       if(best&&spState&&spId===id){spState.progress=best.p;spFetched=best.at;spState.playing=best.pl;spSlew=null;if(before!=null)moved=curMs()-before}
     }
-    const undo=lAdj!==0;lAdj=0;DS.fixes=0;DS.asked=false;dsReset();   // back to the plain timing: undo any automatic desync fix
+    const undo=lAdj!==0;lAdj=0;DS.lastFix=0;DS.fixes=0;DS.asked=false;dsReset();   // back to the plain timing: undo any automatic desync fix
     moving.forEach(k=>{if(lEls[k])restLine(lEls[k])});moving.clear();lastWT=0;   // the words start again from the right pose
     if(lsync&&L.length){li=-2;lsi=-2;lActKey='';lyricsTick()}
     toast((moved==null?'Lyrics re-synced':Math.abs(moved)<40?'Lyrics are in sync with Spotify':'Lyrics re-synced: moved '+(moved>0?'ahead ':'back ')+(Math.abs(moved)/1000).toFixed(2)+' s')+(undo?' (the automatic desync fix was undone)':'')+'.','ok',2600);
@@ -2607,7 +2607,7 @@ function lyricsTick(){
    Needs real sound (Vibe Bridge, audio capture, a local file); Spotify's ambient bars carry none. ---- */
 const DS={prev:new Uint8Array(1024),ft:0,acc:0,lv:0,ln:0,bt:0,t:[],f:[],v:[],lastT:null,off:0,est:[],fixes:0,asked:false,ign:false,next:0,stat:'',ok:0};
 function dsReset(){DS.t.length=DS.f.length=DS.v.length=0;DS.lastT=null;DS.est.length=0}
-function dsSong(){dsReset();DS.fixes=0;DS.asked=false;DS.ign=false;DS.ok=0;lAdj=0}
+function dsSong(){dsReset();DS.lastFix=0;DS.fixes=0;DS.asked=false;DS.ign=false;DS.ok=0;lAdj=0}
 function dsStat(m){if(m===DS.stat)return;DS.stat=m;const e=$('dsstat');if(e)e.textContent=m}
 function desyncTick(now){
   if(S.lDesync==='off'){dsStat('');return}
@@ -2653,8 +2653,10 @@ function dsAnalyze(){
   // the sound reaches the app a little after it plays (Vibe Bridge more so through the server): that delay isn't a
   // desync. Only a clear, real offset counts: 0.6 s+ with word timing, 1 s+ with line timing, early or late alike,
   // and only when it fits clearly better than the lyrics as they are
-  const ec=e-dsLag(),words=L.some(l=>l.words&&l.words.length),min=words?.6:1,zero=sc[60];
-  if(Math.abs(ec)<min||best-zero<.08){DS.est.length=0;DS.ok=performance.now();dsStat('In sync ✓');return}
+  // Music repeats on the beat, so a shift of one beat can fit almost as well as the right one: only a clear, unique best
+  // fit counts, judged against where the lyrics are now (the known sound delay counted as in sync)
+  const lag=dsLag(),z=Math.max(0,Math.min(sc.length-1,60+Math.round(lag/.05))),ec=e-lag,words=L.some(l=>l.words&&l.words.length),min=words?.4:1;
+  if(Math.abs(ec)<min||best-sc[z]<.15||best-second<.05){DS.est.length=0;DS.ok=performance.now();dsStat('In sync ✓');return}
   DS.est.push(ec);if(DS.est.length>3)DS.est.shift();
   if(DS.est.length<3){dsStat('Checking a possible desync…');return}
   const lo=Math.min(...DS.est),hi=Math.max(...DS.est);if(hi-lo>.1){DS.est.shift();return}   // three checks in a row (15 s) must agree
@@ -2663,8 +2665,11 @@ function dsAnalyze(){
 function dsLag(){return bridgeLive()&&!liveAudio()?(bridgeVia==='relay'?.22:.08):capStream?.06:0}   // seconds the measured sound lags behind what you hear
 function dsFound(e){   // e > 0: the singing comes e seconds after the lyrics' time, so the lyrics are ahead
   DS.est.length=0;
+  if(DS.lastFix&&Math.sign(e)===-Math.sign(DS.lastFix)&&Math.abs(e+DS.lastFix)<Math.max(.25,Math.abs(DS.lastFix)*.4)){   // it wants the last fix undone: that fix was wrong
+    lAdj+=DS.lastFix;DS.lastFix=0;DS.ign=true;dsReset();moving.forEach(k=>{if(lEls[k])restLine(lEls[k])});moving.clear();li=-2;lsi=-2;lActKey='';lyricsTick();
+    dsStat('The last fix didn’t fit after all, so it was undone. This song is left as it is.');return}
   const txt='about '+Math.abs(e).toFixed(1)+' s '+(e>0?'ahead of':'behind')+' the singing';
-  const fix=()=>{lAdj-=e;DS.fixes++;dsReset();moving.forEach(k=>{if(lEls[k])restLine(lEls[k])});moving.clear();li=-2;lsi=-2;lActKey='';lyricsTick();dsStat('Fixed: moved '+(e>0?'back ':'ahead ')+Math.abs(e).toFixed(1)+' s.')};
+  const fix=()=>{lAdj-=e;DS.lastFix=e;DS.fixes++;dsReset();moving.forEach(k=>{if(lEls[k])restLine(lEls[k])});moving.clear();li=-2;lsi=-2;lActKey='';lyricsTick();dsStat('Fixed: moved '+(e>0?'back ':'ahead ')+Math.abs(e).toFixed(1)+' s.')};
   if(DS.fixes>=4)return;   // something odd with this song: stop adjusting
   if(S.lDesync==='auto'||DS.fixes>0){fix();toast('Lyrics were '+txt+'. Fixed for this song.','ok',3500);return}   // once you've said yes, later fixes for the song just happen
   if(DS.asked)return;DS.asked=true;dsStat('Lyrics look '+txt+'.');
