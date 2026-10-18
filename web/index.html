@@ -1171,25 +1171,41 @@ const playing=()=>src==='file'?filePlaying():src==='spotify'?spPlaying():false;
 const liveAudio=()=>!!capStream||(src==='file'&&filePlaying());
 /* ---- Vibe Bridge: a small app on the computer that plays the music (Linux and Windows) listens to everything it plays
    and sends the analyser data here over a local WebSocket, so the bars follow the Spotify app with no sharing prompt */
-const BRIDGE_URL='ws://127.0.0.1:47120';
-let bws=null,bridgeOn=false,bridgeAt=0,bridgeDev='',bridgeT=0;const bridgeBuf=new Uint8Array(1024);
+// two ways to reach it: straight on this computer (ws://127.0.0.1), or through your server, which every page can
+// always reach (and other devices too). The bridge on this computer wins when both work.
+const BRIDGE_LOCAL='ws://127.0.0.1:47120',BRIDGE_RELAY=PREFS?(location.protocol==='https:'?'wss://':'ws://')+location.host+'/api/bridge/listen':null;
+const bridgeBuf=new Uint8Array(1024);let bridgeOn=false,bridgeAt=0,bridgeDev='',bridgeVia='';
+const bl={local:{ws:null,on:false,t:0,at:0,dev:''},relay:{ws:null,on:false,t:0,at:0,dev:''}};
 const bridgeLive=()=>bridgeOn&&performance.now()-bridgeAt<600;
-function bridgeConnect(){
-  clearTimeout(bridgeT);if(!S.bridge||bws)return;
-  try{bws=new WebSocket(BRIDGE_URL)}catch(e){bws=null;bridgeT=setTimeout(bridgeConnect,15000);return}
-  bws.binaryType='arraybuffer';
-  bws.onopen=()=>{bridgeOn=true;updBridge();toast('Vibe Bridge connected: the bars follow your computer’s sound.','ok',3500)};
-  bws.onmessage=e=>{
-    if(typeof e.data==='string'){try{const m=JSON.parse(e.data);if(m.device)bridgeDev=m.device;updBridge()}catch(x){}return}
-    const a=new Uint8Array(e.data);bridgeBuf.set(a.length>1024?a.subarray(0,1024):a);bridgeAt=performance.now();
-  };
-  bws.onclose=()=>{const was=bridgeOn;bws=null;bridgeOn=false;updBridge();if(was)toast('Vibe Bridge closed. The bars go back to the other sources.','warn',3500);
-    if(S.bridge)bridgeT=setTimeout(bridgeConnect,was?2000:15000)};   // keep looking for it quietly
-  bws.onerror=()=>{};
+function bridgeState(){
+  const now=performance.now(),loc=bl.local.on&&now-bl.local.at<1500,rel=bl.relay.on&&now-bl.relay.at<1500;
+  const was=bridgeOn;bridgeOn=loc||rel;bridgeVia=loc?'local':rel?'relay':'';bridgeDev=(loc?bl.local:bl.relay).dev;
+  if(bridgeOn&&!was)toast('Vibe Bridge connected'+(bridgeVia==='relay'?' through your server':'')+': the bars follow the computer’s sound.','ok',3500);
+  if(!bridgeOn&&was)toast('Vibe Bridge stopped. The bars go back to the other sources.','warn',3500);
+  updBridge();
 }
-function bridgeStop(){clearTimeout(bridgeT);if(bws){const w=bws;bws=null;bridgeOn=false;w.onclose=null;w.close()}updBridge()}
+function bridgeOpen(kind){
+  const b=bl[kind],url=kind==='local'?BRIDGE_LOCAL:BRIDGE_RELAY;clearTimeout(b.t);
+  if(!S.bridge||b.ws||!url)return;
+  try{b.ws=new WebSocket(url)}catch(e){b.ws=null;b.t=setTimeout(()=>bridgeOpen(kind),15000);return}
+  b.ws.binaryType='arraybuffer';
+  b.ws.onopen=()=>{b.on=true};
+  b.ws.onmessage=e=>{
+    if(typeof e.data==='string'){try{const m=JSON.parse(e.data);if(m.device)b.dev=m.device;if(m.type==='bye')b.at=0}catch(x){}bridgeState();return}
+    b.at=performance.now();
+    if(kind==='relay'&&bl.local.on&&b.at-bl.local.at<1500)return;   // the bridge on this computer is answering: use that
+    const a=new Uint8Array(e.data);bridgeBuf.set(a.length>1024?a.subarray(0,1024):a);bridgeAt=b.at;
+    if(!bridgeOn)bridgeState();
+  };
+  b.ws.onclose=()=>{b.ws=null;b.on=false;bridgeState();if(S.bridge)b.t=setTimeout(()=>bridgeOpen(kind),kind==='relay'?5000:15000)};
+  b.ws.onerror=()=>{};
+}
+function bridgeConnect(){bridgeOpen('local');bridgeOpen('relay')}
+setInterval(()=>{if(S.bridge&&bridgeOn&&performance.now()-bridgeAt>1500)bridgeState()},1000);   // notice when frames stop
+function bridgeStop(){['local','relay'].forEach(k=>{const b=bl[k];clearTimeout(b.t);if(b.ws){const w=b.ws;b.ws=null;b.on=false;w.onclose=null;w.close()}});bridgeOn=false;updBridge()}
 function updBridge(){
-  const el=$('bridgestat');if(el)el.textContent=!S.bridge?'Off.':bridgeOn?'Connected'+(bridgeDev?' · listening to '+bridgeDev:'')+'.':'Not running on this computer. Start the Vibe Bridge app (see the README).';
+  const el=$('bridgestat');
+  if(el)el.textContent=!S.bridge?'Off.':bridgeOn?'Connected '+(bridgeVia==='relay'?'through your server':'on this computer')+(bridgeDev?' · listening to '+bridgeDev:'')+'.':'Not connected. On the computer that plays the music, start Vibe Bridge'+(PREFS&&location.protocol==='https:'?' with:  vibe-bridge --server '+location.host:'')+'  (see the README).';
   $('capbtn').classList.toggle('bridge',bridgeOn);
 }
 let spSlew=null,spSnap=false;

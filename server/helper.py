@@ -12,9 +12,10 @@ GET /netease?title=&artist=&duration=  ->  NetEase Cloud Music lyrics (unofficia
 GET/PUT/DELETE /prefs              ->  per-device Vibe Visualizer preferences, keyed by the device's Tailscale IP
 GET  /version                      ->  installed web app version, the newest one on GitHub, and release notes
 POST /report, GET /report, DELETE /report  ->  error reports from the app, kept on this server (errors.jsonl in PREFS_DIR)
+WS   /bridge/push, /bridge/listen  ->  relay for Vibe Bridge: a bridge pushes its bar data, the app's pages listen
 POST /update                       ->  download the newest web app files from GitHub into WEB_DIR
 """
-import asyncio, ipaddress, json, os, re, time, urllib.error, urllib.parse, urllib.request
+import asyncio, base64, hashlib, ipaddress, json, os, re, struct, time, urllib.error, urllib.parse, urllib.request
 from playwright.async_api import async_playwright
 
 SP_DC_FILE = os.environ.get("SP_DC_FILE", "/config/sp_dc")
@@ -425,6 +426,96 @@ def prefs(method, ip, body):
     return 405, {"error": "method not allowed"}
 
 
+# ---- Vibe Bridge relay: a bridge on the computer that plays the music pushes its analyser frames here; every
+# Vibe Visualizer page on your tailnet listens. Plain WebSocket (RFC 6455), so pages never need to reach the bridge.
+bridge = {"hello": None, "listeners": set(), "pushers": 0, "last": 0.0}
+
+
+async def ws_read(reader):
+    """One WebSocket message -> (opcode, payload); None when the connection closes."""
+    try:
+        h = await reader.readexactly(2)
+    except (asyncio.IncompleteReadError, ConnectionError):
+        return None
+    op, n, masked = h[0] & 15, h[1] & 127, h[1] & 128
+    if n == 126:
+        n = struct.unpack(">H", await reader.readexactly(2))[0]
+    elif n == 127:
+        n = struct.unpack(">Q", await reader.readexactly(8))[0]
+    if n > 65536:
+        return None
+    mask = await reader.readexactly(4) if masked else b""
+    data = await reader.readexactly(n)
+    if masked:
+        data = bytes(b ^ mask[i % 4] for i, b in enumerate(data))
+    return op, data
+
+
+def ws_frame(op, data):
+    n = len(data)
+    head = bytes([0x80 | op]) + (bytes([n]) if n < 126 else bytes([126]) + struct.pack(">H", n) if n < 65536 else bytes([127]) + struct.pack(">Q", n))
+    return head + data
+
+
+async def bridge_ws(reader, writer, headers, role):
+    key = headers.get("sec-websocket-key", "")
+    accept = base64.b64encode(hashlib.sha1((key + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11").encode()).digest()).decode()
+    writer.write(("HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: %s\r\n\r\n" % accept).encode())
+    await writer.drain()
+    if role == "listen":
+        bridge["listeners"].add(writer)
+        if bridge["hello"]:
+            writer.write(ws_frame(1, bridge["hello"]))
+        try:
+            while True:
+                m = await ws_read(reader)
+                if not m or m[0] == 8:
+                    break
+                if m[0] == 9:
+                    writer.write(ws_frame(10, m[1]))
+        finally:
+            bridge["listeners"].discard(writer)
+    else:
+        bridge["pushers"] += 1
+        log("Vibe Bridge connected")
+        try:
+            while True:
+                m = await ws_read(reader)
+                if not m or m[0] == 8:
+                    break
+                op, data = m
+                if op == 9:
+                    writer.write(ws_frame(10, data))
+                    continue
+                if op == 1:
+                    bridge["hello"] = data
+                elif op != 2:
+                    continue
+                bridge["last"] = time.time()
+                frame = ws_frame(op, data)
+                for w in list(bridge["listeners"]):
+                    if w.transport.get_write_buffer_size() < 256 * 1024:   # a slow page skips frames instead of piling them up
+                        try:
+                            w.write(frame)
+                        except Exception:
+                            bridge["listeners"].discard(w)
+        finally:
+            bridge["pushers"] -= 1
+            log("Vibe Bridge disconnected")
+            if not bridge["pushers"]:
+                bridge["hello"] = None
+                for w in list(bridge["listeners"]):   # tell the pages it's gone
+                    try:
+                        w.write(ws_frame(1, json.dumps({"type": "bye"}).encode()))
+                    except Exception:
+                        pass
+    try:
+        writer.write(ws_frame(8, b""))
+        writer.close()
+    except Exception:
+        pass
+
+
 async def handle(reader, writer):
     status, out = 500, {"error": "internal"}
     try:
@@ -444,7 +535,12 @@ async def handle(reader, writer):
         path = line.split(" ")[1] if " " in line else "/"
         route, _, qs = path.partition("?")
         params = {k: v[0] for k, v in urllib.parse.parse_qs(qs).items()}
-        if route.endswith("/prefs"):
+        if headers.get("upgrade", "").lower() == "websocket" and (route.endswith("/bridge/push") or route.endswith("/bridge/listen")):
+            if not client_ip(headers):
+                status, out = 403, {"error": "only for Vibe Visualizer on your tailnet"}
+            else:
+                return await bridge_ws(reader, writer, headers, "push" if route.endswith("/push") else "listen")
+        elif route.endswith("/prefs"):
             ip = client_ip(headers)
             status, out = prefs(method, ip, body) if ip else (403, {"error": "open Vibe Visualizer through its Tailscale HTTPS address to save preferences"})
         elif route.endswith("/lyrics"):
@@ -496,7 +592,7 @@ async def handle(reader, writer):
         elif route.endswith("/health"):
             status, out = 200, {"ok": state["error"] is None, "logged_in": state["logged_in"], "hash": state["hash"],
                                 "token_age_s": int(time.time() - state["minted"]) if state["minted"] else None,
-                                "cached": len(cache), "error": state["error"], "spicy_key": bool(spicy_key()), "can_update": web_dir_writable(),
+                                "cached": len(cache), "error": state["error"], "spicy_key": bool(spicy_key()), "can_update": web_dir_writable(), "bridge": bool(bridge["pushers"]),
                                 "timing": {k: {"ms": v["ms"], "status": v["status"], "age_s": int(time.time() - v["at"])} for k, v in timing.items()}}
         elif route.endswith("/canvas"):
             tid = params.get("id", "")

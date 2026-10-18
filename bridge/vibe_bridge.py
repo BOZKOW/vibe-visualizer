@@ -5,21 +5,57 @@ loopback on Windows), turns it into the same frequency data a browser's Web Audi
 to Vibe Visualizer over a local WebSocket (ws://127.0.0.1:47120). Only programs on this computer can connect; no
 sound or data leaves it.
 
-    vibe-bridge                 run with the default output device
-    vibe-bridge --list          list the output devices
-    vibe-bridge --device NAME   follow a specific output (part of its name is enough)
+It can also send the same data through your Vibe Visualizer server (--server), which every page of the app can
+always reach, so it works even if the browser blocks connections to programs on this computer, and on your other
+devices too (a phone gets the bars of the computer playing the music).
+
+    vibe-bridge                         run with the default output device
+    vibe-bridge --server https://NAME.ts.net   also send through your server (remembered for next time)
+    vibe-bridge --server off            stop sending through the server
+    vibe-bridge --list                  list the output devices
+    vibe-bridge --device NAME           follow a specific output (part of its name is enough)
 """
-import argparse, asyncio, json, sys, threading, time
+import argparse, asyncio, json, os, ssl, sys, threading, time
 
 import numpy as np
 import soundcard as sc
+from websockets.asyncio.client import connect
 from websockets.asyncio.server import serve
 
-VERSION = "1.0.0"
+VERSION = "1.1.0"
 FFT = 2048              # the same as Vibe Visualizer's analyser (fftSize 2048 -> 1024 bins)
 RATE = 48000
 SMOOTHING = 0.35        # the analyser's smoothingTimeConstant
 MIN_DB, MAX_DB = -100.0, -30.0   # the analyser's default dB range for byte data
+
+
+def config_path():
+    base = os.environ.get("APPDATA") if os.name == "nt" else os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/.config")
+    return os.path.join(base or ".", "vibe-bridge.json")
+
+
+def load_config():
+    try:
+        return json.load(open(config_path()))
+    except (OSError, ValueError):
+        return {}
+
+
+def save_config(cfg):
+    try:
+        os.makedirs(os.path.dirname(config_path()), exist_ok=True)
+        json.dump(cfg, open(config_path(), "w"))
+    except OSError as e:
+        print("couldn't save the settings:", e)
+
+
+def tls():
+    """Trusted certificates, also in the single-file builds (certifi when it's there)."""
+    try:
+        import certifi
+        return ssl.create_default_context(cafile=certifi.where())
+    except Exception:
+        return ssl.create_default_context()
 
 
 class Analyser:
@@ -129,9 +165,38 @@ async def main(args):
                 except Exception:
                     pass
 
+    async def push(server):   # send the same frames through the Vibe Visualizer server, reconnecting as needed
+        url = server.rstrip("/").replace("https://", "wss://", 1).replace("http://", "ws://", 1) + "/api/bridge/push"
+        wait, said = 2, False
+        while True:
+            try:
+                async with connect(url, ssl=tls() if url.startswith("wss://") else None, max_size=2 ** 16, open_timeout=15) as ws:
+                    print("sending through the server:", server, flush=True)
+                    wait, said, last, dev = 2, False, -1, None
+                    while True:
+                        if cap.device != dev:
+                            dev = cap.device
+                            await ws.send(json.dumps({"type": "hello", "name": "Vibe Bridge", "version": VERSION, "rate": RATE,
+                                                      "bins": FFT // 2, "device": cap.device}))
+                        await asyncio.sleep(1 / args.fps)
+                        with cap.lock:
+                            seq, frame = cap.seq, cap.frame
+                        if seq != last:
+                            last = seq
+                            await ws.send(frame)
+            except Exception as e:
+                if not said:
+                    print("can't reach the server (%s) - trying again" % e, flush=True)
+                    said = True
+                await asyncio.sleep(wait)
+                wait = min(wait * 2, 30)
+
     async with serve(handler, "127.0.0.1", args.port, max_size=2 ** 16):
         print("Vibe Bridge %s is running on ws://127.0.0.1:%d - leave this window open." % (VERSION, args.port), flush=True)
-        await pump()
+        tasks = [pump()]
+        if args.server:
+            tasks.append(push(args.server))
+        await asyncio.gather(*tasks)
 
 
 if __name__ == "__main__":
@@ -140,7 +205,17 @@ if __name__ == "__main__":
     p.add_argument("--device", help="follow this output device instead of the default (part of its name)")
     p.add_argument("--fps", type=int, default=50, help="frames sent per second (default 50)")
     p.add_argument("--list", action="store_true", help="list output devices and exit")
+    p.add_argument("--server", help="your Vibe Visualizer address (https://NAME.ts.net) to also send through it; 'off' to stop")
     a = p.parse_args()
+    cfg = load_config()
+    if a.server is not None:   # remember it, so starting it automatically keeps sending through the server
+        a.server = "" if a.server.lower() in ("off", "none", "no", "") else a.server.strip()
+        if a.server and not a.server.startswith(("http://", "https://")):
+            a.server = "https://" + a.server
+        cfg["server"] = a.server
+        save_config(cfg)
+    else:
+        a.server = cfg.get("server", "")
     if a.list:
         for s in sc.all_speakers():
             print(("* " if s.name == sc.default_speaker().name else "  ") + s.name)

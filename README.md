@@ -234,13 +234,26 @@ everything that computer plays, the Spotify app included, and sends the bars' da
 computer, with no sharing prompt and no device to pick. It only accepts connections from that same computer, and no
 sound or data leaves it.
 
+It can also send the same data **through your Vibe Visualizer server**, which every page of the app can always
+reach. That works even if your browser blocks connections to programs on the same computer, and your other devices
+(a phone, a tablet) then get real bars from the computer playing the music. Start it once with your server's
+address and it remembers it:
+
+```sh
+vibe-bridge --server https://<server-name>.<your-tailnet>.ts.net
+```
+
+(`vibe-bridge --server off` stops that again.) *Settings → Visualizer → Vibe Bridge* shows the exact command for
+your server.
+
 Download it from the [Releases page](https://github.com/BOZKOW/vibe-visualizer/releases) (look for "Vibe Bridge").
 Vibe Visualizer finds it by itself; *Settings → Visualizer → Vibe Bridge* shows whether it's connected and which
 output it's listening to, and the sound button in the top bar gets a green ring.
 
 **Windows**
 1. Download `vibe-bridge-windows.exe` and run it. Windows may say *Windows protected your PC*, because the program
-   isn't signed: choose *More info → Run anyway*.
+   isn't signed: choose *More info → Run anyway*. To also send through your server, run it once from a terminal:
+   `vibe-bridge-windows.exe --server https://<server-name>.<your-tailnet>.ts.net` (it remembers it).
 2. Leave its window open (minimize it) while you listen.
 3. To start it automatically: press `Win + R`, type `shell:startup`, and put a shortcut to `vibe-bridge-windows.exe`
    in the folder that opens.
@@ -251,8 +264,10 @@ output it's listening to, and the sound button in the top bar gets a green ring.
    mkdir -p ~/.local/bin
    mv ~/Downloads/vibe-bridge-linux-x86_64 ~/.local/bin/vibe-bridge
    chmod +x ~/.local/bin/vibe-bridge
-   vibe-bridge
+   vibe-bridge --server https://<server-name>.<your-tailnet>.ts.net
    ```
+   Run it from a terminal the first time, so you can see what it prints ("listening to …" and
+   "sending through the server …" mean it works). Double-clicking a program on Linux often does nothing.
    It needs PipeWire (with its PulseAudio layer) or PulseAudio, which almost every desktop has.
 2. To start it automatically when you log in, use the service file from the `bridge` folder:
    ```sh
