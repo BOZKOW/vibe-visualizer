@@ -9,3 +9,6 @@ prefs/
 .idea/
 .DS_Store
 __pycache__/
+
+# local notes for Claude Code: kept on this computer only
+CLAUDE.md
