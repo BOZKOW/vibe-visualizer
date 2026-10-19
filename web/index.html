@@ -749,7 +749,8 @@ body.phone:not(.phpl) #stage{grid-template-columns:var(--sl-cov) minmax(0,1fr);g
 body.phone:not(.phpl) #artw{width:var(--sl-cov)}
 body.phone:not(.phpl) #nextup{display:none}
 body.phone #lyr{left:0;-webkit-mask-image:linear-gradient(transparent,#000 5%,#000 74%,transparent 98%);mask-image:linear-gradient(transparent,#000 5%,#000 74%,transparent 98%)}
-body.phone #ly{padding:0}
+body.phone #ly{padding:0 calc(var(--sl-sider) + 4px) 0 calc(var(--sl-side) + 4px)}
+body.phone #lyr{left:calc(-1*var(--sl-side) - 4px)!important;right:calc(-1*var(--sl-sider) - 4px)!important}   /* the lyrics' area runs to the screen's edges, the text keeps its place: blur and glow fade out instead of being cut off */
 body.phone .ll{font-size:calc(clamp(26px,7.2vw,34px)*var(--ls));line-height:1.16}
 body.phone[data-view=both]:is(.hl,.lm) #lyr,body.phone.xfocus[data-view=both]:is(.hl,.lm) #lyr{bottom:86px}
 body.phone[data-view=both]:is(.hl,.lm) #viz{top:calc(100% - 80px)}
@@ -1074,6 +1075,17 @@ body.phone #qs.on{transform:translate(-50%,-50%)!important;opacity:1}
 .qdc .ib{width:40px;height:40px;font-size:22px;font-weight:700;line-height:1;color:#fff;background:var(--ph-glass,rgba(255,255,255,.1))!important;border:0!important}
 .qdc b{min-width:62px;text-align:center;font-variant-numeric:tabular-nums;font-size:15px}
 .qhint{margin:0 4px;font-size:13px;color:var(--dim);line-height:1.45}
+/* scrolling through the lyrics: every line shows, sharp; the button back to the line being sung */
+body.lscroll #ly{transition:none!important}
+body.lscroll #lyr:not(.st) .ll{--bl:0px!important;--fb:0px!important;filter:none!important;visibility:visible!important}
+body.lscroll #lyr:not(.st) .ll:not(.a):not(.fv){opacity:.55!important;pointer-events:auto!important}
+body.lscroll.xfocus #lyr:not(.st) .ll{transform:none!important;transition:opacity .3s!important}
+body.lscroll.xfocus #lyr:not(.st) .ll.dots{opacity:.55!important}
+body.lscroll.xfocus #ly .lcr{display:flex}
+#lyback{position:absolute;left:50%;bottom:18px;z-index:5;transform:translateX(-50%);display:flex;align-items:center;gap:8px;padding:10px 18px 10px 14px;border:0;border-radius:99px;
+  font:inherit;font-size:13.5px;font-weight:700;color:#111;background:#fff;box-shadow:0 8px 24px rgba(0,0,0,.35);cursor:pointer;animation:up .3s var(--e-out);white-space:nowrap}
+#lyback[hidden]{display:none}#lyback svg{width:18px;height:18px;fill:currentColor}
+body.phone #lyback{position:fixed;bottom:calc(var(--stageb,190px) + 120px)}body.phone.uihide #lyback{bottom:calc(var(--sab,0px) + 130px)}
 </style>
 <style id="glassui">
 /* ===== Design: Glass (Settings → Appearance → Design). Classic turns this whole sheet off. ===== */
@@ -1181,6 +1193,7 @@ body.low #scrubtip{backdrop-filter:none;-webkit-backdrop-filter:none;background:
     <div id="viz"><canvas id="c"></canvas></div>
     <div id="lyr"><div id="ly"></div><div id="lmsg"></div></div>
     <div id="lprob" role="status" hidden></div>
+    <button type="button" id="lyback" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 4h2v12l5.5-5.5 1.4 1.4L12 19.8l-7.9-7.9 1.4-1.4L11 16z"/></svg>Back to the lyrics being sung</button>
   </section>
 </div>
 
@@ -1891,8 +1904,11 @@ function kwFeed(){   // the cover (or the Canvas video while one plays live) int
 function kwOpts(){if(kw)try{kw.setOptions({blurPasses:kwPasses(),saturation:kwSat(),tintColor:[0,0,0],tintIntensity:kwDim()});kwFeed()}catch(e){}}
 function kwTick(now){
   if(!kwOn||S.bgStyle!=='dynamic'||document.hidden)return;
-  const iv=S.low?250:PHONE?33:0;if(now-kwLast<iv)return;kwLast=now;
-  if(now-kwSpdAt>200){kwSpdAt=now;kw.animationSpeed=(playing()?.08+Math.min(.3,bgEnergy*.5)+bgKick*.15:.025)*S.bgspeed/100}   // faster when the music is loud and busy
+  const iv=S.low?250:0;if(now-kwLast<iv)return;kwLast=now;
+  // as Spicy Lyrics moves it: speed 1 while music plays (0.1 paused), times the tempo (from the beats, 120 BPM = 1) and the
+  // loudness, plus a pulse on every beat (up to +1.5, fading), within 0.1-3
+  const sp=playing()?Math.max(.1,Math.min(3,(bgTempo||1)*(.5+Math.min(1,bgEnergy*2.2)*.7)+1.5*bgKick)):.1;
+  kw.animationSpeed=sp*S.bgspeed/100;
   try{kw.renderFrame()}catch(e){}
 }
 addEventListener('resize',()=>{if(kw)kwSize()});
@@ -2832,7 +2848,7 @@ function renderLyrics(label,quiet){
       if(l.tr)timed('tr',l.tr);
     }
     d.dataset.b=d.className;
-    d.onclick=()=>{if(lsync&&l.t!=null&&seekTo((l.t-S.loff/1000-lAdj)/lPace-(S.lseekFade&&src==='spotify'?.3:0))&&d.animate)d.animate([{transform:'scale(.97)'},{transform:'none'}],{duration:260,easing:'ease-out'})};   // click a line to jump there
+    d.onclick=()=>{if(lyDragged)return;lyFreeEnd();if(lsync&&l.t!=null&&seekTo((l.t-S.loff/1000-lAdj)/lPace-(S.lseekFade&&src==='spotify'?.3:0))&&d.animate)d.animate([{transform:'scale(.97)'},{transform:'none'}],{duration:260,easing:'ease-out'})};   // click a line to jump there
     ly.appendChild(d);lEls.push(d);
   });
   body.classList.toggle('hl',L.length>0);lyrMsg('');phLayout();
@@ -2951,6 +2967,7 @@ function songOffSet(ms){const k=songOffKey();if(!k)return;let m={};try{m=JSON.pa
   songOffMs=Math.max(-5000,Math.min(5000,Math.round(ms)));if(songOffMs)m[k]=songOffMs;else delete m[k];
   const ks=Object.keys(m);if(ks.length>400)ks.slice(0,ks.length-400).forEach(x=>delete m[x]);try{localStorage.setItem('vv_songoff',JSON.stringify(m))}catch(e){}
   li=-2;lsi=-2;lActKey='';moving.forEach(i=>{if(lEls[i])restLine(lEls[i])});moving.clear();if(L.length)lyricsTick();qsRender()}
+$('lyback').onclick=lyFreeEnd;
 const lyrT=()=>curTime()*lPace+S.loff/1000+lAdj+songOffMs/1000;   // the lyrics clock
 function checkPace(r,dur){
   lPace=1;if(!r.sync||!dur||r.credit&&/^(spicy_lyrics|apple_music|spotify|file|amll)$/.test(r.credit.source||''))return;   // matched by track id or your own file: exact
@@ -3143,10 +3160,28 @@ function place(){
   const el=lEls[Math.max(lsi>=0?lsi:li,0)];if(!el)return;
   const hh=S.xFocus&&S.view==='both'?lyr.clientHeight*.74-24:lyr.clientHeight;   // Focus mode in Both: same middle as before
   let y=hh*.38-(el.offsetTop+el.offsetHeight/2);
-  if(PHONE&&!S.xFocus&&!body.classList.contains('pip')){ly.style.transform='translateY('+(Math.max(14,hh*.045)-el.offsetTop)+'px)';return}   // phones: the line being sung right under the header   // phones: the line being sung near the top, as Spicy Lyrics Mobile scrolls
+  if(PHONE&&!S.xFocus&&!body.classList.contains('pip')){setLyY(Math.max(14,hh*.045)-el.offsetTop);return}   // phones: the line being sung right under the header   // phones: the line being sung near the top, as Spicy Lyrics Mobile scrolls
   const top=hh*.16;if(el.offsetTop+y<top)y=top-el.offsetTop;   // a tall line (long text, a translation under it) moves down so its top stays out of the fade
-  ly.style.transform='translateY('+y+'px)';
+  setLyY(y);
 }
+/* Scrolling through the lyrics, as in Spicy Lyrics: the wheel or a finger moves them freely and every line shows, sharp
+   (in Focus and Minimal mode too); following the song pauses, and comes back 4 s after the last move or with the
+   button, gliding to the line being sung. Tapping a line still jumps there. */
+let lyY=0,lyFree=false,lyFreeY=0,lyFreeT=0,lyDragged=false;
+function setLyY(y){lyY=y;if(!lyFree)ly.style.transform='translateY('+y+'px)'}
+function lyFreeBy(dy){
+  if(!L.length||!lsync||lyr.classList.contains('st')||S.view==='viz')return;
+  if(!lyFree){lyFree=true;lyFreeY=lyY;body.classList.add('lscroll');$('lyback').hidden=false;poke()}
+  const hh=lyr.clientHeight,maxY=hh*.45,minY=Math.min(maxY,hh*.45-ly.offsetHeight);
+  lyFreeY=Math.max(minY,Math.min(maxY,lyFreeY+dy));ly.style.transform='translateY('+lyFreeY+'px)';
+  clearTimeout(lyFreeT);lyFreeT=setTimeout(lyFreeEnd,4000);
+}
+function lyFreeEnd(){if(!lyFree)return;lyFree=false;clearTimeout(lyFreeT);body.classList.remove('lscroll');$('lyback').hidden=true;place()}
+lyr.addEventListener('wheel',e=>{if(!lsync||!L.length||lyr.classList.contains('st'))return;e.preventDefault();lyFreeBy(-e.deltaY*(e.deltaMode===1?32:e.deltaMode===2?lyr.clientHeight:1))},{passive:false});
+{let ty=null;
+ lyr.addEventListener('touchstart',e=>{ty=e.touches[0].clientY;lyDragged=false},{passive:true});
+ lyr.addEventListener('touchmove',e=>{if(ty==null)return;const y=e.touches[0].clientY,d=y-ty;if(!lyDragged&&Math.abs(d)<8)return;lyDragged=true;ty=y;lyFreeBy(d)},{passive:true});
+ lyr.addEventListener('touchend',()=>{ty=null;if(lyDragged)setTimeout(()=>{lyDragged=false},60)},{passive:true})}
 /* ==== Lyrics animation, ported from Spicy Lyrics ====
    Source: https://github.com/Spikerko/spicy-lyrics (src/utils/Lyrics/Animator/Lyrics/LyricsAnimator.ts,
    src/modules/Spring.ts, src/utils/Lyrics/Applyer/Utils/Emphasize.ts, src/css/Lyrics/Mixed.css)
@@ -4217,8 +4252,8 @@ function sample(dt,now){
   const viaBridge=!liveAudio()&&bridgeLive();realAudio=liveAudio()||viaBridge;   // the Vibe Bridge app: the sound of the whole computer (the Spotify app too)
   if(liveAudio()||viaBridge){
     // the analyser smooths once per read: scaled to the frame time, so the bars move the same at 60 and 240 fps
-    if(viaBridge&&AND&&bridgeVia==='local'){const k=1-Math.exp(-dt/38);for(let i=0;i<1024;i++){andGlide[i]+=(bridgeBuf[i]-andGlide[i])*k;data[i]=andGlide[i]}}   // the phone's sound comes 20 times a second: glide between readings instead of jumping
-    else if(viaBridge)data.set(bridgeBuf);else{analyser.smoothingTimeConstant=Math.pow(.35,dt/16.7);analyser.getByteFrequencyData(data)}
+    if(viaBridge){const k=1-Math.exp(-dt/(AND&&bridgeVia==='local'?38:20));for(let i=0;i<1024;i++){andGlide[i]+=(bridgeBuf[i]-andGlide[i])*k;data[i]=andGlide[i]}}   // Vibe Bridge readings come 20 (phone) to 50 (computer) times a second, through the server in bursts: glide between them instead of jumping
+    else{analyser.smoothingTimeConstant=Math.pow(.35,dt/16.7);analyser.getByteFrequencyData(data)}
     if(capStream&&!capHeard){for(let k=0;k<64;k++)if(data[k]){capHeard=true;break}}
     let mx=0;
     for(let i=0;i<N;i++){
