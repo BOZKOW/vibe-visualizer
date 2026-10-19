@@ -9,6 +9,8 @@ prefs/
 .idea/
 .DS_Store
 __pycache__/
+macos/build/
+macos/out/
 
 # local notes for Claude Code: kept on this computer only
 CLAUDE.md

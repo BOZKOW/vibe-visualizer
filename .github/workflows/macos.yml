@@ -1,0 +1,30 @@
+name: Build macOS app
+on:
+  push:
+    branches: [main]
+    paths: ["macos/**", "web/index.html", ".github/workflows/macos.yml"]
+  pull_request:
+    paths: ["macos/**", "web/index.html", ".github/workflows/macos.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build app
+        run: |
+          xcodebuild \
+            -project macos/VibeVisualizer.xcodeproj \
+            -scheme VibeVisualizer \
+            -configuration Release \
+            -destination 'platform=macOS' \
+            -derivedDataPath macos/build \
+            CODE_SIGNING_ALLOWED=NO
+          bash macos/package-dmg.sh \
+            "macos/build/Build/Products/Release/Vibe Visualizer.app"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Vibe-Visualizer-macOS
+          path: macos/out/Vibe-Visualizer-macOS.dmg

@@ -25,6 +25,7 @@ domain is needed.
 - [Updating](#updating)
 - [Using it on Linux](#using-it-on-linux)
 - [Using it on Windows](#using-it-on-windows)
+- [macOS app](#macos-app)
 - [Android app](#android-app)
 - [Third-party services](#third-party-services)
 - [Privacy](#privacy)
@@ -394,6 +395,25 @@ so lyrics, Canvas, your settings and updates all come from the server, the same 
 - **Building it yourself:** the app is in `android/` (plain Java, no libraries). GitHub Actions builds it on every
   change and publishes it when a tag like `android-v1.0.0` is pushed. Without the release key (the
   `ANDROID_KEYSTORE_B64` and `ANDROID_KEYSTORE_PASS` secrets) the build is signed with a debug key.
+
+## macOS app
+
+The native macOS app (macOS 13 or newer) opens your existing Vibe Visualizer server in its own WebKit window.
+It does not install or run the server for you; keep Tailscale connected if your server is reached through your tailnet.
+
+- **Download:** GitHub Actions builds a drag-to-Applications `.dmg` on changes to `macos/` or `web/index.html` and
+  uploads it as a workflow artifact.
+- **Build:** open `macos/VibeVisualizer.xcodeproj` in Xcode and build the `VibeVisualizer` scheme. To package a built
+  app as a disk image, run `bash macos/package-dmg.sh "/path/to/Vibe Visualizer.app"`. Without an argument, the script
+  packages the Release build at `macos/build/Build/Products/Release/`.
+- **First start:** enter your server's HTTPS address, such as `https://NAME.ts.net`. Change it later with the gear
+  button in the app. The app keeps its browser data separate from Safari and other apps.
+- **Spotify login:** when prompted, add `vibevisualizer://callback` as a Redirect URI in your Spotify app's developer
+  dashboard. Sign-in opens in your default browser and returns to the Mac app.
+- **Files and audio:** the app uses macOS's file picker for local audio and lyrics files. Allow microphone or screen
+  capture only if you choose an audio-capture option in the visualizer.
+- **Build it yourself:** the app is in `macos/` (SwiftUI and WebKit, no third-party dependencies). The distributed app
+  is unsigned and not notarized; macOS may ask you to confirm that you want to open it.
 
 ## Third-party services
 

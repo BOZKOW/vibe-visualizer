@@ -1801,13 +1801,15 @@ const SPS='user-read-currently-playing user-read-playback-state user-modify-play
 let SP=store.get('pulse_sp')||{};
 const spSave=()=>{store.set('pulse_sp',SP);pushPrefs()};
 const b64u=b=>btoa(String.fromCharCode(...new Uint8Array(b))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
-const redirectUri=()=>AND&&AND.callback?AND.callback():location.protocol==='http:'||location.protocol==='https:'?location.origin+location.pathname:'';   // the Android app logs in through the phone's browser, which comes back to the app
+const MAC=window.VVMac||null;
+const redirectUri=()=>AND&&AND.callback?AND.callback():MAC&&MAC.callback?MAC.callback():location.protocol==='http:'||location.protocol==='https:'?location.origin+location.pathname:'';   // app logins return from the browser to the app
 const lsGet=k=>{try{return localStorage.getItem(k)}catch(e){return null}},lsSet=(k,v)=>{try{v==null?localStorage.removeItem(k):localStorage.setItem(k,v)}catch(e){}};
+const appRedirectKey=AND?'vv_andredir':'vv_macredir';
 async function spLogin(go){
-  if(AND&&!go&&!lsGet('vv_andredir')){   // once: the app's login comes back to its own address, which Spotify has to know
+  if((AND||MAC)&&!go&&!lsGet(appRedirectKey)){   // once: the app's login comes back to its own address, which Spotify has to know
     notify({key:'andlogin',kind:'warn',title:'One step before logging in',msg:'In the Spotify developer dashboard (developer.spotify.com → your app → Settings → Redirect URIs), add this address next to the one you already have, and save:',
       list:[redirectUri()],actions:[{label:'Copy address',fn:async()=>{try{await navigator.clipboard.writeText(redirectUri());toast('Copied.','ok',1800)}catch(e){}spLogin()}},
-        {label:'It’s added, log in',pri:true,fn:()=>{lsSet('vv_andredir','1');spLogin(true)}}]});
+        {label:'It’s added, log in',pri:true,fn:()=>{lsSet(appRedirectKey,'1');spLogin(true)}}]});
     return}
   if(!C.spotId.trim()){toast('Add your Spotify Client ID first (Settings → Spotify).','warn');openPanel('spotify');return}
   if(!redirectUri()){toast('Spotify login needs this page served over http://127.0.0.1 and not opened as a file. Run: python -m http.server 8000','warn',10000);openPanel('spotify');return}
@@ -1815,7 +1817,7 @@ async function spLogin(go){
   try{
     const v=b64u(crypto.getRandomValues(new Uint8Array(48))),st=b64u(crypto.getRandomValues(new Uint8Array(12)));
     const ch=b64u(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(v)));
-    sessionStorage.setItem('sp_v',v);sessionStorage.setItem('sp_s',st);if(AND){lsSet('vv_sp_v',v);lsSet('vv_sp_s',st)}   // the app may be closed while the browser logs in
+    sessionStorage.setItem('sp_v',v);sessionStorage.setItem('sp_s',st);if(AND||MAC){lsSet('vv_sp_v',v);lsSet('vv_sp_s',st)}   // the app may be closed while the browser logs in
     const u='https://accounts.spotify.com/authorize?'+new URLSearchParams({client_id:C.spotId.trim(),response_type:'code',redirect_uri:redirectUri(),code_challenge_method:'S256',code_challenge:ch,state:st,scope:SPS});
     if(AND&&AND.login&&AND.login(u))return;location.href=u;
   }catch(e){toast('Could not start Spotify login: '+e.message)}
