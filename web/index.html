@@ -62,7 +62,7 @@ body.phone.kwon.cvlive:not(.low) #bg{opacity:1}   /* phones: Kawarp blurs the Ca
 body.cvmode #cvpane{opacity:1}
 
 /* ---------- layout ---------- */
-#stage{position:fixed;inset:0;display:grid;grid-template-columns:clamp(220px,28vw,380px) 1fr;gap:calc(var(--pad)*1.1);align-items:stretch;padding:78px var(--pad) 136px;opacity:0;transition:opacity .8s,grid-template-columns .6s var(--e-out)}
+#stage{position:fixed;inset:0;display:grid;grid-template-columns:clamp(220px,28vw,380px) 1fr;gap:calc(var(--pad)*1.1);align-items:stretch;padding:78px var(--pad) calc(136px + var(--credup,0px));opacity:0;transition:opacity .8s,grid-template-columns .6s var(--e-out)}
 body.loaded #stage{opacity:1}
 body.cvmode #stage{grid-template-columns:calc(50vw - var(--pad) - var(--pad)*.55) 1fr}
 #left{display:flex;flex-direction:column;justify-content:center;min-width:0}
@@ -70,7 +70,7 @@ body.cvmode #left{justify-content:center}
 body.cvmode.cvnoart #artw{display:none}   /* setting: hide the cover while a Canvas plays (comes back when there's none) */
 body.cvmode.cvnoart #left{justify-content:flex-end}   /* no cover: the text drops to the bottom of the video */
 #info{display:flex;flex-direction:column;gap:18px;min-width:0}
-#artw{position:relative;width:100%;aspect-ratio:1;border-radius:clamp(16px,2vw,28px);overflow:hidden;background:rgba(255,255,255,.1);transition:transform .07s ease-out,box-shadow .12s linear;
+#artw{position:relative;width:min(100%,calc(100vh - 384px - var(--credup,0px)));min-width:min(100%,140px);aspect-ratio:1;border-radius:clamp(16px,2vw,28px);overflow:hidden;background:rgba(255,255,255,.1);transition:transform .07s ease-out,box-shadow .12s linear;
   /* depth: a tight contact shadow, a soft wide one as from a light above, and a faint glow in the cover's colour */
   box-shadow:0 1px 2px rgba(0,0,0,.35),0 8px 16px rgba(0,0,0,.28),0 28px 56px -8px rgba(0,0,0,.5),0 60px 110px -20px rgba(0,0,0,.55),0 0 90px -30px var(--acc)}
 /* 3D through light, not movement: a fixed glossy highlight from the top-left, a bright top edge and a darker
@@ -711,7 +711,7 @@ body.android #corner{margin-top:var(--sat,0px);right:calc(16px + var(--sar,0px))
    a thin timeline with the times under it, plain white transport glyphs and a row of round glass buttons.
    Player (the Visualizer view): the cover large and centred with the song under it, and the bars. Chrome is
    monochrome white (92/60/35/18%), as in Spicy Lyrics Mobile. Landscape: cover and song left, lyrics right. */
-#qsbtn,#lybtn,#qs,#qsback,#nowfrom,#tl,#tr{display:none}
+#qsbtn,#lybtn,#qs,#qsback,#tl,#tr{display:none}
 body.phone{--sl-side:max(5vw,calc(var(--sal,0px) + 8px));--sl-sider:max(5vw,calc(var(--sar,0px) + 8px));--sl-top:max(5vw,calc(var(--sat,0px) + 6px));
   --sl-cov:min(13vh,30vw);--sl-t1:rgba(255,255,255,.92);--sl-t2:rgba(255,255,255,.6);--sl-t3:rgba(255,255,255,.35)}
 body.phone #top{display:none}
@@ -727,7 +727,7 @@ body.phone #right{grid-area:ly;min-height:0}
 body.phone:not(.phpl) #right{margin-top:6px}
 body.phone #ttl{font-size:clamp(19px,calc(var(--sl-cov)*.2),26px);line-height:1.2;font-weight:700;color:var(--sl-t1);margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 body.phone #sub{font-size:clamp(14px,calc(var(--sl-cov)*.125),17px);line-height:1.3;color:rgba(255,255,255,.7);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-body.phone #status,body.phone #lstat,body.phone #nowfrom{display:none}
+body.phone #status,body.phone #lstat{display:none}
 body.phone #ttl.mq,body.phone #sub.mq{text-overflow:clip;-webkit-mask-image:linear-gradient(90deg,#000 88%,transparent);mask-image:linear-gradient(90deg,#000 88%,transparent)}
 body.phone #ttl.mq>span,body.phone #sub.mq>span{display:inline-block;padding-right:2.5em;animation:slmq var(--mqd,9s) linear 1.6s infinite}
 @keyframes slmq{0%,12%{transform:translateX(0)}88%,100%{transform:translateX(var(--mqx,0px))}}   /* a long title glides along (header marquee) */
@@ -804,7 +804,7 @@ body.phone #slrow .ib{width:46px!important;height:46px!important;border-radius:5
   backdrop-filter:none!important;-webkit-backdrop-filter:none!important;transition:transform .15s,background .2s}   /* tinted glass, no live blur: a blur behind every button is redrawn every frame */
 body.phone #slrow .ib:not(.on){background:rgba(255,255,255,.08)!important}
 /* phones: no live blur anywhere it's redrawn all the time (it heats the phone); solid glass instead */
-body.phone #notes .note,body.phone #corner .toast,body.phone #cappanel,body.phone #netpanel,body.phone #devpanel,body.phone #lprob .pr,body.phone .qtile,body.phone #pwin,body.phone #panel,body.phone #setup .sw,body.phone #setup{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+body.phone #notes .note,body.phone #corner .toast,body.phone #cappanel,body.phone #netpanel,body.phone #devpanel,body.phone #lprob .pr,body.phone #pwin,body.phone #panel,body.phone #setup .sw,body.phone #setup{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
 body.phone #notes .note,body.phone #corner .toast,body.phone #cappanel,body.phone #netpanel,body.phone #devpanel{background:rgba(28,28,32,.96)!important}
 body.phone #pwin{background:rgba(18,18,26,.98)!important}body.phone #panel{background:rgba(4,4,12,.6)!important}
 body.phone .lq::before,body.phone .lq::after,body.phone .lqr{display:none!important}   /* no pointer-following highlights on a touch screen */
@@ -911,12 +911,11 @@ body.phone .psh{padding:16px 22px 0}
 /* computer-only settings and parts aren't shown on a phone */
 body.phone .pconly{display:none!important}
 /* phones: no hard outlines anywhere: soft fills and shadows instead */
-body.phone .ib,body.phone .btn,body.phone .chip,body.phone select,body.phone input,body.phone .tin,body.phone #psearch,body.phone .qtile,body.phone #qs,body.phone #nextup,body.phone .prow,body.phone .crow,
-body.phone #notes .note,body.phone #corner .toast,body.phone #lprob .pr,body.phone #hprob,body.phone #cappanel,body.phone #netpanel,body.phone #devpanel,body.phone .drow,body.phone #qsview,body.phone #qsdelay,body.phone #artw,
+body.phone .ib,body.phone .btn,body.phone .chip,body.phone select,body.phone input,body.phone .tin,body.phone #psearch,body.phone #qs,body.phone #nextup,body.phone .prow,body.phone .crow,
+body.phone #notes .note,body.phone #corner .toast,body.phone #lprob .pr,body.phone #hprob,body.phone #cappanel,body.phone #netpanel,body.phone #devpanel,body.phone .drow,body.phone #artw,
 body.phone .opt,body.phone #setup .sw,body.phone .lchip,body.phone .relnotes .rn{border:0!important;outline:0}
 body.phone select,body.phone .ppage input[type=text],body.phone .ppage input[type=url],body.phone .ppage input[type=password],body.phone .tin{background:rgba(255,255,255,.08)!important;box-shadow:none!important}
 body.phone .btn:not(.pri){background:rgba(255,255,255,.1)!important;box-shadow:none!important}
-body.phone .qtile{box-shadow:none!important}body.phone .qtile:not(.on){background:rgba(255,255,255,.08)!important}
 body.phone #qs:not([hidden]){box-shadow:0 -12px 40px rgba(0,0,0,.45)!important}
 body.phone #nextup{box-shadow:0 8px 24px rgba(0,0,0,.4)!important}
 body.phone #slrow .ib{box-shadow:0 8px 20px -8px rgba(0,0,0,.45)!important}
@@ -927,34 +926,11 @@ body.phone .f.chk input[type=checkbox]{border:0!important}
 /* quick toggles: a bottom sheet of tiles */
 body.phone #qsback:not([hidden]){display:block;position:fixed;inset:0;z-index:12;background:rgba(0,0,0,.45);opacity:0;transition:opacity .3s}
 body.phone #qsback.on{opacity:1}
-body.phone #qs:not([hidden]){display:flex;flex-direction:column;gap:14px;position:fixed;z-index:13;left:calc(8px + var(--sal,0px));right:calc(8px + var(--sar,0px));bottom:calc(8px + var(--sab,0px));
-  max-width:620px;margin:0 auto;max-height:calc(100% - 40px - var(--sat,0px));overflow-y:auto;overscroll-behavior:contain;padding:10px 16px 18px;border-radius:30px;
-  background:rgba(20,20,34,.94);border:1px solid rgba(255,255,255,.14);box-shadow:0 -10px 50px rgba(0,0,0,.5);
-  transform:translateY(calc(100% + 30px));transition:transform .45s var(--e-soft,cubic-bezier(.34,1.3,.64,1));touch-action:pan-y}
-body.phone #qs.on{transform:translateY(var(--qsdrag,0px))}
-body.phone #qs.drag{transition:none}
-.qsgrab{width:42px;height:5px;border-radius:9px;background:rgba(255,255,255,.3);margin:2px auto 0;flex:none}
-.qshead{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:0 4px;min-width:0}.qshead b{font-size:17px;white-space:nowrap;flex:none}.qshead small{color:var(--dim);font-size:12.5px;font-weight:600;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-#qsview{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;padding:4px;border-radius:16px;background:rgba(255,255,255,.07)}
-#qsview button{padding:10px 0;border-radius:12px;font-weight:700;font-size:13.5px;color:var(--dim);background:none;border:0;transition:background .25s,color .25s}
-#qsview button.on{background:#fff;color:#111}
-#qsdelay{display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:18px;background:rgba(255,255,255,.06)}
-#qsdelay span{flex:1;font-weight:700;font-size:13.5px;min-width:0}#qsdelay span small{display:block;font-weight:500;font-size:11px;color:var(--dim);margin-top:2px}
-#qsdelay .ib{width:38px;height:38px;font-size:22px;font-weight:700;line-height:1}#qsdelay b{min-width:52px;text-align:center;font-variant-numeric:tabular-nums}
-#qs.qmode #qsview,#qs.qmode #qsdelay,#qs.qmode #qsgrid{display:none}
 #qsq{display:flex;flex-direction:column;gap:4px}#qsq[hidden]{display:none}
 #qsq .qi{display:flex;align-items:center;gap:12px;padding:6px 4px;border-radius:12px}#qsq .qi img{width:46px;height:46px;border-radius:6px;object-fit:cover;background:rgba(255,255,255,.08);flex:none}
 #qsq .qi b{display:block;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#qsq .qi small{display:block;font-size:12.5px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #qsq .qi div{min-width:0}#qsq .qnow{opacity:.6}
-#qsgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
-@media(orientation:landscape){#qsgrid{grid-template-columns:repeat(6,minmax(0,1fr))}}
-.qtile{display:flex;flex-direction:column;align-items:flex-start;justify-content:space-between;gap:10px;min-height:92px;padding:12px;border-radius:20px;text-align:left;
   background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);color:#fff;transition:background .25s,color .25s,transform .2s}
-.qtile svg{width:24px;height:24px;fill:currentColor}
-.qtile b{display:block;font-size:13px;line-height:1.2}.qtile small{display:block;font-size:11px;font-weight:600;color:var(--dim);margin-top:2px;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
-.qtile span{display:block;min-width:0;max-width:100%}
-.qtile.on{background:rgba(255,255,255,.92);border-color:transparent;color:#000}.qtile.on small{color:rgba(0,0,0,.6)}
-.qtile:active{transform:scale(.95)}.qtile:disabled{opacity:.35}
 body.low #qs:not([hidden]){transition:none}
 /* the browser's page after logging in to Spotify for one of the apps */
 #appbounce{position:fixed;inset:0;z-index:100;display:grid;place-items:center;padding:24px;background:rgba(7,7,12,.92);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px)}
@@ -984,13 +960,6 @@ body.phone #nextup{background:var(--ph-glass),rgba(22,22,38,.92)!important;box-s
 /* quick toggles: a bottom sheet attached to the bottom edge, glass tiles, the accent for what's on */
 body.phone #qs:not([hidden]){left:0;right:0;bottom:0;max-width:none;border-radius:28px 28px 0 0!important;padding:10px calc(18px + var(--sar,0px)) calc(20px + var(--sab,0px)) calc(18px + var(--sal,0px));
   background:var(--ph-glass),rgba(18,18,30,.97)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 -14px 40px rgba(0,0,0,.45)!important}
-body.phone #qsview{background:var(--ph-surf)!important;border-radius:20px;padding:4px}
-body.phone #qsview button{border-radius:16px}body.phone #qsview button.on{background:#fff!important;color:#111!important}
-body.phone .qtile{border-radius:24px!important;min-height:96px}
-body.phone .qtile:not(.on){background:var(--ph-glass)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.14)!important}
-body.phone .qtile.on{background:var(--acc)!important;color:#111!important;box-shadow:0 8px 22px -8px var(--acc)!important}body.phone .qtile.on small{color:rgba(0,0,0,.62)!important}
-body.phone #qsdelay{background:var(--ph-surf)!important;border-radius:20px}
-body.phone #qsdelay .ib{background:var(--ph-glass)!important}
 /* snackbars in the app's glass */
 body.phone #notes .note,body.phone #corner .toast{background:var(--ph-glass),rgba(22,22,38,.97)!important;border-radius:20px!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.16),0 10px 28px rgba(0,0,0,.45)!important}
 body.phone #notes .note .nact .btn{color:var(--ph-acc)!important}
@@ -1020,7 +989,7 @@ body.phone #provlist .prow{border-radius:16px!important;background:rgba(255,255,
 body.phone .ppage .relnotes,body.phone .ppage .crow{margin-left:16px!important;margin-right:16px!important}
 body.phone .f.chk input[type=checkbox]:checked{background-color:var(--acc)!important}
 /* quick settings: a centred pop-up in the app's glass (Spicy Lyrics Mobile's layout) */
-body.phone #qs:not([hidden]){left:50%!important;top:50%!important;right:auto!important;bottom:auto!important;width:min(520px,calc(100% - 32px - var(--sal,0px) - var(--sar,0px)))!important;
+body.phone #qs:not([hidden]){position:fixed;z-index:13;left:50%!important;top:50%!important;right:auto!important;bottom:auto!important;width:min(520px,calc(100% - 32px - var(--sal,0px) - var(--sar,0px)))!important;
   max-height:calc(100% - var(--sat,0px) - var(--sab,0px) - 48px)!important;display:flex;flex-direction:column;gap:0!important;padding:0!important;overflow:hidden!important;border-radius:28px!important;
   transform:translate(-50%,-47%) scale(.96)!important;opacity:0;transition:transform .32s var(--e-out),opacity .22s!important}
 body.phone #qs.on{transform:translate(-50%,-50%)!important;opacity:1}
@@ -1042,7 +1011,8 @@ body.phone #qs.on{transform:translate(-50%,-50%)!important;opacity:1}
 .qset small{white-space:normal}
 .qrow .qch{width:20px;height:20px;fill:rgba(255,255,255,.45);flex:none}
 .qset{display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:20px;background:var(--ph-surf,rgba(255,255,255,.055))}
-.qdel{flex-wrap:wrap}.qdc{display:flex;align-items:center;gap:8px;margin-left:auto}
+.qdel{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:12px;row-gap:4px}.qdel>span{display:contents}.qdel>span>b{grid-column:1;grid-row:1;align-self:center}.qdel>span>small{grid-column:1/-1;grid-row:2;margin:0}
+.qdc{display:flex;align-items:center;gap:8px;margin-left:auto;grid-column:2;grid-row:1}   /* the buttons beside the title, the description across the whole row */
 .qdc .ib{width:40px;height:40px;font-size:22px;font-weight:700;line-height:1;color:#fff;background:var(--ph-glass,rgba(255,255,255,.1))!important;border:0!important}
 .qdc b{min-width:62px;text-align:center;font-variant-numeric:tabular-nums;font-size:15px}
 .qhint{margin:0 4px;font-size:13px;color:var(--dim);line-height:1.45}
@@ -1203,8 +1173,6 @@ body.low #bar input[type=range]::-webkit-slider-thumb{transition:none}
 #hprob.err{background:var(--g-grad),rgba(44,16,20,.42)}
 /* the quick toggles sheet in glass */
 body.phone #qs:not([hidden]){background:rgba(28,28,32,.96);border-color:var(--g-bd);box-shadow:0 -10px 50px rgba(0,0,0,.45),var(--g-hi);backdrop-filter:none;-webkit-backdrop-filter:none}
-.qtile{background:linear-gradient(145deg,rgba(255,255,255,.15),rgba(255,255,255,.05));border-color:rgba(255,255,255,.16);box-shadow:inset 0 1px 0 rgba(255,255,255,.18)}
-.qtile.on{background:rgba(255,255,255,.92);box-shadow:inset 0 1px 0 rgba(255,255,255,.5)}
 body.low #qs:not([hidden]){backdrop-filter:none;-webkit-backdrop-filter:none;background:rgba(20,20,32,.97)}
 /* the Spicy Lyrics parts in the same glass: scrub preview (floating glass), loading skeleton (frosted bars), refined credits */
 #scrubtip{border-radius:var(--r-sm);padding:5px 11px;background:var(--g-grad),var(--g-float);border-color:var(--g-bd);box-shadow:0 8px 24px rgba(0,0,0,.35),var(--g-hi);
@@ -1240,7 +1208,6 @@ body.low #scrubtip{backdrop-filter:none;-webkit-backdrop-filter:none;background:
 
 <header id="top">
   <div class="brand" id="brand" role="button" tabindex="0" title="Welcome page" aria-label="Vibe Visualizer: open the welcome page"><img class="logo" src="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22 role=%22img%22 aria-label=%22Vibe Visualizer%22%3E%3Cdefs%3E%3ClinearGradient id=%22vv-bg%22 x1=%220%22 y1=%220%22 x2=%221%22 y2=%221%22%3E%3Cstop offset=%220%22 stop-color=%22%238b7cff%22/%3E%3Cstop offset=%22.55%22 stop-color=%22%23ff5fa2%22/%3E%3Cstop offset=%221%22 stop-color=%22%2336c9ff%22/%3E%3C/linearGradient%3E%3ClinearGradient id=%22vv-shine%22 x1=%220%22 y1=%220%22 x2=%220%22 y2=%221%22%3E%3Cstop offset=%220%22 stop-color=%22%23fff%22 stop-opacity=%22.28%22/%3E%3Cstop offset=%22.5%22 stop-color=%22%23fff%22 stop-opacity=%220%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width=%2264%22 height=%2264%22 rx=%2216%22 fill=%22url(%23vv-bg)%22/%3E%3Crect width=%2264%22 height=%2264%22 rx=%2216%22 fill=%22url(%23vv-shine)%22/%3E%3Cg fill=%22%23fff%22%3E%3Crect x=%229.5%22 y=%2213%22 width=%226.5%22 height=%2220%22 rx=%223.25%22 opacity=%22.78%22/%3E%3Crect x=%2219%22 y=%2219%22 width=%226.5%22 height=%2222%22 rx=%223.25%22 opacity=%22.9%22/%3E%3Crect x=%2228.75%22 y=%2225%22 width=%226.5%22 height=%2226%22 rx=%223.25%22/%3E%3Crect x=%2238.5%22 y=%2219%22 width=%226.5%22 height=%2222%22 rx=%223.25%22 opacity=%22.9%22/%3E%3Crect x=%2248%22 y=%2213%22 width=%226.5%22 height=%2220%22 rx=%223.25%22 opacity=%22.78%22/%3E%3C/g%3E%3C/svg%3E" alt=""><span>Vibe Visualizer</span></div>
-  <div id="nowfrom" aria-live="polite"><small></small><b></b></div>
   <div id="seg" role="tablist" aria-label="View"><span id="segpill"></span>
     <button data-v="viz">Visualizer</button><button data-v="lyrics">Lyrics</button><button data-v="both">Both</button>
   </div>
@@ -1940,13 +1907,13 @@ function kwFeed(){   // the cover (or the Canvas video while one plays live) int
     const vsrc=cvv.getAttribute('src')||'';
     if(vid&&kwVidBad!==vsrc){if(!kwVid){kw.loadVideo(cvv,{frameRate:PHONE?15:24,onError:()=>{kwVid=false;kwVidBad=vsrc;kwFeed()}});kwVid=true}return}   // a video it can't read: the blurred cover instead
     if(kwVid){kw.unloadVideo();kwVid=false}
-    if(curImg)kw.loadImageElement(curImg);else kw.loadGradient(rawCols.map(c=>'rgb('+c.join(',')+')'),135)}
+    if(curImg&&!curImgTainted)kw.loadImageElement(curImg);else kw.loadGradient(rawCols.map(c=>'rgb('+c.join(',')+')'),135)}   // a cover that can't be read: soft colours instead (the GPU may not read it either)
   catch(e){console.warn('Kawarp:',e&&e.message)}
 }
 function kwOpts(){if(kw)try{kw.setOptions({blurPasses:kwPasses(),saturation:kwSat(),tintColor:[0,0,0],tintIntensity:kwDim()});kwFeed()}catch(e){}}
 function kwTick(now){
-  if(!kwOn||S.bgStyle!=='dynamic'||document.hidden||(!PHONE&&body.classList.contains('cvlive')))return;   // hidden behind a computer's Canvas: not drawn
-  const iv=S.low?250:0;if(now-kwLast<iv)return;kwLast=now;
+  if(!kwOn||S.low||S.bgStyle!=='dynamic'||document.hidden||(!PHONE&&body.classList.contains('cvlive')))return;   // hidden (low performance mode, a computer's Canvas in front): not drawn
+  if(now-kwLast<15)return;kwLast=now;   // 60 times a second at most: a slow blur looks the same, a 144 Hz screen doesn't need more
   // as Spicy Lyrics moves it: speed 1 while music plays (0.1 paused), times the tempo (from the beats, 120 BPM = 1) and the
   // loudness, plus a pulse on every beat (up to +1.5, fading), within 0.1-3
   const sp=playing()?Math.max(.1,Math.min(3,(bgTempo||1)*(.5+Math.min(1,bgEnergy*2.2)*.7)+1.5*bgKick)):.1;
@@ -1995,7 +1962,7 @@ function drawLiveBg(now,dt){
 sizeBgl();addEventListener('resize',sizeBgl);
 
 /* ================= cover pipeline ================= */
-let coverTok=0,tagWarned=false;
+let coverTok=0,tagWarned=false,curImgTainted=false;
 const clean=n=>n.replace(/\.[^.]+$/,'').replace(/_+/g,' ').replace(/\[[^\]]*\]|\((?:official|lyrics?|audio|video|hd|hq|remaster|visuali[sz]er|music|explicit)[^)]*\)/gi,'').replace(/^\s*\d{1,3}[\s.\-–]+/,'').replace(/\s+/g,' ').trim();
 const loadImg=(s,cors)=>new Promise(res=>{const i=new Image();if(cors)i.crossOrigin='anonymous';i.onload=()=>res(i);i.onerror=()=>res(null);i.src=s});
 async function setCover(s,label,tok,remote){
@@ -2004,7 +1971,7 @@ async function setCover(s,label,tok,remote){
   if(!img||tok!==coverTok)return false;
   coverSwap();art.src=s;artw.classList.add('has');status.textContent=label;
   let cols=null;if(!tainted){try{cols=extract(img)}catch(e){}}
-  curImg=img;
+  curImg=img;curImgTainted=tainted;
   if(cols){rawCols=cols.raw;barCols=cols.bar}else{rawCols=barCols=DEF_COLS;toast('Cover colors could not be read (image blocked by the browser); using default colors.','warn')}
   palDirty=true;dirty=true;fadeBake();return true;
 }
@@ -2213,6 +2180,7 @@ function placeCredit(){
   if(show&&room>=need-1){const mid=Math.max(0,(k.offsetHeight-cr.offsetHeight)/2);   // centred against the bar
     root.style.setProperty('--credb',Math.max(12,bottom+mid)+'px');root.style.setProperty('--credw',Math.min(420,room)+'px')}
   else{root.style.setProperty('--credb',(innerHeight-top+10)+'px');root.style.setProperty('--credw',(iw-pad*2)+'px')}
+  root.style.setProperty('--credup',(!PHONE&&show&&room<need-1?cr.offsetHeight+8:0)+'px');   // credits above the bar: the cover and title end above them
   // phones: the stage ends where the bar (and the credits above it) begin, so the bars are never drawn under them
   if(PHONE)root.style.setProperty('--credh',(cr.hidden||!cr.textContent.trim()||body.classList.contains('phpl')?0:cr.offsetHeight)+'px');
   root.style.setProperty('--stageb',Math.round(PHONE?innerHeight-(k.offsetTop+$('bar').offsetTop)+10:innerHeight-top+12+(show&&room<need-1?cr.offsetHeight+10:0))+'px');
@@ -2977,7 +2945,7 @@ function lyrMsg(msg,sub,kind,actions){
     if(actions&&actions.length){const row=document.createElement('div');row.className='lmact';actions.forEach(a=>{const x=document.createElement('button');x.type='button';x.className='btn sm'+(a.pri?' pri':'');x.textContent=a.label;x.onclick=a.fn;row.appendChild(x)});lmsg.appendChild(row)}}
   body.classList.toggle('lm',!!msg);phLayout();
 }
-function clearLyrics(msg,sub,kind,actions){clearTimeout(lyLoadT);L=[];lsync=false;lCredit=null;renderLyrics();if(kind==='none'&&!S.lnotice)lyrMsg('');else lyrMsg(msg,sub,kind,actions)}
+function clearLyrics(msg,sub,kind,actions){clearTimeout(lyLoadT);lyFreeEnd();L=[];lsync=false;lCredit=null;renderLyrics();if(kind==='none'&&!S.lnotice)lyrMsg('');else lyrMsg(msg,sub,kind,actions)}
 // a song change: the old lyrics fade out, and "Looking for lyrics…" only shows if finding the new ones takes a while
 // (saved lyrics come back at once, so there's no flash of the message and no jump)
 let lyLoadT=0;
@@ -3019,7 +2987,7 @@ function checkPace(r,dur){
   if(!src&&last&&last.t>dur-.5)src=last.t+Math.max(2,dur*.03);   // a line after the end can't be right
   if(src&&Math.abs(src-dur)/dur<.12){lPace=src/dur;toast('Lyrics timing adjusted to this version of the song ('+(lPace>1?'+':'')+((lPace-1)*100).toFixed(1)+'% pace).','ok',4000)}
 }
-function applyLyrics(r){clearTimeout(lyLoadT);songOffLoad();ly.classList.remove('leave');checkPace(r,curDur());dsSong();lyEnter();lCredit=r.credit||(r.label?{source:null}:null);L=(r.sync?interludes(r.lines):r.lines.filter(l=>!l.dots)).map(l=>Object.assign({},l));lsync=r.sync;renderLyrics(r.label);decorate(true)}
+function applyLyrics(r){clearTimeout(lyLoadT);lyFreeEnd();songOffLoad();ly.classList.remove('leave');checkPace(r,curDur());dsSong();lyEnter();lCredit=r.credit||(r.label?{source:null}:null);L=(r.sync?interludes(r.lines):r.lines.filter(l=>!l.dots)).map(l=>Object.assign({},l));lsync=r.sync;renderLyrics(r.label);decorate(true)}
 
 /* ---------- translation + romanization (Google Translate's free web endpoint, unofficial) ---------- */
 const GT='https://translate.googleapis.com/translate_a/single?client=dict-chrome-ex&sl=auto&dt=t&dt=rm&tl=';
@@ -4056,11 +4024,10 @@ function phoneMarquee(){
     const t=el.textContent,sp=document.createElement('span');sp.textContent=t;el.textContent='';el.appendChild(sp);el.classList.add('mq');
     const over=sp.offsetWidth-el.clientWidth;el.style.setProperty('--mqx',-over+'px');el.style.setProperty('--mqd',Math.max(6,over/28+4)+'s')});
 }
-// the phone player's header: where the music comes from
+// phones: the lyrics button shows whether the lyrics are on screen
 let phKey='';
 function phoneHead(){
-  const dev=spx.dev&&spx.dev.name,f=src==='spotify'?['Playing from Spotify',dev?'on '+dev:'Spotify']:src==='file'?['Playing from',ttl.textContent?'your files':'—']:['','Vibe Visualizer'];
-  const k=f.join('|');if(k===phKey)return;phKey=k;const h=$('nowfrom');h.querySelector('small').textContent=f[0];h.querySelector('b').textContent=f[1];
+  const k=S.view;if(k===phKey)return;phKey=k;
   $('lybtn').classList.toggle('on',S.view!=='viz');$('lybtn').setAttribute('aria-pressed',S.view!=='viz');
 }
 // the lyrics button: between the player and the lyrics (Both, when that was the last lyrics view)
@@ -4168,11 +4135,12 @@ function liquid(el){
   const up=()=>el.classList.remove('press');el.addEventListener('pointerup',up);el.addEventListener('pointercancel',up);
   el.addEventListener('pointerleave',()=>{up();r=null;cancelAnimationFrame(q);q=0;['--dx','--dy','--ax','--ay'].forEach(k=>{delete last[k];el.style.removeProperty(k)})});
 }
-const LQ_SEL='.ib,.chip,.btn,#seg button,#pnav .pn,.prow,.opt,#nextup,#bar,.qtile';
+const LQ_SEL='.ib,.chip,.btn,#seg button,#pnav .pn,.prow,.opt,#nextup,#bar';
 document.querySelectorAll(LQ_SEL).forEach(liquid);
 // controls added later (panels, rows): only look at what was added, not the whole page on every change
-new MutationObserver(ms=>{for(const m of ms)for(const n of m.addedNodes){if(n.nodeType!==1||n.classList.contains('lqr'))continue;
-  if(n.matches(LQ_SEL))liquid(n);if(n.firstElementChild)n.querySelectorAll(LQ_SEL).forEach(liquid)}}).observe(document.body,{childList:true,subtree:true});
+if(!PHONE)new MutationObserver(ms=>{for(const m of ms){if(m.target===ly||m.target===lmsg||ly.contains(m.target))continue;   // the lyrics are never buttons: not scanned word by word
+  for(const n of m.addedNodes){if(n.nodeType!==1||n.classList.contains('lqr'))continue;
+  if(n.matches(LQ_SEL))liquid(n);if(n.firstElementChild)n.querySelectorAll(LQ_SEL).forEach(liquid)}}}).observe(document.body,{childList:true,subtree:true});   // (phones: no liquid effects, so no watching)
 /* ---------- quick settings (phones), as Spicy Lyrics Mobile has them: a pop-up with a card leading to Up next, the
    song's lyrics source and your lyrics files, then translation, romanization, this song's delay and the output delay;
    the screens slide in with a back arrow ---------- */
@@ -4193,7 +4161,6 @@ function qsRender(){
   $('qrom').checked=S.romMode!=='off';$('qsrom').textContent=S.romMode==='off'?'Off':S.romMode==='below'?'Under each line':'Instead of the lyrics';
   $('qsdv').textContent=(songOffMs>0?'+':'')+(songOffMs/1000).toFixed(1)+' s';$('qsdelay').querySelectorAll('button').forEach(b=>b.disabled=!songOffKey()||!lsync);
   $('qsov').textContent=(S.loff>0?'+':'')+S.loff+' ms';
-  $('qshome').textContent=src==='spotify'&&SP.access?'The start page':'The start page';
 }
 setInterval(qsRender,1000);
 $('qsbtn').onclick=()=>qsOpen()?qsClose():qsShow();
@@ -4247,7 +4214,7 @@ addEventListener('keydown',e=>{
   if(!WZ.hidden){if(e.key==='Escape')wzDone();return}
   if(e.ctrlKey||e.metaKey||e.altKey)return;   // Ctrl+F, Ctrl+P, Ctrl+R… stay the browser's
   const tg=e.target.tagName;if(tg==='SELECT'||(tg==='INPUT'&&e.target.type!=='range'&&e.target.type!=='checkbox'))return;
-  if(e.key==='Escape'){closePanel();leaveHome()}
+  if(e.key==='Escape'){lyFreeEnd();closePanel();leaveHome()}
   else if(e.code==='Space'&&tg!=='BUTTON'){e.preventDefault();toggle()}
   else if(e.key==='f')fsToggle();
   else if(e.key==='n')nextTrack();
@@ -4572,6 +4539,7 @@ function homeButtons(){   // the home screen's buttons follow what's going on (a
 function leaveHome(){if(!body.classList.contains('home'))return;body.classList.remove('home');if(src!=='none'||loaded)$('empty').classList.add('gone')}
 $('brand').onclick=goHome;
 window.vvBack=()=>{   // the Android back button: closes what's open in the app, in this order; false = nothing was
+  if(lyFree){lyFreeEnd();return true}
   if(qsOpen()){if(qsScr!=='main')qsGo('main');else qsClose();return true}
   if(!WZ.hidden){wzDone();return true}
   if($('panel').classList.contains('open')){if(PHONE&&!$('pwin').classList.contains('plist')){phoneSetList(true);return true}closePanel();return true}
