@@ -8,16 +8,24 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.net.ConnectivityManager;
+import android.net.LinkProperties;
+import android.net.Network;
+import android.net.NetworkCapabilities;
+import android.net.http.SslError;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.text.InputType;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.WindowInsets;
 import android.view.WindowInsetsController;
 import android.view.WindowManager;
 import android.webkit.JavascriptInterface;
 import android.webkit.PermissionRequest;
+import android.webkit.RenderProcessGoneDetail;
+import android.webkit.SslErrorHandler;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceError;
@@ -38,7 +46,7 @@ public class MainActivity extends Activity {
     private WebView web;
     private SharedPreferences prefs;
     private final AudioTap tap = new AudioTap();
-    private boolean tapWanted, askedAudio, errorShown;
+    private boolean tapWanted, askedAudio, errorShown, gone;
     private ValueCallback<Uri[]> fileCb;
     private PermissionRequest micReq;
 
@@ -71,9 +79,20 @@ public class MainActivity extends Activity {
                 try { startActivity(new Intent(Intent.ACTION_VIEW, u)); } catch (ActivityNotFoundException ignored) { }
                 return true;   // other sites (GitHub, a lyrics maker's profile) open in the browser
             }
-            @Override public void onPageFinished(WebView v, String url) { errorShown = false; }
             @Override public void onReceivedError(WebView v, WebResourceRequest r, WebResourceError e) {
-                if (r.isForMainFrame()) cantReach(String.valueOf(e.getDescription()));
+                if (r.isForMainFrame()) cantReach(String.valueOf(e.getDescription()), e.getErrorCode() == ERROR_HOST_LOOKUP);
+            }
+            @Override public void onReceivedSslError(WebView v, SslErrorHandler h, SslError e) {
+                h.cancel();   // never load past a bad certificate; without this the page just stays black
+                if (e.getUrl() != null && inApp(Uri.parse(e.getUrl()))) cantReach("certificate error " + e.getPrimaryError(), false);
+            }
+            @Override public boolean onRenderProcessGone(WebView v, RenderProcessGoneDetail d) {
+                // the page crashed or Android took its memory: start over instead of letting Android close the app
+                gone = true;
+                ((ViewGroup) v.getParent()).removeView(v);
+                v.destroy();
+                recreate();
+                return true;
             }
         });
         web.setWebChromeClient(new WebChromeClient() {
@@ -113,7 +132,8 @@ public class MainActivity extends Activity {
     private static String normalize(String a) {
         a = a.trim();
         if (a.isEmpty()) return null;
-        if (!a.matches("(?i)^https?://.*")) a = "https://" + a;
+        a = a.replaceFirst("(?i)^https?://", "");
+        a = "https://" + a;   // the server is reached through tailscale serve's HTTPS; plain http isn't allowed
         Uri u = Uri.parse(a);
         if (u.getHost() == null || u.getHost().isEmpty()) return null;
         return u.getScheme() + "://" + u.getAuthority() + "/";
@@ -150,18 +170,44 @@ public class MainActivity extends Activity {
         d.show();
     }
 
-    private void cantReach(String why) {
+    private void cantReach(String why, boolean lookup) {
         if (errorShown || isFinishing()) return;
         errorShown = true;
         web.loadData("<html><body style='background:#07070c'></body></html>", "text/html", "utf-8");
+        String msg = lookup ? lookupHint()
+            : why.startsWith("certificate") ? "The server’s HTTPS certificate doesn’t fit this address. Use the "
+                + "https://NAME.ts.net address you open on your computer, not an IP address."
+            : "Check that the server is on and Tailscale is connected on this phone.";
         new AlertDialog.Builder(this, R.style.VVDialog)
             .setTitle("Your server can’t be reached")
-            .setMessage("Check that the server is on and Tailscale is connected on this phone.\n\n(" + why + ")")
+            .setMessage(msg + "\n\n(" + why + ")")
             .setPositiveButton("Try again", (x, w) -> { errorShown = false; web.loadUrl(prefs.getString("server", "")); })
             .setNeutralButton("Change address", (x, w) -> { errorShown = false; askServer(false); })
             .setNegativeButton("Quit", (x, w) -> finish())
             .setCancelable(false)
             .show();
+    }
+
+    /** Why the server's name can't be looked up: Tailscale isn't connected, Private DNS bypasses it, or MagicDNS is off. */
+    private String lookupHint() {
+        ConnectivityManager cm = getSystemService(ConnectivityManager.class);
+        Network act = cm == null ? null : cm.getActiveNetwork();
+        NetworkCapabilities nc = act == null ? null : cm.getNetworkCapabilities(act);
+        if (nc == null || !nc.hasTransport(NetworkCapabilities.TRANSPORT_VPN))
+            return "Tailscale isn’t connected on this phone (or this app is excluded from it). Open the Tailscale app, "
+                + "connect, then try again.";
+        if (Build.VERSION.SDK_INT >= 28) {
+            for (Network n : cm.getAllNetworks()) {
+                LinkProperties lp = cm.getLinkProperties(n);
+                String dns = lp == null ? null : lp.getPrivateDnsServerName();
+                if (dns != null)
+                    return "Android’s Private DNS (" + dns + ") is on, so this phone doesn’t ask Tailscale for your "
+                        + "server’s name. Set Private DNS to Off or Automatic in Android’s settings (Network & internet, "
+                        + "or Connections → More connection settings on Samsung), then try again.";
+            }
+        }
+        return "This phone doesn’t ask Tailscale for your server’s name. In the Tailscale app turn on "
+            + "Settings → Use Tailscale DNS, reconnect, then try again.";
     }
 
     // ---------- Vibe Bridge built in ----------
@@ -243,8 +289,8 @@ public class MainActivity extends Activity {
         });
     }
 
-    @Override protected void onResume() { super.onResume(); web.onResume(); if (tapWanted && hasAudio()) tap.start(); }
-    @Override protected void onPause() { super.onPause(); web.onPause(); tap.stop(); }   // nothing runs in the background
-    @Override protected void onSaveInstanceState(Bundle out) { super.onSaveInstanceState(out); web.saveState(out); }
-    @Override protected void onDestroy() { tap.stop(); web.destroy(); super.onDestroy(); }
+    @Override protected void onResume() { super.onResume(); if (!gone) web.onResume(); if (tapWanted && hasAudio()) tap.start(); }
+    @Override protected void onPause() { super.onPause(); if (!gone) web.onPause(); tap.stop(); }   // nothing runs in the background
+    @Override protected void onSaveInstanceState(Bundle out) { super.onSaveInstanceState(out); if (!gone) web.saveState(out); }
+    @Override protected void onDestroy() { tap.stop(); if (!gone) web.destroy(); super.onDestroy(); }
 }

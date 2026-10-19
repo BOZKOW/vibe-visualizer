@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- only to tell why the server can't be reached (Tailscale off, Private DNS on) -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <!-- Vibe Bridge: Android's Visualizer reads what the phone plays (the Spotify app too). Nothing is recorded or sent. -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />

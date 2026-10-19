@@ -379,7 +379,7 @@ so lyrics, Canvas, your settings and updates all come from the server, the same 
   and allow installing apps from your browser when Android asks.
 - **First start:** type your server's address (`https://NAME.ts.net`). Keep the **Tailscale** app connected on the
   phone. To change the address later: *Settings → Help & about → Android app*.
-- **"Can't be reached" (`ERR_NAME_NOT_RESOLVED`):** the phone isn't asking Tailscale for `.ts.net` names. In the
+- **"Can't be reached" (`ERR_NAME_NOT_RESOLVED`):** the app says which of these it is. The phone isn't asking Tailscale for `.ts.net` names. In the
   Tailscale app turn on *Settings → Use Tailscale DNS*, and turn **Private DNS** off in Android's settings
   (*Connections → More connection settings → Private DNS* on Samsung), then reconnect.
 - **The bars follow what the phone plays**, the Spotify app included: Vibe Bridge is built in. Allow the audio
