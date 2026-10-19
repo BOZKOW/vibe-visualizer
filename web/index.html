@@ -755,7 +755,7 @@ body.phone #lyr{left:calc(-1*var(--sl-side) - 4px)!important;right:calc(-1*var(-
 body.phone .ll{font-size:calc(clamp(26px,7.2vw,34px)*var(--ls));line-height:1.16}
 body.phone[data-view=both]:is(.hl,.lm) #lyr,body.phone.xfocus[data-view=both]:is(.hl,.lm) #lyr{bottom:86px}
 body.phone[data-view=both]:is(.hl,.lm) #viz{top:calc(100% - 80px)}
-body.phone #lmsg{padding:0}
+body.phone #lmsg{padding:0 calc(var(--sl-sider) + 4px) 0 calc(var(--sl-side) + 4px)!important}   /* inside the lyrics' widened area: the same inset as the lyrics
 body.phone #lprob:not(.big) .pr{background:rgba(28,28,32,.88);padding:9px 12px;border-radius:14px}
 /* player: the cover large and centred, the song under it, the bars, then the controls */
 body.phone.phpl #stage{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) auto 70px;grid-template-areas:"art" "txt" "ly";row-gap:18px;padding-bottom:var(--stageb,230px)}
@@ -1073,7 +1073,7 @@ body.phone.land.land.land.land.land #nextup{display:flex}
 body.phone.land.land.land.land.land #right{margin:0!important}
 body.phone.land.land.land.land.land #lyr{left:-12px!important;right:calc(-1*var(--L-right))!important;top:0!important;bottom:max(0px,calc(var(--stageb,100px) - var(--L-bot)))!important;transition:bottom .35s var(--e-out)!important}
 body.phone.land.land.land.land.land.uihide #lyr{bottom:0!important}
-body.phone.land.land.land.land.land #ly{padding:0 var(--L-right) 0 12px!important}
+body.phone.land.land.land.land.land #ly{padding:0 var(--L-right) 0 12px!important}body.phone.land.land.land.land.land #lmsg{padding:0 var(--L-right) 0 12px!important}
 body.phone.land.land.land.land.land .ll{font-size:calc(24px*var(--ls))!important}
 /* the bars: under the song (the player layout: the whole right side, mirrored) */
 body.phone.land.land.land.land.land:not(.phpl) #viz{position:fixed!important;top:auto!important;left:var(--L-left)!important;right:auto!important;width:var(--L-cov)!important;height:44px!important;bottom:calc(var(--L-bot) + var(--credh,30px) + 6px)!important;opacity:1!important;z-index:4;transition:none!important}
@@ -1111,6 +1111,22 @@ body.phone.low #dock::before,body.phone.low #dock::after{backdrop-filter:none!im
 body.phone.land.land.land.land.land #dock{-webkit-mask-image:none!important;mask-image:none!important}   /* a mask here would stop the blur seeing the page: the soft left edge goes on the layers */
 body.phone.land.land.land.land.land #dock::before{-webkit-mask-image:linear-gradient(to top,#000 35%,transparent),linear-gradient(90deg,transparent,#000 36px)!important;mask-image:linear-gradient(to top,#000 35%,transparent),linear-gradient(90deg,transparent,#000 36px)!important;-webkit-mask-composite:source-in!important;mask-composite:intersect!important}
 body.phone.land.land.land.land.land #dock::after{-webkit-mask-image:linear-gradient(to top,#000 20%,transparent 62%),linear-gradient(90deg,transparent,#000 36px)!important;mask-image:linear-gradient(to top,#000 20%,transparent 62%),linear-gradient(90deg,transparent,#000 36px)!important;-webkit-mask-composite:source-in!important;mask-composite:intersect!important}
+/* phones: the home screen without the player's controls over it; the device picker and the setup guide as pop-ups
+   in the app's glass */
+body.phone.home #dock,body.phone.home #lcredit,body.phone.home #nextup,body.phone.home #lyback{opacity:0!important;visibility:hidden!important;pointer-events:none!important}
+body.phone #empty{padding:calc(var(--sat,0px) + 24px) calc(24px + var(--sar,0px)) calc(var(--sab,0px) + 24px) calc(24px + var(--sal,0px))!important}
+body.phone #devpanel{left:50%!important;top:50%!important;right:auto!important;bottom:auto!important;width:min(440px,calc(100% - 32px))!important;max-height:calc(100% - var(--sat,0px) - var(--sab,0px) - 48px);overflow:auto;
+  transform:translate(-50%,-50%);transform-origin:center!important;border-radius:28px!important;padding:18px 16px 16px!important;background:var(--ph-glass),rgba(18,18,30,.97)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 24px 60px rgba(0,0,0,.55)!important;z-index:14!important;animation:devpop .3s var(--e-out)!important}
+@keyframes devpop{from{opacity:0;transform:translate(-50%,-46%) scale(.96)}}
+body.phone #devpanel .nph{padding:0 6px 10px}body.phone #devpanel .nph b{font-size:20px;font-weight:800}
+body.phone #devpanel .drow{border-radius:6px!important;background:var(--ph-surf)!important;margin-bottom:3px;padding:12px 14px!important}
+body.phone #devpanel .drow:first-child{border-radius:20px 20px 6px 6px!important}body.phone #devpanel .drow:last-child{border-radius:6px 6px 20px 20px!important}
+body.phone #devpanel .drow:only-child{border-radius:20px!important}
+body.phone #devpanel .drow.on{background:color-mix(in srgb,var(--acc) 22%,rgba(255,255,255,.06))!important}
+body.phone #devpanel .hint{padding:8px 6px 0;font-size:12.5px}
+body.phone #setup{padding:calc(var(--sat,0px) + 12px) calc(12px + var(--sar,0px)) calc(var(--sab,0px) + 12px) calc(12px + var(--sal,0px))!important}
+body.phone #setup .sw{max-height:100%!important;border-radius:28px!important;border:0!important;background:var(--ph-glass),rgba(18,18,30,.97)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 24px 60px rgba(0,0,0,.55)!important}
 </style>
 <style id="glassui">
 /* ===== Design: Glass (Settings → Appearance → Design). Classic turns this whole sheet off. ===== */
@@ -4000,7 +4016,7 @@ function uiTick(now){
 // phones: the player layout (big cover, song under it, bars) for the player view, and whenever a song has no lyrics
 function phLand(){if(!PHONE)return;const l=innerWidth>innerHeight;if(body.classList.contains('land')!==l){body.classList.toggle('land',l);mqKey='';setTimeout(()=>{placeCredit();resize();place()},80)}}
 addEventListener('resize',phLand);
-function phLayout(){if(!PHONE)return;phLand();const pl=S.view==='viz'||(!L.length&&!/load/.test(lmsg.className)&&(src!=='none'||loaded));
+function phLayout(){if(!PHONE)return;phLand();const pl=S.view==='viz'||(!L.length&&!/load/.test(lmsg.className)&&!lmsg.querySelector('.lmact')&&(src!=='none'||loaded));
   if(body.classList.contains('phpl')!==pl){body.classList.toggle('phpl',pl);mqKey='';setTimeout(()=>{placeCredit();resize();place()},60)}}
 function applyPhone(){
   if(!PHONE)return;phLayout();
