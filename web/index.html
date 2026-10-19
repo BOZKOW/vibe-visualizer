@@ -36,7 +36,7 @@ select option{color:#fff}   /* Windows draws dropdown lists white otherwise */
 /* live background (Spicy Lyrics style): drawn every frame, the .bl layers become its sources */
 #bgl{position:absolute;inset:0;width:100%;height:100%;display:block}
 #kw{position:absolute;inset:0;width:100%;height:100%;display:none}
-body.kwon:not(.low) #kw{display:block}body.kwon:not(.low) #bgl{display:none}body.kwon #cvblur{display:none}   /* the Spicy Lyrics background (Kawarp) when it runs */
+body.kwon:not(.low) #kw{display:block}body.kwon:not(.low) #bgl{display:none}body.phone.kwon #cvblur{display:none}   /* the Spicy Lyrics background (Kawarp) when it runs; a computer keeps its own blurred Canvas */
 /* still backgrounds (Spicy Lyrics' Artist image / Cover art / Color / None) cover the animated one */
 #bgimg{position:absolute;inset:-6%;z-index:1;background:#07070c center/cover no-repeat;opacity:0;transition:opacity .8s,background-color .8s;
   filter:blur(var(--bgb,0px)) brightness(var(--bgbr,.7)) saturate(var(--bgsa,1.7))}
@@ -53,7 +53,7 @@ body.low #bgl{display:none}
 #shade{position:fixed;inset:0;background:radial-gradient(ellipse at 70% 50%,rgba(0,0,0,.15),rgba(0,0,0,.55));opacity:0;transition:opacity .8s;pointer-events:none}
 body.cvlive #cvblur,body.cvlive #shade{opacity:1}
 body.cvlive #bg{opacity:0}
-body.kwon.cvlive:not(.low) #bg{opacity:1}   /* with Kawarp, the Canvas video is blurred into the background itself */
+body.phone.kwon.cvlive:not(.low) #bg{opacity:1}   /* phones: Kawarp blurs the Canvas video into the background itself */
 
 /* ---------- canvas video (left half) ---------- */
 #cvpane{position:fixed;left:0;top:0;bottom:0;width:56vw;opacity:0;pointer-events:none;transition:opacity .8s;-webkit-mask-image:linear-gradient(90deg,#000 0%,#000 40%,rgba(0,0,0,.93) 50%,rgba(0,0,0,.76) 61%,rgba(0,0,0,.5) 72%,rgba(0,0,0,.25) 83%,rgba(0,0,0,.08) 93%,transparent 100%);mask-image:linear-gradient(90deg,#000 0%,#000 40%,rgba(0,0,0,.93) 50%,rgba(0,0,0,.76) 61%,rgba(0,0,0,.5) 72%,rgba(0,0,0,.25) 83%,rgba(0,0,0,.08) 93%,transparent 100%)}   /* a long, eased fade: the video melts into the blur, no edge */
@@ -1920,7 +1920,7 @@ async function kwInit(){
 }
 function kwFeed(){   // the cover (or the Canvas video while one plays live) into the background
   if(!kw)return;
-  try{const vid=body.classList.contains('cvlive')&&!cvTaint&&cvv.readyState>=2;
+  try{const vid=PHONE&&body.classList.contains('cvlive')&&!cvTaint&&cvv.readyState>=2;   // a computer keeps its own blurred Canvas (as it always was)
     const vsrc=cvv.getAttribute('src')||'';
     if(vid&&kwVidBad!==vsrc){if(!kwVid){kw.loadVideo(cvv,{frameRate:PHONE?15:24,onError:()=>{kwVid=false;kwVidBad=vsrc;kwFeed()}});kwVid=true}return}   // a video it can't read: the blurred cover instead
     if(kwVid){kw.unloadVideo();kwVid=false}
@@ -1929,7 +1929,7 @@ function kwFeed(){   // the cover (or the Canvas video while one plays live) int
 }
 function kwOpts(){if(kw)try{kw.setOptions({blurPasses:kwPasses(),saturation:kwSat(),tintColor:[0,0,0],tintIntensity:kwDim()});kwFeed()}catch(e){}}
 function kwTick(now){
-  if(!kwOn||S.bgStyle!=='dynamic'||document.hidden)return;
+  if(!kwOn||S.bgStyle!=='dynamic'||document.hidden||(!PHONE&&body.classList.contains('cvlive')))return;   // hidden behind a computer's Canvas: not drawn
   const iv=S.low?250:0;if(now-kwLast<iv)return;kwLast=now;
   // as Spicy Lyrics moves it: speed 1 while music plays (0.1 paused), times the tempo (from the beats, 120 BPM = 1) and the
   // loudness, plus a pulse on every beat (up to +1.5, fading), within 0.1-3
@@ -4367,7 +4367,7 @@ function frame(now){
   const dt=Math.min(now-last,50);last=now;
   const pl=playing();andPoll();sample(dt,now);beatTick(now,dt);drawLiveBg(now,dt);kwTick(now);
   lyricsTick();desyncTick(now);uiTick(now);if(palDirty)buildPal();palTick(now);
-  if(!kwOn&&body.classList.contains('cvlive')&&now-lastCv>90&&now>coverAnimEnd&&cvv.readyState>=2&&!document.hidden){lastCv=now;cvFrame()}   // not during the cover's animation
+  if(!(PHONE&&kwOn)&&body.classList.contains('cvlive')&&now-lastCv>90&&now>coverAnimEnd&&cvv.readyState>=2&&!document.hidden){lastCv=now;cvFrame()}   // not during the cover's animation
   const active=pl||mxv>.003||!!capStream||idleK>.005;
   // the cover and title stay still (no beat pulse)
   if(!active&&!wasActive&&!dirty)return;
