@@ -1971,8 +1971,8 @@ function appLoginCheck(){
   const at=+lsGet('vv_sp_at')||0;if(!at||Date.now()-at<2500||Date.now()-at>15*60000)return;
   lsSet('vv_sp_at',null);
   notify({key:'loginback',kind:'warn',title:'Spotify isn’t connected yet',
-    msg:'If Spotify only showed “Logged in as …”, the login in your browser worked but it didn’t come back. Try again: now that you’re logged in, Spotify asks you to agree and then comes back. Or log in right here in the app.',
-    actions:[{label:'Log in inside the app',fn:()=>spLogin(true)},{label:'Try again',pri:true,fn:()=>spLogin()}]});
+    msg:'If Spotify only showed “Logged in as …”, the login worked but didn’t come back. Try again: now that you’re logged in, Spotify asks you to agree, then the “Open Vibe Visualizer” button brings it here.',
+    actions:[{label:'Not now'},{label:'Try again',pri:true,fn:()=>spLogin()}]});   // (not inside the app: Spotify refuses logins in an app's web view)
 }
 document.addEventListener('visibilitychange',()=>setTimeout(appLoginCheck,1200));
 function appBounceShow(){   // in the browser, after logging in for one of the apps: back to the app
@@ -1987,7 +1987,7 @@ function appBounceShow(){   // in the browser, after logging in for one of the a
   document.body.appendChild(d);
   if(!bad)setTimeout(()=>{location.href=link},400);   // straight back when the browser allows it; the button otherwise
 }
-async function spLogin(inApp){   // inApp: the app's own window instead of the browser
+async function spLogin(inApp){   // inApp: in this window, not handed to the browser (Spotify refuses that in the apps)
   if(!C.spotId.trim()){toast('Add your Spotify Client ID first (Settings → Spotify).','warn');openPanel('spotify');return}
   if(!redirectUri()){toast('Spotify login needs this page served over http://127.0.0.1 and not opened as a file. Run: python -m http.server 8000','warn',10000);openPanel('spotify');return}
   if(!(window.crypto&&crypto.subtle)){toast('Spotify login needs a secure context. Open the page via http://127.0.0.1:8000 or https.');return}

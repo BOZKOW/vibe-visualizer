@@ -150,6 +150,42 @@ public class MainActivity extends Activity {
         return true;
     }
 
+    /** Spotify's login in a browser tab over the app (Custom Tabs, as Spotify's own Android login does): the phone's
+     *  real browser, so an existing Spotify login carries over and Spotify accepts it (it refuses logins inside an
+     *  app's WebView). Opened in the browser itself, never in another app that claims Spotify links. */
+    private void openLogin(Uri u) {
+        Intent i = new Intent(Intent.ACTION_VIEW, u).addCategory(Intent.CATEGORY_BROWSABLE);
+        String pkg = tabBrowser();
+        if (pkg != null) {
+            i.setPackage(pkg);
+            Bundle extras = new Bundle();
+            extras.putBinder("android.support.customtabs.extra.SESSION", null);   // makes it a Custom Tab
+            i.putExtras(extras);
+            i.putExtra("android.support.customtabs.extra.TOOLBAR_COLOR", Color.rgb(7, 7, 12));
+            i.putExtra("android.support.customtabs.extra.TITLE_VISIBILITY", 1);
+        }
+        try { startActivity(i); }
+        catch (ActivityNotFoundException e) {
+            try { startActivity(new Intent(Intent.ACTION_VIEW, u)); } catch (ActivityNotFoundException ignored) { }
+        }
+    }
+
+    /** The default browser if it can show Custom Tabs, otherwise any browser that can; null if none. */
+    private String tabBrowser() {
+        PackageManager pm = getPackageManager();
+        Intent web = new Intent(Intent.ACTION_VIEW, Uri.parse("https://example.com")).addCategory(Intent.CATEGORY_BROWSABLE);
+        android.content.pm.ResolveInfo def = pm.resolveActivity(web, PackageManager.MATCH_DEFAULT_ONLY);
+        String defPkg = def != null && def.activityInfo != null ? def.activityInfo.packageName : null;
+        java.util.List<String> tabs = new java.util.ArrayList<>();
+        for (android.content.pm.ResolveInfo ri : pm.queryIntentActivities(web, PackageManager.MATCH_ALL)) {
+            Intent svc = new Intent("android.support.customtabs.action.CustomTabsService").setPackage(ri.activityInfo.packageName);
+            if (pm.resolveService(svc, 0) != null) tabs.add(ri.activityInfo.packageName);
+        }
+        if (defPkg != null && tabs.contains(defPkg)) return defPkg;
+        if (tabs.contains("com.android.chrome")) return "com.android.chrome";
+        return tabs.isEmpty() ? null : tabs.get(0);
+    }
+
     @Override protected void onNewIntent(Intent i) { super.onNewIntent(i); setIntent(i); loginReturn(i); }
 
     // ---------- the server ----------
@@ -273,10 +309,7 @@ public class MainActivity extends Activity {
         @JavascriptInterface public boolean login(String url) {   // only Spotify's login page, in the browser
             Uri u = Uri.parse(url);
             if (!"https".equals(u.getScheme()) || !"accounts.spotify.com".equals(u.getHost())) return false;
-            runOnUiThread(() -> {
-                try { startActivity(new Intent(Intent.ACTION_VIEW, u).addCategory(Intent.CATEGORY_BROWSABLE)); }
-                catch (ActivityNotFoundException e) { web.loadUrl(url); }   // no browser: log in here instead
-            });
+            runOnUiThread(() -> openLogin(u));
             return true;
         }
     }
