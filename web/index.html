@@ -833,36 +833,6 @@ body.phone #notes .note .nact .btn{background:none!important;border:0!important;
 body.phone #notes .note .nact .btn:active{background:rgba(208,196,255,.12)!important}
 body.phone #notes .note.err,body.phone #notes .note.warn,body.phone #notes .note.ok{border-left:0!important}
 /* landscape: the cover and song on the left, the lyrics on the right, the controls under the lyrics */
-@media(orientation:landscape){
-  body.phone{--sl-cov:min(calc(100vh - 2*var(--sl-top) - 92px),38vw)}
-  body.phone #stage,body.phone.phpl #stage,body.phone:not(.phpl) #stage{grid-template-columns:var(--sl-cov) minmax(0,1fr);grid-template-rows:auto auto minmax(0,1fr);
-    grid-template-areas:"art ly" "txt ly" ". ly";column-gap:5vw;row-gap:14px;padding-bottom:0}
-  body.phone #artw,body.phone.phpl #artw,body.phone:not(.phpl) #artw{width:var(--sl-cov);align-self:start;justify-self:start;border-radius:12px}
-  body.phone #txt,body.phone.phpl #txt{align-self:start;text-align:left}
-  body.phone #ttl,body.phone.phpl #ttl{font-size:20px}body.phone #sub,body.phone.phpl #sub{font-size:15px}
-  body.phone .ll{font-size:calc(24px*var(--ls))}
-  body.phone #nextup{display:none}
-  body.phone.phpl #lcredit{display:none!important}
-  body.phone #dock{left:calc(var(--sl-side) + var(--sl-cov) + 5vw - 52px);padding-left:40px;padding-top:120px;padding-bottom:calc(8px + var(--sab,0px));
-    -webkit-mask-image:linear-gradient(90deg,transparent,#000 40px);mask-image:linear-gradient(90deg,transparent,#000 40px)}   /* over the lyrics only, its left edge soft */
-  body.phone #bar{grid-template-columns:auto auto auto auto auto minmax(0,1fr);grid-template-areas:"shuf prev play next rep seek" "btns btns btns btns btns btns";gap:2px 4px;max-width:none}
-  body.phone #seekwrap{padding-left:10px;box-sizing:border-box}
-  body.phone #slrow{justify-content:flex-end}
-  body.phone #slrow .ib{width:40px!important;height:40px!important}
-  body.phone[data-view=both]:is(.hl,.lm) #lyr{bottom:66px}
-  body.phone[data-view=both]:is(.hl,.lm) #viz{top:calc(100% - 60px)}
-  body.phone #corner{left:auto;width:min(420px,60vw)}
-  body.phone[data-view=both]:not(.phpl) #viz{left:calc(var(--sl-side) + var(--sl-cov) + 5vw)!important;height:40px!important}
-  body.phone[data-view=both]:not(.phpl):is(.hl,.lm) #lyr{bottom:calc(var(--stageb,120px) + 46px)!important}
-  body.phone.uihide[data-view=both]:not(.phpl):is(.hl,.lm) #lyr{bottom:calc(var(--sab,0px) + 58px)!important}
-  body.phone:not(.phpl) #nextup{left:calc(var(--sl-side) + var(--sl-cov) + 5vw)!important;bottom:calc(var(--stageb,120px) + 50px)!important}
-  body.phone.uihide:not(.phpl) #nextup{bottom:calc(var(--sab,0px) + 78px)!important}
-  body.phone:not(.phpl) #nextup{bottom:calc(var(--stageb,120px) + 68px)!important}
-  body.phone #lcredit{left:calc(var(--sl-side) + var(--sl-cov) + 5vw)!important;bottom:calc(var(--stageb,120px) + 46px)!important}
-  body.phone.uihide #lcredit{bottom:calc(var(--sab,0px) + 56px)!important}
-  body.phone[data-view=both]:not(.phpl):is(.hl,.lm) #lyr{bottom:calc(var(--stageb,120px) + 64px)!important}
-  body.phone.uihide[data-view=both]:not(.phpl):is(.hl,.lm) #lyr{bottom:calc(var(--sab,0px) + 74px)!important}
-}
 /* floating lyrics (picture-in-picture): only the lyrics, the line being sung in the middle, the credits line under */
 body.pip #top,body.pip #dock,body.pip #corner,body.pip #qs,body.pip #qsback,body.pip #panel,body.pip #setup,body.pip #lprob,body.pip #lmsg small{display:none!important}
 body.pip #stage{padding:6px 10px!important;grid-template-columns:minmax(0,1fr)!important;grid-template-rows:minmax(0,1fr) auto!important;grid-template-areas:"ly" "txt"!important;row-gap:2px!important}
@@ -1087,6 +1057,60 @@ body.lscroll.xfocus #ly .lcr{display:flex}
   font:inherit;font-size:13.5px;font-weight:700;color:#111;background:#fff;box-shadow:0 8px 24px rgba(0,0,0,.35);cursor:pointer;animation:up .3s var(--e-out);white-space:nowrap}
 #lyback[hidden]{display:none}#lyback svg{width:18px;height:18px;fill:currentColor}
 body.phone #lyback{position:fixed;bottom:calc(var(--stageb,190px) + 120px)}body.phone.uihide #lyback{bottom:calc(var(--sab,0px) + 130px)}
+/* ===================== phones in landscape (Spicy Lyrics Mobile's layout) =====================
+   Left: the cover and the song, centred, with the bars and the credits in the bottom-left corner under them.
+   Right: the lyrics over the full height. The controls come over the lyrics' lower part when tapped, in two rows. */
+body.phone.land.land.land.land.land{--L-top:calc(var(--sat,0px) + 10px);--L-bot:calc(var(--sab,0px) + 10px);--L-left:max(4vw,calc(var(--sal,0px) + 14px));--L-right:max(4vw,calc(var(--sar,0px) + 14px));--L-gap:4vw;
+  --L-low:calc(54px + var(--credh,30px));--L-cov:min(calc(100vh - var(--sat,0px) - var(--sab,0px) - 94px - var(--L-low)),32vw)}
+body.phone.land.land.land.land.land[data-view=lyrics]{--L-low:calc(var(--credh,30px) + 4px)}body.phone.land.land.land.land.land.phpl{--L-low:0px}
+body.phone.land.land.land.land.land #stage{display:grid!important;padding:var(--L-top) var(--L-right) var(--L-bot) var(--L-left)!important;grid-template-columns:var(--L-cov) minmax(0,1fr)!important;
+  grid-template-rows:minmax(0,1fr) auto auto minmax(0,1fr) var(--L-low)!important;grid-template-areas:". ly" "art ly" "txt ly" ". ly" "low ly"!important;column-gap:var(--L-gap)!important;row-gap:10px!important}
+body.phone.land.land.land.land.land #artw{width:var(--L-cov)!important;min-width:0!important;align-self:end!important;justify-self:start!important;border-radius:12px!important;visibility:visible}
+body.phone.land.land.land.land.land.cvmode.phpl:not(.cvsoft) #artw{visibility:hidden}
+body.phone.land.land.land.land.land #txt{width:var(--L-cov);align-self:start!important;text-align:left!important}
+body.phone.land.land.land.land.land #ttl{font-size:19px!important}body.phone.land.land.land.land.land #sub{font-size:14px!important;margin-top:1px!important}
+body.phone.land.land.land.land.land #nextup{display:flex}
+body.phone.land.land.land.land.land #right{margin:0!important}
+body.phone.land.land.land.land.land #lyr{left:-12px!important;right:calc(-1*var(--L-right))!important;top:0!important;bottom:max(0px,calc(var(--stageb,100px) - var(--L-bot)))!important;transition:bottom .35s var(--e-out)!important}
+body.phone.land.land.land.land.land.uihide #lyr{bottom:0!important}
+body.phone.land.land.land.land.land #ly{padding:0 var(--L-right) 0 12px!important}
+body.phone.land.land.land.land.land .ll{font-size:calc(24px*var(--ls))!important}
+/* the bars: under the song (the player layout: the whole right side, mirrored) */
+body.phone.land.land.land.land.land:not(.phpl) #viz{position:fixed!important;top:auto!important;left:var(--L-left)!important;right:auto!important;width:var(--L-cov)!important;height:44px!important;bottom:calc(var(--L-bot) + var(--credh,30px) + 6px)!important;opacity:1!important;z-index:4;transition:none!important}
+body.phone.land.land.land.land.land[data-view=lyrics]:not(.phpl) #viz{display:none!important}
+body.phone.land.land.land.land.land.phpl #viz{position:absolute!important;inset:0!important;width:auto!important;height:auto!important;opacity:1!important}
+/* credits: the bottom-left corner */
+body.phone.land.land.land.land.land #lcredit{left:var(--L-left)!important;right:auto!important;width:var(--L-cov);max-width:var(--L-cov)!important;bottom:var(--L-bot)!important;font-size:10.5px!important}
+/* Next up: above the controls, on the lyrics side */
+body.phone.land.land.land.land.land #nextup{left:calc(var(--L-left) + var(--L-cov) + var(--L-gap))!important;right:auto!important;bottom:calc(var(--stageb,100px) + 8px)!important;max-width:min(360px,45vw)!important}
+body.phone.land.land.land.land.land.uihide #nextup{bottom:var(--L-bot)!important}body.phone.land.land.land.land.land.phpl #nextup{display:none!important}
+/* the controls: over the lower part of the lyrics side, the timeline on one line, then the transport and the buttons */
+body.phone.land.land.land.land.land #dock{left:calc(var(--L-left) + var(--L-cov) + var(--L-gap) - 36px)!important;right:0!important;padding:52px var(--L-right) calc(var(--sab,0px) + 8px) 36px!important;
+  -webkit-mask-image:linear-gradient(90deg,transparent,#000 36px)!important;mask-image:linear-gradient(90deg,transparent,#000 36px)!important}
+body.phone.land.land.land.land.land #bar{display:grid!important;grid-template-columns:auto auto auto auto auto minmax(0,1fr)!important;grid-template-areas:"seek seek seek seek seek seek" "shuf prev play next rep btns"!important;
+  gap:2px 6px!important;max-width:none!important;align-items:center!important;justify-items:center!important}
+body.phone.land.land.land.land.land #seekwrap{display:flex!important;align-items:center!important;gap:10px!important;padding:0 4px!important;width:100%!important}
+body.phone.land.land.land.land.land #seek{flex:1 1 auto!important;width:auto!important;order:2}body.phone.land.land.land.land.land #tl{order:1;margin:0!important}body.phone.land.land.land.land.land #tr{order:3;margin:0!important}
+body.phone.land.land.land.land.land #shuf,body.phone.land.land.land.land.land #rep{width:38px!important;height:38px!important}
+body.phone.land.land.land.land.land #prev,body.phone.land.land.land.land.land #next{width:46px!important;height:46px!important}body.phone.land.land.land.land.land #prev svg,body.phone.land.land.land.land.land #next svg{width:30px!important;height:30px!important}
+body.phone.land.land.land.land.land #bar #play{width:50px!important;height:50px!important}body.phone.land.land.land.land.land #bar #play svg{width:24px!important;height:24px!important}
+body.phone.land.land.land.land.land #slrow{justify-self:end!important;justify-content:flex-end!important;flex-wrap:wrap!important;gap:6px!important;width:auto!important}
+body.phone.land.land.land.land.land #slrow .ib{width:36px!important;height:36px!important}body.phone.land.land.land.land.land #slrow .ib svg{width:19px!important;height:19px!important}
+body.phone.land.land.land.land.land #lyback{left:calc((var(--L-left) + var(--L-cov) + var(--L-gap) + 100vw - var(--L-right)) / 2)!important;bottom:calc(var(--stageb,100px) + 10px)!important}
+body.phone.land.land.land.land.land.uihide #lyback{bottom:calc(var(--L-bot) + 10px)!important}
+body.phone.land.land.land.land.land #corner{left:auto!important;right:var(--L-right)!important;width:min(420px,52vw)!important;bottom:calc(var(--stageb,100px) + 8px)!important}
+body.phone.land.land.land.land.land.uihide #corner{bottom:var(--L-bot)!important}
+/* under the phone controls: a progressive blur (two blur layers, each fading in, so it has no edge) and a light tint,
+   instead of a black shade; only while the controls show */
+body.phone.phone #dock{background:none!important}
+body.phone.phone #dock::before,body.phone.phone #dock::after{display:block!important;content:"";position:absolute;inset:0;z-index:-1;pointer-events:none}
+body.phone.phone #dock::before{background:linear-gradient(to top,rgba(0,0,0,.34),rgba(0,0,0,.16) 50%,rgba(0,0,0,0));backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);
+  -webkit-mask-image:linear-gradient(to top,#000 35%,transparent);mask-image:linear-gradient(to top,#000 35%,transparent)}
+body.phone.phone #dock::after{backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);-webkit-mask-image:linear-gradient(to top,#000 20%,transparent 62%);mask-image:linear-gradient(to top,#000 20%,transparent 62%)}
+body.phone.low #dock::before,body.phone.low #dock::after{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+body.phone.land.land.land.land.land #dock{-webkit-mask-image:none!important;mask-image:none!important}   /* a mask here would stop the blur seeing the page: the soft left edge goes on the layers */
+body.phone.land.land.land.land.land #dock::before{-webkit-mask-image:linear-gradient(to top,#000 35%,transparent),linear-gradient(90deg,transparent,#000 36px)!important;mask-image:linear-gradient(to top,#000 35%,transparent),linear-gradient(90deg,transparent,#000 36px)!important;-webkit-mask-composite:source-in!important;mask-composite:intersect!important}
+body.phone.land.land.land.land.land #dock::after{-webkit-mask-image:linear-gradient(to top,#000 20%,transparent 62%),linear-gradient(90deg,transparent,#000 36px)!important;mask-image:linear-gradient(to top,#000 20%,transparent 62%),linear-gradient(90deg,transparent,#000 36px)!important;-webkit-mask-composite:source-in!important;mask-composite:intersect!important}
 </style>
 <style id="glassui">
 /* ===== Design: Glass (Settings → Appearance → Design). Classic turns this whole sheet off. ===== */
@@ -2174,6 +2198,7 @@ function placeCredit(){
     root.style.setProperty('--credb',Math.max(12,bottom+mid)+'px');root.style.setProperty('--credw',Math.min(420,room)+'px')}
   else{root.style.setProperty('--credb',(innerHeight-top+10)+'px');root.style.setProperty('--credw',(iw-pad*2)+'px')}
   // phones: the stage ends where the bar (and the credits above it) begin, so the bars are never drawn under them
+  if(PHONE)root.style.setProperty('--credh',(cr.hidden||!cr.textContent.trim()||body.classList.contains('phpl')?0:cr.offsetHeight)+'px');
   root.style.setProperty('--stageb',Math.round(PHONE?innerHeight-(k.offsetTop+$('bar').offsetTop)+10:innerHeight-top+12+(show&&room<need-1?cr.offsetHeight+10:0))+'px');
 }
 {let q=0;const ro=new ResizeObserver(()=>{cancelAnimationFrame(q);q=requestAnimationFrame(placeCredit)});   // next frame: resizing the bar here would loop
@@ -3162,7 +3187,7 @@ function place(){
   const el=lEls[Math.max(lsi>=0?lsi:li,0)];if(!el)return;
   const hh=S.xFocus&&S.view==='both'?lyr.clientHeight*.74-24:lyr.clientHeight;   // Focus mode in Both: same middle as before
   let y=hh*.38-(el.offsetTop+el.offsetHeight/2);
-  if(PHONE&&!S.xFocus&&!body.classList.contains('pip')){setLyY(Math.max(14,hh*.045)-el.offsetTop);return}   // phones: the line being sung right under the header   // phones: the line being sung near the top, as Spicy Lyrics Mobile scrolls
+  if(PHONE&&!S.xFocus&&!body.classList.contains('pip')){setLyY(Math.max(14,hh*(body.classList.contains('land')?.2:.045))-el.offsetTop);return}   // phones: the line being sung right under the header   // phones: the line being sung near the top, as Spicy Lyrics Mobile scrolls
   const top=hh*.16;if(el.offsetTop+y<top)y=top-el.offsetTop;   // a tall line (long text, a translation under it) moves down so its top stays out of the fade
   setLyY(y);
 }
@@ -3973,8 +3998,10 @@ function uiTick(now){
 }
 // Settings → Phone: header size, the buttons under the controls
 // phones: the player layout (big cover, song under it, bars) for the player view, and whenever a song has no lyrics
-function phLayout(){if(!PHONE)return;const pl=S.view==='viz'||(!L.length&&!/load/.test(lmsg.className)&&(src!=='none'||loaded));
-  if(body.classList.contains('phpl')!==pl){body.classList.toggle('phpl',pl);mqKey='';setTimeout(()=>{resize();place()},60)}}
+function phLand(){if(!PHONE)return;const l=innerWidth>innerHeight;if(body.classList.contains('land')!==l){body.classList.toggle('land',l);mqKey='';setTimeout(()=>{placeCredit();resize();place()},80)}}
+addEventListener('resize',phLand);
+function phLayout(){if(!PHONE)return;phLand();const pl=S.view==='viz'||(!L.length&&!/load/.test(lmsg.className)&&(src!=='none'||loaded));
+  if(body.classList.contains('phpl')!==pl){body.classList.toggle('phpl',pl);mqKey='';setTimeout(()=>{placeCredit();resize();place()},60)}}
 function applyPhone(){
   if(!PHONE)return;phLayout();
   ['large','medium','small','hidden'].forEach(k=>body.classList.toggle('phh-'+k,S.phHead===k));
@@ -4103,6 +4130,7 @@ function openPanel(page){
 function closePanel(){$('panel').classList.remove('open');body.classList.remove('popen');$('gear').classList.remove('on')}
 // Liquid Glass behaviour for every control: pointer-following highlight, squish on press, springy release
 function liquid(el){
+  if(PHONE)return;   // touch screens: no hover, so no liquid lean or highlight (a tapped button stayed 'hovered')
   if(el._lq)return;el._lq=1;el.classList.add('lq');
   // pointer tracking: measure once when the pointer comes in, update at most once a frame, write only what changed
   let r=null,q=0,px=0,py=0;const last={};
