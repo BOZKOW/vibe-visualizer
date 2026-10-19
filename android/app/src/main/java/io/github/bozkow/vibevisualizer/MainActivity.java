@@ -132,8 +132,24 @@ public class MainActivity extends Activity {
 
         String server = prefs.getString("server", null);
         if (server == null) askServer(true);
-        else if (saved == null || web.restoreState(saved) == null) web.loadUrl(server);
+        else if (!loginReturn(getIntent()) && (saved == null || web.restoreState(saved) == null)) web.loadUrl(server);
     }
+
+    // ---------- Spotify login: in the phone's browser (Google/Apple sign-in and an existing Spotify session work
+    // there, not inside an app), which comes back to vibevisualizer://callback; the page then finishes the login ----------
+    static final String CALLBACK = "vibevisualizer://callback";
+
+    private boolean loginReturn(Intent i) {
+        Uri u = i == null ? null : i.getData();
+        if (u == null || !"vibevisualizer".equals(u.getScheme())) return false;
+        String server = prefs.getString("server", null);
+        if (server == null) return false;
+        String q = u.getEncodedQuery();
+        web.loadUrl(server + (q != null ? "?" + q : ""));   // ?code=…&state=… (or ?error=…), as a web login would come back
+        return true;
+    }
+
+    @Override protected void onNewIntent(Intent i) { super.onNewIntent(i); setIntent(i); loginReturn(i); }
 
     // ---------- the server ----------
     private boolean inApp(Uri u) {
@@ -251,6 +267,16 @@ public class MainActivity extends Activity {
         @JavascriptInterface public String version() { return MainActivity.this.version(); }
         @JavascriptInterface public String server() { return prefs.getString("server", ""); }
         @JavascriptInterface public void changeServer() { runOnUiThread(() -> askServer(false)); }
+        @JavascriptInterface public String callback() { return CALLBACK; }
+        @JavascriptInterface public boolean login(String url) {   // only Spotify's login page, in the browser
+            Uri u = Uri.parse(url);
+            if (!"https".equals(u.getScheme()) || !"accounts.spotify.com".equals(u.getHost())) return false;
+            runOnUiThread(() -> {
+                try { startActivity(new Intent(Intent.ACTION_VIEW, u).addCategory(Intent.CATEGORY_BROWSABLE)); }
+                catch (ActivityNotFoundException e) { web.loadUrl(url); }   // no browser: log in here instead
+            });
+            return true;
+        }
     }
 
     @Override public void onRequestPermissionsResult(int code, String[] perms, int[] res) {

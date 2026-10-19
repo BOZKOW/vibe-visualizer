@@ -427,13 +427,37 @@ def client_ip(headers):
     return str(a) if any(a in n for n in TS_NETS) else None
 
 
+def shared_spot_id():
+    """A new device (a phone) starts with the Spotify Client ID another of your devices saved: it isn't secret, and
+    typing it on a phone is no fun. Only the Client ID; every device still logs in to Spotify by itself."""
+    best, at = "", 0
+    try:
+        for n in os.listdir(PREFS_DIR):
+            if not n.endswith(".json") or n == "errors.json":
+                continue
+            p = os.path.join(PREFS_DIR, n)
+            try:
+                c = (json.load(open(p)).get("C") or {})
+                sid, t = str(c.get("spotId") or "").strip(), os.path.getmtime(p)
+            except (OSError, ValueError, AttributeError):
+                continue
+            if re.fullmatch(r"[0-9a-fA-F]{32}", sid) and t > at:
+                best, at = sid, t
+    except OSError:
+        pass
+    return best
+
+
 def prefs(method, ip, body):
     path = os.path.join(PREFS_DIR, ip.replace(":", "_") + ".json")
     if method == "GET":
         try:
-            return 200, json.load(open(path))
+            data = json.load(open(path))
         except (OSError, ValueError):
-            return 404, {"error": "nothing saved for this device"}
+            return 404, {"error": "nothing saved for this device", "spotId": shared_spot_id()}
+        if isinstance(data, dict) and not ((data.get("C") or {}).get("spotId") or "").strip():
+            data["spotId"] = shared_spot_id()
+        return 200, data
     if method == "DELETE":
         try:
             os.remove(path)

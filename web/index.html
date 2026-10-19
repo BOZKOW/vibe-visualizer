@@ -648,7 +648,12 @@ body.wz #empty,body.popen #empty{opacity:0;transition:opacity .3s}   /* nothing 
 body.low .ib,body.low .chip,body.low select,body.low .prow,body.low #cappanel,body.low #netpanel,body.low #setup .sw,body.low #setup{backdrop-filter:none;-webkit-backdrop-filter:none}
 body.low #cappanel,body.low #netpanel,body.low #setup .sw{background:rgba(20,20,32,.95)}
 /* ---------- phones and tablets (the Android app, or a narrow window) ---------- */
-body.android #fs,body.android #captab{display:none}   /* the app is full screen already; WebView can't share a tab */
+*{-webkit-tap-highlight-color:transparent}   /* no blue flash on whatever is tapped */
+:focus:not(:focus-visible){outline:none}   /* a ring only for the keyboard, not after a tap or click */
+body.android{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}   /* a long press doesn't select the page in blue */
+body.android input,body.android textarea,body.android .relnotes,body.android #errlog{-webkit-user-select:text;user-select:text}
+body.android #fs,body.android #captab{display:none}
+@media(max-width:760px){body.android #lowbtn{display:none}}   /* in Settings → Performance; so the top buttons fit a phone */   /* the app is full screen already; WebView can't share a tab */
 body.android #volume,body.android #volval,body.android #spvol,body.android #spvolval{display:none}   /* the phone's volume buttons do that */
 /* the app draws under the camera cutout and sends its size (--sat/--sab/--sal/--sar): nothing important goes under it */
 body.android #stage{padding-left:calc(var(--pad) + var(--sal,0px));padding-right:calc(var(--pad) + var(--sar,0px))}
@@ -672,8 +677,8 @@ body.android #lcredit{left:calc(var(--pad) + var(--sal,0px))}
   #capt{display:none}
   #stage{padding-top:58px;padding-bottom:var(--stageb,132px);gap:28px;grid-template-columns:minmax(0,30vw) 1fr}   /* ends where the bar (and the credits above it) begin */
   body.cvmode #stage{grid-template-columns:minmax(0,40vw) 1fr}
-  #artw,body.cvmode #artw{width:min(100%,calc(100vh - 250px))}
-  body.credly #artw,body.credly.cvmode #artw{width:min(100%,calc(100vh - 200px))}
+  #artw,body.cvmode #artw{width:min(100%,calc(100vh - var(--stageb,132px) - 58px - 64px))}   /* the cover takes what's left above the title */
+  #status,#lstat{display:none}
   #info{gap:10px}#ttl{font-size:18px}
   #dock{bottom:calc(10px + var(--sab,env(safe-area-inset-bottom,0px)))}
   #bar{flex-wrap:nowrap;padding:7px 12px;gap:8px}
@@ -1783,16 +1788,23 @@ const SPS='user-read-currently-playing user-read-playback-state user-modify-play
 let SP=store.get('pulse_sp')||{};
 const spSave=()=>{store.set('pulse_sp',SP);pushPrefs()};
 const b64u=b=>btoa(String.fromCharCode(...new Uint8Array(b))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
-const redirectUri=()=>location.protocol==='http:'||location.protocol==='https:'?location.origin+location.pathname:'';
-async function spLogin(){
+const redirectUri=()=>AND&&AND.callback?AND.callback():location.protocol==='http:'||location.protocol==='https:'?location.origin+location.pathname:'';   // the Android app logs in through the phone's browser, which comes back to the app
+const lsGet=k=>{try{return localStorage.getItem(k)}catch(e){return null}},lsSet=(k,v)=>{try{v==null?localStorage.removeItem(k):localStorage.setItem(k,v)}catch(e){}};
+async function spLogin(go){
+  if(AND&&!go&&!lsGet('vv_andredir')){   // once: the app's login comes back to its own address, which Spotify has to know
+    notify({key:'andlogin',kind:'warn',title:'One step before logging in',msg:'In the Spotify developer dashboard (developer.spotify.com → your app → Settings → Redirect URIs), add this address next to the one you already have, and save:',
+      list:[redirectUri()],actions:[{label:'Copy address',fn:async()=>{try{await navigator.clipboard.writeText(redirectUri());toast('Copied.','ok',1800)}catch(e){}spLogin()}},
+        {label:'It’s added, log in',pri:true,fn:()=>{lsSet('vv_andredir','1');spLogin(true)}}]});
+    return}
   if(!C.spotId.trim()){toast('Add your Spotify Client ID first (Settings → Spotify).','warn');openPanel('spotify');return}
   if(!redirectUri()){toast('Spotify login needs this page served over http://127.0.0.1 and not opened as a file. Run: python -m http.server 8000','warn',10000);openPanel('spotify');return}
   if(!(window.crypto&&crypto.subtle)){toast('Spotify login needs a secure context. Open the page via http://127.0.0.1:8000 or https.');return}
   try{
     const v=b64u(crypto.getRandomValues(new Uint8Array(48))),st=b64u(crypto.getRandomValues(new Uint8Array(12)));
     const ch=b64u(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(v)));
-    sessionStorage.setItem('sp_v',v);sessionStorage.setItem('sp_s',st);
-    location.href='https://accounts.spotify.com/authorize?'+new URLSearchParams({client_id:C.spotId.trim(),response_type:'code',redirect_uri:redirectUri(),code_challenge_method:'S256',code_challenge:ch,state:st,scope:SPS});
+    sessionStorage.setItem('sp_v',v);sessionStorage.setItem('sp_s',st);if(AND){lsSet('vv_sp_v',v);lsSet('vv_sp_s',st)}   // the app may be closed while the browser logs in
+    const u='https://accounts.spotify.com/authorize?'+new URLSearchParams({client_id:C.spotId.trim(),response_type:'code',redirect_uri:redirectUri(),code_challenge_method:'S256',code_challenge:ch,state:st,scope:SPS});
+    if(AND&&AND.login&&AND.login(u))return;location.href=u;
   }catch(e){toast('Could not start Spotify login: '+e.message)}
 }
 async function spToken(extra){
@@ -1805,9 +1817,10 @@ async function spCallback(){
   const q=new URLSearchParams(location.search);
   if(!q.has('code')&&!q.has('error'))return false;
   history.replaceState({},'',location.pathname);
-  if(q.get('error')){toast('Spotify login was cancelled or refused ('+q.get('error')+').','warn');return false}
-  if(q.get('state')!==sessionStorage.getItem('sp_s')){toast('Spotify login failed: security check mismatch. Please try again.');return false}
-  try{await spToken({grant_type:'authorization_code',code:q.get('code'),redirect_uri:redirectUri(),code_verifier:sessionStorage.getItem('sp_v')||''});toast('Spotify connected.','ok',3000);return true}
+  if(q.get('error')){lsSet('vv_sp_v',null);lsSet('vv_sp_s',null);toast('Spotify login was cancelled or refused ('+q.get('error')+').','warn');return false}
+  const sv=sessionStorage.getItem('sp_v')||lsGet('vv_sp_v')||'',ss=sessionStorage.getItem('sp_s')||lsGet('vv_sp_s');lsSet('vv_sp_v',null);lsSet('vv_sp_s',null);
+  if(q.get('state')!==ss){toast('Spotify login failed: security check mismatch. Please try again.');return false}
+  try{await spToken({grant_type:'authorization_code',code:q.get('code'),redirect_uri:redirectUri(),code_verifier:sv});toast('Spotify connected.','ok',3000);return true}
   catch(e){toast(e.message);return false}
 }
 let spWaitKnown=0,spRelayDown=0,spErrRetry=false;
@@ -3408,6 +3421,7 @@ function showPage(id){
   pageNow=id;$('pnone').hidden=true;$('pbody').classList.remove('searching');
   $('pbody').querySelectorAll('.ppage').forEach(pg=>{pg.hidden=pg.dataset.p!==id;pg.querySelectorAll(':scope>*').forEach(el=>el.style.display='')});
   $('pnav').querySelectorAll('.pn').forEach(b=>b.classList.toggle('on',b.dataset.p===id));pnavPill();
+  {const nav=$('pnav'),b=nav.querySelector('.pn.on');if(b&&nav.scrollWidth>nav.clientWidth)nav.scrollTo({left:b.offsetLeft-(nav.clientWidth-b.offsetWidth)/2,behavior:'smooth'})}   // phones: the tabs scroll sideways, the chosen one into view
   const pg=$('pbody').querySelector('.ppage[data-p="'+id+'"]');$('phead').textContent=pg?pg.dataset.name:'';$('pbody').scrollTop=0;
   if(pg){[...pg.children].forEach((el,k)=>el.style.setProperty('--i',Math.min(k,14)));pg.classList.remove('enter');void pg.offsetWidth;pg.classList.add('enter')}   // the page's settings slide in one after another
 }
@@ -3853,7 +3867,8 @@ poke();
 (async()=>{
   // fresh open (nothing in this tab yet): restore what the server kept for this device
   if(PREFS&&!store.get('pulse4')){
-    try{const r=await fetch(PREFS,{cache:'no-store'});if(r.ok){const p=await r.json();if(p&&p.S)applyRemote(p)}}catch(e){}
+    try{const r=await fetch(PREFS,{cache:'no-store'}),p=await r.json().catch(()=>null);if(r.ok&&p&&p.S)applyRemote(p);
+      if(p&&p.spotId&&!C.spotId){C.spotId=p.spotId;saveC();syncInputs();updSpPanel()}}catch(e){}   // a new device (a phone): your Spotify Client ID comes along
   }
   prefsReady=true;
   if(AND&&!S.andTuned){S.andTuned=true;S.lblur=false;applyLB();syncInputs();save()}   // once, for settings saved before the app had its own defaults

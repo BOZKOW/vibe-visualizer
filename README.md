@@ -385,9 +385,10 @@ so lyrics, Canvas, your settings and updates all come from the server, the same 
 - **The bars follow what the phone plays**, the Spotify app included: Vibe Bridge is built in. Allow the audio
   permission when the app asks. It only reads the sound's spectrum through Android's Visualizer; nothing is recorded
   or sent anywhere. A few phones don't allow this; the bars then use the ambient motion.
-- **Spotify login** happens inside the app with your email or username and password (Spotify's *Continue with
-  Google/Apple* buttons don't work inside apps). Use the same Client ID; the Redirect URI is your server address, as
-  on the computer.
+- **Spotify login** happens in the phone's browser (where Google/Apple sign-in and an existing Spotify session work),
+  which then hands it back to the app. Once, add `vibevisualizer://callback` as a second Redirect URI in your Spotify
+  app (developer.spotify.com → your app → Settings); the app shows this before the first login. Your Client ID comes
+  over from your other devices by itself.
 - The screen stays on while the app is open, the back button closes Settings and panels first, and nothing runs in
   the background.
 - **Building it yourself:** the app is in `android/` (plain Java, no libraries). GitHub Actions builds it on every
