@@ -390,11 +390,11 @@ so lyrics, Canvas, your settings and updates all come from the server, the same 
   which then hands it back to the app. Once, add `vibevisualizer://callback` as a second Redirect URI in your Spotify
   app (developer.spotify.com → your app → Settings); the app shows this before the first login. Your Client ID comes
   over from your other devices by itself.
-- **Made for the phone:** a slim header, the song as a small card, lyrics filling the screen, phone bars above the
-  controls, and a control card for your thumb (seek, a big transport row, like, devices, quick toggles, mute).
-  **Quick toggles** (the four-squares button, or swipe up on the controls) open a sheet with the view switch and tiles
-  for translation, romanization, resync, Focus lyrics, Canvas, the phone's sound, low power, Spotify, opening a file,
-  the connection and Settings. Phones' browsers get the same design.
+- **A phone music player:** the player shows "Playing from Spotify", big artwork (or the song's Canvas filling the
+  screen), the bars under it, title and artist with the heart, then the seek bar and controls. The lyrics button
+  switches to the lyrics, with the song as a small header. **Quick toggles** (the four squares, or swipe up on the
+  controls) hold the view switch and tiles for translation, romanization, resync, Focus lyrics, Canvas, the phone's
+  sound, low power, Spotify, opening a file, the connection, mute and Settings. Phones' browsers get the same design.
 - The screen stays on while the app is open, the back button closes Settings and panels first, and nothing runs in
   the background.
 - **Building it yourself:** the app is in `android/` (plain Java, no libraries). GitHub Actions builds it on every

@@ -699,81 +699,109 @@ body.android #corner{margin-top:var(--sat,0px);right:calc(16px + var(--sar,0px))
   #corner{top:58px}
   .ll{font-size:calc(clamp(20px,3.3vw,40px)*var(--ls))}
 }
-/* ===================== the phone design (the Android app, and phones' browsers) =====================
-   One layer over the same app: the same buttons and functions, laid out for a thumb. Portrait: a slim header, the
-   song as a small card, lyrics filling the screen, phone bars in a strip above the controls, and a control card at
-   the bottom (seek, a big transport row, then like · devices · quick toggles · mute). The quick toggles open as a
-   bottom sheet. Landscape: the cover left, lyrics right, the controls in one row. */
-#qsbtn,#qs,#qsback{display:none}
-body.phone #qsbtn{display:grid}
-body.phone{--ph-side:calc(14px + var(--sal,0px));--ph-sider:calc(14px + var(--sar,0px))}
-/* header: logo · view switch · Settings (everything else is in the quick toggles) */
-body.phone #top{display:grid;grid-template-columns:auto 1fr auto;row-gap:0;column-gap:10px;padding:calc(8px + var(--sat,env(safe-area-inset-top,0px))) var(--ph-sider) 14px var(--ph-side)}
-body.phone #top .grp{overflow:visible;justify-content:flex-end;padding:0}
+/* ===================== the phone design: a music player (the Android app, and phones' browsers) =====================
+   The same app and functions, shown the way a phone music player is. Player (the Visualizer view): "Playing from" at
+   the top, big artwork, the bars under it, title and artist with the heart, then the controls straight on the
+   background. Lyrics: the song shrinks to a small header and the lyrics fill the screen (Both: with the bars strip).
+   A Spotify Canvas fills the whole screen behind everything. Landscape: artwork left, everything else right. */
+#qsbtn,#lybtn,#qs,#qsback,#nowfrom,#tl,#tr{display:none}
+body.phone{--ph-l:calc(22px + var(--sal,0px));--ph-r:calc(22px + var(--sar,0px));--ph-top:calc(60px + var(--sat,0px))}
+/* header: logo · "Playing from …" · Settings */
+body.phone #top{display:grid;grid-template-columns:44px minmax(0,1fr) 44px;column-gap:8px;padding:calc(8px + var(--sat,env(safe-area-inset-top,0px))) calc(12px + var(--sar,0px)) 10px calc(12px + var(--sal,0px));background:none}
+body.phone #top .grp{overflow:visible;padding:0;justify-content:flex-end}
 body.phone #top .grp>*:not(#gear){display:none!important}
-body.phone #seg{grid-row:1;grid-column:2;justify-self:center}
-body.phone #seg button{padding:6px 12px;font-size:12.5px}
+body.phone #seg{display:none}
+body.phone #gear{background:none!important;border:0!important;box-shadow:none!important}
 body.phone #top .brand span{display:none}
-/* the stage: song card on top, lyrics (and the bars strip) below, ending where the controls begin */
-body.phone #stage{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr);gap:14px;
-  padding:calc(62px + var(--sat,0px)) var(--ph-sider) var(--stageb,190px) var(--ph-side)}
-body.phone #left{justify-content:flex-start}
-body.phone #info,body.phone.cvmode #info{flex-direction:row;align-items:center;gap:14px;text-align:left}
-body.phone #artw,body.phone.cvmode #artw{width:68px;flex:none;border-radius:14px;margin:0}
-body.phone #ph{font-size:26px}
-body.phone #txt{min-width:0;flex:1}
-body.phone #ttl{font-size:19px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-body.phone #sub{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+body.phone #nowfrom{display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:0;line-height:1.2;text-align:center;grid-column:2;grid-row:1}
+#nowfrom small{font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
+#nowfrom b{font-size:13.5px;font-weight:700;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* the stage: its pieces placed straight into one grid */
+body.phone #left,body.phone #info{display:contents}
+body.phone #stage{display:grid;column-gap:14px;row-gap:16px;padding:var(--ph-top) var(--ph-r) var(--stageb,200px) var(--ph-l)}
+body.phone #artw{grid-area:art;margin:0;border-radius:10px;box-shadow:0 18px 50px rgba(0,0,0,.45)}
+body.phone #txt{grid-area:txt;min-width:0;align-self:center;text-align:left}
+body.phone #like{grid-area:like;align-self:center;width:44px;height:44px;background:none!important;border:0!important;box-shadow:none!important}
+body.phone #like svg{width:26px;height:26px}
+body.phone #right{grid-area:ly;min-height:0}
+body.phone #ttl{font-size:22px;line-height:1.2;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:0}
+body.phone #sub{font-size:15px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:3px}
 body.phone #status,body.phone #lstat{display:none}
-body.phone #nextup{margin-top:8px;padding:5px 10px 5px 5px;max-width:100%}body.phone #nextup img{width:30px;height:30px}
+body.phone #nextup{margin-top:10px;max-width:100%}
+/* player */
+body.phone[data-view=viz] #stage{grid-template-columns:minmax(0,1fr) auto;grid-template-rows:minmax(0,1fr) 64px auto;grid-template-areas:"art art" "ly ly" "txt like"}
+body.phone[data-view=viz] #artw{align-self:center;justify-self:center;width:min(100%,calc(100vh - var(--ph-top) - var(--stageb,200px) - 190px));min-width:120px}
+body.phone[data-view=viz] #lcredit{display:none}   /* no lyrics on screen, so no lyrics credits */
+/* lyrics (and both): a small header */
+body.phone:not([data-view=viz]) #stage{grid-template-columns:52px minmax(0,1fr) auto;grid-template-rows:auto minmax(0,1fr);grid-template-areas:"art txt like" "ly ly ly";row-gap:10px}
+body.phone:not([data-view=viz]) #artw{width:52px;border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,.35)}
+body.phone:not([data-view=viz]) #ph{font-size:22px}
+body.phone:not([data-view=viz]) #ttl{font-size:16.5px}body.phone:not([data-view=viz]) #sub{font-size:13.5px;margin-top:1px}
+body.phone:not([data-view=viz]) #nextup{display:none}
 body.phone #lyr{left:-6px}
-body.phone .ll{font-size:calc(26px*var(--ls))}
-body.phone[data-view=both]:is(.hl,.lm) #lyr{bottom:96px}
-body.phone[data-view=both]:is(.hl,.lm) #viz{top:calc(100% - 84px)}
-body.phone.xfocus[data-view=both]:is(.hl,.lm) #lyr{bottom:96px}
-/* visualizer view: a big cover, the title under it, mirrored bars below */
-body.phone[data-view=viz] #stage{grid-template-rows:auto minmax(0,1fr)}
-body.phone[data-view=viz] #info{flex-direction:column;align-items:center;text-align:center;gap:16px}
-body.phone[data-view=viz] #artw{width:min(68vw,calc(100vh - var(--stageb,190px) - 330px));min-width:120px;border-radius:22px}
-body.phone[data-view=viz] #txt{flex:none;width:100%}
-/* credits: one compact line above the controls */
-body.phone #lcredit{flex-direction:row;flex-wrap:wrap;column-gap:.6em;row-gap:0;font-size:11px;left:var(--ph-side)!important;max-width:calc(100% - 28px - var(--sal,0px) - var(--sar,0px))!important}
+body.phone .ll{font-size:calc(27px*var(--ls))}
+body.phone[data-view=both]:is(.hl,.lm) #lyr,body.phone.xfocus[data-view=both]:is(.hl,.lm) #lyr{bottom:92px}
+body.phone[data-view=both]:is(.hl,.lm) #viz{top:calc(100% - 80px)}
+/* small notes over the lyrics get a backing, so they never sit on lyric text */
+body.phone #lprob:not(.big) .pr{background:rgba(16,16,26,.82);padding:9px 12px;border-radius:14px;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+/* credits: one quiet line above the controls */
+body.phone #lcredit{flex-direction:row;flex-wrap:wrap;column-gap:.6em;row-gap:0;font-size:11px;left:var(--ph-l)!important;max-width:calc(100% - 44px - var(--sal,0px) - var(--sar,0px))!important}
 body.phone #lcredit>*{white-space:nowrap}
-/* the control card */
-body.phone #dock{width:auto;left:var(--ph-side);right:var(--ph-sider);transform:none;margin:0;bottom:calc(10px + var(--sab,env(safe-area-inset-bottom,0px)))}
-body.phone.uihide #dock{transform:translateY(16px)}
-body.phone #bar{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));grid-template-areas:"seek seek seek seek seek" "shuf prev play next rep" "like dev qs smute vmute";
-  justify-items:center;align-items:center;gap:8px 0;padding:12px 12px 10px;border-radius:28px}
+/* a Canvas fills the screen, as in Spotify's app; the player shows it instead of the artwork */
+body.phone #cvpane{left:0;right:0;width:auto;top:0;bottom:0;height:auto;-webkit-mask-image:none;mask-image:none}
+body.phone #cvpane::after{background:linear-gradient(to top,rgba(0,0,0,.82),rgba(0,0,0,.25) 45%,transparent 60%),linear-gradient(to bottom,rgba(0,0,0,.5),transparent 20%)}
+body.phone.cvmode[data-view=viz] #artw{visibility:hidden}
+body.phone.cvmode:not([data-view=viz]) #cvpane{opacity:.45}
+/* the controls, straight on the background */
+body.phone #dock{left:0;right:0;width:auto;margin:0;transform:none;bottom:0;padding:10px calc(14px + var(--sar,0px)) calc(12px + var(--sab,env(safe-area-inset-bottom,0px))) calc(14px + var(--sal,0px));
+  background:linear-gradient(transparent,rgba(0,0,0,.28) 30%,rgba(0,0,0,.42))}
+body.phone.uihide #dock{transform:translateY(20px)}
+body.phone #bar{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));grid-template-areas:"seek seek seek seek seek" "shuf prev play next rep" "dev . lyb . qs";
+  justify-items:center;align-items:center;gap:6px 0;padding:0 8px;background:none!important;border:0!important;box-shadow:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;border-radius:0}
+body.phone #bar>.lqr{display:none}
 body.phone #spx,body.phone #volwrap:not([hidden]){display:contents}
-body.phone #seekwrap{grid-area:seek;width:100%;margin:0;padding:0 6px;flex-wrap:wrap;gap:0;justify-content:flex-end}
-body.phone #seek{flex:1 1 100%;width:100%}
-body.phone #time{font-size:11.5px;margin-top:-2px}
+body.phone #seekwrap{grid-area:seek;width:100%;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;row-gap:0}
+body.phone #seek{grid-column:1/-1;width:100%}
+body.phone #time{display:none}
+body.phone #tl,body.phone #tr{display:block;font-size:11.5px;font-weight:600;color:var(--dim);font-variant-numeric:tabular-nums;margin-top:-3px}body.phone #tr{text-align:right}
 body.phone #shuf{grid-area:shuf}body.phone #prev{grid-area:prev}body.phone #play{grid-area:play}body.phone #next{grid-area:next}body.phone #rep{grid-area:rep}
-body.phone #like{grid-area:like}body.phone #devbtn{grid-area:dev}body.phone #qsbtn{grid-area:qs}body.phone #spmute{grid-area:smute}body.phone #mute{grid-area:vmute}
-body.phone #bar .ib{width:44px;height:44px}body.phone #bar .ib svg{width:22px;height:22px}
-body.phone #play{width:62px!important;height:62px!important}body.phone #play svg{width:28px;height:28px}
-body.phone #spvol,body.phone #spvolval,body.phone #volume,body.phone #volval{display:none!important}
-body.phone #corner{top:calc(62px + var(--sat,0px))!important;right:var(--ph-sider);width:calc(100% - 28px - var(--sal,0px) - var(--sar,0px))}
-/* landscape: cover left, lyrics right, one row of controls */
+body.phone #devbtn{grid-area:dev;justify-self:start}body.phone #lybtn{display:grid;grid-area:lyb}body.phone #qsbtn{display:grid;grid-area:qs;justify-self:end}
+body.phone #bar .ib,body.phone #like,body.phone #gear{width:48px;height:48px;background:none!important;border:0!important;box-shadow:none!important;color:#fff;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+body.phone #like.on{color:#1ed760}
+body.phone #bar .ib svg{width:26px;height:26px}
+body.phone #prev svg,body.phone #next svg{width:34px;height:34px}
+body.phone #bar .ib:disabled{opacity:.35}
+body.phone #shuf.on,body.phone #rep.on,body.phone #lybtn.on{color:var(--acc)}
+body.phone #shuf.on::after,body.phone #rep.on::after,body.phone #lybtn.on::after{content:"";position:absolute;bottom:3px;left:50%;width:4px;height:4px;margin-left:-2px;border-radius:50%;background:currentColor}
+body.phone #shuf,body.phone #rep,body.phone #lybtn{position:relative}
+body.phone #bar #play{width:70px!important;height:70px!important;background:#fff!important;color:#111!important;box-shadow:0 8px 26px rgba(0,0,0,.35)!important}
+body.phone #play svg{width:32px;height:32px}
+body.phone #devbtn svg,body.phone #lybtn svg,body.phone #qsbtn svg{width:23px;height:23px}
+body.phone #spmute,body.phone #mute,body.phone #spvol,body.phone #spvolval,body.phone #volume,body.phone #volval{display:none!important}   /* the phone's volume buttons (and Mute in the quick toggles) */
+body.phone #bar input[type=range]{height:22px}
+body.phone #bar input[type=range]::-webkit-slider-runnable-track{height:5px}
+body.phone #bar input[type=range]::-webkit-slider-thumb{width:14px;height:14px;margin-top:-4.5px}
+body.phone #corner{top:var(--ph-top)!important;right:calc(14px + var(--sar,0px));width:calc(100% - 28px - var(--sal,0px) - var(--sar,0px))}
+/* landscape: artwork left; title, lyrics or bars right; the controls in one row */
 @media(orientation:landscape){
-  body.phone #top{padding-top:calc(6px + var(--sat,0px));padding-bottom:8px}
-  body.phone #top .ib{width:36px;height:36px}
-  body.phone #stage{grid-template-columns:minmax(0,36vw) minmax(0,1fr);grid-template-rows:minmax(0,1fr);gap:24px;padding-top:calc(52px + var(--sat,0px))}
-  body.phone #left{justify-content:center}
-  body.phone #info,body.phone.cvmode #info{flex-direction:column;align-items:flex-start;gap:10px}
-  body.phone #artw,body.phone.cvmode #artw{width:min(100%,calc(100vh - var(--stageb,96px) - 130px));min-width:64px;border-radius:16px}
-  body.phone[data-view=viz] #info{align-items:center}
-  body.phone[data-view=viz] #artw{width:min(100%,calc(100vh - var(--stageb,96px) - 130px))}
-  body.phone #txt{width:100%;flex:none}
+  body.phone{--ph-top:calc(48px + var(--sat,0px))}
+  body.phone #top{padding-top:calc(4px + var(--sat,0px));padding-bottom:4px}
+  body.phone #stage,body.phone[data-view=viz] #stage,body.phone:not([data-view=viz]) #stage{grid-template-columns:auto minmax(0,1fr) auto;grid-template-rows:auto minmax(0,1fr);grid-template-areas:"art txt like" "art ly ly";column-gap:22px;row-gap:8px}
+  body.phone #artw,body.phone[data-view=viz] #artw,body.phone:not([data-view=viz]) #artw{width:calc(100vh - var(--ph-top) - var(--stageb,90px));min-width:60px;align-self:start;border-radius:10px}
+  body.phone:not([data-view=viz]) #ttl,body.phone #ttl{font-size:19px}body.phone #sub{font-size:14px}
+  body.phone #nextup{display:none}
   body.phone .ll{font-size:calc(22px*var(--ls))}
-  body.phone[data-view=both]:is(.hl,.lm) #lyr,body.phone.xfocus[data-view=both]:is(.hl,.lm) #lyr{bottom:74px}
-  body.phone[data-view=both]:is(.hl,.lm) #viz{top:calc(100% - 64px)}
-  body.phone #bar{display:flex;flex-wrap:nowrap;gap:4px;padding:6px 10px;border-radius:24px}
-  body.phone #bar .ib{width:38px;height:38px}body.phone #bar .ib svg{width:20px;height:20px}
-  body.phone #play{width:46px!important;height:46px!important}body.phone #play svg{width:24px;height:24px}
-  body.phone #seekwrap{flex:1 1 auto;flex-wrap:nowrap;gap:10px;margin:0 6px;padding:0}
-  body.phone #seek{flex:1 1 auto;width:auto}body.phone #time{margin:0}
-  body.phone #corner{top:calc(52px + var(--sat,0px))!important;width:min(360px,50vw)}
+  body.phone[data-view=both]:is(.hl,.lm) #lyr,body.phone.xfocus[data-view=both]:is(.hl,.lm) #lyr{bottom:66px}
+  body.phone[data-view=both]:is(.hl,.lm) #viz{top:calc(100% - 58px)}
+  body.phone[data-view=viz] #lcredit{display:none}
+  body.phone #dock{padding-top:4px;padding-bottom:calc(6px + var(--sab,0px))}
+  body.phone #bar{display:flex;flex-wrap:nowrap;gap:2px;padding:0}
+  body.phone #bar .ib{width:42px;height:42px}body.phone #bar .ib svg{width:22px;height:22px}body.phone #prev svg,body.phone #next svg{width:28px;height:28px}
+  body.phone #bar #play{width:50px!important;height:50px!important}body.phone #play svg{width:26px;height:26px}
+  body.phone #seekwrap{flex:1 1 auto;display:flex;flex-wrap:nowrap;align-items:center;gap:8px;margin:0 8px}
+  body.phone #seek{flex:1 1 auto;width:auto;order:2}body.phone #tl{order:1;margin:0}body.phone #tr{order:3;margin:0}
+  body.phone #devbtn,body.phone #qsbtn{justify-self:auto}
+  body.phone #corner{width:min(360px,50vw)}
 }
 /* quick toggles: a bottom sheet of tiles */
 body.phone #qsback:not([hidden]){display:block;position:fixed;inset:0;z-index:12;background:rgba(0,0,0,.45);opacity:0;transition:opacity .3s}
@@ -785,7 +813,7 @@ body.phone #qs:not([hidden]){display:flex;flex-direction:column;gap:14px;positio
 body.phone #qs.on{transform:translateY(var(--qsdrag,0px))}
 body.phone #qs.drag{transition:none}
 .qsgrab{width:42px;height:5px;border-radius:9px;background:rgba(255,255,255,.3);margin:2px auto 0;flex:none}
-.qshead{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:0 4px}.qshead b{font-size:17px}.qshead small{color:var(--dim);font-size:12.5px;font-weight:600;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.qshead{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:0 4px;min-width:0}.qshead b{font-size:17px;white-space:nowrap;flex:none}.qshead small{color:var(--dim);font-size:12.5px;font-weight:600;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #qsview{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;padding:4px;border-radius:16px;background:rgba(255,255,255,.07)}
 #qsview button{padding:10px 0;border-radius:12px;font-weight:700;font-size:13.5px;color:var(--dim);background:none;border:0;transition:background .25s,color .25s}
 #qsview button.on{background:#fff;color:#111}
@@ -911,6 +939,7 @@ body.low #scrubtip{backdrop-filter:none;-webkit-backdrop-filter:none;background:
 
 <header id="top">
   <div class="brand" id="brand" role="button" tabindex="0" title="Welcome page" aria-label="Vibe Visualizer: open the welcome page"><img class="logo" src="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22 role=%22img%22 aria-label=%22Vibe Visualizer%22%3E%3Cdefs%3E%3ClinearGradient id=%22vv-bg%22 x1=%220%22 y1=%220%22 x2=%221%22 y2=%221%22%3E%3Cstop offset=%220%22 stop-color=%22%238b7cff%22/%3E%3Cstop offset=%22.55%22 stop-color=%22%23ff5fa2%22/%3E%3Cstop offset=%221%22 stop-color=%22%2336c9ff%22/%3E%3C/linearGradient%3E%3ClinearGradient id=%22vv-shine%22 x1=%220%22 y1=%220%22 x2=%220%22 y2=%221%22%3E%3Cstop offset=%220%22 stop-color=%22%23fff%22 stop-opacity=%22.28%22/%3E%3Cstop offset=%22.5%22 stop-color=%22%23fff%22 stop-opacity=%220%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width=%2264%22 height=%2264%22 rx=%2216%22 fill=%22url(%23vv-bg)%22/%3E%3Crect width=%2264%22 height=%2264%22 rx=%2216%22 fill=%22url(%23vv-shine)%22/%3E%3Cg fill=%22%23fff%22%3E%3Crect x=%229.5%22 y=%2213%22 width=%226.5%22 height=%2220%22 rx=%223.25%22 opacity=%22.78%22/%3E%3Crect x=%2219%22 y=%2219%22 width=%226.5%22 height=%2222%22 rx=%223.25%22 opacity=%22.9%22/%3E%3Crect x=%2228.75%22 y=%2225%22 width=%226.5%22 height=%2226%22 rx=%223.25%22/%3E%3Crect x=%2238.5%22 y=%2219%22 width=%226.5%22 height=%2222%22 rx=%223.25%22 opacity=%22.9%22/%3E%3Crect x=%2248%22 y=%2213%22 width=%226.5%22 height=%2220%22 rx=%223.25%22 opacity=%22.78%22/%3E%3C/g%3E%3C/svg%3E" alt=""><span>Vibe Visualizer</span></div>
+  <div id="nowfrom" aria-live="polite"><small></small><b></b></div>
   <div id="seg" role="tablist" aria-label="View"><span id="segpill"></span>
     <button data-v="viz">Visualizer</button><button data-v="lyrics">Lyrics</button><button data-v="both">Both</button>
   </div>
@@ -969,13 +998,14 @@ body.low #scrubtip{backdrop-filter:none;-webkit-backdrop-filter:none;background:
     <button class="ib" id="play" aria-label="Play or pause"><svg viewBox="0 0 24 24" id="pi"><path d="M8 5v14l11-7z"/></svg></button>
     <button class="ib" id="next" aria-label="Next" title="Next (N)" disabled><svg viewBox="0 0 24 24"><path d="M16 5h2v14h-2zM5 5l9.5 7L5 19z"/></svg></button>
     <button class="ib spx" id="rep" aria-label="Repeat: off" title="Repeat"><svg viewBox="0 0 24 24" id="repi"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></svg></button>
-    <div id="seekwrap"><input type="range" id="seek" min="0" max="1000" value="0" aria-label="Seek"><span id="time">0:00 / 0:00</span></div>
+    <div id="seekwrap"><input type="range" id="seek" min="0" max="1000" value="0" aria-label="Seek"><span id="time">0:00 / 0:00</span><span id="tl">0:00</span><span id="tr">-0:00</span></div>
     <div id="spx" class="spx">
       <button class="ib" id="like" aria-label="Save to Liked Songs" aria-pressed="false" title="Save to Liked Songs (L)"><svg viewBox="0 0 24 24" id="likei"></svg></button>
       <button class="ib" id="devbtn" aria-label="Spotify devices" aria-haspopup="dialog" title="Choose where Spotify plays"><svg viewBox="0 0 24 24"><path d="M4 6h18V4H4a2 2 0 00-2 2v11H0v3h14v-3H4V6zm19 2h-6a1 1 0 00-1 1v10a1 1 0 001 1h6a1 1 0 001-1V9a1 1 0 00-1-1zm-1 9h-4v-7h4v7z"/></svg></button>
       <button class="ib" id="spmute" aria-label="Mute Spotify"><svg viewBox="0 0 24 24" id="spvi"></svg></button>
       <input type="range" id="spvol" min="0" max="100" value="50" aria-label="Spotify volume"><span id="spvolval"></span>
     </div>
+    <button class="ib" id="lybtn" aria-label="Lyrics" aria-pressed="false" title="Lyrics"><svg viewBox="0 0 24 24"><path d="M4 5h11v2H4zm0 4h11v2H4zm0 4h7v2H4zm13-8h3v9.5a3.5 3.5 0 11-2-3.16V5z"/></svg></button>
     <button class="ib" id="qsbtn" aria-label="Quick toggles" aria-haspopup="dialog" title="Quick toggles"><svg viewBox="0 0 24 24"><path d="M4 4h7v7H4zm9 0h7v7h-7zM4 13h7v7H4zm9 0h7v7h-7z" opacity=".9"/></svg></button>
     <div id="volwrap">
       <button class="ib" id="mute" aria-label="Mute"><svg viewBox="0 0 24 24" id="vi"></svg></button>
@@ -1426,7 +1456,7 @@ function liquidMove(p,box,axis){
   clearTimeout(p._t);p.classList.add('stretch');set(u);p._t=setTimeout(()=>{p.classList.remove('stretch');set(box)},150);
 }
 function movePill(){const b=$('seg').querySelector('button.on'),p=$('segpill');if(!b||!b.offsetWidth)return;liquidMove(p,{left:b.offsetLeft,width:b.offsetWidth},'x');requestAnimationFrame(()=>p.classList.add('ready'))}
-function applyView(){if(PHONE&&N&&N!==Math.min(S.low?Math.min(S.bars,48):S.bars,S.view==='viz'?48:40)){setupBands();palDirty=true}body.dataset.view=S.view;document.querySelectorAll('#seg button').forEach(b=>b.classList.toggle('on',b.dataset.v===S.view));movePill();if(S.view!=='viz')place();dirty=true}
+function applyView(){phKey='';if(PHONE&&N&&N!==Math.min(S.low?Math.min(S.bars,48):S.bars,S.view==='viz'?48:40)){setupBands();palDirty=true}body.dataset.view=S.view;document.querySelectorAll('#seg button').forEach(b=>b.classList.toggle('on',b.dataset.v===S.view));movePill();if(S.view!=='viz')place();dirty=true}
 addEventListener('resize',movePill);if(document.fonts)document.fonts.ready.then(movePill);
 document.querySelectorAll('#seg button').forEach(b=>b.onclick=()=>{S.view=b.dataset.v;applyView();save()});
 function applyLow(){
@@ -1683,7 +1713,9 @@ const BRIDGE_LOCAL='ws://127.0.0.1:47120',BRIDGE_RELAY=PREFS?(location.protocol=
 const AND=window.VVAndroid||null;   // inside the Android app: Vibe Bridge is built in (the phone's own sound)
 // the phone design: in the Android app, and in a phone's browser (a touch screen whose short side is a phone's)
 const PHONE=!!AND||(matchMedia('(pointer:coarse)').matches&&Math.min(screen.width,screen.height)<600);
-if(PHONE)body.classList.add('phone');
+if(PHONE){body.classList.add('phone');
+  const lk=$('like');lk.classList.add('spx');$('info').appendChild(lk);   // the heart sits beside the title, as in a phone player
+}
 const bridgeBuf=new Uint8Array(1024);let bridgeOn=false,bridgeAt=0,bridgeDev='',bridgeVia='';
 const bl={local:{ws:null,on:false,t:0,at:0,dev:''},relay:{ws:null,on:false,t:0,at:0,dev:''}};
 const bridgeLive=()=>bridgeOn&&performance.now()-bridgeAt<600;
@@ -3494,8 +3526,19 @@ scrubTip($('spvol'),f=>$('spvol').disabled?null:Math.round(f*100)+'%');
 function uiTick(now){
   if(now-lastUi<240)return;lastUi=now;nextUpTick();
   const d=curDur(),t=curTime();$('time').textContent=fmt(t)+' / '+fmt(d);
+  if(PHONE){$('tl').textContent=fmt(t);$('tr').textContent=d?'-'+fmt(Math.max(0,d-t)):'0:00';phoneHead()}
   if(!seeking){const sk=$('seek');sk.value=d?t/d*1000:0;fill(sk)}
 }
+// the phone player's header: where the music comes from
+let phKey='';
+function phoneHead(){
+  const dev=spx.dev&&spx.dev.name,f=src==='spotify'?['Playing from Spotify',dev?'on '+dev:'Spotify']:src==='file'?['Playing from',ttl.textContent?'your files':'—']:['','Vibe Visualizer'];
+  const k=f.join('|');if(k===phKey)return;phKey=k;const h=$('nowfrom');h.querySelector('small').textContent=f[0];h.querySelector('b').textContent=f[1];
+  $('lybtn').classList.toggle('on',S.view!=='viz');$('lybtn').setAttribute('aria-pressed',S.view!=='viz');
+}
+// the lyrics button: between the player and the lyrics (Both, when that was the last lyrics view)
+let lastLyView='lyrics';
+$('lybtn').onclick=()=>{if(S.view==='viz')S.view=lastLyView;else{lastLyView=S.view;S.view='viz'}applyView();save();phKey='';phoneHead();bump($('lybtn'))};
 function fsToggle(){try{document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen()}catch(e){toast('Fullscreen is not available here.','warn')}}
 $('fs').onclick=fsToggle;
 // group the settings (each <h4> and what follows it) into pages, with a category list and a search box
@@ -3603,7 +3646,8 @@ const QI={   // tile icons (24×24 paths)
   spotify:'M12 2a10 10 0 100 20 10 10 0 000-20zm4.6 14.4a.6.6 0 01-.9.2c-2.4-1.5-5.4-1.8-8.9-1a.6.6 0 11-.3-1.2c3.9-.9 7.2-.5 9.9 1.1.3.2.4.6.2.9zm1.2-2.7a.8.8 0 01-1.1.3c-2.7-1.7-6.9-2.2-10.1-1.2a.8.8 0 11-.5-1.5c3.7-1.1 8.3-.6 11.4 1.3.4.3.5.8.3 1.1zm.1-2.8C14.7 9 9.4 8.8 6.3 9.7a1 1 0 11-.6-1.9c3.5-1.1 9.4-.9 13.1 1.3a1 1 0 01-.9 1.8z',
   open:'M10 4H4a2 2 0 00-2 2v12a2 2 0 002 2h16a2 2 0 002-2V8a2 2 0 00-2-2h-8l-2-2z',
   net:'M12 21l3.6-4.8A6 6 0 0012 15a6 6 0 00-3.6 1.2zm0-18C8 3 4.3 4.3 1.4 6.6L3.2 9A13 13 0 0112 6a13 13 0 018.8 3l1.8-2.4A16 16 0 0012 3zm0 6a10 10 0 00-6.6 2.4l1.8 2.4A7 7 0 0112 12a7 7 0 014.8 1.8l1.8-2.4A10 10 0 0012 9z',
-  set:'M4 7h10v2H4zm12 0h4v2h-4zM4 15h4v2H4zm6 0h10v2H10zM14 5h2v6h-2zM8 13h2v6H8z'};
+  set:'M4 7h10v2H4zm12 0h4v2h-4zM4 15h4v2H4zm6 0h10v2H10zM14 5h2v6h-2zM8 13h2v6H8z',
+  mute:'M3 9v6h4l5 5V4L7 9H3zm13.5 3l2.5-2.5-1-1-2.5 2.5L13 8.5l-1 1 2.5 2.5-2.5 2.5 1 1 2.5-2.5 2.5 2.5 1-1z'};
 // each tile: what it says, whether it's on, and what a tap does (the same functions as the desktop's buttons)
 const QT=[
   {k:'tr',name:'Translate',on:()=>!!S.tr,sub:()=>S.tr?((LANGS.find(x=>x[0]===S.trTo)||['',S.trTo])[1]):'Off',fn:()=>toggleTr()},
@@ -3616,6 +3660,8 @@ const QT=[
   {k:'spotify',name:'Spotify',on:()=>src==='spotify',sub:()=>$('spt').textContent.replace(/^Spotify · /,'')||'—',fn:()=>{qsClose();$('spchip').click()}},
   {k:'open',name:'Open a file',on:()=>src==='file',sub:()=>src==='file'?'A song is open':'Music or lyrics',fn:()=>{qsClose();$('file').click()}},
   {k:'net',name:'Connection',on:()=>false,sub:()=>$('netbtn').classList.contains('bad')?'Not reachable':($('netms').textContent||'–'),fn:()=>{qsClose();setTimeout(()=>$('netbtn').click(),300)}},
+  {k:'mute',name:'Mute',on:()=>src==='spotify'?(+$('spvol').value===0):muted,sub:()=>src==='spotify'?($('spvol').disabled?'Not on this device':(+$('spvol').value===0?'Muted':$('spvol').value+'%')):(muted?'Muted':S.volume+'%'),
+    fn:()=>{if(src==='spotify'){if(!$('spvol').disabled)$('spmute').click()}else{muted=!muted;applyVolume()}}},
   {k:'set',name:'Settings',on:()=>false,sub:()=>'Everything else',fn:()=>{qsClose();openPanel()}}];
 (function buildQs(){
   const g=$('qsgrid');
