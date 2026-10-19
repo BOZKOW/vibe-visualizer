@@ -2156,7 +2156,7 @@ function placeCredit(){
     root.style.setProperty('--credb',Math.max(12,bottom+mid)+'px');root.style.setProperty('--credw',Math.min(420,room)+'px')}
   else{root.style.setProperty('--credb',(innerHeight-top+10)+'px');root.style.setProperty('--credw',(iw-pad*2)+'px')}
   // phones: the stage ends where the bar (and the credits above it) begin, so the bars are never drawn under them
-  root.style.setProperty('--stageb',Math.round(PHONE?innerHeight-$('bar').getBoundingClientRect().top+10:innerHeight-top+12+(show&&room<need-1?cr.offsetHeight+10:0))+'px');
+  root.style.setProperty('--stageb',Math.round(PHONE?innerHeight-(k.offsetTop+$('bar').offsetTop)+10:innerHeight-top+12+(show&&room<need-1?cr.offsetHeight+10:0))+'px');
 }
 {let q=0;const ro=new ResizeObserver(()=>{cancelAnimationFrame(q);q=requestAnimationFrame(placeCredit)});   // next frame: resizing the bar here would loop
 ro.observe($('dock'));ro.observe($('lcredit'))}addEventListener('resize',placeCredit);
