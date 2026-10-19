@@ -910,7 +910,9 @@ body.phone .ppage .f.chk .rs{display:none}
 body.phone .ppage .rs{top:14px;right:10px}
 body.phone .ppage select,body.phone .ppage .tin,body.phone .ppage input[type=text],body.phone .ppage input[type=url],body.phone .ppage input[type=password]{font-size:16px;padding:12px 14px;border-radius:12px;width:100%}
 body.phone .ppage .row2{padding:10px 22px;gap:10px}
-body.phone .ppage .relnotes,body.phone .ppage .prov,body.phone .ppage #provlist,body.phone .ppage .crow,body.phone .ppage .opts{margin-left:22px;margin-right:22px}
+body.phone .ppage .relnotes,body.phone .ppage .crow,body.phone .ppage .opts{margin-left:22px;margin-right:22px}
+body.phone .ppage .f[data-k=lprov]{padding-right:16px}body.phone .ppage .f[data-k=lprov] .rs{top:14px}
+body.phone #provlist .prow{background:rgba(255,255,255,.06)!important;box-shadow:none!important;padding:12px 10px}
 body.phone .ppage .btn.sm{padding:10px 18px;font-size:14.5px}
 body.phone #pwin.psrch #pnav{bottom:auto;z-index:4;padding-bottom:0;background:#0f0f13!important}
 body.phone #pwin.psrch #pnav .pn{display:none}
@@ -919,6 +921,20 @@ body.phone #pwin.psrch #phead{display:none}
 body.phone .psh{padding:16px 22px 0}
 /* computer-only settings and parts aren't shown on a phone */
 body.phone .pconly{display:none!important}
+/* phones: no hard outlines anywhere: soft fills and shadows instead */
+body.phone .ib,body.phone .btn,body.phone .chip,body.phone select,body.phone input,body.phone .tin,body.phone #psearch,body.phone .qtile,body.phone #qs,body.phone #nextup,body.phone .prow,body.phone .crow,
+body.phone #notes .note,body.phone #corner .toast,body.phone #lprob .pr,body.phone #hprob,body.phone #cappanel,body.phone #netpanel,body.phone #devpanel,body.phone .drow,body.phone #qsview,body.phone #qsdelay,body.phone #artw,
+body.phone .opt,body.phone #setup .sw,body.phone .lchip,body.phone .relnotes .rn{border:0!important;outline:0}
+body.phone select,body.phone .ppage input[type=text],body.phone .ppage input[type=url],body.phone .ppage input[type=password],body.phone .tin{background:rgba(255,255,255,.08)!important;box-shadow:none!important}
+body.phone .btn:not(.pri){background:rgba(255,255,255,.1)!important;box-shadow:none!important}
+body.phone .qtile{box-shadow:none!important}body.phone .qtile:not(.on){background:rgba(255,255,255,.08)!important}
+body.phone #qs:not([hidden]){box-shadow:0 -12px 40px rgba(0,0,0,.45)!important}
+body.phone #nextup{box-shadow:0 8px 24px rgba(0,0,0,.4)!important}
+body.phone #slrow .ib{box-shadow:0 8px 20px -8px rgba(0,0,0,.45)!important}
+body.phone #slrow .ib:not(.on){background:rgba(255,255,255,.1)!important}
+body.phone #artw{box-shadow:0 10px 26px rgba(0,0,0,.35)!important}body.phone #artw::after{display:none}
+body.phone #bar input[type=range]::-webkit-slider-runnable-track{box-shadow:none!important}
+body.phone .f.chk input[type=checkbox]{border:0!important}
 /* quick toggles: a bottom sheet of tiles */
 body.phone #qsback:not([hidden]){display:block;position:fixed;inset:0;z-index:12;background:rgba(0,0,0,.45);opacity:0;transition:opacity .3s}
 body.phone #qsback.on{opacity:1}
