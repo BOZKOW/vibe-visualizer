@@ -14,7 +14,7 @@
 <title>Vibe Visualizer</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22 role=%22img%22 aria-label=%22Vibe Visualizer%22%3E%3Cdefs%3E%3ClinearGradient id=%22vv-bg%22 x1=%220%22 y1=%220%22 x2=%221%22 y2=%221%22%3E%3Cstop offset=%220%22 stop-color=%22%238b7cff%22/%3E%3Cstop offset=%22.55%22 stop-color=%22%23ff5fa2%22/%3E%3Cstop offset=%221%22 stop-color=%22%2336c9ff%22/%3E%3C/linearGradient%3E%3ClinearGradient id=%22vv-shine%22 x1=%220%22 y1=%220%22 x2=%220%22 y2=%221%22%3E%3Cstop offset=%220%22 stop-color=%22%23fff%22 stop-opacity=%22.28%22/%3E%3Cstop offset=%22.5%22 stop-color=%22%23fff%22 stop-opacity=%220%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width=%2264%22 height=%2264%22 rx=%2216%22 fill=%22url(%23vv-bg)%22/%3E%3Crect width=%2264%22 height=%2264%22 rx=%2216%22 fill=%22url(%23vv-shine)%22/%3E%3Cg fill=%22%23fff%22%3E%3Crect x=%229.5%22 y=%2213%22 width=%226.5%22 height=%2220%22 rx=%223.25%22 opacity=%22.78%22/%3E%3Crect x=%2219%22 y=%2219%22 width=%226.5%22 height=%2222%22 rx=%223.25%22 opacity=%22.9%22/%3E%3Crect x=%2228.75%22 y=%2225%22 width=%226.5%22 height=%2226%22 rx=%223.25%22/%3E%3Crect x=%2238.5%22 y=%2219%22 width=%226.5%22 height=%2222%22 rx=%223.25%22 opacity=%22.9%22/%3E%3Crect x=%2248%22 y=%2213%22 width=%226.5%22 height=%2220%22 rx=%223.25%22 opacity=%22.78%22/%3E%3C/g%3E%3C/svg%3E">
 <style>
-:root{color-scheme:dark;--fg:#fff;--dim:rgba(255,255,255,.66);--faint:rgba(255,255,255,.4);--glass:rgba(255,255,255,.09);--line:rgba(255,255,255,.14);--acc:#8b7cff;--dur:40s;--ls:1;--pad:clamp(20px,4vw,56px)}
+:root{--e-out:cubic-bezier(.2,.8,.2,1);--e-soft:cubic-bezier(.34,1.3,.64,1);--e-spring:cubic-bezier(.34,1.56,.64,1);color-scheme:dark;--fg:#fff;--dim:rgba(255,255,255,.66);--faint:rgba(255,255,255,.4);--glass:rgba(255,255,255,.09);--line:rgba(255,255,255,.14);--acc:#8b7cff;--dur:40s;--ls:1;--pad:clamp(20px,4vw,56px)}
 *{box-sizing:border-box}
 html,body{height:100%;margin:0;background:#07070c;color:var(--fg);font:14px/1.45 "Inter","Satoshi","SF Pro Display","Segoe UI",system-ui,sans-serif;overflow:hidden;-webkit-font-smoothing:antialiased}
 button{font:inherit;color:inherit}
@@ -59,7 +59,7 @@ body.cvlive #bg{opacity:0}
 body.cvmode #cvpane{opacity:1}
 
 /* ---------- layout ---------- */
-#stage{position:fixed;inset:0;display:grid;grid-template-columns:clamp(220px,28vw,380px) 1fr;gap:calc(var(--pad)*1.1);align-items:stretch;padding:78px var(--pad) 136px;opacity:0;transition:opacity .8s,grid-template-columns .6s cubic-bezier(.2,.8,.2,1)}
+#stage{position:fixed;inset:0;display:grid;grid-template-columns:clamp(220px,28vw,380px) 1fr;gap:calc(var(--pad)*1.1);align-items:stretch;padding:78px var(--pad) 136px;opacity:0;transition:opacity .8s,grid-template-columns .6s var(--e-out)}
 body.loaded #stage{opacity:1}
 body.cvmode #stage{grid-template-columns:calc(50vw - var(--pad) - var(--pad)*.55) 1fr}
 #left{display:flex;flex-direction:column;justify-content:center;min-width:0}
@@ -86,9 +86,9 @@ body.flip #stage,body.flip #artw,body.flip #ttl{transition:none!important}
 .artghost.lite.go{transform:none;filter:none}
 /* hiding the cover while a Canvas plays: it melts away first, then the layout closes the gap; coming back it settles in */
 #artw.melt{animation:artmelt .55s cubic-bezier(.5,0,.75,0) forwards}@keyframes artmelt{to{opacity:0;transform:scale(1.08);filter:blur(14px) saturate(1.3)}}
-#artw.unmelt{animation:artin .7s cubic-bezier(.2,.8,.2,1)}
+#artw.unmelt{animation:artin .7s var(--e-out)}
 body.low #artw.melt,body.low #artw.unmelt{animation:none}
-#art.swap{animation:artin 1.1s cubic-bezier(.2,.8,.2,1)}@keyframes artin{0%{transform:scale(.9);filter:blur(16px) brightness(1.25) saturate(1.4)}60%{transform:scale(1.015);filter:blur(0) brightness(1)}100%{transform:none}}   /* the new one condenses out of the blur with a soft spring */
+#art.swap{animation:artin 1.1s var(--e-out)}@keyframes artin{0%{transform:scale(.9);filter:blur(16px) brightness(1.25) saturate(1.4)}60%{transform:scale(1.015);filter:blur(0) brightness(1)}100%{transform:none}}   /* the new one condenses out of the blur with a soft spring */
 body.low .artghost{display:none}body.low #art.swap{animation:none}
 #ph{position:absolute;inset:0;display:grid;place-items:center;font-size:64px;color:var(--dim)}
 #artw.has #ph{display:none}
@@ -111,7 +111,7 @@ body.cvmode #ttl,body.cvmode #sub{text-shadow:0 1px 2px rgba(0,0,0,.7),0 2px 8px
 body.cvmode #info{align-items:center;text-align:center}
 body.cvmode #artw{width:min(100%,clamp(170px,20vw,300px));margin:0 auto}
 #right{position:relative;min-width:0;min-height:0}
-#viz,#lyr{position:absolute;inset:0;transition:opacity .5s,top .55s cubic-bezier(.2,.8,.2,1),bottom .55s cubic-bezier(.2,.8,.2,1)}
+#viz,#lyr{position:absolute;inset:0;transition:opacity .5s,top .55s var(--e-out),bottom .55s var(--e-out)}
 #viz canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
 body[data-view=lyrics]:is(.hl,.lm) #viz{opacity:0}
 /* "Both": lyrics on top, visualizer in its own strip below, no overlap */
@@ -121,7 +121,7 @@ body[data-view=both]:is(.hl,.lm) #viz{top:74%}
 /* ---------- lyrics ---------- */
 #lyr{left:-20px;overflow:hidden;scrollbar-width:none;-webkit-mask-image:linear-gradient(transparent,#000 14%,#000 80%,transparent);mask-image:linear-gradient(transparent,#000 14%,#000 80%,transparent)}
 body[data-view=viz] #lyr{display:none}
-#ly{position:absolute;left:0;right:0;top:0;padding:0 6% 0 20px;transition:transform .55s cubic-bezier(.2,.8,.2,1);will-change:transform}
+#ly{position:absolute;left:0;right:0;top:0;padding:0 6% 0 20px;transition:transform .55s var(--e-out);will-change:transform}
 #lyr.st{overflow-y:auto}
 #lyr.st #ly{position:relative;transform:none!important;padding:9vh 6% 40vh 20px}   /* untimed: start near the top, clear of the faded lower edge */
 .ll{font-size:calc(clamp(24px,3.3vw,52px)*var(--ls));font-weight:700;line-height:1.18;letter-spacing:0;padding:.2em 0;opacity:.51;transform-origin:left center;transition:opacity .2s cubic-bezier(.61,1,.88,1),filter .35s ease-out;--bl:0px;
@@ -172,7 +172,7 @@ body.low .ll .w,body.low .ll .w .c{scale:1;transform:none}
   background-size:calc(100% - 1em) calc(100% - .3em);background-position:.5em .15em;background-repeat:no-repeat}   /* the fill reaches .35em above and below the text: tails (g, y, j, p) and accents of fonts that go below the line (Segoe UI) are painted too */
 .ll .sub{display:block;font-size:.46em;font-weight:700;letter-spacing:0;line-height:1.3;margin-top:.22em;color:rgba(255,255,255,.75)}
 .ll .sub.tr{font-weight:600;color:rgba(255,255,255,.58)}
-.ll.a .sub{animation:up .5s cubic-bezier(.2,.8,.2,1) backwards}.ll.a .sub.tr{animation-delay:.06s}
+.ll.a .sub{animation:up .5s var(--e-out) backwards}.ll.a .sub.tr{animation-delay:.06s}
 .ll.a .sub.rom{color:#fff}
 #syncbtn.spin svg{animation:spin1 .6s cubic-bezier(.3,.7,.3,1)}@keyframes spin1{to{transform:rotate(-360deg)}}
 /* timed romanization / translation: transparent text filled by the same gradient as the lyrics */
@@ -194,7 +194,7 @@ body.low .ll .w,body.low .ll .w .c{scale:1;transform:none}
 .pb:hover{background:rgba(255,255,255,.2)}.pb:active{transform:scale(.88)}.pb:disabled{opacity:.25;cursor:default}
 /* lyrics credit: under the cover, on screen whenever lyrics are (Spicy Lyrics attribution rules) */
 /* lyrics credit: always in the bottom-left corner, beside the dock (or just above it when there's no room) */
-#lcredit{position:fixed;left:var(--pad);bottom:var(--credb,calc(16px + env(safe-area-inset-bottom,0px)));max-width:var(--credw,min(420px,calc(100vw - var(--pad)*2)));z-index:6;display:flex;flex-direction:column;gap:.25em;font-size:12px;line-height:1.45;font-weight:600;color:#fff;overflow-wrap:anywhere;text-shadow:0 1px 10px rgba(0,0,0,.75);animation:fadein .6s;transition:bottom .35s cubic-bezier(.2,.8,.2,1)}
+#lcredit{position:fixed;left:var(--pad);bottom:var(--credb,calc(16px + env(safe-area-inset-bottom,0px)));max-width:var(--credw,min(420px,calc(100vw - var(--pad)*2)));z-index:6;display:flex;flex-direction:column;gap:.25em;font-size:12px;line-height:1.45;font-weight:600;color:#fff;overflow-wrap:anywhere;text-shadow:0 1px 10px rgba(0,0,0,.75);animation:fadein .6s;transition:bottom .35s var(--e-out)}
 #lcredit a{color:inherit;text-decoration:underline;text-underline-offset:2px}
 .cprov{opacity:.5}.cwrit{opacity:.6}.cdim{opacity:.5}
 .cinfo{display:flex;align-items:center;flex-wrap:wrap}.cinfo .cdim+.cwho{margin-left:.3em}
@@ -219,16 +219,16 @@ body[data-view=viz].credly #lcredit{display:none}
 #lmsg{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;gap:10px;padding:0 6% 0 20px;pointer-events:none}
 #lmsg b{font-size:calc(clamp(22px,2.8vw,42px)*var(--ls));font-weight:800;letter-spacing:-.025em;line-height:1.15;color:rgba(255,255,255,.6)}
 #lmsg small{font-size:14px;font-weight:600;color:var(--faint);max-width:40ch}
-#lmsg:not(:empty){animation:up .6s cubic-bezier(.2,.8,.2,1)}
+#lmsg:not(:empty){animation:up .6s var(--e-out)}
 #lmsg.load b{animation:breathe2 1.8s ease-in-out infinite}
 #lmsg.skel{gap:.55em;justify-content:flex-start;padding-top:12%}
 #lmsg .skl{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);margin-bottom:.4em}
-#lmsg .skr{display:block;height:calc(clamp(22px,2.8vw,42px)*var(--ls)*.62);border-radius:.4em;background:linear-gradient(90deg,rgba(255,255,255,.08),rgba(255,255,255,.16),rgba(255,255,255,.08));background-size:200% 100%;animation:skel 1.6s ease-in-out infinite}
+#lmsg .skr{display:block;height:calc(clamp(22px,2.8vw,42px)*var(--ls)*.62);border-radius:.4em;background:linear-gradient(90deg,rgba(255,255,255,.08),rgba(255,255,255,.16),rgba(255,255,255,.08));background-size:200% 100%;animation:up .5s var(--e-out) backwards,skel 1.6s ease-in-out infinite}
 @keyframes skel{0%{background-position:100% 0;opacity:.7}50%{opacity:1}100%{background-position:-100% 0;opacity:.7}}
 #lmsg .lmact{display:flex;gap:8px;margin-top:6px;pointer-events:auto}
 /* refined credits (Spicy Lyrics 6.4.50 'refinedCredits'): quiet type right under the last line, no box */
-#ly .lcr{display:flex;flex-direction:column;gap:.3em;max-width:min(100%,46em);margin-top:1.1em;padding-bottom:.6em;font-size:calc(clamp(13px,1.05vw,16px)*var(--ls));line-height:1.35;font-weight:600;color:rgba(255,255,255,.7);opacity:.55;transition:opacity .6s ease}
-#ly.allsung .lcr,#lyr.st #ly .lcr{opacity:1}
+#ly .lcr{display:flex;flex-direction:column;gap:.3em;max-width:min(100%,46em);margin-top:1.1em;padding-bottom:.6em;font-size:calc(clamp(13px,1.05vw,16px)*var(--ls));line-height:1.35;font-weight:600;color:rgba(255,255,255,.7);opacity:.55;transform:translateY(.35em);transition:opacity .6s var(--e-out),transform .6s var(--e-out)}
+#ly.allsung .lcr,#lyr.st #ly .lcr{opacity:1;transform:none}
 #ly .lcr .l2{font-size:.86em;font-weight:500;color:rgba(255,255,255,.55)}
 #ly .lcr a{color:rgba(255,255,255,.7);text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:.18em;text-decoration-color:rgba(255,255,255,.35)}#ly .lcr a:hover{color:#fff;text-decoration-color:#fff}
 #ly .lcr .sep{margin:0 .45em}#ly .lcr img{width:1.15em;height:1.15em;border-radius:50%;vertical-align:-.2em;margin-right:.3em;opacity:.85}
@@ -237,12 +237,12 @@ body.credly.credvis #lcredit{opacity:0;pointer-events:none}   /* the credits und
 #lcredit{transition:opacity .4s}
 /* scrub preview (Spicy Lyrics 6.4.50 'scrubPreview'): the time or level a click would set */
 #scrubtip{position:fixed;z-index:21;pointer-events:none;padding:4px 9px;border-radius:9px;font-size:12px;font-weight:700;font-variant-numeric:tabular-nums;color:#fff;
-  background:rgba(20,20,32,.75);border:1px solid rgba(255,255,255,.2);box-shadow:0 6px 18px rgba(0,0,0,.35);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);transform:translate(-50%,-100%);opacity:0;transition:opacity .15s}
-#scrubtip.on{opacity:1}
+  background:rgba(20,20,32,.75);border:1px solid rgba(255,255,255,.2);box-shadow:0 6px 18px rgba(0,0,0,.35);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);transform:translate(-50%,-100%) scale(.7);transform-origin:50% 100%;opacity:0;transition:opacity .15s,transform .3s var(--e-spring)}
+#scrubtip.on{opacity:1;transform:translate(-50%,-100%)}
 /* something's wrong (Spotify waiting or failing, the server unreachable): said on the home screen, and in the app
    where the lyrics go: big when there are none on screen, a small note above them when there are */
 #hprob{display:flex;flex-direction:column;gap:10px;max-width:min(480px,92vw);margin:4px auto 0;padding:12px 16px;border-radius:16px;text-align:left;
-  background:rgba(255,200,87,.1);border:1px solid rgba(255,200,87,.38);color:#ffe8b8;animation:up .5s cubic-bezier(.2,.8,.2,1)}
+  background:rgba(255,200,87,.1);border:1px solid rgba(255,200,87,.38);color:#ffe8b8;animation:up .5s var(--e-out)}
 #hprob[hidden],#lprob[hidden]{display:none}
 #hprob.err{background:rgba(255,107,107,.1);border-color:rgba(255,107,107,.4);color:#ffd6d6}
 .pr{display:flex;gap:10px;align-items:flex-start;color:#ffe8b8}.pr.err{color:#ffd6d6}
@@ -251,10 +251,10 @@ body.credly.credvis #lcredit{opacity:0;pointer-events:none}   /* the credits und
 .pr b{display:block;font-size:14px}.pr small{display:block;font-size:12.5px;line-height:1.45;opacity:.85;margin-top:2px;font-variant-numeric:tabular-nums}
 .prx{font-size:12px;opacity:.7;padding-left:30px}
 .pok{display:block;margin-top:12px;pointer-events:auto;text-shadow:none}#lprob.big .pr:first-child .pok{margin-top:18px}
-#lprob{position:absolute;left:0;top:4px;z-index:4;display:flex;flex-direction:column;gap:8px;max-width:min(560px,92%);pointer-events:none;text-shadow:0 1px 10px rgba(0,0,0,.6);animation:up .5s cubic-bezier(.2,.8,.2,1)}
+#lprob{position:absolute;left:0;top:4px;z-index:4;display:flex;flex-direction:column;gap:8px;max-width:min(560px,92%);pointer-events:none;text-shadow:0 1px 10px rgba(0,0,0,.6);animation:up .5s var(--e-out)}
 /* "Next up": the queue's next song, shown in the last 30 seconds of a Spotify song */
 #nextup{display:flex;align-items:center;gap:10px;margin-top:14px;padding:7px 14px 7px 7px;border-radius:14px;max-width:min(360px,100%);text-align:left;transform-origin:30% 100%}   /* look: the .glass class */
-#nextup.nin{animation:nuin .75s cubic-bezier(.2,.8,.2,1) both}
+#nextup.nin{animation:nuin .75s var(--e-out) both}
 #nextup.nout{animation:nuout .45s cubic-bezier(.4,0,.6,1) forwards;pointer-events:none}
 @keyframes nuout{to{opacity:0;transform:translateY(6px) scale(.9,.82);filter:blur(10px)}}
 #nextup[hidden]{display:none}#nextup img{width:40px;height:40px;border-radius:8px;object-fit:cover;flex:none;background:rgba(255,255,255,.1)}
@@ -271,8 +271,8 @@ body:not(.classic) #nextup{cursor:default;border-radius:18px}   /* the bottom ba
 body.cvmode #nextup{margin-left:auto;margin-right:auto}   /* centred under a centred title */
 #lprob .pr b{font-size:13px}#lprob .pr small{font-size:12px;font-weight:500}
 /* an error: its text replaces the lyrics. The most important one large, like a lyric line; the others smaller below */
-#lprob.big{top:max(4%,calc(30% - var(--extra,0px)));padding:0 6% 0 0;max-width:none;gap:22px;transition:top .3s cubic-bezier(.2,.8,.2,1)}
-#lprob .pr.more{animation:up .3s cubic-bezier(.2,.8,.2,1) backwards}
+#lprob.big{top:max(4%,calc(30% - var(--extra,0px)));padding:0 6% 0 0;max-width:none;gap:22px;transition:top .3s var(--e-out)}
+#lprob .pr.more{animation:up .3s var(--e-out) backwards}
 #lprob.big .pr:first-child>i{display:none}
 #lprob.big .pr:first-child b{font-size:calc(clamp(22px,2.8vw,42px)*var(--ls));font-weight:800;letter-spacing:-.025em;line-height:1.15}
 #lprob.big .pr:first-child small{font-size:15px;font-weight:600;margin-top:10px;max-width:46ch}
@@ -285,7 +285,7 @@ body.hl #lmsg,body[data-view=viz] #lmsg{display:none}
 
 /* ---------- top bar ---------- */
 #top{position:fixed;top:0;left:0;right:0;align-items:center;justify-content:space-between;gap:12px;padding:calc(12px + env(safe-area-inset-top,0px)) 16px 22px;z-index:5;background:linear-gradient(rgba(0,0,0,.4),transparent);transition:opacity .35s,transform .35s}
-.brand{font-weight:800;letter-spacing:-.02em;font-size:17px;display:flex;align-items:center;gap:8px;cursor:pointer;border-radius:12px;padding:4px 8px;margin:-4px -8px;transition:background .2s,transform .4s cubic-bezier(.34,1.56,.64,1)}
+.brand{font-weight:800;letter-spacing:-.02em;font-size:17px;display:flex;align-items:center;gap:8px;cursor:pointer;border-radius:12px;padding:4px 8px;margin:-4px -8px;transition:background .2s,transform .4s var(--e-spring)}
 .brand:hover{background:rgba(255,255,255,.08)}.brand:active{transform:scale(.95)}
 .brand i{width:10px;height:10px;border-radius:50%;background:var(--acc);box-shadow:0 0 14px var(--acc)}
 .grp{display:flex;align-items:center;gap:8px}
@@ -293,7 +293,7 @@ body.hl #lmsg,body[data-view=viz] #lmsg{display:none}
 #seg button{position:relative;z-index:1;border:0;background:transparent;padding:6px 14px;border-radius:999px;cursor:pointer;font-weight:600;font-size:13px;color:var(--dim)}
 #seg button.on{color:#111}
 #segpill{position:absolute;top:3px;bottom:3px;left:3px;width:0;border-radius:999px;background:#fff;box-shadow:0 2px 10px rgba(0,0,0,.25)}
-#segpill.ready{transition:left .45s cubic-bezier(.34,1.35,.64,1),width .45s cubic-bezier(.34,1.35,.64,1),transform .35s cubic-bezier(.34,1.56,.64,1)}
+#segpill.ready{transition:left .45s var(--e-soft),width .45s var(--e-soft),transform .35s var(--e-spring)}
 #segpill.stretch{transition:left .15s ease-out,width .15s ease-out,transform .15s ease-out;transform:scaleY(.84)}
 #pnavpill.stretch{transition:top .15s ease-out,height .15s ease-out,transform .15s ease-out;transform:scaleX(.94)}
 .chip{display:flex;align-items:center;gap:8px;padding:8px 14px;border-radius:999px;cursor:pointer;font-weight:600;font-size:13px;border:1px solid var(--line);background:rgba(20,20,30,.45);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
@@ -327,7 +327,7 @@ body:not([data-src=spotify]) .spx{display:none!important}
 #spx #like.on,#spx #like.on:hover{color:#1ed760}#like.pop svg{animation:likepop .45s cubic-bezier(.3,1.6,.5,1)}
 @keyframes likepop{0%{transform:scale(.7)}60%{transform:scale(1.25)}100%{transform:none}}
 #spvol{width:110px}
-#devpanel{position:fixed;right:max(12px,calc(50% - 440px));bottom:110px;z-index:9;width:min(320px,calc(100% - 24px));padding:14px 16px;animation:pop .3s cubic-bezier(.2,.8,.2,1);transform-origin:bottom right}
+#devpanel{position:fixed;right:max(12px,calc(50% - 440px));bottom:110px;z-index:9;width:min(320px,calc(100% - 24px));padding:14px 16px;animation:pop .3s var(--e-out);transform-origin:bottom right}
 .drow{display:grid;grid-template-columns:22px 1fr auto;gap:0 10px;align-items:center;width:100%;padding:9px 10px;margin:0 -10px;border:0;border-radius:12px;background:none;color:inherit;font:inherit;text-align:left;cursor:pointer;transition:background .2s}
 .drow:hover{background:rgba(255,255,255,.1)}.drow:disabled{opacity:.45;cursor:not-allowed}
 .drow svg{width:20px;height:20px;fill:currentColor;grid-row:span 2;opacity:.85}
@@ -418,9 +418,9 @@ body.lminimal #lyr:not(.st) .ll.p:not(.dp){opacity:0;pointer-events:none}
 /* Background vocal pop-out (Spicy Lyrics 6.4.50 'backgroundLinePop', AGPL-3.0): tucked under the line until it's sung,
    then slides out while the lines below make room, and tucks back in once both are done */
 .ll .sub.bgv{transform-origin:left top}.ll.opp .sub.bgv{transform-origin:right top}
-body.xbgpop .ll .sub.bgv{max-height:6em;transition:max-height .5s cubic-bezier(.22,1,.36,1),transform .5s cubic-bezier(.22,1,.36,1) .1s,opacity .35s cubic-bezier(.22,1,.36,1) .1s,margin .5s cubic-bezier(.22,1,.36,1)}
+body.xbgpop .ll .sub.bgv{max-height:6em;transition:max-height .5s var(--e-out),transform .5s var(--e-out) .1s,opacity .35s var(--e-out) .1s,margin .5s var(--e-out)}
 body.xbgpop #lyr:not(.st) .ll:not(.a) .sub.bgv{max-height:0;margin-top:0;opacity:0;transform:translateY(-.6em) scale(.8);pointer-events:none;
-  transition:max-height .5s cubic-bezier(.22,1,.36,1),transform .3s cubic-bezier(.22,1,.36,1),opacity .12s ease-out,margin .5s cubic-bezier(.22,1,.36,1)}
+  transition:max-height .5s var(--e-out),transform .3s var(--e-out),opacity .12s ease-out,margin .5s var(--e-out)}
 body.lminimal.xkeep #lyr:not(.st) .ll.p.sa:not(.dp){opacity:.45;pointer-events:auto;--fb:0px}   /* Keep overlapping lines: sung after a line still going, it stays, dimmed */
 .ll{position:relative}
 body.lhover #lyr:not(.st) .ll:not(.dots):not(.a):hover::before{content:"";position:absolute;inset:0 -.3em;border-radius:.35em;background:rgba(255,255,255,.08);pointer-events:none}
@@ -431,10 +431,10 @@ body.nosmooth #ly{transition:none}
    The next line (.fn) waits right under it, blurred. Lines further down wait off the bottom of the screen and fly
    in, blurred, when it's their turn to wait; finished lines (.fu) fly up and disappear. */
 body.xfocus #lyr:not(.st) .ll:not(.fv){opacity:0;transform:translateY(60vh);filter:blur(14px);pointer-events:none;
-  transition:opacity .5s ease,transform .8s cubic-bezier(.2,.8,.2,1),filter .6s ease}
+  transition:opacity .5s ease,transform .8s var(--e-out),filter .6s ease}
 body.xfocus #lyr:not(.st) .ll.fn{opacity:.5;transform:none;filter:blur(5px)}
 body.xfocus #lyr:not(.st) .ll.fn.fs{opacity:1;filter:none}   /* sung right after the middle line: sharp while it waits */
-body.xfocus #lyr:not(.st) .ll.fv{opacity:1;transform:none;filter:none;pointer-events:auto;transition:opacity .5s ease,transform .8s cubic-bezier(.2,.8,.2,1),filter .6s ease}
+body.xfocus #lyr:not(.st) .ll.fv{opacity:1;transform:none;filter:none;pointer-events:auto;transition:opacity .5s ease,transform .8s var(--e-out),filter .6s ease}
 body.xfocus #lyr:not(.st) .ll.fu{opacity:0;transform:translateY(-34vh);filter:blur(14px);transition:opacity .45s ease,transform .6s cubic-bezier(.5,0,.75,.4),filter .45s ease}
 body.xfocus #lyr:not(.st) .ll.dots{opacity:0!important;visibility:hidden}   /* breaks show nothing, no dots */
 /* duets in Focus mode: each singer's lines come in and leave on their own side, and stay on that side, so two
@@ -508,58 +508,58 @@ code,kbd{font:12px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;backgrou
 @keyframes pop{from{opacity:0;transform:scale(.9)}}
 @keyframes fadein{from{opacity:0}}
 @keyframes dockin{from{opacity:0;transform:translate(calc(-50% + var(--dockx,0px)),24px)}}
-#empty>*{animation:up .7s cubic-bezier(.2,.8,.2,1) backwards}
+#empty>*{animation:up .7s var(--e-out) backwards}
 #empty>:nth-child(2){animation-delay:.08s}#empty>:nth-child(3){animation-delay:.16s}#empty>:nth-child(4){animation-delay:.24s}#empty>:nth-child(5){animation-delay:.32s}
 /* logo */
 .brand .logo{width:24px;height:24px;border-radius:7px;box-shadow:0 0 18px rgba(255,95,162,.35);flex:none}
-.hero-logo{width:88px;height:88px;border-radius:24px;box-shadow:0 22px 60px rgba(139,124,255,.4);animation:up .7s cubic-bezier(.2,.8,.2,1) backwards,floaty 6s 1s ease-in-out infinite!important}
+.hero-logo{width:88px;height:88px;border-radius:24px;box-shadow:0 22px 60px rgba(139,124,255,.4);animation:up .7s var(--e-out) backwards,floaty 6s 1s ease-in-out infinite!important}
 @keyframes floaty{50%{transform:translateY(-7px)}}
 .wz-logo{display:block;width:48px;height:48px;border-radius:14px;margin-bottom:14px;box-shadow:0 10px 30px rgba(139,124,255,.35)}
-#top{animation:down .6s cubic-bezier(.2,.8,.2,1) backwards}
-#dock{animation:dockin .7s .1s cubic-bezier(.2,.8,.2,1) backwards}
-#setup .sw{animation:pop .45s cubic-bezier(.2,.8,.2,1)}
-.step:not([hidden]){animation:up .45s cubic-bezier(.2,.8,.2,1)}
+#top{animation:down .6s var(--e-out) backwards}
+#dock{animation:dockin .7s .1s var(--e-out) backwards}
+#setup .sw{animation:pop .45s var(--e-out)}
+.step:not([hidden]){animation:up .45s var(--e-out)}
 .closing{animation:popout .22s ease-in forwards!important;pointer-events:none}@keyframes popout{to{opacity:0;transform:scale(.94) translateY(4px)}}
-.tsw{animation:tsw .4s cubic-bezier(.2,.8,.2,1)}@keyframes tsw{from{opacity:0;filter:blur(3px)}}
+.tsw{animation:tsw .4s var(--e-out)}@keyframes tsw{from{opacity:0;filter:blur(3px)}}
 #corner .toast.bye{opacity:0;transform:translateX(24px) scale(.97);transition:opacity .25s,transform .25s}
 .chip.live .dot,.nrow.good i,#capbtn.bridge svg{animation:livedot 2.6s ease-in-out infinite}@keyframes livedot{50%{opacity:.55}}   /* opacity only: the graphics chip runs it, no restyle every frame */
 #pnav{position:relative}#pnav>.pn{position:relative;z-index:1}
-#pnavpill{position:absolute;z-index:0;border-radius:10px;background:rgba(255,255,255,.12);pointer-events:none;transition:top .4s cubic-bezier(.34,1.3,.64,1),left .4s cubic-bezier(.34,1.3,.64,1),width .4s,height .4s cubic-bezier(.34,1.3,.64,1),opacity .2s,transform .35s cubic-bezier(.34,1.56,.64,1)}
+#pnavpill{position:absolute;z-index:0;border-radius:10px;background:rgba(255,255,255,.12);pointer-events:none;transition:top .4s var(--e-soft),left .4s var(--e-soft),width .4s,height .4s var(--e-soft),opacity .2s,transform .35s var(--e-spring)}
 #pnav.haspill .pn.on{background:transparent;box-shadow:none}
-#lmsg>*{animation:up .5s cubic-bezier(.2,.8,.2,1) backwards}#lmsg>small{animation-delay:.08s}
+#lmsg>*{animation:up .5s var(--e-out) backwards}#lmsg>small{animation-delay:.08s}
 #lcredit>*{animation:fadein .6s ease backwards}
 .ll .sub{animation:fadein .5s ease backwards}
-body[data-src=spotify] .spx{animation:pop .45s cubic-bezier(.2,.8,.2,1) backwards}
-.f input[type=range]::-webkit-slider-thumb{transition:transform .2s cubic-bezier(.34,1.56,.64,1)}.f input[type=range]:hover::-webkit-slider-thumb,.f input[type=range]:active::-webkit-slider-thumb{transform:scale(1.25)}
+body[data-src=spotify] .spx{animation:pop .45s var(--e-out) backwards}
+.f input[type=range]::-webkit-slider-thumb{transition:transform .2s var(--e-spring)}.f input[type=range]:hover::-webkit-slider-thumb,.f input[type=range]:active::-webkit-slider-thumb{transform:scale(1.25)}
 body.low .tsw,body.low .chip.live .dot,body.low .nrow.good i,body.low #capbtn.bridge svg,body.low #lmsg>*,body.low #lcredit>*,body.low .ll .sub,body.low[data-src=spotify] .spx{animation:none}
 /* more motion: settings pages, new lyrics and the device list come in one item after another */
-#pbody .ppage.enter>*{animation:up .42s cubic-bezier(.2,.8,.2,1) backwards;animation-delay:calc(var(--i,0)*22ms)}
+#pbody .ppage.enter>*{animation:up .42s var(--e-out) backwards;animation-delay:calc(var(--i,0)*22ms)}
 #ly.leave{opacity:0;transition:opacity .35s ease}   /* the old song's lyrics fade out while the new ones load */
-#ly.enter .ll{animation:lyin .7s cubic-bezier(.2,.8,.2,1) backwards;animation-delay:calc(var(--i,0)*45ms)}@keyframes lyin{from{opacity:0;translate:0 26px}}
-.drow{animation:up .35s cubic-bezier(.2,.8,.2,1) backwards}.drow:nth-child(2){animation-delay:40ms}.drow:nth-child(3){animation-delay:80ms}.drow:nth-child(4){animation-delay:120ms}.drow:nth-child(n+5){animation-delay:160ms}
+#ly.enter .ll{animation:lyin .7s var(--e-out) backwards;animation-delay:calc(var(--i,0)*45ms)}@keyframes lyin{from{opacity:0;translate:0 26px}}
+.drow{animation:up .35s var(--e-out) backwards}.drow:nth-child(2){animation-delay:40ms}.drow:nth-child(3){animation-delay:80ms}.drow:nth-child(4){animation-delay:120ms}.drow:nth-child(n+5){animation-delay:160ms}
 body.low #pbody .ppage.enter>*,body.low #ly.enter .ll,body.low .drow{animation:none}
-#info.anim:not(.keepart) #artw{animation:pop .7s cubic-bezier(.2,.8,.2,1)}   /* only when there was no cover: an existing one melts into the next instead */
-#info.anim #txt>:not(#nextup){animation:up .6s cubic-bezier(.2,.8,.2,1) backwards}   /* not Next up: it has its own animations, which this rule would override */
+#info.anim:not(.keepart) #artw{animation:pop .7s var(--e-out)}   /* only when there was no cover: an existing one melts into the next instead */
+#info.anim #txt>:not(#nextup){animation:up .6s var(--e-out) backwards}   /* not Next up: it has its own animations, which this rule would override */
 #info.anim #txt>:nth-child(2){animation-delay:.07s}#info.anim #txt>:nth-child(n+3){animation-delay:.14s}
 body:not([data-view=viz]) #lyr{animation:fadein .5s}
-.ppage:not([hidden])>*{animation:up .4s cubic-bezier(.2,.8,.2,1) backwards}
+.ppage:not([hidden])>*{animation:up .4s var(--e-out) backwards}
 .btn,.chip,.opt{transition:background .2s,border-color .2s,transform .15s}
 .btn:active,.chip:active,.opt:active{transform:scale(.96)}
 #seg button,#wzseg button{transition:background .25s,color .25s}
 /* settings checkboxes become sliding switches (knob drawn as a background layer, which slides in every browser) */
 .f.chk input[type=checkbox],#wzlow,.psw{-webkit-appearance:none;appearance:none;flex:none;margin:0;width:36px;height:21px;border-radius:999px;border:1px solid var(--line);cursor:pointer;
   background-color:rgba(255,255,255,.16);background-image:radial-gradient(circle,#fff 0 7px,rgba(0,0,0,.25) 7.6px,transparent 8.6px);background-repeat:no-repeat;background-size:19px 19px;background-position:0 50%;
-  transition:background-color .3s,border-color .3s,background-position .4s cubic-bezier(.34,1.56,.64,1)}
+  transition:background-color .3s,border-color .3s,background-position .4s var(--e-spring)}
 .f.chk input[type=checkbox]:checked,#wzlow:checked,.psw:checked{background-color:var(--acc);border-color:transparent;background-position:15px 50%}
 .f.chk input[type=checkbox]:active,#wzlow:active,.psw:active{background-position:2px 50%}
 .f.chk input[type=checkbox]:checked:active,#wzlow:checked:active,.psw:checked:active{background-position:13px 50%}
 /* top-bar toggles: press-and-bounce, and the icon of an "on" toggle gets the accent glow */
 @keyframes bump{0%{transform:scale(1)}35%{transform:scale(.82)}70%{transform:scale(1.12)}100%{transform:scale(1)}}
-.bump{animation:bump .45s cubic-bezier(.34,1.56,.64,1)}
+.bump{animation:bump .45s var(--e-spring)}
 #pi.bump{transform-origin:center;transform-box:fill-box}
 .ib{transition:background .25s,transform .15s,box-shadow .3s}
 .ib.gone{width:0;padding:0!important;border-width:0!important;margin:0 -4px;opacity:0;transform:scale(.5);pointer-events:none}   /* takes no room at all */
-#trbtn,#rombtn{transition:width .4s cubic-bezier(.34,1.3,.64,1),margin .4s cubic-bezier(.34,1.3,.64,1),opacity .3s,transform .4s cubic-bezier(.34,1.56,.64,1),background .25s,box-shadow .3s}
+#trbtn,#rombtn{transition:width .4s var(--e-soft),margin .4s var(--e-soft),opacity .3s,transform .4s var(--e-spring),background .25s,box-shadow .3s}
 .ib.on{box-shadow:0 0 0 1px rgba(255,255,255,.35),0 0 18px -4px var(--acc)}
 .chip .dot{transition:background .3s,box-shadow .3s}
 select{transition:background .2s,border-color .2s}select:hover{border-color:rgba(255,255,255,.35)}
@@ -569,7 +569,7 @@ body.rm *,body.rm *::before,body.rm *::after{animation-duration:.01ms!important;
 /* ---------- ping meter ---------- */
 #netbtn{padding:8px 12px;font-variant-numeric:tabular-nums}
 #netbtn.good .dot{background:#1ed760;box-shadow:0 0 10px #1ed760}#netbtn.ok .dot{background:#ffc857;box-shadow:0 0 10px #ffc857}#netbtn.bad .dot{background:#ff6b6b;box-shadow:0 0 10px #ff6b6b}
-#cappanel,#netpanel{position:fixed;top:64px;right:16px;z-index:9;width:min(380px,calc(100% - 32px));padding:14px 16px;animation:pop .3s cubic-bezier(.2,.8,.2,1);transform-origin:top right;background:rgba(16,16,24,.9)}
+#cappanel,#netpanel{position:fixed;top:64px;right:16px;z-index:9;width:min(380px,calc(100% - 32px));padding:14px 16px;animation:pop .3s var(--e-out);transform-origin:top right;background:rgba(16,16,24,.9)}
 .nph{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}.nph b{font-size:14px}.nph span{font-size:11px;color:var(--faint)}
 .nrow{display:grid;grid-template-columns:auto 1fr auto;gap:2px 10px;align-items:center;padding:8px 0;border-top:1px solid var(--line)}
 .nrow:first-child{border-top:0}
@@ -619,16 +619,16 @@ body.wz #empty,body.popen #empty{opacity:0;transition:opacity .3s}   /* nothing 
 @media(max-width:1180px){#capt{max-width:90px}}
 /* notification cards (updates, what's new, errors) */
 /* every notification lives in one stack in the top-right corner: cards with buttons first, short notes under them */
-#corner{position:fixed;top:70px;right:16px;z-index:20;transition:top .4s cubic-bezier(.2,.8,.2,1);display:flex;flex-direction:column;gap:10px;width:min(360px,calc(100% - 32px));pointer-events:none}
+#corner{position:fixed;top:70px;right:16px;z-index:20;transition:top .4s var(--e-out);display:flex;flex-direction:column;gap:10px;width:min(360px,calc(100% - 32px));pointer-events:none}
 #notes,#toasts{display:flex;flex-direction:column;gap:10px;pointer-events:none}
 #notes:empty,#toasts:empty{display:none}
 #notes .note{margin:0}
-#corner .toast{animation:cin .35s cubic-bezier(.2,.8,.2,1);transform-origin:top right;border-radius:16px}
+#corner .toast{animation:cin .35s var(--e-out);transform-origin:top right;border-radius:16px}
 @keyframes cin{from{opacity:0;transform:translateX(24px) scale(.97)}}
 .note .nact{flex-wrap:wrap}.note .nact .btn{white-space:nowrap}
 .note{pointer-events:auto;padding:14px 16px 12px;border-radius:18px;background:linear-gradient(145deg,rgba(255,255,255,.16),rgba(255,255,255,.05)),rgba(20,20,34,.62);
   border:1px solid rgba(255,255,255,.2);box-shadow:0 18px 50px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.25);backdrop-filter:blur(30px) saturate(170%);-webkit-backdrop-filter:blur(30px) saturate(170%);
-  animation:pop .4s cubic-bezier(.2,.8,.2,1);transform-origin:top right}
+  animation:pop .4s var(--e-out);transform-origin:top right}
 .note.bye{animation:none;opacity:0;transform:translateX(30px) scale(.96);transition:opacity .25s,transform .25s}
 .note b{display:block;font-size:14px;font-weight:800}.note .nsub{font-size:11.5px;color:var(--faint);margin-top:2px}
 .note.err{border-left:3px solid #ff6b6b}.note.warn{border-left:3px solid #ffc857}.note.ok{border-left:3px solid #1ed760}
@@ -642,7 +642,7 @@ body.wz #empty,body.popen #empty{opacity:0;transition:opacity .3s}   /* nothing 
    and a highlight follows the pointer across the glass ===== */
 #pwin{transform-origin:var(--ox,50%) var(--oy,0%)}
 #panel:not(.open) #pwin{transform:scale(.35);opacity:0;filter:blur(8px)}
-#pwin{transition:transform .55s cubic-bezier(.34,1.3,.64,1),opacity .3s,filter .4s}
+#pwin{transition:transform .55s var(--e-soft),opacity .3s,filter .4s}
 /* low performance mode: no blur behind the glass, a bit more opaque instead */
 body.low .ib,body.low .chip,body.low select,body.low .prow,body.low #cappanel,body.low #netpanel,body.low #setup .sw,body.low #setup{backdrop-filter:none;-webkit-backdrop-filter:none}
 body.low #cappanel,body.low #netpanel,body.low #setup .sw{background:rgba(20,20,32,.95)}
@@ -669,7 +669,7 @@ body.low #cappanel,body.low #netpanel,body.low #setup .sw{background:rgba(20,20,
 .btn.pri{box-shadow:0 6px 20px rgba(255,255,255,.15),inset 0 1px 0 #fff}
 .toast{background:var(--g-grad),rgba(22,22,38,.5);border-color:var(--g-bd);box-shadow:var(--g-sh),var(--g-hi);backdrop-filter:var(--g-blur);-webkit-backdrop-filter:var(--g-blur)}
 #psearch::placeholder,.tin::placeholder{color:rgba(255,255,255,.55)}
-.lq{position:relative;transition:transform .5s cubic-bezier(.34,1.56,.64,1),background .25s,box-shadow .3s}
+.lq{position:relative;transition:transform .5s var(--e-spring),background .25s,box-shadow .3s}
 .lq::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:0;transition:opacity .3s;
   background:radial-gradient(circle at var(--mx,50%) var(--my,50%),rgba(255,255,255,.26),rgba(255,255,255,0) 60%)}
 .lq:hover::after{opacity:1}
@@ -686,9 +686,9 @@ body.low #cappanel,body.low #netpanel,body.low #setup .sw{background:rgba(20,20,
   -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0)}
 .lq:hover::before{opacity:1}
 .lqr{position:absolute;left:var(--rx);top:var(--ry);width:var(--rs);height:var(--rs);border-radius:50%;pointer-events:none;z-index:0;transform:translate(-50%,-50%) scale(0);
-  background:radial-gradient(circle,rgba(255,255,255,.5),rgba(255,255,255,.16) 45%,rgba(255,255,255,0) 70%);animation:lqr .65s cubic-bezier(.2,.8,.2,1) forwards}
+  background:radial-gradient(circle,rgba(255,255,255,.5),rgba(255,255,255,.16) 45%,rgba(255,255,255,0) 70%);animation:lqr .65s var(--e-out) forwards}
 @keyframes lqr{to{transform:translate(-50%,-50%) scale(1);opacity:0}}
-#cappanel:not([hidden]),#netpanel:not([hidden]),#devpanel:not([hidden]),#notes .note{animation:liquidin .6s cubic-bezier(.2,.8,.2,1)}
+#cappanel:not([hidden]),#netpanel:not([hidden]),#devpanel:not([hidden]),#notes .note{animation:liquidin .6s var(--e-out)}
 #cappanel.closing,#netpanel.closing,#devpanel.closing{animation:liquidout .24s cubic-bezier(.5,0,.75,0) forwards!important}@keyframes liquidout{to{opacity:0;transform:scale(.62,.45);filter:blur(10px)}}
 @keyframes liquidin{0%{opacity:0;transform:scale(.55,.35);filter:blur(12px)}55%{opacity:1;transform:scale(1.03,1.06);filter:blur(0)}78%{transform:scale(.99,.98)}100%{transform:none}}
 #bar input[type=range]:active::-webkit-slider-thumb{transform:scale(1.4,1.06)}
@@ -704,7 +704,7 @@ body.rm .lq:hover,body.rm .lq.press{transform:none}
 #bar input[type=range]::-moz-range-progress{height:8px;border-radius:99px;background:linear-gradient(180deg,rgba(255,255,255,.32),rgba(255,255,255,0) 65%),var(--acc)}
 #bar input[type=range]::-webkit-slider-thumb{width:18px;height:18px;margin-top:-5px;border:1px solid rgba(255,255,255,.75);
   background:radial-gradient(circle at 35% 30%,#fff 0,rgba(255,255,255,.9) 35%,rgba(225,225,240,.6) 100%);
-  box-shadow:0 2px 8px rgba(0,0,0,.35),0 0 0 4px rgba(255,255,255,.08),inset 0 -2px 3px rgba(0,0,0,.12);transition:transform .2s cubic-bezier(.34,1.56,.64,1),box-shadow .2s}
+  box-shadow:0 2px 8px rgba(0,0,0,.35),0 0 0 4px rgba(255,255,255,.08),inset 0 -2px 3px rgba(0,0,0,.12);transition:transform .2s var(--e-spring),box-shadow .2s}
 #bar input[type=range]::-moz-range-thumb{width:18px;height:18px;border:1px solid rgba(255,255,255,.75);background:radial-gradient(circle at 35% 30%,#fff 0,rgba(255,255,255,.9) 35%,rgba(225,225,240,.6) 100%);box-shadow:0 2px 8px rgba(0,0,0,.35),0 0 0 4px rgba(255,255,255,.08)}
 #bar input[type=range]:hover::-webkit-slider-thumb,#bar input[type=range]:active::-webkit-slider-thumb{transform:scale(1.15);box-shadow:0 3px 12px rgba(0,0,0,.4),0 0 0 6px rgba(255,255,255,.12),inset 0 -2px 3px rgba(0,0,0,.12)}
 body.low #bar input[type=range]::-webkit-slider-thumb{transition:none}
@@ -720,6 +720,14 @@ body.low #bar input[type=range]::-webkit-slider-thumb{transition:none}
 #pwin,#setup .sw{border-radius:var(--r-lg)}
 #hprob{border-radius:var(--r-md);background:var(--g-grad),rgba(40,32,14,.4);box-shadow:var(--g-sh),var(--g-hi);backdrop-filter:var(--g-blur);-webkit-backdrop-filter:var(--g-blur)}
 #hprob.err{background:var(--g-grad),rgba(44,16,20,.42)}
+/* the Spicy Lyrics parts in the same glass: scrub preview (floating glass), loading skeleton (frosted bars), refined credits */
+#scrubtip{border-radius:var(--r-sm);padding:5px 11px;background:var(--g-grad),var(--g-float);border-color:var(--g-bd);box-shadow:0 8px 24px rgba(0,0,0,.35),var(--g-hi);
+  backdrop-filter:blur(30px) saturate(170%);-webkit-backdrop-filter:blur(30px) saturate(170%)}
+#lmsg .skr{border-radius:var(--r-sm);border:1px solid rgba(255,255,255,.1);box-shadow:inset 0 1px 0 rgba(255,255,255,.14);
+  background:linear-gradient(90deg,rgba(255,255,255,.06),rgba(255,255,255,.18),rgba(255,255,255,.06)) 0 0/200% 100%,linear-gradient(145deg,rgba(255,255,255,.08),rgba(255,255,255,.02))}
+#lmsg .lmact{gap:10px;margin-top:10px}
+#ly .lcr a{text-decoration:none;border-radius:6px;padding:0 .2em;margin:0 -.2em;transition:background .25s,color .25s}#ly .lcr a:hover{background:rgba(255,255,255,.12)}
+body.low #scrubtip{backdrop-filter:none;-webkit-backdrop-filter:none;background:rgba(22,22,38,.9)}body.low #lmsg .skr{animation:none}
 .drow,#pnav .pn,#pnavpill,.prow,select,#psearch,.tin,.f input[type=text],.f input[type=url],.f input[type=password]{border-radius:var(--r-sm)}
 </style>
 </head>
