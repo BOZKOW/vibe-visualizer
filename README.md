@@ -412,7 +412,7 @@ so lyrics, Canvas, your settings and updates all come from the server, the same 
   corner with the song beside it, the lyrics filling the screen with the line being sung near the top, and the
   controls hidden while music plays (tap to bring them back): a thin timeline, plain transport glyphs and a row of
   round glass buttons (like, player view, devices, quick toggles, Settings). The player view shows the cover large
-  with your bars under it. **Quick toggles** hold the view switch and tiles for translation, romanization, resync,
+  with your bars under it. **Quick toggles** (the four-squares button) hold the view switch and tiles for translation, romanization, resync,
   Focus lyrics, Canvas, the phone's sound, low power, Spotify, opening a file, the connection, mute, home and Settings.
 - The screen stays on while the app is open, the back button closes Settings and panels first, and nothing runs in
   the background.

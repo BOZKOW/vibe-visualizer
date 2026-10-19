@@ -709,7 +709,10 @@ body.android #corner{margin-top:var(--sat,0px);right:calc(16px + var(--sar,0px))
 #qsbtn,#lybtn,#qs,#qsback,#nowfrom,#tl,#tr{display:none}
 body.phone{--sl-side:max(5vw,calc(var(--sal,0px) + 8px));--sl-sider:max(5vw,calc(var(--sar,0px) + 8px));--sl-top:max(5vw,calc(var(--sat,0px) + 6px));
   --sl-cov:min(15vh,34vw);--sl-t1:rgba(255,255,255,.92);--sl-t2:rgba(255,255,255,.6);--sl-t3:rgba(255,255,255,.35)}
-body.phone #top{display:none}   /* no top bar: Settings sits with the other buttons */
+body.phone #top{display:none}
+body.phone.phh-medium{--sl-cov:min(11vh,26vw)}body.phone.phh-small{--sl-cov:min(8vh,19vw)}
+body.phone.phh-hidden:not([data-view=viz]) #stage{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr);grid-template-areas:"txt" "ly"}
+body.phone.phh-hidden:not([data-view=viz]) #artw,body.phone.phh-hidden:not([data-view=viz]) #ttl,body.phone.phh-hidden:not([data-view=viz]) #sub{display:none}   /* no top bar: Settings sits with the other buttons */
 body.phone #left,body.phone #info{display:contents}
 body.phone #stage{display:grid;column-gap:calc(var(--sl-cov)*.13);row-gap:0;padding:var(--sl-top) var(--sl-sider) 0 var(--sl-side)}
 body.phone #artw{grid-area:art;margin:0;border-radius:calc(var(--sl-cov)*.08);box-shadow:0 9px 20px 0 rgba(0,0,0,.27)}
@@ -750,10 +753,9 @@ body.phone.cvmode[data-view=viz] #artw{visibility:hidden}
 body.phone.cvmode:not([data-view=viz]) #cvpane{opacity:.4}
 /* the controls: a dark shade from the bottom, the timeline, the transport, the glass buttons */
 body.phone #dock{left:0;right:0;width:auto;margin:0;transform:none;bottom:0;padding:110px var(--sl-sider) calc(16px + var(--sab,env(safe-area-inset-bottom,0px))) var(--sl-side);
-  background:linear-gradient(to top,rgba(0,0,0,.72),rgba(0,0,0,.55) 50%,rgba(0,0,0,0));pointer-events:none}
-body.phone #dock::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
-  -webkit-mask-image:linear-gradient(to top,#000 55%,transparent);mask-image:linear-gradient(to top,#000 55%,transparent)}   /* the lyrics blur away under the controls */
-body.low.phone #dock::before{display:none}
+  background:linear-gradient(to top,rgba(0,0,0,.82) 0%,rgba(0,0,0,.66) 45%,rgba(0,0,0,.3) 78%,rgba(0,0,0,0));pointer-events:none}
+body.phone #bar.lq{transform:none!important}
+body.phone #bar::before,body.phone #bar::after,body.phone #dock::before,body.phone #dock::after{display:none!important}   /* no glass band or highlight: just the shade */
 body.phone #bar{pointer-events:auto}
 body.phone.uihide #dock{opacity:0;transform:translateY(14px)}
 body.phone #bar{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));grid-template-areas:"seek seek seek seek seek" "shuf prev play next rep" "btns btns btns btns btns";
@@ -767,8 +769,11 @@ body.phone #tl,body.phone #tr{display:block;font-size:13px;font-weight:600;color
 body.phone #shuf{grid-area:shuf}body.phone #prev{grid-area:prev}body.phone #play{grid-area:play}body.phone #next{grid-area:next}body.phone #rep{grid-area:rep}
 /* the glass row: like · player/lyrics · devices · quick toggles · Settings (whatever applies), centred */
 body.phone #slrow{grid-area:btns;display:flex;justify-content:center;gap:14px;width:100%}
-#slrow{display:none}
-body.phone #slrow #lybtn,body.phone #slrow #qsbtn{display:grid}
+#slrow,#qbtn,#srcbtn{display:none}
+body.phone #slrow #lybtn,body.phone #slrow #qsbtn,body.phone #slrow #qbtn,body.phone #slrow #srcbtn{display:grid}
+body.phone #slrow .phx{display:none!important}   /* switched off in Settings → Phone */
+body.phone #slrow #syncbtn.gone{display:none}
+body.phone #slrow{flex-wrap:wrap;row-gap:10px}
 body.phone #bar .ib{background:none!important;border:0!important;box-shadow:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;color:var(--sl-t1)}
 body.phone #shuf,body.phone #rep{width:44px;height:44px;color:var(--sl-t2)}body.phone #shuf svg,body.phone #rep svg{width:22px;height:22px}
 body.phone #prev,body.phone #next{width:60px;height:56px}body.phone #prev svg,body.phone #next svg{width:36px;height:36px}
@@ -779,7 +784,13 @@ body.phone #shuf.on::after,body.phone #rep.on::after{content:"";position:absolut
 body.phone #shuf,body.phone #rep{position:relative}
 body.phone #slrow .ib{width:46px!important;height:46px!important;border-radius:50%;color:var(--sl-t1);
   background:rgba(0,0,0,.10)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.36),inset 0 0 0 1px rgba(255,255,255,.16),inset 0 -1px 0 rgba(255,255,255,.18),0 10px 24px -8px rgba(8,10,18,.42)!important;
-  backdrop-filter:blur(12px)!important;-webkit-backdrop-filter:blur(12px)!important;transition:transform .15s,background .2s}
+  backdrop-filter:none!important;-webkit-backdrop-filter:none!important;transition:transform .15s,background .2s}   /* tinted glass, no live blur: a blur behind every button is redrawn every frame */
+body.phone #slrow .ib:not(.on){background:rgba(255,255,255,.08)!important}
+/* phones: no live blur anywhere it's redrawn all the time (it heats the phone); solid glass instead */
+body.phone #notes .note,body.phone #corner .toast,body.phone #cappanel,body.phone #netpanel,body.phone #devpanel,body.phone #lprob .pr,body.phone .qtile,body.phone #pwin,body.phone #panel,body.phone #setup .sw,body.phone #setup{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+body.phone #notes .note,body.phone #corner .toast,body.phone #cappanel,body.phone #netpanel,body.phone #devpanel{background:rgba(28,28,32,.96)!important}
+body.phone #pwin{background:rgba(18,18,26,.98)!important}body.phone #panel{background:rgba(4,4,12,.6)!important}
+body.phone .lq::before,body.phone .lq::after,body.phone .lqr{display:none!important}   /* no pointer-following highlights on a touch screen */
 body.phone #slrow .ib svg{width:21px;height:21px}
 body.phone #slrow .ib:active{transform:scale(.94)}
 body.phone #slrow .ib.on{background:rgba(255,255,255,.92)!important;color:#000}
@@ -828,6 +839,14 @@ body.phone #qs.drag{transition:none}
 #qsview{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;padding:4px;border-radius:16px;background:rgba(255,255,255,.07)}
 #qsview button{padding:10px 0;border-radius:12px;font-weight:700;font-size:13.5px;color:var(--dim);background:none;border:0;transition:background .25s,color .25s}
 #qsview button.on{background:#fff;color:#111}
+#qsdelay{display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:18px;background:rgba(255,255,255,.06)}
+#qsdelay span{flex:1;font-weight:700;font-size:13.5px;min-width:0}#qsdelay span small{display:block;font-weight:500;font-size:11px;color:var(--dim);margin-top:2px}
+#qsdelay .ib{width:38px;height:38px;font-size:22px;font-weight:700;line-height:1}#qsdelay b{min-width:52px;text-align:center;font-variant-numeric:tabular-nums}
+#qs.qmode #qsview,#qs.qmode #qsdelay,#qs.qmode #qsgrid{display:none}
+#qsq{display:flex;flex-direction:column;gap:4px}#qsq[hidden]{display:none}
+#qsq .qi{display:flex;align-items:center;gap:12px;padding:6px 4px;border-radius:12px}#qsq .qi img{width:46px;height:46px;border-radius:6px;object-fit:cover;background:rgba(255,255,255,.08);flex:none}
+#qsq .qi b{display:block;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#qsq .qi small{display:block;font-size:12.5px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#qsq .qi div{min-width:0}#qsq .qnow{opacity:.6}
 #qsgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
 @media(orientation:landscape){#qsgrid{grid-template-columns:repeat(6,minmax(0,1fr))}}
 .qtile{display:flex;flex-direction:column;align-items:flex-start;justify-content:space-between;gap:10px;min-height:92px;padding:12px;border-radius:20px;text-align:left;
@@ -918,7 +937,7 @@ body.low #bar input[type=range]::-webkit-slider-thumb{transition:none}
 #hprob{border-radius:var(--r-md);background:var(--g-grad),rgba(40,32,14,.4);box-shadow:var(--g-sh),var(--g-hi);backdrop-filter:var(--g-blur);-webkit-backdrop-filter:var(--g-blur)}
 #hprob.err{background:var(--g-grad),rgba(44,16,20,.42)}
 /* the quick toggles sheet in glass */
-body.phone #qs:not([hidden]){background:rgba(28,28,32,.88);border-color:var(--g-bd);box-shadow:0 -10px 50px rgba(0,0,0,.45),var(--g-hi);backdrop-filter:blur(36px) saturate(170%);-webkit-backdrop-filter:blur(36px) saturate(170%)}
+body.phone #qs:not([hidden]){background:rgba(28,28,32,.96);border-color:var(--g-bd);box-shadow:0 -10px 50px rgba(0,0,0,.45),var(--g-hi);backdrop-filter:none;-webkit-backdrop-filter:none}
 .qtile{background:linear-gradient(145deg,rgba(255,255,255,.15),rgba(255,255,255,.05));border-color:rgba(255,255,255,.16);box-shadow:inset 0 1px 0 rgba(255,255,255,.18)}
 .qtile.on{background:rgba(255,255,255,.92);box-shadow:inset 0 1px 0 rgba(255,255,255,.5)}
 body.low #qs:not([hidden]){backdrop-filter:none;-webkit-backdrop-filter:none;background:rgba(20,20,32,.97)}
@@ -1022,6 +1041,8 @@ body.low #scrubtip{backdrop-filter:none;-webkit-backdrop-filter:none;background:
       <input type="range" id="spvol" min="0" max="100" value="50" aria-label="Spotify volume"><span id="spvolval"></span>
     </div>
     <button class="ib" id="lybtn" aria-label="Lyrics" aria-pressed="false" title="Lyrics"><svg viewBox="0 0 24 24"><path d="M4 5h11v2H4zm0 4h11v2H4zm0 4h7v2H4zm13-8h3v9.5a3.5 3.5 0 11-2-3.16V5z"/></svg></button>
+    <button class="ib" id="qbtn" aria-label="Up next" title="Up next"><svg viewBox="0 0 24 24"><path d="M3 6h12v2H3zm0 5h12v2H3zm0 5h8v2H3zm14-3v-3h2v3h3v2h-3v3h-2v-3h-3v-2z"/></svg></button>
+    <button class="ib" id="srcbtn" aria-label="Other lyrics" title="Wrong lyrics? Try another source"><svg viewBox="0 0 24 24"><path d="M4 5h11v2H4zm0 4h11v2H4zm0 4h7v2H4zm13.6-1.4L20 10v6h-6l2.2-2.2A4 4 0 0013 13l-1.4-1.4a6 6 0 016 0zM14 20l-2.4 2v-6h6l-2.2 2.2A4 4 0 0018 19l1.4 1.4A6 6 0 0114 20z"/></svg></button>
     <button class="ib" id="qsbtn" aria-label="Quick toggles" aria-haspopup="dialog" title="Quick toggles"><svg viewBox="0 0 24 24"><path d="M4 4h7v7H4zm9 0h7v7h-7zM4 13h7v7H4zm9 0h7v7h-7z" opacity=".9"/></svg></button>
     <div id="volwrap">
       <button class="ib" id="mute" aria-label="Mute"><svg viewBox="0 0 24 24" id="vi"></svg></button>
@@ -1079,6 +1100,7 @@ body.low #scrubtip{backdrop-filter:none;-webkit-backdrop-filter:none;background:
   <div class="f chk" data-k="lminimal"><label><input type="checkbox" id="lminimal"> Minimal lyrics mode<small>Hide lines that have already been sung.</small></label></div>
   <div class="f chk" data-k="lhover"><label><input type="checkbox" id="lhover"> Highlight on hover<small>Show a soft box behind a line when you point at it.</small></label></div>
   <div class="f chk" data-k="lduet"><label><input type="checkbox" id="lduet"> Duet line padding<small>Indent each singer’s lines toward their side, so duets read as two columns.</small></label></div>
+  <div class="f chk" data-k="lbgBr"><label><input type="checkbox" id="lbgBr"> Background vocals in brackets<small>Show background vocals as (like this), as Spicy Lyrics Mobile can.</small></label></div>
   <div class="f chk" data-k="lcredLast"><label><input type="checkbox" id="lcredLast"> Credits follow the last singer<small>With credits under the lyrics: when a song ends on a line sung from the right, the credits move to the right too.</small></label></div>
   <p class="sub-h">Scrolling</p>
   <div class="f chk" data-k="lsmooth"><label><input type="checkbox" id="lsmooth"> Smooth scrolling<small>Glide from line to line instead of jumping.</small></label></div>
@@ -1108,6 +1130,10 @@ body.low #scrubtip{backdrop-filter:none;-webkit-backdrop-filter:none;background:
   <p class="hint">Spicy Lyrics looks songs up by Spotify track, so local files are matched through your Spotify connection. Every lyric shown credits its source, and community syncs credit their uploader and maker, as the <a class="src" target="_blank" rel="noopener" href="https://developers.spicylyrics.org/docs/attribution">Spicy Lyrics attribution rules</a> require.</p>
 
   <h4>Lyrics cache</h4>
+  <p class="sub-h">Last lookup</p>
+  <p class="hint">What each lyrics source said for the song that’s playing, in the order they were asked.</p>
+  <div id="lookuplog" class="relnotes"><p class="hint">No lookup yet.</p></div>
+  <div class="row2"><button class="btn sm" id="lyother">Try another source for this song</button><button class="btn sm" id="dbgcopy">Copy debug info</button></div>
   <p class="stat" id="lccount"></p>
   <div class="crow"><span>Clear this song’s cache<small>Remove everything saved for the song that’s playing (lyrics, romanization, translation) and fetch it again.</small></span><button class="btn sm" id="lcsong">Clear</button></div>
   <div class="crow"><span>Clear stored lyrics<small>Delete all lyrics saved on this device. They’re normally kept for up to 7 days.</small></span><button class="btn sm" id="lyrclear">Clear</button></div>
@@ -1128,6 +1154,21 @@ body.low #scrubtip{backdrop-filter:none;-webkit-backdrop-filter:none;background:
   <div class="f plain"><span class="lb">Canvas endpoint (optional)</span><input type="url" id="canvasUrl" placeholder="https://…/canvas?track={id}" autocomplete="off" spellcheck="false"></div>
   <p class="hint">Spotify’s public API doesn’t include Canvas videos. Add your own source here: a URL that returns a video, or JSON with a <b>url</b> field. Placeholders: <b>{id} {uri} {title} {artist}</b>.</p>
 
+  <h4>Phone</h4>
+  <p class="hint">How Vibe Visualizer looks and behaves on a phone: in the Android app and in a phone's browser. Laid out after Spicy Lyrics Mobile by TX24.</p>
+  <div class="f" data-k="phHead"><span class="lb">Song header</span><select id="phHead"><option value="large">Large</option><option value="medium">Medium</option><option value="small">Small</option><option value="hidden">Hidden (only the credits line)</option></select></div>
+  <div class="f chk" data-k="phYear"><label><input type="checkbox" id="phYear"> Release year<small>After the artist, when Spotify or the file says it.</small></label></div>
+  <div class="f" data-k="phHide"><span class="lb">Hide the controls after</span><select id="phHide"><option value="2">2 seconds</option><option value="3">3 seconds</option><option value="5">5 seconds</option><option value="8">8 seconds</option><option value="never">Never</option></select><small class="hint">While music plays. A tap brings them back.</small></div>
+  <div class="f chk" data-k="phHidePaused"><label><input type="checkbox" id="phHidePaused"> Hide while paused too<small>Without it, the controls stay while the music is paused.</small></label></div>
+  <p class="sub-h">Buttons under the controls</p>
+  <div class="f chk" data-k="phbLike"><label><input type="checkbox" id="phbLike"> Like<small>Save the song to your Liked Songs (Spotify).</small></label></div>
+  <div class="f chk" data-k="phbView"><label><input type="checkbox" id="phbView"> Player or lyrics<small>Switch between the big cover with the bars and the lyrics.</small></label></div>
+  <div class="f chk" data-k="phbDev"><label><input type="checkbox" id="phbDev"> Devices<small>Choose where Spotify plays.</small></label></div>
+  <div class="f chk" data-k="phbSync"><label><input type="checkbox" id="phbSync"> Resync<small>Line the lyrics up with Spotify again.</small></label></div>
+  <div class="f chk" data-k="phbSrc"><label><input type="checkbox" id="phbSrc"> Other lyrics<small>Wrong lyrics? Try the next source for this song.</small></label></div>
+  <div class="f chk" data-k="phbQueue"><label><input type="checkbox" id="phbQueue"> Up next<small>What Spotify plays next.</small></label></div>
+  <div class="f chk" data-k="phbQs"><label><input type="checkbox" id="phbQs"> Quick toggles<small>The sheet of tiles.</small></label></div>
+  <div class="f chk" data-k="phbSet"><label><input type="checkbox" id="phbSet"> Settings<small>Shown anyway when the quick toggles are off, so Settings stays in reach.</small></label></div>
   <h4>Performance</h4>
   <div class="f chk" data-k="low"><label><input type="checkbox" id="low"> Low performance mode</label></div>
   <div class="f chk" data-k="perfAsk"><label><input type="checkbox" id="perfAsk"> Suggest Low performance mode when needed<small>Watches how smoothly the app runs while a song plays. If your computer can’t keep up, or the battery is low and not charging, a pop-up offers to turn Low performance mode on.</small></label></div>
@@ -1164,6 +1205,9 @@ body.low #scrubtip{backdrop-filter:none;-webkit-backdrop-filter:none;background:
   <p class="hint">Errors Vibe Visualizer runs into are saved on your server (not sent anywhere else), so they can be looked at and fixed.</p>
   <div id="errlog" class="relnotes"></div>
   <div class="row2"><button class="btn sm" id="errload">Show errors</button><button class="btn sm" id="errclear">Clear</button></div>
+  <p class="sub-h">Back up settings</p>
+  <p class="hint">Copy your settings (not your logins) to paste them on another device, or to keep them.</p>
+  <div class="row2"><button class="btn sm" id="setcopy">Copy my settings</button><button class="btn sm" id="setpaste">Paste settings</button></div>
   <div class="row2"><button class="btn sm" id="rerun">Open setup guide</button><button class="btn sm" id="forget">Forget this device</button></div>
   <p class="hint">Opened from your Vibe Visualizer server, your settings, keys and Spotify login are kept on the server for this device (by its Tailscale address), so they’re still here next time. “Forget this device” deletes them.</p>
   <p class="hint">Vibe Visualizer is free software under the <a class="src" target="_blank" rel="noopener" href="https://www.gnu.org/licenses/agpl-3.0.html">GNU AGPL-3.0</a>. Its lyrics animation is ported from <a class="src" target="_blank" rel="noopener" href="https://github.com/Spikerko/spicy-lyrics">Spicy Lyrics</a> by Spikerko and contributors. Vibe Visualizer is an unofficial project, not made by or affiliated with Spicy Lyrics. <a class="src" target="_blank" rel="noopener" href="https://github.com/BOZKOW/vibe-visualizer">Source code</a></p>
@@ -1294,7 +1338,9 @@ body.low #scrubtip{backdrop-filter:none;-webkit-backdrop-filter:none;background:
   <div class="qsgrab" aria-hidden="true"></div>
   <div class="qshead"><b id="qst">Quick toggles</b><small id="qss"></small></div>
   <div id="qsview" role="tablist" aria-label="View"><button data-v="viz">Visualizer</button><button data-v="lyrics">Lyrics</button><button data-v="both">Both</button></div>
+  <div id="qsdelay"><span>This song’s timing<small>Lyrics early? Make them later, and the other way round.</small></span><button type="button" class="ib" data-d="-100" aria-label="Lyrics 0.1 s earlier">−</button><b id="qsdv">0.0 s</b><button type="button" class="ib" data-d="100" aria-label="Lyrics 0.1 s later">+</button><button type="button" class="btn sm" data-d="0">Reset</button></div>
   <div id="qsgrid"></div>
+  <div id="qsq" hidden></div>
 </section>
 <div id="corner"><div id="notes" aria-live="polite"></div><div id="toasts" aria-live="polite"></div></div>
 <input type="file" id="file" accept="audio/*" hidden>
@@ -1352,7 +1398,7 @@ function toast(msg,type,ms){
 /* ================= settings (one store) ================= */
 const LANGS=[['en','English'],['cs','Czech'],['sk','Slovak'],['de','German'],['es','Spanish'],['fr','French'],['it','Italian'],['pt','Portuguese'],['pl','Polish'],['nl','Dutch'],['sv','Swedish'],['da','Danish'],['no','Norwegian'],['fi','Finnish'],['hu','Hungarian'],['ro','Romanian'],['el','Greek'],['tr','Turkish'],['uk','Ukrainian'],['ru','Russian'],['ar','Arabic'],['he','Hebrew'],['hi','Hindi'],['th','Thai'],['vi','Vietnamese'],['id','Indonesian'],['tl','Filipino'],['ja','Japanese'],['ko','Korean'],['zh-CN','Chinese (Simplified)'],['zh-TW','Chinese (Traditional)']];
 const navLang=(()=>{const l=(navigator.language||'en').toLowerCase(),m=LANGS.find(x=>x[0].toLowerCase()===l)||LANGS.find(x=>x[0].split('-')[0]===l.split('-')[0]);return m?m[0]:'en'})();
-const DEF={bridge:true,xFocus:false,bgStyle:'dynamic',lfont:'vv',lsimple:false,lminimal:false,lhover:true,lduet:true,lcredLast:false,lsmooth:true,learly:false,learlyMs:250,lseekFade:true,lnotice:true,volshow:true,fpscap:'0',credPos:'corner',cvNoArt:false,capDev:'',romMode:'replace',tr:false,trTo:navLang,trSkip:'',theme:'cover',c1:'#ff5a5f',c2:'#4f8cff',auto:true,boost:100,resp:25,blur:0,bars:72,gap:28,glow:false,round:true,scale:'1',fps:false,bgblur:60,bri:70,sat:170,bgspeed:100,online:true,volume:100,view:'both',lprov:'spicy:1,spotify:1,lrclib:1,netease:1',loff:0,lsize:100,lblur:true,canvasOn:true,low:false,perfAsk:true,anim:'system',lDesync:'ask',design:'glass',uiHide:'idle',xRefCred:true,xScrub:true,xSkeleton:true,xKeep:true,xBgPop:false,xRefSimple:false,ljoin:false,andTuned:false};
+const DEF={bridge:true,xFocus:false,bgStyle:'dynamic',lfont:'vv',lsimple:false,lminimal:false,lhover:true,lduet:true,lcredLast:false,lsmooth:true,learly:false,learlyMs:250,lseekFade:true,lnotice:true,volshow:true,fpscap:'0',credPos:'corner',cvNoArt:false,capDev:'',romMode:'replace',tr:false,trTo:navLang,trSkip:'',theme:'cover',c1:'#ff5a5f',c2:'#4f8cff',auto:true,boost:100,resp:25,blur:0,bars:72,gap:28,glow:false,round:true,scale:'1',fps:false,bgblur:60,bri:70,sat:170,bgspeed:100,online:true,volume:100,view:'both',lprov:'spicy:1,spotify:1,lrclib:1,netease:1',loff:0,lsize:100,lblur:true,canvasOn:true,low:false,perfAsk:true,anim:'system',lDesync:'ask',design:'glass',uiHide:'idle',xRefCred:true,xScrub:true,xSkeleton:true,xKeep:true,xBgPop:false,xRefSimple:false,ljoin:false,lbgBr:false,phHead:'large',phYear:true,phHide:'3',phHidePaused:false,phbLike:true,phbView:true,phbDev:true,phbSync:false,phbSrc:false,phbQueue:false,phbQs:true,phbSet:true,andTuned:false};
 if(window.VVAndroid)DEF.lblur=false;   // phones: blurring every lyric line costs more than half of the page's drawing time
 const CFGD={spotId:'',canvasUrl:''},OLDCFG=['spicyUrl','spicyHdr','spicyPfx','spicyKey'];   // old fields that kept a key in the browser: always removed
 // Everything (settings, API keys, Spotify login, setup progress) lives in sessionStorage:
@@ -1441,7 +1487,8 @@ function onSetting(k){
   else if(k==='credPos')applyCredPos();
   else if(k==='bridge'){if(S.bridge)bridgeConnect();else bridgeStop()}
   else if(/^(xFocus|lsimple|lminimal|lhover|lduet|lcredLast|lsmooth|volshow|xKeep|xBgPop|xRefSimple|xScrub)$/.test(k)){applyLyrOpts();if(k==='xFocus'||k==='xBgPop'||k==='xRefSimple')setTimeout(place,60);if(k==='xRefSimple'||k==='lsimple')lEls.forEach(restLine)}
-  else if(k==='ljoin'){if(L.length)renderLyrics(null,true)}
+  else if(k==='ljoin'||k==='lbgBr'){if(L.length)renderLyrics(null,true)}
+  else if(/^ph/.test(k)){applyPhone();poke()}
   else if(k==='xRefCred'){applyLyrOpts();renderCredit()}
   else if(k==='lnotice'&&!S.lnotice&&lmsg.className==='none')lyrMsg('');
   else if(k==='cvNoArt')coverHide(!!S.cvNoArt&&body.classList.contains('cvmode'),()=>body.classList.toggle('cvnoart',!!S.cvNoArt));
@@ -1613,7 +1660,7 @@ function drawLiveBg(now,dt){
   const tempo=bgTempo;
   bgT+=dt/1000*(S.bgspeed/100)*(.35+bgEnergy*1.8+bgKick*2.2)*tempo;
   bgPulse+=(bass-bgPulse)*(1-Math.exp(-dt/120));
-  if(now-lastBgF<33)return;lastBgF=now;                       // ~30 fps is plenty for a blur
+  if(now-lastBgF<(PHONE?(playing()?50:200):33))return;lastBgF=now;   // phones: 20 fps, the background only drifts (5 while paused)                       // ~30 fps is plenty for a blur
   const w=bgl.width,h=bgl.height,D=Math.hypot(w,h)*(1+bgPulse*.18),t=bgT,W2=6.2832/40;
   blx.globalAlpha=1;blx.fillStyle='#07070c';blx.fillRect(0,0,w,h);
   BGL.forEach((l,i)=>{const s=D*l.sc;
@@ -1734,7 +1781,8 @@ if(PHONE){body.classList.add('phone');
   // quick toggles, Settings
   const row=document.createElement('div');row.id='slrow';$('bar').appendChild(row);
   const lk=$('like');lk.classList.add('spx');const dv=$('devbtn');dv.classList.add('spx');
-  [lk,$('lybtn'),dv,$('qsbtn'),$('gear')].forEach(b=>row.appendChild(b));
+  [lk,$('lybtn'),dv,$('syncbtn'),$('srcbtn'),$('qbtn'),$('qsbtn'),$('gear')].forEach(b=>row.appendChild(b));
+  $('qbtn').classList.add('spx');
   $('txt').appendChild($('lcredit'));   // the lyrics credits: a quiet line under the artist
 }
 const bridgeBuf=new Uint8Array(1024);let bridgeOn=false,bridgeAt=0,bridgeDev='',bridgeVia='';
@@ -1827,7 +1875,7 @@ function setSource(s){
   hideEmpty();updChips();updPlayIcon();
 }
 function resize(){
-  dpr=Math.min(devicePixelRatio||1,2)*(S.low?.6:parseFloat(S.scale));W=viz.clientWidth;H=viz.clientHeight;
+  dpr=Math.min(devicePixelRatio||1,PHONE?1.5:2)*(S.low?.6:parseFloat(S.scale));   // phones: the bars don't need the screen's full sharpnessW=viz.clientWidth;H=viz.clientHeight;
   if(!W||!H)return;cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);ctx.setTransform(cv.width/W,0,0,cv.height/H,0,0);gradB=null;dirty=true;
 }
 new ResizeObserver(()=>{resize();place()}).observe(viz);
@@ -2150,9 +2198,9 @@ function spApply(d,mid){   // a player state from Spotify (fetched here or share
   spFetched=mid;
   const it=d&&d.item;
   spxFrom(d);
-  if(!it){spState=null;if(spId!==null||!ttl.textContent){spId=null;spMeta=null;setIdle();clearLyrics('');clearCanvas()}updChips();syncCanvasPlay();updSpx();return}
+  if(!it){spState=null;if(spId!==null||!ttl.textContent){spId=null;spMeta=null;curYear='';curArtist='';setIdle();clearLyrics('');clearCanvas()}updChips();syncCanvasPlay();updSpx();return}
   const ep=it.type==='episode',imgs=(ep?it.images:(it.album&&it.album.images))||[];
-  const m={ep,id:it.id,uri:it.uri,title:it.name,artist:ep?((it.show&&it.show.name)||''):(it.artists||[]).map(a=>a.name).join(', '),album:ep?'':((it.album&&it.album.name)||''),duration:it.duration_ms/1000,cover:imgs[0]?imgs[0].url:'',artistId:ep?'':((it.artists&&it.artists[0]&&it.artists[0].id)||'')};
+  const m={ep,id:it.id,uri:it.uri,title:it.name,artist:ep?((it.show&&it.show.name)||''):(it.artists||[]).map(a=>a.name).join(', '),album:ep?'':((it.album&&it.album.name)||''),duration:it.duration_ms/1000,cover:imgs[0]?imgs[0].url:'',year:ep?'':((it.album&&it.album.release_date)||'').slice(0,4),artistId:ep?'':((it.artists&&it.artists[0]&&it.artists[0].id)||'')};
   spState={playing:!!d.is_playing,progress:d.progress_ms||0,duration:it.duration_ms};
   // small differences glide in over ~0.6 s instead of jumping the lyrics; big ones (seek, skip) snap
   const after=spState.progress+(spState.playing?now-mid:0),err=before==null?null:before-after;
@@ -2165,7 +2213,7 @@ function onSpTrack(m){
   curArtistId=m.artistId||'';spMeta=m;spLikeCheck(m);
   if(vals)vals.fill(0);   // the bars drop and grow back with the new song
   const tok=++coverTok;peak=.3;clearCanvas(true);
-  ttl.textContent=m.title;sub.textContent=m.artist;status.textContent='Spotify';animTrack();
+  ttl.textContent=m.title;curYear=m.year||'';subShow(m.artist);status.textContent='Spotify';animTrack();
   if(!m.cover)resetCover();
   (async()=>{
     let ok=m.cover?await setCover(m.cover,'',tok,true):false;
@@ -2353,19 +2401,23 @@ function parseTTML(x){
   d.querySelectorAll('p').forEach(p=>{
     const b=p.getAttribute('begin');if(b==null)return;
     const ag=agentOf(p);if(!main&&ag)main=ag;
-    const isBg=n=>n.nodeType===1&&/x-bg/.test(n.getAttribute('ttm:role')||n.getAttribute('role')||'');
+    const role=n=>n.nodeType===1?(n.getAttribute('ttm:role')||n.getAttribute('role')||''):'';
+    const isBg=n=>/x-bg/.test(role(n)),isSide=n=>/x-translation|x-roman/.test(role(n));   // translation / romanization spans (AMLL TTML) aren't sung text
     const take=(par,words)=>par.childNodes.forEach(n=>{
-      if(isBg(n))return;
+      if(isBg(n)||isSide(n))return;
       if(n.nodeType===1&&n.getAttribute('begin')!=null){const e=n.getAttribute('end');words.push({t:ttSec(n.getAttribute('begin')),end:e!=null?ttSec(e):null,text:n.textContent,sp:false})}
       else if(n.nodeType===3&&/\s/.test(n.nodeValue)&&words.length)words[words.length-1].sp=true;
     });
     const fix=ws=>{if(ws.length&&!ws.some(w=>w.sp||/\s$/.test(w.text)))ws.forEach(w=>w.sp=true);return ws};
     const words=fix([]);take(p,words);fix(words);
-    const bg=[...p.children].filter(isBg).map(n=>{const ws=[];take(n,ws);fix(ws);return{text:n.textContent.replace(/\s+/g,' ').trim(),words:ws.length?ws:null}}).filter(x=>x.text);
-    let text='';p.childNodes.forEach(n=>{if(!isBg(n))text+=n.textContent});text=text.replace(/\s+/g,' ').trim();if(!text)return;
+    const bg=[...p.children].filter(isBg).map(n=>{const ws=[];take(n,ws);fix(ws);let t='';n.childNodes.forEach(c=>{if(!isSide(c))t+=c.textContent});return{text:t.replace(/\s+/g,' ').trim(),words:ws.length?ws:null}}).filter(x=>x.text);
+    let text='';p.childNodes.forEach(n=>{if(!isBg(n)&&!isSide(n))text+=n.textContent});text=text.replace(/\s+/g,' ').trim();if(!text)return;
+    const side=r=>{const n=[...p.children].find(c=>new RegExp(r).test(role(c)));return n?{t:n.textContent.replace(/\s+/g,' ').trim(),lang:(n.getAttribute('xml:lang')||'').split('-')[0]}:null};
+    const trS=side('x-translation'),roS=side('x-roman');
     const e=p.getAttribute('end');
     const opp=!!ag&&ag!==main&&(!people.length||people.includes(ag));
-    out.push({t:ttSec(b),end:e!=null?ttSec(e):null,text,words:words.length>1?words:null,bg:bg.length?bg:null,opp:opp||undefined});
+    out.push({t:ttSec(b),end:e!=null?ttSec(e):null,text,words:words.length>1?words:null,bg:bg.length?bg:null,opp:opp||undefined,
+      apiTr:trS&&trS.t||null,apiTrLang:trS&&trS.t?(trS.lang||'zh'):undefined,apiRom:roS&&roS.t||null});
   });
   out.sort((a,b)=>a.t-b.t);
   out.writers=[...d.querySelectorAll('songwriter')].map(x=>x.textContent.trim()).filter(Boolean);   // credits
@@ -2497,9 +2549,10 @@ function renderLyrics(label,quiet){
         const romW=S.romMode==='replace'&&!!l.rom&&!!(b.words&&b.words.some(w=>w.rom)),romB=S.romMode==='replace'&&l.rom&&b.rom&&!romW;
         if(lsync&&b.words&&b.words.length&&!romB){
           const s=sub('bgv bw',''),bts=b.words.map((w,k)=>({t:w.t,end:w.end!=null?w.end:k+1<b.words.length?b.words[k+1].t:w.t+1}));
-          b.words.forEach(w=>{const x=document.createElement('span');x.className='w';x.textContent=(romW&&w.rom?w.rom:w.text)+(w.sp?' ':'');s.appendChild(x)});
+          const br=S.lbgBr&&!/^\s*[(\[]/.test(b.text),n=b.words.length;   // background vocals in brackets
+          b.words.forEach((w,k)=>{const x=document.createElement('span');x.className='w';let t=romW&&w.rom?w.rom:w.text;if(br&&!k)t='('+t;if(br&&k===n-1)t=t.replace(/\s*$/,')');x.textContent=t+(w.sp?' ':'');s.appendChild(x)});
           splitLetters(s,bts);(d._bg=d._bg||[]).push({el:s,ts:bts});
-        }else sub('bgv',romB?b.rom:b.text);
+        }else{const t=romB?b.rom:b.text;sub('bgv',S.lbgBr&&!/^\s*[(\[]/.test(t)?'('+t+')':t)}
       });
       // romanization and translation under the line fill in time with it: word by word when the romanized
       // words line up with the sung ones, otherwise across the whole line
@@ -2528,7 +2581,7 @@ function renderLyrics(label,quiet){
   dirty=true;
 }
 let lCredit=null;
-const PROVIDERS={spicy_lyrics:'Spicy Lyrics',apple_music:'Apple Music',spotify:'Spotify',lrclib:'LRCLIB',netease:'NetEase Cloud Music'};
+const PROVIDERS={amll:'AMLL TTML DB',spicy_lyrics:'Spicy Lyrics',apple_music:'Apple Music',spotify:'Spotify',lrclib:'LRCLIB',netease:'NetEase Cloud Music'};
 // credits laid out like Spicy Lyrics: "Provided by", then "Made by @maker" / "Uploaded by @uploader" with their
 // avatars. Visible the whole time lyrics are on screen (the Spicy Lyrics terms want attribution with the lyrics).
 const profileUrl=x=>x&&(x.url&&/^https:\/\//.test(x.url)?x.url:x.id?'https://spicylyrics.org/uid/'+encodeURIComponent(x.id):null);
@@ -2630,15 +2683,22 @@ function interludes(ls){
 // remaster) that runs at another pace, so they slide further off as the song goes on. When the lyrics' own length is
 // known, or their last line comes after the song has ended, stretch the lyrics timeline to fit this song.
 let lPace=1,lAdj=0,realAudio=false;   // lAdj: this song's correction from the desync detection (seconds)
-const lyrT=()=>curTime()*lPace+S.loff/1000+lAdj;   // the lyrics clock
+// a song's own delay (Spicy Lyrics Mobile's "song delay"), on top of the general timing offset; kept on this device
+const songOffKey=()=>spId?'id:'+spId:curLyr?curLyr.key:'';let songOffMs=0;
+function songOffLoad(){let m={};try{m=JSON.parse(localStorage.getItem('vv_songoff')||'{}')}catch(e){}songOffMs=+m[songOffKey()]||0}
+function songOffSet(ms){const k=songOffKey();if(!k)return;let m={};try{m=JSON.parse(localStorage.getItem('vv_songoff')||'{}')}catch(e){}
+  songOffMs=Math.max(-5000,Math.min(5000,Math.round(ms)));if(songOffMs)m[k]=songOffMs;else delete m[k];
+  const ks=Object.keys(m);if(ks.length>400)ks.slice(0,ks.length-400).forEach(x=>delete m[x]);try{localStorage.setItem('vv_songoff',JSON.stringify(m))}catch(e){}
+  li=-2;lsi=-2;lActKey='';moving.forEach(i=>{if(lEls[i])restLine(lEls[i])});moving.clear();if(L.length)lyricsTick();qsRender()}
+const lyrT=()=>curTime()*lPace+S.loff/1000+lAdj+songOffMs/1000;   // the lyrics clock
 function checkPace(r,dur){
-  lPace=1;if(!r.sync||!dur||r.credit&&/^(spicy_lyrics|apple_music|spotify|file)$/.test(r.credit.source||''))return;   // matched by track id or your own file: exact
+  lPace=1;if(!r.sync||!dur||r.credit&&/^(spicy_lyrics|apple_music|spotify|file|amll)$/.test(r.credit.source||''))return;   // matched by track id or your own file: exact
   const last=r.lines.filter(l=>!l.dots&&l.t!=null).pop();
   let src=r.srcDur&&Math.abs(r.srcDur-dur)>1.5?r.srcDur:null;
   if(!src&&last&&last.t>dur-.5)src=last.t+Math.max(2,dur*.03);   // a line after the end can't be right
   if(src&&Math.abs(src-dur)/dur<.12){lPace=src/dur;toast('Lyrics timing adjusted to this version of the song ('+(lPace>1?'+':'')+((lPace-1)*100).toFixed(1)+'% pace).','ok',4000)}
 }
-function applyLyrics(r){clearTimeout(lyLoadT);ly.classList.remove('leave');checkPace(r,curDur());dsSong();lyEnter();lCredit=r.credit||(r.label?{source:null}:null);L=(r.sync?interludes(r.lines):r.lines.filter(l=>!l.dots)).map(l=>Object.assign({},l));lsync=r.sync;renderLyrics(r.label);decorate(true)}
+function applyLyrics(r){clearTimeout(lyLoadT);songOffLoad();ly.classList.remove('leave');checkPace(r,curDur());dsSong();lyEnter();lCredit=r.credit||(r.label?{source:null}:null);L=(r.sync?interludes(r.lines):r.lines.filter(l=>!l.dots)).map(l=>Object.assign({},l));lsync=r.sync;renderLyrics(r.label);decorate(true)}
 
 /* ---------- translation + romanization (Google Translate's free web endpoint, unofficial) ---------- */
 const GT='https://translate.googleapis.com/translate_a/single?client=dict-chrome-ex&sl=auto&dt=t&dt=rm&tl=';
@@ -3176,6 +3236,7 @@ function dsFound(e){   // e > 0: the singing comes e seconds after the lyrics' t
 }
 // lyrics sources, tried in the order set in Settings
 const PROVS={local:{name:'Your lyrics files',desc:'TTML or LRC files you added · kept in this browser'},spicy:{name:'Spicy Lyrics',desc:'community word-synced lyrics · needs your API key'},
+  amll:{name:'AMLL TTML DB',desc:'community word-synced TTML lyrics (CC0), found by the Spotify track'},
   spotify:{name:'Spotify',desc:'Spotify’s own lyrics · needs the sp_dc cookie · unofficial'},
   lrclib:{name:'LRCLIB',desc:'free, open lyrics database'},
   netease:{name:'NetEase Cloud Music',desc:'strong for Japanese, Chinese, Korean · unofficial'}};
@@ -3207,6 +3268,14 @@ $('provlist').addEventListener('change',e=>{
   if(!e.target.classList.contains('psw'))return;
   const l=provList();l.find(p=>p.k===e.target.closest('.prow').dataset.k).on=e.target.checked;setProv(l);
 });
+// AMLL TTML DB (github.com/amll-dev/amll-ttml-db, CC0): word-synced TTML files named by Spotify track id
+async function fromAmll(m){
+  const id=await spotifyIdFor(m);if(!id)return null;
+  const r=await timed('amll',()=>fetch('https://raw.githubusercontent.com/amll-dev/amll-ttml-db/main/spotify-lyrics/'+encodeURIComponent(id)+'.ttml'));
+  if(r.status===404)return null;if(!r.ok)throw new Error('HTTP '+r.status);
+  const t=fromText(await r.text());if(!t.lines.length)return null;
+  return{lines:t.lines,sync:t.sync,label:'AMLL TTML DB',credit:{source:'amll',writers:t.writers||[]}};
+}
 const needServer=()=>{const e=new Error('only works when opened from your server');e.noKey=true;return e};
 async function fromSpotifyLyrics(m){
   if(!PREFS)throw needServer();
@@ -3236,32 +3305,56 @@ async function fromNetease(m){
   lines.forEach(l=>{if(l.dots)return;l.apiRom=at(rom,l.t);const tt=at(tr,l.t);if(tt){l.apiTr=tt;l.apiTrLang='zh'}});
   return{lines,sync:true,label:'NetEase',credit:{source:'netease'}};
 }
-let lyAskAt=0;
-async function loadLyrics(m,tok){
-  lyricsLoading();
+let lyAskAt=0,lookupLog=[];
+// one lookup: every source in your order until one has the song. opt.skip: sources not to ask (another source for
+// this song), opt.fresh: past the saved lyrics. lookupLog: what each source said (Settings → Lyrics cache)
+async function loadLyrics(m,tok,opt){
+  opt=opt||{};lyricsLoading();
   const quick=Date.now()-lyAskAt<1200;lyAskAt=Date.now();
-  if(quick){await new Promise(r=>setTimeout(r,650));if(tok!==coverTok)return}   // skipping through songs: only ask for the one you stop on
-  const order=provList().filter(p=>p.on).map(p=>p.k);
-  if(!order.length){clearLyrics('All lyrics sources are off','Turn one on in Settings → Lyrics.','none');return}
-  const key=[m.id||'',m.artist,m.title,Math.round(m.duration||0),order.join()].join('|').toLowerCase();
-  curLyr={m,key};
-  if(order[0]==='local'){const r=await fromLocal(m).catch(()=>null);if(tok!==coverTok)return;if(r){applyLyrics(r);return}}   // your own file wins, also over saved lyrics
-  if(lcache.has(key)){applyLyrics(lcache.get(key));return}
-  const saved=await lcGet(key);if(tok!==coverTok)return;
-  if(saved){if(saved.r){lcache.set(key,saved.r);applyLyrics(saved.r)}else clearLyrics('No lyrics for this song','None of your lyrics sources had it recently. Settings → Lyrics → Clear saved lyrics looks again.','none');return}
-  const FN={local:fromLocal,spicy:fromSpicy,spotify:fromSpotifyLyrics,lrclib:fromLrclib,netease:fromNetease},errs=[];
+  if(quick&&!opt.fresh){await new Promise(r=>setTimeout(r,650));if(tok!==coverTok)return}   // skipping through songs: only ask for the one you stop on
+  const skip=new Set(opt.skip||[]),order=provList().filter(p=>p.on&&!skip.has(p.k)).map(p=>p.k);
+  const log=[],note=(p,st,ms)=>{log.push({p,st,ms:ms==null?null:Math.round(ms)});if(tok===coverTok){lookupLog=log;showLookup()}};
+  lookupLog=log;
+  if(!order.length){if(skip.size)return lyOtherDone(m,tok);clearLyrics('All lyrics sources are off','Turn one on in Settings → Lyrics.','none');return}
+  const key=[m.id||'',m.artist,m.title,Math.round(m.duration||0),provList().filter(p=>p.on).map(p=>p.k).join()].join('|').toLowerCase();
+  curLyr={m,key,skip:[...skip]};
+  if(!opt.fresh){
+    if(order[0]==='local'){const r=await fromLocal(m).catch(()=>null);if(tok!==coverTok)return;if(r){r.prov='local';note('local','found');applyLyrics(r);return}}   // your own file wins, also over saved lyrics
+    if(lcache.has(key)){const r=lcache.get(key);note(r.prov||'?','from memory');applyLyrics(r);return}
+    const saved=await lcGet(key);if(tok!==coverTok)return;
+    if(saved){if(saved.r){lcache.set(key,saved.r);note(saved.r.prov||'?','saved on this device');applyLyrics(saved.r)}else{note('—','saved: no lyrics');clearLyrics('No lyrics for this song','None of your lyrics sources had it recently. Settings → Lyrics → Clear saved lyrics looks again.','none')}return}
+  }
+  const FN={local:fromLocal,spicy:fromSpicy,amll:fromAmll,spotify:fromSpotifyLyrics,lrclib:fromLrclib,netease:fromNetease},errs=[];
   for(const p of order){
+    const t0=performance.now();
     try{
       const r=await FN[p](m);
       if(tok!==coverTok)return;
-      if(r&&r.lines.some(l=>!l.dots)){lcache.set(key,r);lcPut(key,r);applyLyrics(r);return}
-    }catch(e){if(e.noKey)continue;errs.push(PROVS[p].name+': '+e.message)}
+      if(r&&r.lines.some(l=>!l.dots)){r.prov=p;note(p,'found: '+(r.sync?(r.lines.some(l=>l.words)?'word-synced':'line-synced'):'not synced'),performance.now()-t0);
+        if(!skip.size){lcache.set(key,r);lcPut(key,r)}applyLyrics(r);return}
+      note(p,'not found',performance.now()-t0);
+    }catch(e){if(e.noKey){note(p,'skipped: '+e.message);continue}note(p,'failed: '+e.message,performance.now()-t0);errs.push(PROVS[p].name+': '+e.message)}
   }
   if(tok!==coverTok)return;
+  if(skip.size)return lyOtherDone(m,tok);
   if(!errs.length)lcPut(key,null);   // remember "none" for a day; failures aren't remembered
   if(errs.length)clearLyrics('Couldn’t load lyrics',errs.join(' · '),'none',[   // Try again / Copy details, as in Spicy Lyrics 6.4.0
     {label:'Try again',pri:true,fn:()=>{lcache.delete(key);lcDel(key);loadLyrics(m,coverTok)}},
     {label:'Copy details',fn:async()=>{try{await navigator.clipboard.writeText(m.artist+' – '+m.title+'\n'+errs.join('\n'));toast('Details copied.','ok',2000)}catch(e){toast('Couldn’t copy.','warn')}}}]);else clearLyrics('No lyrics for this song','It may be instrumental, or none of your lyrics sources has it. You can drop a .lrc or .ttml file here.','none');
+}
+// "Wrong lyrics?": the next source in your order for this song (not saved); after the last one, back to the first
+function lyOther(){
+  const c=curLyr;if(!c||!L.length&&!(c.skip&&c.skip.length)){toast('No song with lyrics is playing.','warn',2500);return}
+  const used=(L.length&&lCredit)?[...(c.skip||[]),lyProv()].filter(Boolean):(c.skip||[]);
+  toast('Trying the next lyrics source…','ok',1800);loadLyrics(c.m,coverTok,{skip:used,fresh:true});
+}
+const lyProv=()=>{const s_=lCredit&&lCredit.source;return s_==='spicy_lyrics'?'spicy':s_==='file'?'local':s_||''};
+function lyOtherDone(m,tok){toast('No other source has lyrics for this song: back to the first one.','warn',4000);if(tok===coverTok)loadLyrics(m,tok,{fresh:false})}
+function showLookup(){
+  const box=$('lookuplog');if(!box)return;box.textContent='';
+  if(!lookupLog.length){const p=document.createElement('p');p.className='hint';p.textContent='No lookup yet.';box.appendChild(p);return}
+  const s0=curLyr&&curLyr.m;if(s0){const h=document.createElement('small');h.textContent=(s0.artist?s0.artist+' – ':'')+s0.title;box.appendChild(h)}
+  lookupLog.forEach(x=>{const d=document.createElement('div');d.className='rn';const b=document.createElement('b');b.textContent=(PROVS[x.p]&&PROVS[x.p].name)||x.p;const sm=document.createElement('small');sm.textContent=x.st+(x.ms!=null?' · '+x.ms+' ms':'');d.append(b,sm);box.appendChild(d)});
 }
 async function spicyStatus(){
   const out=$('lyrstatus');
@@ -3303,12 +3396,12 @@ async function load(f){
   poke();
   const tok=++coverTok;resetCover();spId=null;
   const parts=clean(n).split(/\s[-–]\s/);
-  ttl.textContent=parts.length>1?parts.slice(1).join(' - '):clean(n);sub.textContent=parts.length>1?parts[0]:'';status.textContent='';animTrack();
+  ttl.textContent=parts.length>1?parts.slice(1).join(' - '):clean(n);curYear='';subShow(parts.length>1?parts[0]:'');status.textContent='';animTrack();
   lyricsLoading();
   const tags=await readTags(f);if(tok!==coverTok)return;
   if(tags.title)ttl.textContent=tags.title;
-  if(tags.artist)sub.textContent=tags.artist;
-  const meta={title:tags.title||ttl.textContent,artist:tags.artist||sub.textContent,album:tags.album||'',duration:0,id:'',file:n};
+  if(tags.year)curYear=String(tags.year).slice(0,4);if(tags.artist||tags.year)subShow(tags.artist||curArtist);
+  const meta={title:tags.title||ttl.textContent,artist:tags.artist||curArtist,album:tags.album||'',duration:0,id:'',file:n};
   getDur().then(d=>{if(tok===coverTok){meta.duration=d;loadLyrics(meta,tok)}});
   const p=tags.picture;
   if(p&&await setCover(URL.createObjectURL(new Blob([new Uint8Array(p.data)],{type:p.format||'image/jpeg'})),'Embedded cover',tok,false))return;
@@ -3577,6 +3670,18 @@ function uiTick(now){
   if(PHONE){$('tl').textContent=fmt(t);$('tr').textContent=d?'-'+fmt(Math.max(0,d-t)):'0:00';phoneHead();phoneMarquee()}
   if(!seeking){const sk=$('seek');sk.value=d?t/d*1000:0;fill(sk)}
 }
+// Settings → Phone: header size, the buttons under the controls
+function applyPhone(){
+  if(!PHONE)return;
+  ['large','medium','small','hidden'].forEach(k=>body.classList.toggle('phh-'+k,S.phHead===k));
+  const set=(id,on)=>$(id).classList.toggle('phx',!on);
+  set('like',S.phbLike);set('lybtn',S.phbView);set('devbtn',S.phbDev);set('syncbtn',S.phbSync);set('srcbtn',S.phbSrc);set('qbtn',S.phbQueue);set('qsbtn',S.phbQs);
+  set('gear',S.phbSet||!S.phbQs);   // Settings stays in reach
+  mqKey='';subShow();
+}
+// the artist line, with the release year after it on phones
+let curYear='',curArtist='';
+function subShow(a){if(a!=null)curArtist=a;sub.textContent=curArtist+(PHONE&&S.phYear&&curYear?' · '+curYear:'')}
 // phones: a title or artist too long for its line glides along it (Spicy Lyrics Mobile's header marquee)
 let mqKey='';
 function phoneMarquee(){
@@ -3606,6 +3711,7 @@ const PAGES=[
   ['tr','Translation',['Translation & romanization'],'M12.9 15.1l-2.5-2.5A17.5 17.5 0 0014 6h3V4h-7V2H8v2H1v2h11.2A15.7 15.7 0 019 11.4 15.6 15.6 0 016.7 8H4.7a17.6 17.6 0 003 4.6l-5.1 5 1.4 1.4 5-5 3.1 3.1.8-2zM18.5 10h-2L12 22h2l1.1-3h4.8l1.1 3h2l-4.5-12zm-2.6 7l1.6-4.3 1.6 4.3h-3.2z'],
   ['cache','Lyrics cache',['Lyrics cache'],'M12 3C7.6 3 4 4.3 4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6c0-1.7-3.6-3-8-3zm0 2c3.9 0 6 1.1 6 1s-2.1 1-6 1-6-.9-6-1 2.1-1 6-1zm6 13c0 .1-2.1 1-6 1s-6-.9-6-1v-2.3c1.5.8 3.6 1.3 6 1.3s4.5-.5 6-1.3V18zm0-5c0 .1-2.1 1-6 1s-6-.9-6-1v-2.3c1.5.8 3.6 1.3 6 1.3s4.5-.5 6-1.3V13z'],
   ['spotify','Spotify & Canvas',['Spotify','Canvas'],'M12 2a10 10 0 100 20 10 10 0 000-20zm4.6 14.4a.6.6 0 01-.9.2c-2.4-1.5-5.4-1.8-8.9-1a.6.6 0 11-.3-1.2c3.9-.9 7.2-.5 9.9 1.1.3.2.4.6.2.9zm1.2-2.7a.8.8 0 01-1.1.3c-2.7-1.7-6.9-2.2-10.1-1.2a.8.8 0 11-.5-1.5c3.7-1.1 8.3-.6 11.4 1.3.4.3.5.8.3 1.1zm.1-2.8C14.7 9 9.4 8.8 6.3 9.7a1 1 0 11-.6-1.9c3.5-1.1 9.4-.9 13.1 1.3a1 1 0 01-.9 1.8z'],
+  ['phone','Phone',['Phone'],'M16 1H8a2 2 0 00-2 2v18a2 2 0 002 2h8a2 2 0 002-2V3a2 2 0 00-2-2zm0 18H8V5h8v14z'],
   ['perf','Performance',['Performance'],'M13 2L4 14h6l-1 8 9-12h-6l1-8z'],
   ['exp','Experiments',['Experiments'],'M9 2v2h1v5.2L4.6 18.4A2.4 2.4 0 006.7 22h10.6a2.4 2.4 0 002.1-3.6L14 9.2V4h1V2H9zm3 2v5.7l2.1 3.3H9.9L12 9.7V4z'],
   ['help','Help & about',['Help'],'M12 2a10 10 0 100 20 10 10 0 000-20zm1 17h-2v-2h2v2zm2.1-7.7l-.9.9c-.7.7-1.2 1.3-1.2 2.8h-2v-.5c0-1.1.5-2.1 1.2-2.8l1.2-1.3A2 2 0 0012 8a2 2 0 00-2 2H8a4 4 0 118 0c0 .9-.4 1.7-.9 2.3z']];
@@ -3651,7 +3757,7 @@ function pnavPill(){   // the highlight glides to the chosen category instead of
   p.style.opacity=1;liquidMove(p,{top:on.offsetTop,height:on.offsetHeight,left:on.offsetLeft,width:on.offsetWidth},'y');
 }
 function showPage(id){
-  pageNow=id;$('pnone').hidden=true;$('pbody').classList.remove('searching');
+  pageNow=id;$('pnone').hidden=true;if(id==='cache')showLookup();$('pbody').classList.remove('searching');
   $('pbody').querySelectorAll('.ppage').forEach(pg=>{pg.hidden=pg.dataset.p!==id;pg.querySelectorAll(':scope>*').forEach(el=>el.style.display='')});
   $('pnav').querySelectorAll('.pn').forEach(b=>b.classList.toggle('on',b.dataset.p===id));pnavPill();
   {const nav=$('pnav'),b=nav.querySelector('.pn.on');if(b&&nav.scrollWidth>nav.clientWidth)nav.scrollTo({left:b.offsetLeft-(nav.clientWidth-b.offsetWidth)/2,behavior:'smooth'})}   // phones: the tabs scroll sideways, the chosen one into view
@@ -3705,6 +3811,8 @@ const QI={   // tile icons (24×24 paths)
   net:'M12 21l3.6-4.8A6 6 0 0012 15a6 6 0 00-3.6 1.2zm0-18C8 3 4.3 4.3 1.4 6.6L3.2 9A13 13 0 0112 6a13 13 0 018.8 3l1.8-2.4A16 16 0 0012 3zm0 6a10 10 0 00-6.6 2.4l1.8 2.4A7 7 0 0112 12a7 7 0 014.8 1.8l1.8-2.4A10 10 0 0012 9z',
   set:'M4 7h10v2H4zm12 0h4v2h-4zM4 15h4v2H4zm6 0h10v2H10zM14 5h2v6h-2zM8 13h2v6H8z',
   home:'M12 3l9 8h-3v9h-5v-6h-2v6H6v-9H3z',
+  src:'M4 5h11v2H4zm0 4h11v2H4zm0 4h7v2H4zm13.6-1.4L20 10v6h-6l2.2-2.2A4 4 0 0013 13l-1.4-1.4a6 6 0 016 0z',
+  queue:'M3 6h12v2H3zm0 5h12v2H3zm0 5h8v2H3zm14-3v-3h2v3h3v2h-3v3h-2v-3h-3v-2z',
   mute:'M3 9v6h4l5 5V4L7 9H3zm13.5 3l2.5-2.5-1-1-2.5 2.5L13 8.5l-1 1 2.5 2.5-2.5 2.5 1 1 2.5-2.5 2.5 2.5 1-1z'};
 // each tile: what it says, whether it's on, and what a tap does (the same functions as the desktop's buttons)
 const QT=[
@@ -3720,6 +3828,8 @@ const QT=[
   {k:'net',name:'Connection',on:()=>false,sub:()=>$('netbtn').classList.contains('bad')?'Not reachable':($('netms').textContent||'–'),fn:()=>{qsClose();setTimeout(()=>$('netbtn').click(),300)}},
   {k:'mute',name:'Mute',on:()=>src==='spotify'?(+$('spvol').value===0):muted,sub:()=>src==='spotify'?($('spvol').disabled?'Not on this device':(+$('spvol').value===0?'Muted':$('spvol').value+'%')):(muted?'Muted':S.volume+'%'),
     fn:()=>{if(src==='spotify'){if(!$('spvol').disabled)$('spmute').click()}else{muted=!muted;applyVolume()}}},
+  {k:'src',name:'Other lyrics',on:()=>false,sub:()=>L.length?'Now: '+((PROVS[lyProv()]&&PROVS[lyProv()].name)||'—'):'No lyrics',dis:()=>!curLyr,fn:()=>{qsClose();lyOther()}},
+  {k:'queue',name:'Up next',on:()=>false,sub:()=>src==='spotify'?'Spotify’s queue':'Spotify only',dis:()=>src!=='spotify',fn:()=>qsShow('queue')},
   {k:'home',name:'Home',on:()=>false,sub:()=>'Start page',fn:()=>{qsClose();goHome()}},
   {k:'set',name:'Settings',on:()=>false,sub:()=>'Everything else',fn:()=>{qsClose();openPanel()}}];
 (function buildQs(){
@@ -3734,23 +3844,35 @@ function qsRender(){
   QT.forEach(t=>{const on=t.on(),b=t.el;b.classList.toggle('on',on);b.setAttribute('aria-pressed',on);b.disabled=!!(t.dis&&t.dis());
     const sm=b.querySelector('small'),v=t.sub();if(sm.textContent!==v)sm.textContent=v});
   $('qsview').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.v===S.view));
+  $('qsdv').textContent=(songOffMs>0?'+':'')+(songOffMs/1000).toFixed(1)+' s';$('qsdelay').querySelectorAll('button').forEach(b=>b.disabled=!songOffKey()||!lsync);
   $('qss').textContent=[ttl.textContent&&ttl.textContent!=='Nothing playing'?ttl.textContent:'',$('capt').textContent].filter(Boolean).join(' · ');
 }
 const qsOpen=()=>!$('qs').hidden&&$('qs').classList.contains('on');
 let qsT=0;
-function qsShow(){const q=$('qs'),b=$('qsback');clearTimeout(qsT);q.hidden=b.hidden=false;q.style.removeProperty('--qsdrag');poke();
+function qsShow(mode){const q=$('qs'),b=$('qsback');clearTimeout(qsT);q.classList.toggle('qmode',mode==='queue');$('qsq').hidden=mode!=='queue';$('qst').textContent=mode==='queue'?'Up next':'Quick toggles';if(mode==='queue')qsQueue();q.hidden=b.hidden=false;q.style.removeProperty('--qsdrag');poke();
   requestAnimationFrame(()=>requestAnimationFrame(()=>{q.classList.add('on');b.classList.add('on');qsRender()}))}
 function qsClose(){const q=$('qs'),b=$('qsback');if(q.hidden)return;q.classList.remove('on','drag');b.classList.remove('on');q.style.removeProperty('--qsdrag');
   clearTimeout(qsT);qsT=setTimeout(()=>{q.hidden=b.hidden=true;poke()},S.low?0:420)}
 setInterval(qsRender,1000);
 $('qsbtn').onclick=()=>qsOpen()?qsClose():qsShow();
+$('qbtn').onclick=()=>qsOpen()?qsClose():qsShow('queue');
+$('srcbtn').onclick=()=>{bump($('srcbtn'));lyOther()};
+// Up next: what Spotify plays after this song
+async function qsQueue(){
+  const box=$('qsq');box.textContent='';const p=document.createElement('p');p.className='hint';p.textContent='Asking Spotify…';box.appendChild(p);
+  let q=null;try{q=await spApi('/me/player/queue')}catch(e){p.textContent=e.message;return}
+  const item=it=>{const ep=it.type==='episode',imgs=(ep?it.images:(it.album&&it.album.images))||[];const d=document.createElement('div');d.className='qi';
+    const im=document.createElement('img');im.alt='';im.loading='lazy';const u=(imgs[imgs.length-1]||imgs[0]||{}).url;if(u)im.src=u;
+    const tx=document.createElement('div'),b=document.createElement('b'),sm=document.createElement('small');b.textContent=it.name;sm.textContent=ep?((it.show&&it.show.name)||''):(it.artists||[]).map(a=>a.name).join(', ');tx.append(b,sm);d.append(im,tx);return d};
+  box.textContent='';
+  if(q&&q.currently_playing){const n=item(q.currently_playing);n.classList.add('qnow');box.appendChild(n)}
+  const list=(q&&q.queue)||[];if(!list.length){const e=document.createElement('p');e.className='hint';e.textContent='Nothing queued.';box.appendChild(e);return}
+  list.slice(0,20).forEach(it=>box.appendChild(item(it)));
+}
 $('qsback').onclick=qsClose;
-// swipe up on the controls opens the sheet; dragging the sheet down closes it
-{let y0=null;const bar=$('bar');
- bar.addEventListener('touchstart',e=>{y0=e.target.closest('input')?null:e.touches[0].clientY},{passive:true});
- bar.addEventListener('touchmove',e=>{if(y0!=null&&y0-e.touches[0].clientY>46){y0=null;qsShow()}},{passive:true});
- bar.addEventListener('touchend',()=>{y0=null},{passive:true});
- const q=$('qs');let d0=null,dy=0;
+$('qsdelay').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const d=+b.dataset.d;songOffSet(d?songOffMs+d:0)});
+// dragging the sheet down closes it (no swipe up to open: that's Android's own gesture at the screen's bottom edge)
+{const q=$('qs');let d0=null,dy=0;
  q.addEventListener('touchstart',e=>{d0=q.scrollTop<=0?e.touches[0].clientY:null;dy=0},{passive:true});
  q.addEventListener('touchmove',e=>{if(d0==null)return;dy=Math.max(0,e.touches[0].clientY-d0);if(dy>4){q.classList.add('drag');q.style.setProperty('--qsdrag',dy+'px')}},{passive:true});
  q.addEventListener('touchend',()=>{if(d0==null)return;d0=null;q.classList.remove('drag');if(dy>90)qsClose();else q.style.removeProperty('--qsdrag')},{passive:true})}
@@ -3784,11 +3906,12 @@ addEventListener('keydown',e=>{
 let tm;
 function poke(){
   if(body.classList.contains('uihide')||body.classList.contains('idle'))body.classList.remove('uihide','idle');clearTimeout(tm);   // touch <body> only when it changes: on every mouse move it restyled the whole page
-  if(playing()&&S.uiHide!=='never'&&!$('panel').classList.contains('open')&&!qsOpen())tm=setTimeout(()=>{
+  const phMs=PHONE?(S.phHide==='never'?0:(+S.phHide||3)*1000):2800,go=PHONE?(playing()||(S.phHidePaused&&(src!=='none'||loaded))):playing();
+  if(go&&phMs&&S.uiHide!=='never'&&!$('panel').classList.contains('open')&&!qsOpen())tm=setTimeout(()=>{
     const a=document.activeElement;
     if((!touchUI&&($('dock').matches(':hover')||$('top').matches(':hover')))||(a&&a.tagName==='SELECT')||['devpanel','cappanel','netpanel'].some(id=>popOpen($(id)))||qsOpen())return poke();   // not while a panel is open
     body.classList.add('uihide','idle');
-  },2800);
+  },phMs);
 }
 // touch: a tapped button stays ":hover" (so the bar would never hide again), and while the controls are hidden the
 // first tap only brings them back instead of also jumping the lyrics or pausing
@@ -3889,7 +4012,7 @@ function frame(now){
   requestAnimationFrame(frame);perfTick(now);
   // Limit frame rate: time adds up between screen refreshes and a frame is drawn once a whole frame's worth has
   // passed, so 120 on a 144 Hz screen really gives 120 (comparing each gap alone would give 72)
-  const iv=1000/Math.min(+S.fpscap||HZMAX,S.low?30:HZMAX);
+  const iv=1000/Math.min(+S.fpscap||HZMAX,S.low?30:PHONE?60:HZMAX);   // phones: 60 at most (a 120 Hz screen would double the work and the heat for no visible gain)
   fAcc+=Math.min(now-fPrev,100);fPrev=now;
   if(fAcc<iv-.5)return;fAcc=Math.min(fAcc-iv,iv);
   const dt=Math.min(now-last,50);last=now;
@@ -4127,6 +4250,27 @@ const songNow=()=>{if(!curLyr){toast('No song with lyrics is playing.','warn',25
 $('lcsong').onclick=async()=>{const c=songNow();if(!c)return;lcache.delete(c.key);trCache.clear();await lcDel(c.key);lcShow();
   toast('This song’s cache cleared. Fetching its lyrics again…','ok',2500);loadLyrics(c.m,coverTok)};
 $('lcreset').onclick=()=>{const c=songNow();if(!c)return;lcache.delete(c.key);toast('Lyrics reset.','ok',1800);loadLyrics(c.m,coverTok)};
+$('lyother').onclick=lyOther;
+function debugInfo(){
+  let appv='';try{appv=AND?'Android '+AND.version():MAC&&MAC.version?'Mac '+MAC.version():'browser'}catch(e){}
+  const v=updInfo&&updInfo.installed;
+  return ['Vibe Visualizer debug info',
+    'page: '+(v?v.sha.slice(0,7)+' ('+v.date+')':'unknown')+' · app: '+appv,
+    'device: '+navigator.userAgent,'screen: '+innerWidth+'×'+innerHeight+' @'+devicePixelRatio+(PHONE?' · phone design':''),
+    'source: '+src+(spState?' · '+(spPlaying()?'playing':'paused'):'')+' · view: '+S.view+' · design: '+S.design+(S.low?' · low performance':''),
+    'song: '+(curLyr&&curLyr.m?(curLyr.m.artist||'')+' – '+(curLyr.m.title||'')+(spId?' ('+spId+')':''):'—'),
+    'lyrics: '+(L.length?(lsync?'synced':'not synced')+' from '+((PROVS[lyProv()]&&PROVS[lyProv()].name)||'?'):'none')+' · offset '+S.loff+' ms · this song '+songOffMs+' ms',
+    'last lookup: '+(lookupLog.map(x=>x.p+' '+x.st+(x.ms!=null?' '+x.ms+'ms':'')).join('; ')||'—'),
+    'sources: '+S.lprov,'problems: '+problemsNow(false).map(p=>p.t).join('; ')].join('\n');
+}
+$('dbgcopy').onclick=async()=>{try{await navigator.clipboard.writeText(debugInfo());toast('Debug info copied.','ok',2000)}catch(e){prompt('Copy this:',debugInfo())}};
+// settings backup: as text to keep or paste on another device (no keys, no logins)
+$('setcopy').onclick=async()=>{const t=JSON.stringify({vibeVisualizerSettings:1,S,C:{canvasUrl:C.canvasUrl}});try{await navigator.clipboard.writeText(t);toast('Settings copied. Paste them on the other device under Help & about.','ok',3500)}catch(e){prompt('Copy your settings:',t)}};
+$('setpaste').onclick=async()=>{let t='';try{t=await navigator.clipboard.readText()}catch(e){}if(!/vibeVisualizerSettings/.test(t||''))t=prompt('Paste the settings you copied:')||'';
+  let o=null;try{o=JSON.parse(t)}catch(e){}if(!o||!o.vibeVisualizerSettings||!o.S){if(t)toast('That isn’t a copy of Vibe Visualizer’s settings.','warn');return}
+  let n=0;for(const k in DEF)if(k in o.S&&typeof o.S[k]===typeof DEF[k]&&k!=='volume'){S[k]=o.S[k];n++}
+  if(o.C&&typeof o.C.canvasUrl==='string')C.canvasUrl=o.C.canvasUrl;
+  save();saveC();syncInputs();Object.keys(DEF).forEach(onSetting);refreshReset();toast(n+' settings restored.','ok',2500)};
 $('lyrclear').onclick=async()=>{await lcClear();lcache.clear();trCache.clear();lcShow();toast('Stored lyrics cleared. They’re fetched again as songs play.','ok',3000)};
 lcPrune().then(lcShow);setInterval(lcPrune,6*3600e3);   // saved lyrics are dropped once out of date, also in a tab left open for weeks (the terms allow 30 days at most)
 $('forget').onclick=async()=>{
@@ -4200,7 +4344,7 @@ netLoop();
 applyDesign();applyAnim();syncInputs();refreshReset();volIcon();setTimeout(animAsk,2500);
 root.style.setProperty('--ls',S.lsize/100);
 $('fpsEl').style.display=S.fps?'block':'none';
-body.classList.toggle('cvnoart',!!S.cvNoArt);applyCredPos();applyLyrOpts();bridgeConnect();updBridge();applyFont();applyBgStyle();setupBands();applyView();applyLow();resize();renderBg();updChips();updPlayIcon();updQuick();updNeed();
+body.classList.toggle('cvnoart',!!S.cvNoArt);applyCredPos();applyLyrOpts();applyPhone();bridgeConnect();updBridge();applyFont();applyBgStyle();setupBands();applyView();applyLow();resize();renderBg();updChips();updPlayIcon();updQuick();updNeed();
 requestAnimationFrame(frame);
 poke();
 (async()=>{
