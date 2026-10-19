@@ -14,6 +14,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # the history since the last app release, for its notes
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -38,14 +40,41 @@ jobs:
         with:
           name: vibe-visualizer-android
           path: out/vibe-visualizer-android.apk
+      - name: Release notes
+        if: startsWith(github.ref, 'refs/tags/android-v')
+        run: |
+          # what changed since the previous app release: the bullet points of each change to the app or the web page
+          prev=$(git describe --tags --abbrev=0 --match 'android-v*' "$GITHUB_REF_NAME^" 2>/dev/null || true)
+          git log --no-merges --format='%x1e%s%n%b' ${prev:+$prev..}"$GITHUB_REF_NAME" -- android web server > log.txt
+          PREV="${prev#android-v}" python3 - <<'PY'
+          import os
+          pts = []
+          for c in open("log.txt").read().split("\x1e"):
+              lines = c.strip().splitlines()
+              if not lines:
+                  continue
+              mine = []
+              for l in lines[1:]:
+                  if l.strip().startswith("- "):
+                      mine.append(l.strip()[2:].strip())
+                  elif mine and l.startswith("  ") and l.strip():
+                      mine[-1] += " " + l.strip()
+              pts += mine or [lines[0]]
+          prev = os.environ.get("PREV")
+          with open("notes.md", "w") as f:
+              f.write("Vibe Visualizer on your Android phone or tablet (Android 8 or newer). It opens your Vibe Visualizer "
+                      "server (keep Tailscale connected on the phone) and has Vibe Bridge built in: the bars follow what "
+                      "the phone plays, the Spotify app included. Download the APK on the phone and open it; it installs "
+                      "over the version you have. See the README's \"Android app\" section.\n\n")
+              f.write("### What's new" + (" since " + prev if prev else "") + "\n\n")
+              f.write("\n".join("- " + p for p in pts[:40]) + "\n")
+          PY
+          cat notes.md
       - if: startsWith(github.ref, 'refs/tags/android-v')
         uses: softprops/action-gh-release@v2
         with:
-          name: Vibe Visualizer for Android ${{ github.ref_name }}
-          body: |
-            Vibe Visualizer on your Android phone or tablet (Android 8 or newer). It opens your Vibe Visualizer server,
-            so keep Tailscale connected on the phone, and it has Vibe Bridge built in: the bars follow what the phone
-            plays, the Spotify app included.
-            Download the APK on the phone, open it and allow installing from your browser. See the README's
-            "Android app" section.
+          name: Vibe Visualizer for Android ${{ github.ref_name }}${{ startsWith(github.ref_name, 'android-v0.') && ' beta' || '' }}
+          prerelease: ${{ startsWith(github.ref_name, 'android-v0.') }}   # below 1.0 the app is a beta
+          make_latest: false   # "Latest" stays with Vibe Bridge, which most people need first
+          body_path: notes.md
           files: out/vibe-visualizer-android.apk

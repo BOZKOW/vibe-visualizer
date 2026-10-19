@@ -637,7 +637,11 @@ body.wz #empty,body.popen #empty{opacity:0;transition:opacity .3s}   /* nothing 
 .note .nmsg{margin-top:6px;font-size:12.5px;color:var(--dim);word-break:break-word}
 .note .nact{display:flex;gap:8px;margin-top:10px;justify-content:flex-end}
 .relnotes{display:flex;flex-direction:column;gap:10px;font-size:12.5px;color:var(--dim)}
-.relnotes .rn b{color:#fff;font-size:13px}.relnotes .rn small{color:var(--faint);margin-left:6px}.relnotes ul{margin:4px 0 0;padding-left:18px;line-height:1.45}
+.relnotes .rn b{color:#fff;font-size:13px}
+.relnotes .rtag{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:99px;font-size:10.5px;font-weight:700;letter-spacing:.02em;vertical-align:1px;background:rgba(255,255,255,.12);color:#fff}
+.relnotes .rtag.new{background:var(--acc);color:#111}.relnotes .rn.old{opacity:.75}
+.relnotes details summary{cursor:pointer;color:var(--faint);font-size:12px;list-style:none}.relnotes details summary::-webkit-details-marker{display:none}
+.relnotes details[open] summary{margin-bottom:4px}.relnotes .rn small{color:var(--faint);margin-left:6px}.relnotes ul{margin:4px 0 0;padding-left:18px;line-height:1.45}
 /* Focus mode in Both: no box behind the bars; the lyrics fade out before them (see the #lyr mask) */
 /* ===== Liquid Glass behaviour: controls swell under the pointer, squish when pressed and spring back,
    and a highlight follows the pointer across the glass ===== */
@@ -660,6 +664,13 @@ body.android #stage{padding-left:calc(var(--pad) + var(--sal,0px));padding-right
 body.android #top{padding-left:calc(16px + var(--sal,0px));padding-right:calc(16px + var(--sar,0px))}
 body.android #dock{width:calc(100% - 32px - var(--sal,0px) - var(--sar,0px));margin-left:calc((var(--sal,0px) - var(--sar,0px))/2)}
 body.android #lcredit{left:calc(var(--pad) + var(--sal,0px))}
+/* everything else that reaches an edge keeps clear of the cutout too: Settings, the setup guide, the home screen,
+   the pop-up panels and the notifications */
+body.android #panel,body.android #setup{padding:calc(16px + var(--sat,0px)) calc(16px + var(--sar,0px)) calc(16px + var(--sab,0px)) calc(16px + var(--sal,0px))}
+body.android #empty{padding:calc(24px + var(--sat,0px)) calc(24px + var(--sar,0px)) calc(24px + var(--sab,0px)) calc(24px + var(--sal,0px))}
+body.android #cappanel,body.android #netpanel{top:calc(64px + var(--sat,0px));right:calc(16px + var(--sar,0px))}
+body.android #devpanel{right:calc(12px + var(--sar,0px))}
+body.android #corner{margin-top:var(--sat,0px);right:calc(16px + var(--sar,0px))}
 @media(max-width:760px){   /* portrait: the view switch gets its own row, the buttons scroll sideways when they don't fit */
   #top{grid-template-columns:auto minmax(0,1fr);row-gap:10px;padding:calc(10px + var(--sat,env(safe-area-inset-top,0px))) 12px 18px}
   #seg{grid-row:2;grid-column:1/-1;justify-self:center}
@@ -986,13 +997,15 @@ body.low #scrubtip{backdrop-filter:none;-webkit-backdrop-filter:none;background:
   <h4>Help</h4>
   <div id="andbox" hidden><p class="sub-h">Android app</p>
   <p class="stat" id="andstat"></p>
-  <div class="row2"><button class="btn sm" id="andsrv">Change server address</button></div>
+  <div class="row2"><button class="btn sm pri" id="andget" hidden>Download the new app</button><button class="btn sm" id="andsrv">Change server address</button></div>
+  <div id="andnotes" class="relnotes"></div>
   <p class="hint">The app opens your server, so this page updates with the server. Only the app itself (rarely) needs a new APK from the GitHub Releases page.</p></div>
   <p class="sub-h">Updates</p>
   <p class="stat" id="updstat">Not checked yet.</p>
   <div class="row2"><button class="btn sm" id="updcheck">Check for updates</button><button class="btn sm pri" id="updgo" hidden>Update now</button></div>
   <p class="hint">Updates download the newest Vibe Visualizer from its GitHub page onto your server. Your settings, keys and saved lyrics stay as they are.</p>
   <p class="sub-h">Release notes</p>
+  <p class="hint">What changed lately, newest first. Changes marked <b>New</b> come with the next update.</p>
   <div id="relnotes" class="relnotes"><p class="hint">Check for updates to see what’s new.</p></div>
   <p class="sub-h">Error log</p>
   <p class="hint">Errors Vibe Visualizer runs into are saved on your server (not sent anywhere else), so they can be looked at and fixed.</p>
@@ -3677,15 +3690,38 @@ $('rerun').onclick=wzOpen;
 // updates: the server helper compares the installed version with the newest on GitHub, lists what changed, and downloads it
 const fmtV=v=>'“'+v.message+'” ('+new Date(v.date).toLocaleDateString()+')';
 const noteLines=notes=>notes.map(n=>n.title);
-function showNotes(notes,box){   // release notes into Settings → Help & about
-  box=box||$('relnotes');box.textContent='';
-  if(!notes||!notes.length){const p=document.createElement('p');p.className='hint';p.textContent='Nothing new.';box.appendChild(p);return}
-  notes.forEach(n=>{const d=document.createElement('div');d.className='rn';const b=document.createElement('b');b.textContent=n.title;d.appendChild(b);
-    const sm=document.createElement('small');sm.textContent=new Date(n.date).toLocaleDateString();d.appendChild(sm);
-    if(n.points&&n.points.length){const ul=document.createElement('ul');n.points.forEach(x=>{const li=document.createElement('li');li.textContent=x;ul.appendChild(li)});d.appendChild(ul)}
+// release notes into Settings → Help & about. o.fresh: shas still to come (marked New); o.cur: the installed one;
+// o.open: how many show their points unfolded (the rest fold them away)
+function showNotes(notes,box,o){
+  box=box||$('relnotes');o=o||{};box.textContent='';
+  if(!notes||!notes.length){const p=document.createElement('p');p.className='hint';p.textContent=o.none||'No release notes right now.';box.appendChild(p);return}
+  let seenCur=false;
+  notes.forEach((n,i)=>{const d=document.createElement('div');d.className='rn';const b=document.createElement('b');b.textContent=n.title;d.appendChild(b);
+    const sm=document.createElement('small');sm.textContent=n.date?new Date(n.date).toLocaleDateString():'';d.appendChild(sm);
+    const tag=(t,c)=>{const x=document.createElement('span');x.className='rtag'+(c?' '+c:'');x.textContent=t;d.appendChild(x)};
+    const isNew=o.fresh&&o.fresh.has(n.sha),isCur=o.cur&&o.cur===n.sha;
+    if(isNew)tag('New','new');else if(isCur)tag('Installed');if(isCur)seenCur=true;else if(seenCur)d.classList.add('old');
+    if(n.points&&n.points.length){const ul=document.createElement('ul');n.points.forEach(x=>{const li=document.createElement('li');li.textContent=x;ul.appendChild(li)});
+      if(i<(o.open??3)||isNew)d.appendChild(ul);else{const dt=document.createElement('details'),su=document.createElement('summary');su.textContent=n.points.length+(n.points.length>1?' changes':' change')+' ›';dt.append(su,ul);d.appendChild(dt)}}
     box.appendChild(d)});
 }
 let updInfo=null;
+const helpOpen=()=>$('panel').classList.contains('open')&&pageNow==='help';   // the page already says it: no card on top
+// the Android app itself: its version against the newest app release on GitHub (only the APK, not the page, which
+// comes from your server)
+const verCmp=(a,b)=>{const p=x=>String(x||'').split(/[.-]/).map(n=>parseInt(n,10)||0);const A=p(a),B=p(b);for(let i=0;i<Math.max(A.length,B.length);i++){if((A[i]||0)!==(B[i]||0))return(A[i]||0)-(B[i]||0)}return 0};
+function andUpdate(r){
+  if(!AND)return;let mine='';try{mine=AND.version()}catch(e){}
+  const st=$('andstat'),go=$('andget'),newer=!!(r&&r.version&&verCmp(r.version,mine)>0);
+  let srv='';try{srv=AND.server()}catch(e){}
+  st.textContent='App version '+(mine||'?')+(r&&r.version?(newer?' · new version '+r.version+(r.beta?' beta':'')+' is out':' · the newest')+'':'')+(srv?' · server '+srv:'');
+  go.hidden=!newer||!r.apk;if(newer)go.textContent='Download app '+r.version;
+  go.onclick=()=>{location.href=r.apk};   // opens in the phone's browser, which downloads it; open the file to install over this one
+  showNotes(r&&r.points&&r.points.length?[{title:r.title||('App '+r.version),date:r.date,points:r.points,sha:r.tag}]:[],$('andnotes'),{fresh:new Set(newer?[r.tag]:[]),open:1,none:' '});
+  let skip='';try{skip=localStorage.getItem('vv_andskip')||''}catch(e){}
+  if(newer&&r.apk&&skip!==r.tag&&!helpOpen())notify({key:'andupd',kind:'ok',title:'New app version '+r.version+(r.beta?' beta':''),sub:'You have '+(mine||'an older one'),list:(r.points||[]).slice(0,5),
+    actions:[{label:'Later',fn:()=>{try{localStorage.setItem('vv_andskip',r.tag)}catch(e){}}},{label:'Download',pri:true,fn:()=>{location.href=r.apk}}]});
+}
 async function checkUpdate(manual){
   const out=$('updstat'),go=$('updgo');
   if(!PREFS){out.textContent='Updates work when Vibe Visualizer is opened from your server.';return}
@@ -3698,9 +3734,11 @@ async function checkUpdate(manual){
     out.textContent=(cur?'Installed: '+fmtV(cur)+'. ':'')+(newer?'New version: '+fmtV(lat)+'.':'You have the newest version.');
     go.hidden=!newer;go.disabled=!v.can_update;
     if(newer&&!v.can_update)out.textContent+=' To update from here, the web folder has to be mounted into the helper (see the README).';
-    if(newer)showNotes(v.notes);
+    const fresh=new Set(newer?(v.notes||[]).map(n=>n.sha):[]),recent=(v.recent&&v.recent.length?v.recent:v.notes)||[];
+    showNotes(recent,null,{fresh,cur:cur&&cur.sha&&cur.sha.slice(0,7),none:newer?'':'You have the newest version.'});
+    andUpdate(v.android);
     let skip='';try{skip=localStorage.getItem('vv_skip')||''}catch(e){}
-    if(newer&&v.can_update&&(manual||skip!==lat.sha)){   // a notification card with what's new
+    if(newer&&v.can_update&&(manual||skip!==lat.sha)&&!helpOpen()){   // a notification card with what's new
       const ls=noteLines(v.notes||[]);
       notify({key:'upd',kind:'ok',title:'Update available',sub:'Released '+new Date(lat.date).toLocaleDateString()+(ls.length>1?' · '+ls.length+' changes':''),list:ls.slice(0,5).concat(ls.length>5?['…and '+(ls.length-5)+' more (Settings → Help & about)']:[]),
         actions:[{label:'Later',fn:()=>{try{localStorage.setItem('vv_skip',lat.sha)}catch(e){}}},{label:'Update now',pri:true,fn:doUpdate}]});

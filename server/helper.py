@@ -10,7 +10,8 @@ GET /lyrics?id=<spotify track id>  ->  Spicy Lyrics API answer (secret key stays
 GET /spotify-lyrics?id=<track id>   ->  Spotify's own lyrics via the web player session (unofficial, needs sp_dc)
 GET /netease?title=&artist=&duration=  ->  NetEase Cloud Music lyrics (unofficial API)
 GET/PUT/DELETE /prefs              ->  per-device Vibe Visualizer preferences, keyed by the device's Tailscale IP
-GET  /version                      ->  installed web app version, the newest one on GitHub, and release notes
+GET  /version                      ->  installed web app version, the newest one on GitHub, release notes, recent
+                                        changes and the newest Android app release
 POST /report, GET /report, DELETE /report  ->  error reports from the app, kept on this server (errors.jsonl in PREFS_DIR)
 WS   /bridge/push, /bridge/listen  ->  relay for Vibe Bridge: a bridge pushes its bar data, the app's pages listen
 POST /update                       ->  download the newest web app files from GitHub into WEB_DIR
@@ -340,17 +341,85 @@ def note_of(c):
     return {"sha": c["sha"][:7], "date": c["commit"]["committer"]["date"], "title": msg[0], "points": pts}
 
 
+feed_cache = {}
+
+
+def gh_feed(path, ttl=600):
+    """A public GitHub Atom feed (commits, releases): no API rate limit. Kept for 10 minutes."""
+    c = feed_cache.get(path)
+    if c and time.time() - c[0] < ttl:
+        return c[1]
+    x = gh_get("https://github.com/%s/%s" % (UPDATE_REPO, path), raw=True).decode("utf-8", "replace")
+    feed_cache[path] = (time.time(), x)
+    return x
+
+
+def feed_commits():
+    """The newest 20 commits from the commit feed, as API-style dicts (full message included)."""
+    import html as _h
+    out = []
+    for e in re.findall(r"<entry>(.*?)</entry>", gh_feed("commits/%s.atom" % UPDATE_BRANCH), re.S):
+        sha = re.search(r"Commit/([0-9a-f]{40})<", e)
+        body = re.search(r'<content type="html">(.*?)</content>', e, re.S)
+        upd = re.search(r"<updated>([^<]+)</updated>", e)
+        if not sha:
+            continue
+        msg = _h.unescape(re.sub(r"<[^>]+>", "", _h.unescape(body.group(1)))) if body else ""
+        out.append({"sha": sha.group(1), "commit": {"message": msg.strip(), "committer": {"date": upd.group(1) if upd else ""}}})
+    return out
+
+
 def release_notes(cur_sha, new_sha):
-    """What changed between the installed version and the newest one (newest first, at most 25)."""
+    """What changed since the installed version (newest first, at most 25), from the commit feed; the API when the
+    installed version is older than the feed reaches."""
     try:
-        if cur_sha:
+        cs = feed_commits()
+        shas = [c["sha"] for c in cs]
+        if cur_sha in shas:
+            commits = cs[:shas.index(cur_sha)]
+        elif cur_sha:
             commits = gh_get("https://api.github.com/repos/%s/compare/%s...%s" % (UPDATE_REPO, cur_sha, new_sha))["commits"][::-1]
         else:
-            commits = gh_get("https://api.github.com/repos/%s/commits?sha=%s&per_page=10" % (UPDATE_REPO, new_sha))
+            commits = cs[:10]
         return [note_of(c) for c in commits[:25] if not c["commit"]["message"].startswith("Merge ")]
     except Exception as e:
         log("release notes:", e)
         return []
+
+
+def recent_notes(n=15):
+    """The latest changes, whether installed or not, for Settings → Help & about."""
+    try:
+        return [note_of(c) for c in feed_commits()[:n] if not c["commit"]["message"].startswith("Merge ")]
+    except Exception as e:
+        log("recent notes:", e)
+        return []
+
+
+android_cache = {"at": 0, "v": None}
+
+
+def android_latest():
+    """The newest Android app release (by when it was published), its notes and its APK link. Kept for 30 minutes."""
+    if android_cache["v"] is not None and time.time() - android_cache["at"] < 1800:
+        return android_cache["v"]
+    v = {}
+    try:
+        rels = [r for r in gh_get("https://api.github.com/repos/%s/releases?per_page=30" % UPDATE_REPO)
+                if r.get("tag_name", "").startswith("android-v") and not r.get("draft")]
+        rels.sort(key=lambda r: r.get("published_at") or "", reverse=True)
+        if rels:
+            r = rels[0]
+            apk = next((a["browser_download_url"] for a in r.get("assets", []) if a["name"].endswith(".apk")), "")
+            v = {"tag": r["tag_name"], "version": r["tag_name"][len("android-v"):], "title": r.get("name") or r["tag_name"],
+                 "date": r.get("published_at") or "", "beta": bool(r.get("prerelease")), "url": r.get("html_url", ""), "apk": apk,
+                 "points": [l.strip()[2:].strip() for l in (r.get("body") or "").splitlines() if l.strip().startswith(("- ", "* "))][:20]}
+    except Exception as e:
+        log("android release:", e)
+        if android_cache["v"] is not None:
+            return android_cache["v"]
+    android_cache.update(at=time.time(), v=v)
+    return v
 
 
 ERR_FILE = os.path.join(PREFS_DIR, "errors.jsonl")
@@ -660,7 +729,10 @@ async def handle(reader, writer):
                 notes = []
                 if latest.get("sha") and (not cur or cur.get("sha") != latest["sha"]):
                     notes = await asyncio.to_thread(release_notes, cur and cur.get("sha"), latest["sha"])
-                status, out = 200, {"installed": cur, "latest": latest, "notes": notes, "can_update": web_dir_writable(), "repo": UPDATE_REPO}
+                recent = await asyncio.to_thread(recent_notes)
+                android = await asyncio.to_thread(android_latest)
+                status, out = 200, {"installed": cur, "latest": latest, "notes": notes, "recent": recent, "android": android,
+                                    "can_update": web_dir_writable(), "repo": UPDATE_REPO}
             elif method != "POST":
                 status, out = 405, {"error": "use POST"}
             else:
