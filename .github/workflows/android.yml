@@ -34,6 +34,7 @@ jobs:
           VV_VERSION_CODE: ${{ github.run_number }}
         run: |
           case "$GITHUB_REF_NAME" in android-v*) export VV_VERSION_NAME="${GITHUB_REF_NAME#android-v}";; *) export VV_VERSION_NAME="0.0.$GITHUB_RUN_NUMBER-dev";; esac
+          echo "VV_VER=$VV_VERSION_NAME" >> "$GITHUB_ENV"
           gradle -p android assembleRelease --no-daemon --stacktrace
           mkdir -p out && cp android/app/build/outputs/apk/release/app-release.apk out/vibe-visualizer-android.apk
       - uses: actions/upload-artifact@v4
@@ -73,7 +74,7 @@ jobs:
       - if: startsWith(github.ref, 'refs/tags/android-v')
         uses: softprops/action-gh-release@v2
         with:
-          name: Vibe Visualizer for Android ${{ github.ref_name }}${{ startsWith(github.ref_name, 'android-v0.') && ' beta' || '' }}
+          name: Vibe Visualizer for Android ${{ env.VV_VER }}${{ startsWith(github.ref_name, 'android-v0.') && ' beta' || '' }}
           prerelease: ${{ startsWith(github.ref_name, 'android-v0.') }}   # below 1.0 the app is a beta
           make_latest: false   # "Latest" stays with Vibe Bridge, which most people need first
           body_path: notes.md
