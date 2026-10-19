@@ -404,10 +404,10 @@ so lyrics, Canvas, your settings and updates all come from the server, the same 
 - **The bars follow what the phone plays**, the Spotify app included: Vibe Bridge is built in. Allow the audio
   permission when the app asks. It only reads the sound's spectrum through Android's Visualizer; nothing is recorded
   or sent anywhere. A few phones don't allow this; the bars then use the ambient motion.
-- **Spotify login** happens in the phone's browser (where Google/Apple sign-in and an existing Spotify session work),
-  which then hands it back to the app. Once, add `vibevisualizer://callback` as a second Redirect URI in your Spotify
-  app (developer.spotify.com → your app → Settings); the app shows this before the first login. Your Client ID comes
-  over from your other devices by itself.
+- **Spotify login** happens in the phone's browser (where Google/Apple sign-in and an existing Spotify session work).
+  Spotify comes back to your server's address, the Redirect URI you already registered, and the page there has an
+  **Open Vibe Visualizer** button that takes the login back to the app. Your Client ID comes over from your other
+  devices by itself.
 - **A phone music player:** the player shows "Playing from Spotify", big artwork (or the song's Canvas filling the
   screen), the bars under it, title and artist with the heart, then the seek bar and controls. The lyrics button
   switches to the lyrics, with the song as a small header. **Quick toggles** (the four squares, or swipe up on the
@@ -430,9 +430,9 @@ itself; keep Tailscale connected on the Mac if your server is reached through yo
   *Open* (or allow it under *System Settings → Privacy & Security*).
 - **First start:** type your server's address (`https://NAME.ts.net`). Change it later with the gear button in the
   app's window. The app keeps its own browser data, separate from Safari.
-- **Spotify login** opens in your default browser and comes back to the app. Once, add `vibevisualizer://callback`
-  as a second Redirect URI in your Spotify app (developer.spotify.com → your app → Settings); the app shows this
-  before the first login, and it's the same address the Android app uses.
+- **Spotify login** opens in your default browser. Spotify comes back to your server's address (the Redirect URI you
+  already registered), and the page there has an **Open Vibe Visualizer** button that takes the login back to the
+  app.
 - **Bars from the Spotify app:** there's no Vibe Bridge for macOS yet. Install a loopback device such as
   [BlackHole](https://github.com/ExistentialAudio/BlackHole), send the Mac's sound to it (a Multi-Output Device in
   *Audio MIDI Setup* keeps your speakers playing), and pick it with the microphone button; it's marked 🔊.
