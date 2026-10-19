@@ -68,7 +68,8 @@ public class MainActivity extends Activity {
         FrameLayout root = new FrameLayout(this);
         root.addView(web);
         setContentView(root);
-        immersive();
+        hideBars = prefs.getBoolean("hidebars", false);
+        systemBars();
         root.setOnApplyWindowInsetsListener((v, ins) -> {
             insets(ins);   // edge to edge, so the keyboard doesn't resize the page by itself: keep Settings' fields above it
             if (Build.VERSION.SDK_INT >= 30) v.setPadding(0, 0, 0, ins.getInsets(WindowInsets.Type.ime()).bottom);
@@ -344,6 +345,8 @@ public class MainActivity extends Activity {
         @JavascriptInterface public String server() { return prefs.getString("server", ""); }
         @JavascriptInterface public void changeServer() { runOnUiThread(() -> askServer(false)); }
         @JavascriptInterface public String callback() { return CALLBACK; }
+        /** Hide the status and navigation bars (a swipe from the edge shows them), or show them as usual. */
+        @JavascriptInterface public void bars(boolean hidden) { prefs.edit().putBoolean("hidebars", hidden).apply(); runOnUiThread(() -> { hideBars = hidden; systemBars(); }); }
         /** The screen's refresh rate for this window: 60, or 0 for the phone's own (120 Hz on many). */
         @JavascriptInterface public void hz(int rate) { prefs.edit().putBoolean("hz120", rate == 0).apply(); runOnUiThread(() -> setHz(rate)); }
         /** Floating lyrics: picture-in-picture now, or by itself when you leave the app (while music plays). */
@@ -388,6 +391,11 @@ public class MainActivity extends Activity {
     }
 
     /** Tells the page how much of each edge the camera cutout covers (CSS px), as --sat/--sab/--sal/--sar. */
+    /**
+     * Tells the page how much of each edge is taken (CSS px), as --sat/--sab/--sal/--sar: the status bar (with the
+     * camera), the navigation or gesture bar, and in landscape the camera and a side navigation bar. With the bars
+     * hidden, only the camera's band counts (upright, the hidden status bar's height, which always covers it).
+     */
     private void insets(WindowInsets ins) {
         float d = getResources().getDisplayMetrics().density;
         int t = 0, b = 0, l = 0, r = 0;
@@ -396,12 +404,17 @@ public class MainActivity extends Activity {
             if (c != null) { t = c.getSafeInsetTop(); b = c.getSafeInsetBottom(); l = c.getSafeInsetLeft(); r = c.getSafeInsetRight(); }
         }
         if (Build.VERSION.SDK_INT >= 30) {
-            // the cutout as an inset type too, and upright the (hidden) status bar's height: it always covers the
-            // punch hole, also on phones that report no cutout while the status bar is hidden
             android.graphics.Insets dc = ins.getInsets(WindowInsets.Type.displayCutout());
             t = Math.max(t, dc.top); b = Math.max(b, dc.bottom); l = Math.max(l, dc.left); r = Math.max(r, dc.right);
-            boolean upright = getResources().getConfiguration().orientation == android.content.res.Configuration.ORIENTATION_PORTRAIT;
-            if (upright) t = Math.max(t, ins.getInsetsIgnoringVisibility(WindowInsets.Type.statusBars()).top);
+            if (!hideBars) {
+                android.graphics.Insets sb = ins.getInsets(WindowInsets.Type.systemBars());
+                t = Math.max(t, sb.top); b = Math.max(b, sb.bottom); l = Math.max(l, sb.left); r = Math.max(r, sb.right);
+            } else if (getResources().getConfiguration().orientation == android.content.res.Configuration.ORIENTATION_PORTRAIT) {
+                t = Math.max(t, ins.getInsetsIgnoringVisibility(WindowInsets.Type.statusBars()).top);
+            }
+        } else if (!hideBars) {
+            t = Math.max(t, ins.getSystemWindowInsetTop()); b = Math.max(b, ins.getSystemWindowInsetBottom());
+            l = Math.max(l, ins.getSystemWindowInsetLeft()); r = Math.max(r, ins.getSystemWindowInsetRight());
         }
         edges = Math.round(t / d) + "," + Math.round(b / d) + "," + Math.round(l / d) + "," + Math.round(r / d);
         String js = "(function(s){s.setProperty('--sat','" + Math.round(t / d) + "px');s.setProperty('--sab','" + Math.round(b / d)
@@ -412,22 +425,35 @@ public class MainActivity extends Activity {
         web.evaluateJavascript(js, null);
     }
 
-    private void immersive() {   // full screen; a swipe from the edge shows the system bars for a moment
+    /**
+     * Like any Android app: the status bar (notifications, clock) and the navigation or gesture bar stay, see-through
+     * over the page, which draws behind them and keeps its controls clear of them. Settings → Phone can hide them
+     * (a swipe from the edge then shows them for a moment).
+     */
+    private boolean hideBars;
+    @SuppressWarnings("deprecation")
+    private void systemBars() {
+        getWindow().setStatusBarColor(Color.TRANSPARENT);
+        getWindow().setNavigationBarColor(Color.TRANSPARENT);
+        if (Build.VERSION.SDK_INT >= 29) { getWindow().setNavigationBarContrastEnforced(false); getWindow().setStatusBarContrastEnforced(false); }
         if (Build.VERSION.SDK_INT >= 30) {
             getWindow().setDecorFitsSystemWindows(false);
             WindowInsetsController c = getWindow().getInsetsController();
             if (c != null) {
-                c.hide(WindowInsets.Type.statusBars() | WindowInsets.Type.navigationBars());
-                c.setSystemBarsBehavior(WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
+                c.setSystemBarsAppearance(0, WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS | WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS);   // white icons on the dark page
+                if (hideBars) { c.hide(WindowInsets.Type.systemBars()); c.setSystemBarsBehavior(WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE); }
+                else c.show(WindowInsets.Type.systemBars());
             }
         } else {
-            getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-                | View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
+            int f = View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION;
+            if (hideBars) f |= View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY | View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION;
+            getWindow().getDecorView().setSystemUiVisibility(f);
         }
+        View root = (View) web.getParent();
+        if (root != null) root.requestApplyInsets();
     }
 
-    @Override public void onWindowFocusChanged(boolean focus) { super.onWindowFocusChanged(focus); if (focus) immersive(); }
+    @Override public void onWindowFocusChanged(boolean focus) { super.onWindowFocusChanged(focus); if (focus && hideBars) systemBars(); }
 
     @Override protected void onActivityResult(int code, int result, Intent data) {
         if (code == REQ_FILE && fileCb != null) {
