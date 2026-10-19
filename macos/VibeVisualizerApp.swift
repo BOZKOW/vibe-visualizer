@@ -86,6 +86,7 @@ final class AppModel: ObservableObject {
 
 @main
 struct VibeVisualizerMacApp: App {
+    @NSApplicationDelegateAdaptor(VibeVisualizerAppDelegate.self) private var appDelegate
     @StateObject private var model = AppModel()
 
     var body: some Scene {
@@ -102,6 +103,18 @@ struct VibeVisualizerMacApp: App {
                     .keyboardShortcut("r", modifiers: .command)
             }
         }
+    }
+}
+
+@MainActor
+final class VibeVisualizerAppDelegate: NSObject, NSApplicationDelegate {
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        guard let iconURL = Bundle.main.url(forResource: "AppIcon", withExtension: "icns"),
+              let icon = NSImage(contentsOf: iconURL) else {
+            NSLog("Vibe Visualizer: AppIcon.icns is missing or could not be loaded.")
+            return
+        }
+        NSApplication.shared.applicationIconImage = icon
     }
 }
 
