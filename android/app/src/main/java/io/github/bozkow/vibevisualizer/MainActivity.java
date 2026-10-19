@@ -68,7 +68,7 @@ public class MainActivity extends Activity {
         FrameLayout root = new FrameLayout(this);
         root.addView(web);
         setContentView(root);
-        hideBars = prefs.getBoolean("hidebars", false);
+        hideBars = prefs.getBoolean("hidebars", true);   // full screen, with room kept for the bars
         systemBars();
         root.setOnApplyWindowInsetsListener((v, ins) -> {
             insets(ins);   // edge to edge, so the keyboard doesn't resize the page by itself: keep Settings' fields above it
@@ -406,13 +406,10 @@ public class MainActivity extends Activity {
         if (Build.VERSION.SDK_INT >= 30) {
             android.graphics.Insets dc = ins.getInsets(WindowInsets.Type.displayCutout());
             t = Math.max(t, dc.top); b = Math.max(b, dc.bottom); l = Math.max(l, dc.left); r = Math.max(r, dc.right);
-            if (!hideBars) {
-                android.graphics.Insets sb = ins.getInsets(WindowInsets.Type.systemBars());
-                t = Math.max(t, sb.top); b = Math.max(b, sb.bottom); l = Math.max(l, sb.left); r = Math.max(r, sb.right);
-            } else if (getResources().getConfiguration().orientation == android.content.res.Configuration.ORIENTATION_PORTRAIT) {
-                t = Math.max(t, ins.getInsetsIgnoringVisibility(WindowInsets.Type.statusBars()).top);
-            }
-        } else if (!hideBars) {
+            // the bars' room is kept also while they're hidden, so they never land on anything when swiped in
+            android.graphics.Insets sb = hideBars ? ins.getInsetsIgnoringVisibility(WindowInsets.Type.systemBars()) : ins.getInsets(WindowInsets.Type.systemBars());
+            t = Math.max(t, sb.top); b = Math.max(b, sb.bottom); l = Math.max(l, sb.left); r = Math.max(r, sb.right);
+        } else {   // LAYOUT_STABLE: the bars' sizes also while they're hidden
             t = Math.max(t, ins.getSystemWindowInsetTop()); b = Math.max(b, ins.getSystemWindowInsetBottom());
             l = Math.max(l, ins.getSystemWindowInsetLeft()); r = Math.max(r, ins.getSystemWindowInsetRight());
         }

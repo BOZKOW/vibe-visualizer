@@ -35,6 +35,8 @@ select option{color:#fff}   /* Windows draws dropdown lists white otherwise */
 @keyframes spin{to{transform:rotate(360deg)}}
 /* live background (Spicy Lyrics style): drawn every frame, the .bl layers become its sources */
 #bgl{position:absolute;inset:0;width:100%;height:100%;display:block}
+#kw{position:absolute;inset:0;width:100%;height:100%;display:none}
+body.kwon:not(.low) #kw{display:block}body.kwon:not(.low) #bgl{display:none}body.kwon #cvblur{display:none}   /* the Spicy Lyrics background (Kawarp) when it runs */
 /* still backgrounds (Spicy Lyrics' Artist image / Cover art / Color / None) cover the animated one */
 #bgimg{position:absolute;inset:-6%;z-index:1;background:#07070c center/cover no-repeat;opacity:0;transition:opacity .8s,background-color .8s;
   filter:blur(var(--bgb,0px)) brightness(var(--bgbr,.7)) saturate(var(--bgsa,1.7))}
@@ -657,7 +659,8 @@ body.low #cappanel,body.low #netpanel,body.low #setup .sw{background:rgba(20,20,
 body.android{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}   /* a long press doesn't select the page in blue */
 body.android input,body.android textarea,body.android .relnotes,body.android #errlog{-webkit-user-select:text;user-select:text}
 body.android #fs,body.android #captab{display:none}
-body:not(.android) .andonly{display:none!important}   /* settings only the Android app can do */
+body:not(.android) .andonly{display:none!important}
+body:not(.phone) #pnav .pn[data-p=phone],body:not(.phone) .ppage[data-p=phone]{display:none!important}   /* the Phone page only on phones */   /* settings only the Android app can do */
 @media(max-width:760px){body.android #lowbtn{display:none}}   /* in Settings → Performance; so the top buttons fit a phone */   /* the app is full screen already; WebView can't share a tab */
 body.android #volume,body.android #volval,body.android #spvol,body.android #spvolval{display:none}   /* the phone's volume buttons do that */
 /* the app draws under the camera cutout and sends its size (--sat/--sab/--sal/--sar): nothing important goes under it */
@@ -727,10 +730,19 @@ body.phone #status,body.phone #lstat,body.phone #nowfrom{display:none}
 body.phone #ttl.mq,body.phone #sub.mq{text-overflow:clip;-webkit-mask-image:linear-gradient(90deg,#000 88%,transparent);mask-image:linear-gradient(90deg,#000 88%,transparent)}
 body.phone #ttl.mq>span,body.phone #sub.mq>span{display:inline-block;padding-right:2.5em;animation:slmq var(--mqd,9s) linear 1.6s infinite}
 @keyframes slmq{0%,12%{transform:translateX(0)}88%,100%{transform:translateX(var(--mqx,0px))}}   /* a long title glides along (header marquee) */
-/* credits: one quiet line under the artist, whenever lyrics are on screen */
-body.phone #txt #lcredit{position:static!important;display:block;margin-top:4px;max-width:100%!important;font-size:11px;line-height:1.35;color:var(--sl-t3);text-shadow:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;animation:none}
-body.phone #txt #lcredit>*{display:inline;opacity:1}body.phone #txt #lcredit>*+*::before{content:" · "}
-body.phone #txt #lcredit .cinfo{display:inline}body.phone #txt #lcredit img{display:none}
+/* lyrics credits on phones, where Settings → Lyrics credits says: the bottom corner (one quiet line above the bars,
+   lower when the controls hide) or under the lyrics; none in the player layout, which shows no lyrics */
+body.phone #lcredit{position:fixed!important;   /* (under the lyrics: the full credits come after the last line, this line steps aside once they're in view) */
+  left:var(--sl-side)!important;right:var(--sl-sider);max-width:none!important;bottom:calc(var(--stageb,190px) + 64px)!important;z-index:5;
+  flex-direction:row;flex-wrap:wrap;column-gap:.55em;row-gap:0;font-size:11px;line-height:1.4;opacity:.75;transition:bottom .35s var(--e-out),opacity .3s}
+body.phone #lcredit>*{white-space:nowrap}body.phone #lcredit img{width:14px;height:14px}
+body.phone.uihide #lcredit{bottom:calc(var(--sab,0px) + 74px)!important}
+body.phone[data-view=lyrics] #lcredit{bottom:calc(var(--stageb,190px) + 6px)!important}
+body.phone.uihide[data-view=lyrics] #lcredit{bottom:calc(var(--sab,0px) + 8px)!important}
+body.phone[data-view=both]:not(.phpl):is(.hl,.lm) #lyr{bottom:calc(var(--stageb,190px) + 84px)!important}
+body.phone.uihide[data-view=both]:not(.phpl):is(.hl,.lm) #lyr{bottom:calc(var(--sab,0px) + 94px)!important}
+body.phone[data-view=lyrics]:not(.phpl) #lyr{bottom:calc(var(--stageb,190px) + 26px)!important}
+body.phone.uihide[data-view=lyrics]:not(.phpl) #lyr{bottom:calc(var(--sab,0px) + 28px)!important}
 body.phone.phpl #lcredit{display:none!important}
 /* lyrics (and both) */
 body.phone:not(.phpl) #stage{grid-template-columns:var(--sl-cov) minmax(0,1fr);grid-template-rows:var(--sl-cov) minmax(0,1fr);grid-template-areas:"art txt" "ly ly"}
@@ -842,13 +854,18 @@ body.phone #notes .note.err,body.phone #notes .note.warn,body.phone #notes .note
   body.phone[data-view=both]:not(.phpl):is(.hl,.lm) #lyr{bottom:calc(var(--stageb,120px) + 46px)!important}
   body.phone.uihide[data-view=both]:not(.phpl):is(.hl,.lm) #lyr{bottom:calc(var(--sab,0px) + 58px)!important}
   body.phone:not(.phpl) #nextup{left:calc(var(--sl-side) + var(--sl-cov) + 5vw)!important;bottom:calc(var(--stageb,120px) + 50px)!important}
-  body.phone.uihide:not(.phpl) #nextup{bottom:calc(var(--sab,0px) + 60px)!important}
+  body.phone.uihide:not(.phpl) #nextup{bottom:calc(var(--sab,0px) + 78px)!important}
+  body.phone:not(.phpl) #nextup{bottom:calc(var(--stageb,120px) + 68px)!important}
+  body.phone #lcredit{left:calc(var(--sl-side) + var(--sl-cov) + 5vw)!important;bottom:calc(var(--stageb,120px) + 46px)!important}
+  body.phone.uihide #lcredit{bottom:calc(var(--sab,0px) + 56px)!important}
+  body.phone[data-view=both]:not(.phpl):is(.hl,.lm) #lyr{bottom:calc(var(--stageb,120px) + 64px)!important}
+  body.phone.uihide[data-view=both]:not(.phpl):is(.hl,.lm) #lyr{bottom:calc(var(--sab,0px) + 74px)!important}
 }
 /* floating lyrics (picture-in-picture): only the lyrics, the line being sung in the middle, the credits line under */
 body.pip #top,body.pip #dock,body.pip #corner,body.pip #qs,body.pip #qsback,body.pip #panel,body.pip #setup,body.pip #lprob,body.pip #lmsg small{display:none!important}
 body.pip #stage{padding:6px 10px!important;grid-template-columns:minmax(0,1fr)!important;grid-template-rows:minmax(0,1fr) auto!important;grid-template-areas:"ly" "txt"!important;row-gap:2px!important}
 body.pip #artw,body.pip #ttl,body.pip #sub,body.pip #nextup{display:none!important}
-body.pip #txt{text-align:center!important}body.pip #txt #lcredit{display:block!important;font-size:8px;margin:0}
+body.pip #txt{text-align:center!important}body.pip #lcredit{position:fixed!important;left:0!important;right:0!important;bottom:2px!important;display:block!important;font-size:8px;text-align:center;opacity:.7}
 body.pip #right{margin:0!important}
 body.pip .ll{font-size:17px!important;text-align:center}body.pip #lyr{-webkit-mask-image:linear-gradient(transparent,#000 25%,#000 75%,transparent);mask-image:linear-gradient(transparent,#000 25%,#000 75%,transparent)}
 body.pip[data-view=both] #viz{display:none}body.pip[data-view=both] #lyr{bottom:0!important}
@@ -863,11 +880,11 @@ body.phone.uihide[data-view=both]:not(.phpl):is(.hl,.lm) #lyr{bottom:calc(var(--
 body.phone[data-view=lyrics]:not(.phpl) #lyr{bottom:var(--stageb,190px)!important}
 body.phone.uihide[data-view=lyrics]:not(.phpl) #lyr{bottom:calc(var(--sab,0px) + 8px)!important}   /* the lyrics end above the bars and the controls (lower when those hide) */
 /* Next up: a pill above the bars in the last 30 seconds (in the player layout, under the song) */
-body.phone:not(.phpl) #nextup{display:flex!important;position:fixed;left:var(--sl-side);right:auto;max-width:calc(100% - var(--sl-side) - var(--sl-sider));bottom:calc(var(--stageb,190px) + 70px);
+body.phone:not(.phpl) #nextup{display:flex!important;position:fixed;left:var(--sl-side);right:auto;max-width:calc(100% - var(--sl-side) - var(--sl-sider));bottom:calc(var(--stageb,190px) + 92px);
   margin:0;z-index:6;padding:6px 14px 6px 6px;border-radius:99px;background:rgba(28,28,32,.92)!important;border:1px solid rgba(255,255,255,.12);box-shadow:0 8px 24px rgba(0,0,0,.35);backdrop-filter:none!important;transition:bottom .35s var(--e-out)}
 body.phone:not(.phpl) #nextup[hidden]{display:none!important}
-body.phone.uihide:not(.phpl) #nextup{bottom:calc(var(--sab,0px) + 80px)}
-body.phone[data-view=lyrics]:not(.phpl) #nextup{bottom:calc(var(--stageb,190px) + 10px)}body.phone.uihide[data-view=lyrics]:not(.phpl) #nextup{bottom:calc(var(--sab,0px) + 16px)}
+body.phone.uihide:not(.phpl) #nextup{bottom:calc(var(--sab,0px) + 100px)}
+body.phone[data-view=lyrics]:not(.phpl) #nextup{bottom:calc(var(--stageb,190px) + 30px)}body.phone.uihide[data-view=lyrics]:not(.phpl) #nextup{bottom:calc(var(--sab,0px) + 34px)}
 body.phone #nextup img{width:34px;height:34px;border-radius:99px}body.phone #nextup b{font-size:13.5px}body.phone #nextup span{font-size:12px}
 /* a Canvas behind: blurred (the light, already-blurred copy, and the cover stays) or sharp (the video itself) */
 body.phone.cvsoft #cvpane{opacity:0!important}
@@ -972,6 +989,91 @@ body.low #qs:not([hidden]){transition:none}
 #appbounce .abx{display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;max-width:340px}
 #appbounce b{font-size:22px}#appbounce p{margin:0;color:var(--dim);line-height:1.45}#appbounce small{color:var(--faint)}
 #appbounce .btn{margin-top:8px;padding:14px 26px;font-size:16px;text-decoration:none}
+/* ===================== one design on phones: Vibe Visualizer's own, laid out like a modern Android app =====================
+   The desktop's language (glass surfaces, the cover's accent colour, the white round play button, white for "on",
+   Inter, the 12/20/28 px corners) in Android 15/16's shapes: large titles, a pill search bar, rows as rounded cards
+   with small gaps, tinted icon circles, bottom sheets and snackbars with rounded corners. */
+body.phone,body.phone button,body.phone input,body.phone select{font-family:InterVV,"Inter",system-ui,sans-serif!important}
+body.phone{--ph-acc:color-mix(in srgb,var(--acc) 72%,#fff);--ph-glass:linear-gradient(145deg,rgba(255,255,255,.15),rgba(255,255,255,.05));--ph-surf:rgba(255,255,255,.055)}
+/* the controls: the desktop's white play button, glass buttons, the accent timeline */
+body.phone #bar #play{background:#fff!important;color:#111!important;width:64px!important;height:64px!important;border-radius:50%!important;box-shadow:0 10px 28px rgba(0,0,0,.4)!important}
+body.phone #bar #play svg{width:30px!important;height:30px!important}
+body.phone #slrow .ib{background:var(--ph-glass)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 8px 20px -8px rgba(0,0,0,.5)!important;color:#fff}
+body.phone #slrow .ib.on{background:#fff!important;color:#111!important}
+body.phone #shuf.on,body.phone #rep.on{color:var(--ph-acc)!important}
+body.phone #shuf.on::after,body.phone #rep.on::after{background:var(--ph-acc)!important}
+body.phone #bar input[type=range]::-webkit-slider-runnable-track{height:8px!important;border-radius:99px;box-shadow:none!important;
+  background:linear-gradient(180deg,rgba(255,255,255,.28),rgba(255,255,255,0) 65%),linear-gradient(90deg,var(--acc) var(--p,0%),rgba(255,255,255,.14) var(--p,0%))!important}
+body.phone #bar input[type=range]::-webkit-slider-thumb{opacity:1!important;width:16px!important;height:16px!important;margin-top:-4px!important;border-radius:50%;border:0!important;
+  background:radial-gradient(circle at 35% 30%,#fff 0,rgba(255,255,255,.92) 40%,rgba(225,225,240,.7) 100%)!important;box-shadow:0 2px 8px rgba(0,0,0,.35)!important}
+body.phone #bar input[type=range]:active::-webkit-slider-runnable-track{height:8px!important}
+body.phone #bar input[type=range]:active::-webkit-slider-thumb{transform:scale(1.25);margin-top:-4px!important}
+body.phone #nextup{background:var(--ph-glass),rgba(22,22,38,.92)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 10px 26px rgba(0,0,0,.4)!important}
+/* quick toggles: a bottom sheet attached to the bottom edge, glass tiles, the accent for what's on */
+body.phone #qs:not([hidden]){left:0;right:0;bottom:0;max-width:none;border-radius:28px 28px 0 0!important;padding:10px calc(18px + var(--sar,0px)) calc(20px + var(--sab,0px)) calc(18px + var(--sal,0px));
+  background:var(--ph-glass),rgba(18,18,30,.97)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 -14px 40px rgba(0,0,0,.45)!important}
+body.phone #qsview{background:var(--ph-surf)!important;border-radius:20px;padding:4px}
+body.phone #qsview button{border-radius:16px}body.phone #qsview button.on{background:#fff!important;color:#111!important}
+body.phone .qtile{border-radius:24px!important;min-height:96px}
+body.phone .qtile:not(.on){background:var(--ph-glass)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.14)!important}
+body.phone .qtile.on{background:var(--acc)!important;color:#111!important;box-shadow:0 8px 22px -8px var(--acc)!important}body.phone .qtile.on small{color:rgba(0,0,0,.62)!important}
+body.phone #qsdelay{background:var(--ph-surf)!important;border-radius:20px}
+body.phone #qsdelay .ib{background:var(--ph-glass)!important}
+/* snackbars in the app's glass */
+body.phone #notes .note,body.phone #corner .toast{background:var(--ph-glass),rgba(22,22,38,.97)!important;border-radius:20px!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.16),0 10px 28px rgba(0,0,0,.45)!important}
+body.phone #notes .note .nact .btn{color:var(--ph-acc)!important}
+body.phone #notes .note .nact .btn.pri{background:#fff!important;color:#111!important;border-radius:99px}
+/* Settings: a large title, a pill search bar, categories and settings as rounded cards with small gaps */
+body.phone #pwin,body.phone #panel{background:radial-gradient(120% 60% at 0% 0%,rgba(139,124,255,.14),transparent 60%),radial-gradient(90% 50% at 100% 100%,rgba(54,201,255,.08),transparent 60%),#0c0c15!important}
+body.phone #phead,body.phone #pwin.psrch #pnav{background:rgba(12,12,21,.97)!important}
+body.phone #ptitle{font-size:34px!important;font-weight:800!important;letter-spacing:-.02em!important;padding:26px 20px 18px 6px!important}
+body.phone #phead{font-size:22px!important;font-weight:700!important}
+body.phone #psearch{margin:0 16px 18px!important;border-radius:28px!important;padding:15px 20px 15px 50px!important;background:var(--ph-surf) no-repeat 18px 50%/20px url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ffffff99'%3E%3Cpath d='M15.5 14h-.8l-.3-.3A6.5 6.5 0 109.5 16a6.5 6.5 0 004.2-1.6l.3.3v.8l5 5 1.5-1.5-5-5zm-6 0a4.5 4.5 0 110-9 4.5 4.5 0 010 9z'/%3E%3C/svg%3E")!important}
+body.phone #pnav .pn{width:auto!important;margin:0 16px 3px;padding:14px 16px!important;gap:16px!important;border-radius:6px!important;background:var(--ph-surf)!important;font-size:16.5px!important;font-weight:600!important}
+body.phone #pnav>.pn:first-of-type{border-radius:26px 26px 6px 6px!important}
+body.phone #pnav>.pn:last-of-type{border-radius:6px 6px 26px 26px!important}
+body.phone #pnav .pn:active{background:rgba(255,255,255,.1)!important}
+body.phone #pnav .pn svg{width:40px!important;height:40px!important;padding:9px;border-radius:50%;opacity:1!important;fill:var(--ph-acc);background:color-mix(in srgb,var(--acc) 20%,transparent);flex:none}
+body.phone .ppage{padding:0 0 12px}
+body.phone .ppage h4:not(.same),body.phone .ppage .sub-h{color:var(--ph-acc)!important;font-size:14.5px!important;font-weight:700!important;margin:22px 30px 10px!important}
+body.phone .ppage>.hint,body.phone .ppage>p.hint,body.phone .ppage>.stat{padding:4px 30px 8px!important}
+body.phone .ppage .f{margin:0 16px 3px;border-radius:20px;background:var(--ph-surf);padding:16px 52px 16px 20px!important}
+body.phone .ppage .f.chk{padding-right:18px!important}
+body.phone .ppage .f[data-k=lprov]{padding-right:14px!important}
+body.phone .ppage select{background:var(--ph-glass)!important;border-radius:14px!important}
+body.phone .ppage .row2{padding:8px 20px!important}
+body.phone .ppage .btn{border-radius:99px!important}
+body.phone .ppage .btn.pri{background:#fff!important;color:#111!important}
+body.phone #provlist .prow{border-radius:16px!important;background:rgba(255,255,255,.05)!important}
+body.phone .ppage .relnotes,body.phone .ppage .crow{margin-left:16px!important;margin-right:16px!important}
+body.phone .f.chk input[type=checkbox]:checked{background-color:var(--acc)!important}
+/* quick settings: a centred pop-up in the app's glass (Spicy Lyrics Mobile's layout) */
+body.phone #qs:not([hidden]){left:50%!important;top:50%!important;right:auto!important;bottom:auto!important;width:min(520px,calc(100% - 32px - var(--sal,0px) - var(--sar,0px)))!important;
+  max-height:calc(100% - var(--sat,0px) - var(--sab,0px) - 48px)!important;display:flex;flex-direction:column;gap:0!important;padding:0!important;overflow:hidden!important;border-radius:28px!important;
+  transform:translate(-50%,-47%) scale(.96)!important;opacity:0;transition:transform .32s var(--e-out),opacity .22s!important}
+body.phone #qs.on{transform:translate(-50%,-50%)!important;opacity:1}
+.qshead{display:flex;align-items:center;gap:4px;padding:14px 10px 6px 20px;flex:none}.qshead b{flex:1;font-size:20px;font-weight:800;letter-spacing:-.01em}
+#qsbk:not([hidden])+b{margin-left:-6px}
+.qsbk{width:44px;height:44px;border-radius:50%;border:0;background:none;color:#fff;display:grid;place-items:center;flex:none}.qsbk[hidden]{display:none}.qsbk:active{background:rgba(255,255,255,.1)}.qsbk svg{width:22px;height:22px;fill:currentColor}
+.qshead .qsbk:first-child:not([hidden]){margin-left:-10px}
+#qsbody{overflow:auto;overscroll-behavior:contain;padding:6px 16px 18px}
+.qscr{display:flex;flex-direction:column;gap:10px}.qscr[hidden]{display:none}
+.qscr.qin{animation:qin .28s var(--e-out)}@keyframes qin{from{opacity:0;transform:translateX(18px)}}
+.qgroup{display:flex;flex-direction:column;gap:3px}
+.qrow{display:flex;align-items:center;gap:14px;width:100%;padding:12px 14px;border:0;border-radius:6px;background:var(--ph-surf,rgba(255,255,255,.055));color:#fff;text-align:left;font:inherit}
+.qrow:active{background:rgba(255,255,255,.1)}
+.qgroup>.qrow:first-child{border-top-left-radius:20px;border-top-right-radius:20px}.qgroup>.qrow:last-child{border-bottom-left-radius:20px;border-bottom-right-radius:20px}
+.qrow .qic{width:36px;height:36px;padding:8px;border-radius:50%;flex:none;fill:var(--ph-acc,#c9bdf5);background:color-mix(in srgb,var(--acc) 20%,transparent)}
+.qrow.on .qic{background:var(--acc);fill:#111}
+.qrow span,.qset span{flex:1;min-width:0}.qrow b,.qset b{display:block;font-size:15px;font-weight:600}
+.qrow small,.qset small{display:block;font-size:12.5px;color:var(--dim);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.qset small{white-space:normal}
+.qrow .qch{width:20px;height:20px;fill:rgba(255,255,255,.45);flex:none}
+.qset{display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:20px;background:var(--ph-surf,rgba(255,255,255,.055))}
+.qdel{flex-wrap:wrap}.qdc{display:flex;align-items:center;gap:8px;margin-left:auto}
+.qdc .ib{width:40px;height:40px;font-size:22px;font-weight:700;line-height:1;color:#fff;background:var(--ph-glass,rgba(255,255,255,.1))!important;border:0!important}
+.qdc b{min-width:62px;text-align:center;font-variant-numeric:tabular-nums;font-size:15px}
+.qhint{margin:0 4px;font-size:13px;color:var(--dim);line-height:1.45}
 </style>
 <style id="glassui">
 /* ===== Design: Glass (Settings → Appearance → Design). Classic turns this whole sheet off. ===== */
@@ -1063,7 +1165,7 @@ body.low #scrubtip{backdrop-filter:none;-webkit-backdrop-filter:none;background:
 </style>
 </head>
 <body data-view="both" data-src="none">
-<div id="bg"><div id="bgimg"></div><canvas class="bl" width="128" height="128"></canvas><canvas class="bl" width="128" height="128"></canvas><canvas class="bl" width="128" height="128"></canvas><canvas id="bgl"></canvas></div>
+<div id="bg"><div id="bgimg"></div><canvas class="bl" width="128" height="128"></canvas><canvas class="bl" width="128" height="128"></canvas><canvas class="bl" width="128" height="128"></canvas><canvas id="bgl"></canvas><canvas id="kw"></canvas></div>
 <canvas id="cvblur" width="48" height="48"></canvas>
 <div id="shade"></div>
 <div id="cvpane"><video id="cvv" muted loop playsinline preload="auto"></video></div>
@@ -1268,6 +1370,7 @@ body.low #scrubtip{backdrop-filter:none;-webkit-backdrop-filter:none;background:
 
   <h4>Phone</h4>
   <p class="hint">How Vibe Visualizer looks and behaves on a phone: in the Android app and in a phone's browser. Laid out after Spicy Lyrics Mobile by TX24.</p>
+  <div class="f" data-k="view"><span class="lb">What the screen shows</span><select id="view"><option value="both">Lyrics and the bars</option><option value="lyrics">Lyrics</option><option value="viz">Player: the cover and the bars</option></select><small class="hint">The lyrics button under the controls switches to the player and back.</small></div>
   <div class="f" data-k="phHead"><span class="lb">Song header</span><select id="phHead"><option value="large">Large</option><option value="medium">Medium</option><option value="small">Small</option><option value="hidden">Hidden (only the credits line)</option></select></div>
   <div class="f chk" data-k="phYear"><label><input type="checkbox" id="phYear"> Release year<small>After the artist, when Spotify or the file says it.</small></label></div>
   <div class="f" data-k="phHide"><span class="lb">Hide the controls after</span><select id="phHide"><option value="2">2 seconds</option><option value="3">3 seconds</option><option value="5">5 seconds</option><option value="8">8 seconds</option><option value="never">Never</option></select><small class="hint">While music plays. A tap brings them back.</small></div>
@@ -1275,7 +1378,7 @@ body.low #scrubtip{backdrop-filter:none;-webkit-backdrop-filter:none;background:
   <div class="f" data-k="phCv"><span class="lb">Canvas behind</span><select id="phCv"><option value="blur">Blurred, the cover stays</option><option value="sharp">Sharp, instead of the cover</option></select><small class="hint">How a song’s Spotify Canvas video shows behind everything.</small></div>
   <div class="f chk andonly" data-k="phPip"><label><input type="checkbox" id="phPip"> Floating lyrics when you leave<small>Going home while music plays keeps the lyrics in a small window over other apps (picture-in-picture).</small></label></div>
   <div class="f andonly" data-k="phHaptic"><span class="lb">Music haptics</span><select id="phHaptic"><option value="off">Off</option><option value="beats">With the beat</option><option value="lines">On each new line</option></select><small class="hint">Short pulses you can feel. The beat needs the bars to follow the music (Phone sound).</small></div>
-  <div class="f chk andonly" data-k="phBars"><label><input type="checkbox" id="phBars"> Hide the status and navigation bars<small>Full screen: a swipe from the top or bottom edge shows them for a moment. Off: they stay, like in any app.</small></label></div>
+  <div class="f chk andonly" data-k="phBars"><label><input type="checkbox" id="phBars"> Full screen<small>The status and navigation bars hide; a swipe from the top or bottom edge brings them in, and there’s always room for them. Off: they stay on screen.</small></label></div>
   <div class="f chk andonly" data-k="phHz"><label><input type="checkbox" id="phHz"> Smoother motion (120 Hz)<small>Off: the app runs at 60 Hz, which keeps the phone much cooler and saves battery.</small></label></div>
   <p class="sub-h">Buttons under the controls</p>
   <div class="f chk" data-k="phbLike"><label><input type="checkbox" id="phbLike"> Like<small>Save the song to your Liked Songs (Spotify).</small></label></div>
@@ -1454,12 +1557,20 @@ body.low #scrubtip{backdrop-filter:none;-webkit-backdrop-filter:none;background:
 
 <div id="qsback" hidden></div>
 <section id="qs" role="dialog" aria-modal="true" aria-labelledby="qst" hidden>
-  <div class="qsgrab" aria-hidden="true"></div>
-  <div class="qshead"><b id="qst">Quick toggles</b><small id="qss"></small></div>
-  <div id="qsview" role="tablist" aria-label="View"><button data-v="viz">Visualizer</button><button data-v="lyrics">Lyrics</button><button data-v="both">Both</button></div>
-  <div id="qsdelay"><span>This song’s timing<small>Lyrics early? Make them later, and the other way round.</small></span><button type="button" class="ib" data-d="-100" aria-label="Lyrics 0.1 s earlier">−</button><b id="qsdv">0.0 s</b><button type="button" class="ib" data-d="100" aria-label="Lyrics 0.1 s later">+</button><button type="button" class="btn sm" data-d="0">Reset</button></div>
-  <div id="qsgrid"></div>
-  <div id="qsq" hidden></div>
+  <div class="qshead"><button type="button" class="qsbk" id="qsbk" aria-label="Back" hidden><svg viewBox="0 0 24 24"><path d="M20 11H7.8l5.6-5.6L12 4l-8 8 8 8 1.4-1.4L7.8 13H20z"/></svg></button><b id="qst">Quick settings</b><button type="button" class="qsbk" id="qsx" aria-label="Close"><svg viewBox="0 0 24 24"><path d="M6.4 5L12 10.6 17.6 5 19 6.4 13.4 12l5.6 5.6-1.4 1.4-5.6-5.6L6.4 19 5 17.6l5.6-5.6L5 6.4z"/></svg></button></div>
+  <div id="qsbody">
+    <div class="qscr" data-s="main">
+      <div class="qgroup"><button type="button" class="qrow" data-go="queue"><svg class="qic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h12v2H3zm0 5h12v2H3zm0 5h8v2H3zm14-3v-3h2v3h3v2h-3v3h-2v-3h-3v-2z"/></svg><span><b>Up next</b><small id="qsqn">What Spotify plays next</small></span><svg class="qch" viewBox="0 0 24 24" aria-hidden="true"><path d="M9.3 6.7l1.4-1.4L17.4 12l-6.7 6.7-1.4-1.4 5.3-5.3z"/></svg></button><button type="button" class="qrow" data-go="src"><svg class="qic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h11v2H4zm0 4h11v2H4zm0 4h7v2H4zm13.6-1.4L20 10v6h-6l2.2-2.2A4 4 0 0013 13l-1.4-1.4a6 6 0 016 0z"/></svg><span><b>Lyrics source</b><small id="qssrc">Automatic</small></span><svg class="qch" viewBox="0 0 24 24" aria-hidden="true"><path d="M9.3 6.7l1.4-1.4L17.4 12l-6.7 6.7-1.4-1.4 5.3-5.3z"/></svg></button><button type="button" class="qrow" data-go="mgr"><svg class="qic" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8zm-1 7V3.5L18.5 9zM8 13h8v2H8zm0 4h5v2H8z"/></svg><span><b>Your lyrics files</b><small id="qsmgr">TTML or LRC, for this song or any</small></span><svg class="qch" viewBox="0 0 24 24" aria-hidden="true"><path d="M9.3 6.7l1.4-1.4L17.4 12l-6.7 6.7-1.4-1.4 5.3-5.3z"/></svg></button></div>
+      <div class="qgroup"><button type="button" class="qrow" data-go="open"><svg class="qic" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4H4a2 2 0 00-2 2v12a2 2 0 002 2h16a2 2 0 002-2V8a2 2 0 00-2-2h-8l-2-2z"/></svg><span><b>Open a file</b><small id="qsopen">Music, lyrics, a cover or a Canvas</small></span><svg class="qch" viewBox="0 0 24 24" aria-hidden="true"><path d="M9.3 6.7l1.4-1.4L17.4 12l-6.7 6.7-1.4-1.4 5.3-5.3z"/></svg></button><button type="button" class="qrow" data-go="home"><svg class="qic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l9 8h-3v9h-5v-6h-2v6H6v-9H3z"/></svg><span><b>Home</b><small id="qshome">The start page</small></span><svg class="qch" viewBox="0 0 24 24" aria-hidden="true"><path d="M9.3 6.7l1.4-1.4L17.4 12l-6.7 6.7-1.4-1.4 5.3-5.3z"/></svg></button></div>
+      <label class="qset"><span><b>Translate</b><small id="qstr">Off</small></span><input type="checkbox" class="psw" id="qtr"></label>
+      <label class="qset"><span><b>Romanize</b><small id="qsrom">Off</small></span><input type="checkbox" class="psw" id="qrom"></label>
+      <div class="qset qdel" id="qsdelay"><span><b>This song’s delay</b><small>Lyrics early? Make them later, and the other way round.</small></span><div class="qdc"><button type="button" class="ib" data-d="-100" aria-label="0.1 s earlier">−</button><b id="qsdv">0.0 s</b><button type="button" class="ib" data-d="100" aria-label="0.1 s later">+</button></div></div>
+      <div class="qset qdel" id="qsodel"><span><b>Output delay</b><small>For every song. Move it up if the lyrics run behind the music.</small></span><div class="qdc"><button type="button" class="ib" data-o="-50" aria-label="50 ms less">−</button><b id="qsov">0 ms</b><button type="button" class="ib" data-o="50" aria-label="50 ms more">+</button></div></div>
+    </div>
+    <div class="qscr" data-s="queue" hidden><div id="qsq"></div></div>
+    <div class="qscr" data-s="src" hidden><p class="qhint">Which source gives this song its lyrics. Automatic asks them in your order (Settings → Lyrics).</p><div class="qgroup" id="qssrcl"></div></div>
+    <div class="qscr" data-s="mgr" hidden><p class="qhint" id="qsmgrn"></p><div class="qgroup"><button type="button" class="qrow" data-go="mgrsong"><svg class="qic" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8zm-1 7V3.5L18.5 9z"/></svg><span><b>Use a file for this song</b><small id="qsm1">Its lyrics from now on</small></span><svg class="qch" viewBox="0 0 24 24" aria-hidden="true"><path d="M9.3 6.7l1.4-1.4L17.4 12l-6.7 6.7-1.4-1.4 5.3-5.3z"/></svg></button><button type="button" class="qrow" data-go="mgradd"><svg class="qic" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6z"/></svg><span><b>Add lyrics files</b><small id="qsm2">They’re used whenever their song plays</small></span><svg class="qch" viewBox="0 0 24 24" aria-hidden="true"><path d="M9.3 6.7l1.4-1.4L17.4 12l-6.7 6.7-1.4-1.4 5.3-5.3z"/></svg></button></div></div>
+  </div>
 </section>
 <div id="corner"><div id="notes" aria-live="polite"></div><div id="toasts" aria-live="polite"></div></div>
 <input type="file" id="file" accept="audio/*" hidden>
@@ -1517,7 +1628,7 @@ function toast(msg,type,ms){
 /* ================= settings (one store) ================= */
 const LANGS=[['en','English'],['cs','Czech'],['sk','Slovak'],['de','German'],['es','Spanish'],['fr','French'],['it','Italian'],['pt','Portuguese'],['pl','Polish'],['nl','Dutch'],['sv','Swedish'],['da','Danish'],['no','Norwegian'],['fi','Finnish'],['hu','Hungarian'],['ro','Romanian'],['el','Greek'],['tr','Turkish'],['uk','Ukrainian'],['ru','Russian'],['ar','Arabic'],['he','Hebrew'],['hi','Hindi'],['th','Thai'],['vi','Vietnamese'],['id','Indonesian'],['tl','Filipino'],['ja','Japanese'],['ko','Korean'],['zh-CN','Chinese (Simplified)'],['zh-TW','Chinese (Traditional)']];
 const navLang=(()=>{const l=(navigator.language||'en').toLowerCase(),m=LANGS.find(x=>x[0].toLowerCase()===l)||LANGS.find(x=>x[0].split('-')[0]===l.split('-')[0]);return m?m[0]:'en'})();
-const DEF={bridge:true,xFocus:false,bgStyle:'dynamic',lfont:'vv',lsimple:false,lminimal:false,lhover:true,lduet:true,lcredLast:false,lsmooth:true,learly:false,learlyMs:250,lseekFade:true,lnotice:true,volshow:true,fpscap:'0',credPos:'corner',cvNoArt:false,capDev:'',romMode:'replace',tr:false,trTo:navLang,trSkip:'',theme:'cover',c1:'#ff5a5f',c2:'#4f8cff',auto:true,boost:100,resp:25,blur:0,bars:72,gap:28,glow:false,round:true,scale:'1',fps:false,bgblur:60,bri:70,sat:170,bgspeed:100,online:true,volume:100,view:'both',lprov:'spicy:1,spotify:1,lrclib:1,netease:1',loff:0,lsize:100,lblur:true,canvasOn:true,low:false,perfAsk:true,anim:'system',lDesync:'ask',design:'glass',uiHide:'idle',xRefCred:true,xScrub:true,xSkeleton:true,xKeep:true,xBgPop:false,xRefSimple:false,ljoin:false,lbgBr:false,phHead:'large',phYear:true,phHide:'3',phHidePaused:false,phbLike:true,phbView:true,phbDev:true,phbSync:false,phbSrc:false,phbQueue:false,phbQs:true,phbSet:true,phbPip:false,phbRot:false,phPip:false,phHaptic:'off',phHz:false,phCv:'blur',phBars:false,andTuned:false};
+const DEF={bridge:true,xFocus:false,bgStyle:'dynamic',lfont:'vv',lsimple:false,lminimal:false,lhover:true,lduet:true,lcredLast:false,lsmooth:true,learly:false,learlyMs:250,lseekFade:true,lnotice:true,volshow:true,fpscap:'0',credPos:'corner',cvNoArt:false,capDev:'',romMode:'replace',tr:false,trTo:navLang,trSkip:'',theme:'cover',c1:'#ff5a5f',c2:'#4f8cff',auto:true,boost:100,resp:25,blur:0,bars:72,gap:28,glow:false,round:true,scale:'1',fps:false,bgblur:60,bri:70,sat:170,bgspeed:100,online:true,volume:100,view:'both',lprov:'spicy:1,spotify:1,lrclib:1,netease:1',loff:0,lsize:100,lblur:true,canvasOn:true,low:false,perfAsk:true,anim:'system',lDesync:'ask',design:'glass',uiHide:'idle',xRefCred:true,xScrub:true,xSkeleton:true,xKeep:true,xBgPop:false,xRefSimple:false,ljoin:false,lbgBr:false,phHead:'large',phYear:true,phHide:'3',phHidePaused:false,phbLike:true,phbView:true,phbDev:true,phbSync:false,phbSrc:false,phbQueue:false,phbQs:true,phbSet:true,phbPip:false,phbRot:false,phPip:false,phHaptic:'off',phHz:false,phCv:'blur',phBars:true,andTuned:false};
 if(window.VVAndroid)DEF.lblur=false;   // phones: blurring every lyric line costs more than half of the page's drawing time
 const CFGD={spotId:'',canvasUrl:''},OLDCFG=['spicyUrl','spicyHdr','spicyPfx','spicyKey'];   // old fields that kept a key in the browser: always removed
 // Everything (settings, API keys, Spotify login, setup progress) lives in sessionStorage:
@@ -1590,7 +1701,7 @@ function onSetting(k){
   else if(k==='bars'){setupBands();palDirty=true}
   else if(k==='scale')resize();
   else if(k==='fps')$('fpsEl').style.display=S.fps?'block':'none';
-  else if(k==='bgblur'||k==='bri'||k==='sat')applyBg();
+  else if(k==='bgblur'||k==='bri'||k==='sat'){applyBg();kwOpts()}
   else if(k==='bgStyle')applyBgStyle();
   else if(k==='lfont')applyFont();
   else if(k==='bgspeed')bgSpeed();
@@ -1644,7 +1755,7 @@ document.querySelectorAll('#seg button').forEach(b=>b.onclick=()=>{S.view=b.data
 function applyLow(){
   body.classList.toggle('low',!!S.low);tog('lowbtn',!!S.low,'Low performance mode');$('low').checked=!!S.low;
   bgSpeed();applyLB();setupBands();palDirty=true;resize();artw.style.transform='';
-  if(S.low)body.classList.remove('cvlive');else applyCanvasMode();
+  if(S.low)body.classList.remove('cvlive');else{applyCanvasMode();if(!kw)setTimeout(kwInit,100)}
   dirty=true;
 }
 $('lowbtn').onclick=()=>{S.low=!S.low;applyLow();save();refreshReset();bump($('lowbtn'));toast(S.low?'Low performance mode on':'Low performance mode off','ok',1800)};
@@ -1750,9 +1861,41 @@ async function applyBgStyle(){
 let bgQ=0;function applyBg(){applyBgStyle();cancelAnimationFrame(bgQ);bgQ=requestAnimationFrame(renderBg)}
 let fadeT;function fadeBake(){
   applyBgStyle();   // still backgrounds follow the new cover / artist
+  kwFeed();
   if(!S.low){bgFadeFrom();renderBg();return}     // live mode: crossfade old cover into new
   const b=$('bg');b.style.opacity=0;clearTimeout(fadeT);fadeT=setTimeout(()=>{renderBg();b.style.opacity=''},350)}
 
+/* The background as Spicy Lyrics draws it: Kawarp (github.com/better-lyrics/kawarp, MIT), a WebGL Kawase blur with a
+   slow liquid warp, from the cover, or from the Canvas video while one plays. Drawn small (it's a blur) from this
+   page's own frame loop, so the frame cap holds; the speed follows the music. Without WebGL, the drifting layers
+   below stay. */
+let kw=null,kwOn=false,kwTried=false,kwLast=0,kwSpdAt=0,kwVid=false;
+const kwPasses=()=>Math.max(2,Math.min(12,Math.round(2+S.bgblur/60*6))),kwSat=()=>1.5*S.sat/170,kwDim=()=>Math.max(0,Math.min(.85,1-S.bri/100));   // Brightness: a black tint, free in the shader
+function kwSize(){const c=$('kw'),k=PHONE?.3:.45;c.width=Math.max(64,Math.round(innerWidth*k));c.height=Math.max(64,Math.round(innerHeight*k));if(kw)try{kw.resize()}catch(e){}}
+async function kwInit(){
+  if(kw||kwTried)return;kwTried=true;
+  try{const m=await import('https://cdn.jsdelivr.net/npm/@kawarp/core@1.3.1/+esm'),K=m.Kawarp||m.default;
+    kwSize();kw=new K($('kw'),{warpIntensity:1,blurPasses:kwPasses(),animationSpeed:.1,saturation:kwSat(),dithering:.008,transitionDuration:1000,tintColor:[0,0,0],tintIntensity:kwDim(),scale:1});
+    kw.start();cancelAnimationFrame(kw.animationId);kw.animationId=null;   // drawn from frame() instead of its own loop
+    kwOn=true;body.classList.add('kwon');kwFeed()}
+  catch(e){console.warn('Kawarp background unavailable:',e&&e.message);kw=null;kwOn=false;body.classList.remove('kwon')}
+}
+function kwFeed(){   // the cover (or the Canvas video while one plays live) into the background
+  if(!kw)return;
+  try{const vid=body.classList.contains('cvlive')&&!cvTaint&&cvv.readyState>=2;
+    if(vid){if(!kwVid){kw.loadVideo(cvv,{frameRate:PHONE?15:24});kwVid=true}return}
+    if(kwVid){kw.unloadVideo();kwVid=false}
+    if(curImg)kw.loadImageElement(curImg);else kw.loadGradient(rawCols.map(c=>'rgb('+c.join(',')+')'),135)}
+  catch(e){console.warn('Kawarp:',e&&e.message)}
+}
+function kwOpts(){if(kw)try{kw.setOptions({blurPasses:kwPasses(),saturation:kwSat(),tintColor:[0,0,0],tintIntensity:kwDim()});kwFeed()}catch(e){}}
+function kwTick(now){
+  if(!kwOn||S.bgStyle!=='dynamic'||document.hidden)return;
+  const iv=S.low?250:PHONE?33:0;if(now-kwLast<iv)return;kwLast=now;
+  if(now-kwSpdAt>200){kwSpdAt=now;kw.animationSpeed=(playing()?.08+Math.min(.3,bgEnergy*.5)+bgKick*.15:.025)*S.bgspeed/100}   // faster when the music is loud and busy
+  try{kw.renderFrame()}catch(e){}
+}
+addEventListener('resize',()=>{if(kw)kwSize()});
 /* live background: the blurred cover layers drift, spin and pulse with the bass */
 const bgl=$('bgl'),blx=bgl.getContext('2d'),bgPrev=document.createElement('canvas'),bgPx=bgPrev.getContext('2d');
 let bgFade=1,bgT=0,lastBgF=0,bgPulse=0,bgEnergy=0,bgKick=0,bassSlow=0,lastOnset=0,onsetGaps=[];
@@ -1772,7 +1915,7 @@ function beatTick(now,dt){
 }
 let bgTempo=0;
 function drawLiveBg(now,dt){
-  if(S.low||document.hidden||body.classList.contains('cvlive')||S.bgStyle!=='dynamic')return;
+  if(kwOn||S.low||document.hidden||body.classList.contains('cvlive')||S.bgStyle!=='dynamic')return;
   // the background moves at the music's pace: faster when it's loud and busy, a push on every bass hit,
   // and the overall speed follows the tempo estimated from those hits
   if(!bgTempo){bgTempo=1;if(onsetGaps.length>5){const g=[...onsetGaps].sort((a,b)=>a-b),med=g[g.length>>1];bgTempo=Math.max(.6,Math.min(1.7,(60000/med)/120))}}   // 120 BPM = normal speed
@@ -1903,7 +2046,6 @@ if(PHONE){body.classList.add('phone');
   const lk=$('like');lk.classList.add('spx');const dv=$('devbtn');dv.classList.add('spx');
   [lk,$('lybtn'),dv,$('syncbtn'),$('srcbtn'),$('qbtn'),$('pipbtn'),$('rotbtn'),$('qsbtn'),$('gear')].forEach(b=>row.appendChild(b));
   $('qbtn').classList.add('spx');
-  $('txt').appendChild($('lcredit'));   // the lyrics credits: a quiet line under the artist
 }
 const bridgeBuf=new Uint8Array(1024);let bridgeOn=false,bridgeAt=0,bridgeDev='',bridgeVia='';
 const bl={local:{ws:null,on:false,t:0,at:0,dev:''},relay:{ws:null,on:false,t:0,at:0,dev:''}};
@@ -2395,7 +2537,7 @@ function flipLayout(change){
 function applyCanvasMode(){
   const has=!!cvv.getAttribute('src')&&cvv.readyState>=2;
   setCv(!!(S.canvasOn&&has));
-  body.classList.toggle('cvlive',S.canvasOn&&has&&!S.low&&!cvTaint);
+  body.classList.toggle('cvlive',S.canvasOn&&has&&!S.low&&!cvTaint);kwFeed();
   if(!S.canvasOn)cvv.pause();else syncCanvasPlay();
   dirty=true;
 }
@@ -2762,7 +2904,6 @@ function applyLyrOpts(){   // Spicy Lyrics style options
   const last=L.filter(l=>!l.dots).pop();body.classList.toggle('credr',!!(S.lcredLast&&last&&last.opp));
 }
 function applyCredPos(){
-  if(PHONE){body.classList.remove('credly');return}   // phones: the credits live under the artist in the header
   const under=S.credPos==='lyrics',el=$('lcredit');body.classList.toggle('credly',under);
   if(under&&el.parentNode!==$('right'))$('right').appendChild(el);
   else if(!under&&el.parentNode!==body)body.insertBefore(el,$('dock'));
@@ -3434,6 +3575,8 @@ async function loadLyrics(m,tok,opt){
   const quick=Date.now()-lyAskAt<1200;lyAskAt=Date.now();
   if(quick&&!opt.fresh){await new Promise(r=>setTimeout(r,650));if(tok!==coverTok)return}   // skipping through songs: only ask for the one you stop on
   const skip=new Set(opt.skip||[]),order=provList().filter(p=>p.on&&!skip.has(p.k)).map(p=>p.k);
+  const pk=srcPickMap()[m.id?'id:'+m.id:('t:'+(m.artist||'')+'|'+(m.title||'')).toLowerCase()]||'';   // a source chosen for this song (Quick settings)
+  if(pk&&order.includes(pk)){order.splice(order.indexOf(pk),1);order.unshift(pk);opt.fresh=true}
   const log=[],note=(p,st,ms)=>{log.push({p,st,ms:ms==null?null:Math.round(ms)});if(tok===coverTok){lookupLog=log;showLookup()}};
   lookupLog=log;
   if(!order.length){if(skip.size)return lyOtherDone(m,tok);clearLyrics('All lyrics sources are off','Turn one on in Settings → Lyrics.','none');return}
@@ -3452,7 +3595,7 @@ async function loadLyrics(m,tok,opt){
       const r=await FN[p](m);
       if(tok!==coverTok)return;
       if(r&&r.lines.some(l=>!l.dots)){r.prov=p;note(p,'found: '+(r.sync?(r.lines.some(l=>l.words)?'word-synced':'line-synced'):'not synced'),performance.now()-t0);
-        if(!skip.size){lcache.set(key,r);lcPut(key,r)}applyLyrics(r);return}
+        if(!skip.size&&!pk){lcache.set(key,r);lcPut(key,r)}applyLyrics(r);return}
       note(p,'not found',performance.now()-t0);
     }catch(e){if(e.noKey){note(p,'skipped: '+e.message);continue}note(p,'failed: '+e.message,performance.now()-t0);errs.push(PROVS[p].name+': '+e.message)}
   }
@@ -3898,7 +4041,7 @@ let pageNow='look';
   });
 })();
 // phones: settings that only mean something on a computer aren't shown
-if(PHONE){['design','uiHide','lhover','volshow','credPos','cvNoArt','scale'].forEach(k=>{const f=document.querySelector('.f[data-k="'+k+'"]');if(f)f.classList.add('pconly')});
+if(PHONE){['design','uiHide','lhover','volshow','cvNoArt','scale'].forEach(k=>{const f=document.querySelector('.f[data-k="'+k+'"]');if(f)f.classList.add('pconly')});
   document.querySelectorAll('#pbody h4').forEach(h=>{if(h.textContent.trim()==='Design')h.classList.add('pconly')})}
 function pnavPill(){   // the highlight glides to the chosen category instead of jumping
   const nav=$('pnav'),on=nav.querySelector('.pn.on');let p=$('pnavpill');
@@ -3949,87 +4092,73 @@ document.querySelectorAll(LQ_SEL).forEach(liquid);
 // controls added later (panels, rows): only look at what was added, not the whole page on every change
 new MutationObserver(ms=>{for(const m of ms)for(const n of m.addedNodes){if(n.nodeType!==1||n.classList.contains('lqr'))continue;
   if(n.matches(LQ_SEL))liquid(n);if(n.firstElementChild)n.querySelectorAll(LQ_SEL).forEach(liquid)}}).observe(document.body,{childList:true,subtree:true});
-/* ---------- quick toggles (phones): a bottom sheet of tiles for what the desktop has in its top bar ---------- */
-const QI={   // tile icons (24×24 paths)
-  tr:'M12.9 15.1l-2.5-2.5A17.5 17.5 0 0014 6h3V4h-7V2H8v2H1v2h11.2A15.7 15.7 0 019 11.4 15.6 15.6 0 016.7 8H4.7a17.6 17.6 0 003 4.6l-5.1 5 1.4 1.4 5-5 3.1 3.1.8-2zM18.5 10h-2L12 22h2l1.1-3h4.8l1.1 3h2l-4.5-12zm-2.6 7l1.6-4.3 1.6 4.3h-3.2z',
-  rom:'M3 5h8v2H8v12H6V7H3zm10 4h8v2h-3v8h-2v-8h-3z',
-  sync:'M12 4V1L8 5l4 4V6a6 6 0 016 6 6 6 0 01-.7 2.8l1.46 1.46A8 8 0 0020 12a8 8 0 00-8-8zm0 14a6 6 0 01-6-6c0-1 .25-1.97.7-2.8L5.24 7.74A8 8 0 004 12a8 8 0 008 8v3l4-4-4-4v3z',
-  focus:'M12 8a4 4 0 100 8 4 4 0 000-8zM3 5v4h2V5h4V3H5a2 2 0 00-2 2zm2 10H3v4a2 2 0 002 2h4v-2H5v-4zm14 4h-4v2h4a2 2 0 002-2v-4h-2v4zm0-16h-4v2h4v4h2V5a2 2 0 00-2-2z',
-  canvas:'M4 4h16a2 2 0 012 2v12a2 2 0 01-2 2H4a2 2 0 01-2-2V6a2 2 0 012-2zm6 4v8l6-4z',
-  bridge:'M12 14a3 3 0 003-3V5a3 3 0 00-6 0v6a3 3 0 003 3zm5-3a5 5 0 01-10 0H5a7 7 0 006 6.9V21h2v-3.1A7 7 0 0019 11z',
-  low:'M13 2L4 14h6l-1 8 9-12h-6l1-8z',
-  spotify:'M12 2a10 10 0 100 20 10 10 0 000-20zm4.6 14.4a.6.6 0 01-.9.2c-2.4-1.5-5.4-1.8-8.9-1a.6.6 0 11-.3-1.2c3.9-.9 7.2-.5 9.9 1.1.3.2.4.6.2.9zm1.2-2.7a.8.8 0 01-1.1.3c-2.7-1.7-6.9-2.2-10.1-1.2a.8.8 0 11-.5-1.5c3.7-1.1 8.3-.6 11.4 1.3.4.3.5.8.3 1.1zm.1-2.8C14.7 9 9.4 8.8 6.3 9.7a1 1 0 11-.6-1.9c3.5-1.1 9.4-.9 13.1 1.3a1 1 0 01-.9 1.8z',
-  open:'M10 4H4a2 2 0 00-2 2v12a2 2 0 002 2h16a2 2 0 002-2V8a2 2 0 00-2-2h-8l-2-2z',
-  net:'M12 21l3.6-4.8A6 6 0 0012 15a6 6 0 00-3.6 1.2zm0-18C8 3 4.3 4.3 1.4 6.6L3.2 9A13 13 0 0112 6a13 13 0 018.8 3l1.8-2.4A16 16 0 0012 3zm0 6a10 10 0 00-6.6 2.4l1.8 2.4A7 7 0 0112 12a7 7 0 014.8 1.8l1.8-2.4A10 10 0 0012 9z',
-  set:'M4 7h10v2H4zm12 0h4v2h-4zM4 15h4v2H4zm6 0h10v2H10zM14 5h2v6h-2zM8 13h2v6H8z',
-  home:'M12 3l9 8h-3v9h-5v-6h-2v6H6v-9H3z',
-  pip:'M19 11h-8v6h8v-6zm4 8V5a2 2 0 00-2-2H3a2 2 0 00-2 2v14c0 1.1.9 2 2 2h18a2 2 0 002-2zm-2 0H3V5h18v14z',
-  src:'M4 5h11v2H4zm0 4h11v2H4zm0 4h7v2H4zm13.6-1.4L20 10v6h-6l2.2-2.2A4 4 0 0013 13l-1.4-1.4a6 6 0 016 0z',
-  queue:'M3 6h12v2H3zm0 5h12v2H3zm0 5h8v2H3zm14-3v-3h2v3h3v2h-3v3h-2v-3h-3v-2z',
-  mute:'M3 9v6h4l5 5V4L7 9H3zm13.5 3l2.5-2.5-1-1-2.5 2.5L13 8.5l-1 1 2.5 2.5-2.5 2.5 1 1 2.5-2.5 2.5 2.5 1-1z'};
-// each tile: what it says, whether it's on, and what a tap does (the same functions as the desktop's buttons)
-const QT=[
-  {k:'tr',name:'Translate',on:()=>!!S.tr,sub:()=>S.tr?((LANGS.find(x=>x[0]===S.trTo)||['',S.trTo])[1]):'Off',fn:()=>toggleTr()},
-  {k:'rom',name:'Romanize',on:()=>S.romMode!=='off',sub:()=>S.romMode==='off'?'Off':S.romMode==='below'?'Under the line':'Instead',fn:()=>toggleRom()},
-  {k:'sync',name:'Resync lyrics',on:()=>false,sub:()=>lsync&&L.length?'Tap to resync':'No synced lyrics',dis:()=>!(lsync&&L.length),fn:()=>resyncNow()},
-  {k:'focus',name:'Focus lyrics',on:()=>!!S.xFocus,sub:()=>S.xFocus?'One line at a time':'Off',fn:()=>quickSet('xFocus',!S.xFocus,S.xFocus?'Focus mode off':'Focus mode on')},
-  {k:'canvas',name:'Canvas',on:()=>!!S.canvasOn,sub:()=>!S.canvasOn?'Off':body.classList.contains('cvmode')?'Playing':'When a song has one',fn:()=>quickSet('canvasOn',!S.canvasOn,S.canvasOn?'Canvas off':'Canvas on')},
-  {k:'bridge',name:AND?'Phone sound':'Vibe Bridge',on:()=>!!S.bridge,sub:()=>!S.bridge?'Off':bridgeOn?'Bars follow the music':'Waiting for sound',fn:()=>quickSet('bridge',!S.bridge,S.bridge?'The bars no longer follow the sound':'The bars follow the sound')},
-  {k:'low',name:'Low power',on:()=>!!S.low,sub:()=>S.low?'Light effects':'Off',fn:()=>{S.low=!S.low;applyLow();save();refreshReset()}},
-  {k:'spotify',name:'Spotify',on:()=>src==='spotify',sub:()=>$('spt').textContent.replace(/^Spotify · /,'')||'—',fn:()=>{qsClose();$('spchip').click()}},
-  {k:'open',name:'Open a file',on:()=>src==='file',sub:()=>src==='file'?'A song is open':'Music or lyrics',fn:()=>{qsClose();$('file').click()}},
-  {k:'net',name:'Connection',on:()=>false,sub:()=>$('netbtn').classList.contains('bad')?'Not reachable':($('netms').textContent||'–'),fn:()=>{qsClose();setTimeout(()=>$('netbtn').click(),300)}},
-  {k:'mute',name:'Mute',on:()=>src==='spotify'?(+$('spvol').value===0):muted,sub:()=>src==='spotify'?($('spvol').disabled?'Not on this device':(+$('spvol').value===0?'Muted':$('spvol').value+'%')):(muted?'Muted':S.volume+'%'),
-    fn:()=>{if(src==='spotify'){if(!$('spvol').disabled)$('spmute').click()}else{muted=!muted;applyVolume()}}},
-  {k:'src',name:'Other lyrics',on:()=>false,sub:()=>L.length?'Now: '+((PROVS[lyProv()]&&PROVS[lyProv()].name)||'—'):'No lyrics',dis:()=>!curLyr,fn:()=>{qsClose();lyOther()}},
-  {k:'queue',name:'Up next',on:()=>false,sub:()=>src==='spotify'?'Spotify’s queue':'Spotify only',dis:()=>src!=='spotify',fn:()=>qsShow('queue')},
-  {k:'pip',name:'Floating lyrics',on:()=>false,sub:()=>AND&&AND.pip?'Over other apps':'App 0.5+',dis:()=>!(AND&&AND.pip),fn:()=>{qsClose();setTimeout(()=>$('pipbtn').click(),350)}},
-  {k:'home',name:'Home',on:()=>false,sub:()=>'Start page',fn:()=>{qsClose();goHome()}},
-  {k:'set',name:'Settings',on:()=>false,sub:()=>'Everything else',fn:()=>{qsClose();openPanel()}}];
-(function buildQs(){
-  const g=$('qsgrid');
-  QT.forEach(t=>{const b=document.createElement('button');b.type='button';b.className='qtile';b.dataset.k=t.k;
-    b.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="'+QI[t.k]+'"/></svg><span><b></b><small></small></span>';b.querySelector('b').textContent=t.name;
-    b.onclick=()=>{t.fn();bump(b);setTimeout(qsRender,60);setTimeout(qsRender,700)};g.appendChild(b);t.el=b});
-  $('qsview').querySelectorAll('button').forEach(b=>b.onclick=()=>{S.view=b.dataset.v;applyView();save();qsRender()});
-})();
+/* ---------- quick settings (phones), as Spicy Lyrics Mobile has them: a pop-up with a card leading to Up next, the
+   song's lyrics source and your lyrics files, then translation, romanization, this song's delay and the output delay;
+   the screens slide in with a back arrow ---------- */
+let qsScr='main',qsT=0;
+const QS_TITLE={main:'Quick settings',queue:'Up next',src:'Lyrics source',mgr:'Your lyrics files'};
+function qsGo(sc){qsScr=sc;$('qs').querySelectorAll('.qscr').forEach(x=>{const on=x.dataset.s===sc;x.hidden=!on;if(on){x.classList.remove('qin');void x.offsetWidth;x.classList.add('qin')}});
+  $('qst').textContent=QS_TITLE[sc];$('qsbk').hidden=sc==='main';if(sc==='queue')qsQueue();if(sc==='src')qsSources();if(sc==='mgr')mlShow();qsRender()}
+const qsOpen=()=>!$('qs').hidden&&$('qs').classList.contains('on');
+function qsShow(sc){const q=$('qs'),b=$('qsback');clearTimeout(qsT);q.hidden=b.hidden=false;qsGo(sc||'main');poke();
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{q.classList.add('on');b.classList.add('on')}))}
+function qsClose(){const q=$('qs'),b=$('qsback');if(q.hidden)return;q.classList.remove('on');b.classList.remove('on');clearTimeout(qsT);qsT=setTimeout(()=>{q.hidden=b.hidden=true;poke()},S.low?0:300)}
+const provName=k=>(PROVS[k]&&PROVS[k].name)||k||'—';
 function qsRender(){
   if(!qsOpen())return;
-  QT.forEach(t=>{const on=t.on(),b=t.el;b.classList.toggle('on',on);b.setAttribute('aria-pressed',on);b.disabled=!!(t.dis&&t.dis());
-    const sm=b.querySelector('small'),v=t.sub();if(sm.textContent!==v)sm.textContent=v});
-  $('qsview').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.v===S.view));
+  $('qsqn').textContent=src==='spotify'?'What Spotify plays next':'For Spotify';
+  const pick=srcPickGet();$('qssrc').textContent=pick?provName(pick)+', chosen for this song':L.length?'Automatic, showing '+provName(lyProv()):'Automatic';
+  $('qtr').checked=!!S.tr;$('qstr').textContent=S.tr?'Into '+((LANGS.find(x=>x[0]===S.trTo)||['',S.trTo])[1]):'Off';
+  $('qrom').checked=S.romMode!=='off';$('qsrom').textContent=S.romMode==='off'?'Off':S.romMode==='below'?'Under each line':'Instead of the lyrics';
   $('qsdv').textContent=(songOffMs>0?'+':'')+(songOffMs/1000).toFixed(1)+' s';$('qsdelay').querySelectorAll('button').forEach(b=>b.disabled=!songOffKey()||!lsync);
-  $('qss').textContent=[ttl.textContent&&ttl.textContent!=='Nothing playing'?ttl.textContent:'',$('capt').textContent].filter(Boolean).join(' · ');
+  $('qsov').textContent=(S.loff>0?'+':'')+S.loff+' ms';
+  $('qshome').textContent=src==='spotify'&&SP.access?'The start page':'The start page';
 }
-const qsOpen=()=>!$('qs').hidden&&$('qs').classList.contains('on');
-let qsT=0;
-function qsShow(mode){const q=$('qs'),b=$('qsback');clearTimeout(qsT);q.classList.toggle('qmode',mode==='queue');$('qsq').hidden=mode!=='queue';$('qst').textContent=mode==='queue'?'Up next':'Quick toggles';if(mode==='queue')qsQueue();q.hidden=b.hidden=false;q.style.removeProperty('--qsdrag');poke();
-  requestAnimationFrame(()=>requestAnimationFrame(()=>{q.classList.add('on');b.classList.add('on');qsRender()}))}
-function qsClose(){const q=$('qs'),b=$('qsback');if(q.hidden)return;q.classList.remove('on','drag');b.classList.remove('on');q.style.removeProperty('--qsdrag');
-  clearTimeout(qsT);qsT=setTimeout(()=>{q.hidden=b.hidden=true;poke()},S.low?0:420)}
 setInterval(qsRender,1000);
 $('qsbtn').onclick=()=>qsOpen()?qsClose():qsShow();
 $('qbtn').onclick=()=>qsOpen()?qsClose():qsShow('queue');
-$('srcbtn').onclick=()=>{bump($('srcbtn'));lyOther()};
+$('srcbtn').onclick=()=>qsOpen()?qsClose():qsShow('src');
+$('qsback').onclick=qsClose;$('qsx').onclick=qsClose;$('qsbk').onclick=()=>qsGo('main');
+$('qs').addEventListener('click',e=>{const r=e.target.closest('.qrow');if(!r)return;const g=r.dataset.go;
+  if(g==='queue'||g==='src'||g==='mgr')qsGo(g);
+  else if(g==='open'){qsClose();$('file').click()}
+  else if(g==='home'){qsClose();goHome()}
+  else if(g==='mgrsong'){qsClose();$('lyrbtn').click()}
+  else if(g==='mgradd'){qsClose();$('mladd').click()}
+  else if(g&&g.startsWith('p:')){srcPickSet(g.slice(2));qsGo('main')}});
+$('qtr').onchange=()=>{toggleTr();qsRender()};
+$('qrom').onchange=()=>{toggleRom();qsRender()};
+$('qsdelay').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;songOffSet(songOffMs+(+b.dataset.d))});
+$('qsodel').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const v=Math.max(-3000,Math.min(3000,S.loff+(+b.dataset.o)));S.loff=v;syncInputs();onSetting('loff');save();refreshReset();qsRender()});
 // Up next: what Spotify plays after this song
 async function qsQueue(){
-  const box=$('qsq');box.textContent='';const p=document.createElement('p');p.className='hint';p.textContent='Asking Spotify…';box.appendChild(p);
+  const box=$('qsq');box.textContent='';const p=document.createElement('p');p.className='qhint';p.textContent=src==='spotify'?'Asking Spotify…':'Up next is for Spotify.';box.appendChild(p);
+  if(src!=='spotify')return;
   let q=null;try{q=await spApi('/me/player/queue')}catch(e){p.textContent=e.message;return}
   const item=it=>{const ep=it.type==='episode',imgs=(ep?it.images:(it.album&&it.album.images))||[];const d=document.createElement('div');d.className='qi';
     const im=document.createElement('img');im.alt='';im.loading='lazy';const u=(imgs[imgs.length-1]||imgs[0]||{}).url;if(u)im.src=u;
     const tx=document.createElement('div'),b=document.createElement('b'),sm=document.createElement('small');b.textContent=it.name;sm.textContent=ep?((it.show&&it.show.name)||''):(it.artists||[]).map(a=>a.name).join(', ');tx.append(b,sm);d.append(im,tx);return d};
   box.textContent='';
   if(q&&q.currently_playing){const n=item(q.currently_playing);n.classList.add('qnow');box.appendChild(n)}
-  const list=(q&&q.queue)||[];if(!list.length){const e=document.createElement('p');e.className='hint';e.textContent='Nothing queued.';box.appendChild(e);return}
-  list.slice(0,20).forEach(it=>box.appendChild(item(it)));
+  const list=(q&&q.queue)||[];if(!list.length){const e=document.createElement('p');e.className='qhint';e.textContent='Nothing queued.';box.appendChild(e);return}
+  list.slice(0,30).forEach(it=>box.appendChild(item(it)));
 }
-$('qsback').onclick=qsClose;
-$('qsdelay').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const d=+b.dataset.d;songOffSet(d?songOffMs+d:0)});
-// dragging the sheet down closes it (no swipe up to open: that's Android's own gesture at the screen's bottom edge)
-{const q=$('qs');let d0=null,dy=0;
- q.addEventListener('touchstart',e=>{d0=q.scrollTop<=0?e.touches[0].clientY:null;dy=0},{passive:true});
- q.addEventListener('touchmove',e=>{if(d0==null)return;dy=Math.max(0,e.touches[0].clientY-d0);if(dy>4){q.classList.add('drag');q.style.setProperty('--qsdrag',dy+'px')}},{passive:true});
- q.addEventListener('touchend',()=>{if(d0==null)return;d0=null;q.classList.remove('drag');if(dy>90)qsClose();else q.style.removeProperty('--qsdrag')},{passive:true})}
+// Lyrics source: automatic, or one source chosen for this song (kept on this device)
+const srcPickKey=()=>curLyr&&curLyr.m?(curLyr.m.id?'id:'+curLyr.m.id:('t:'+(curLyr.m.artist||'')+'|'+(curLyr.m.title||'')).toLowerCase()):'';
+function srcPickMap(){try{return JSON.parse(localStorage.getItem('vv_srcpick')||'{}')}catch(e){return{}}}
+function srcPickGet(){const k=srcPickKey();return k?srcPickMap()[k]||'':''}
+function srcPickSet(p){const k=srcPickKey();if(!k||!curLyr)return;const m=srcPickMap();if(p&&p!=='auto')m[k]=p;else delete m[k];
+  const ks=Object.keys(m);if(ks.length>300)ks.slice(0,ks.length-300).forEach(x=>delete m[x]);try{localStorage.setItem('vv_srcpick',JSON.stringify(m))}catch(e){}
+  toast(p&&p!=='auto'?'Lyrics from '+provName(p)+' for this song.':'Lyrics source: automatic.','ok',2000);loadLyrics(curLyr.m,coverTok,{fresh:true})}
+function qsSources(){
+  const box=$('qssrcl');box.textContent='';const pick=srcPickGet(),now=L.length?lyProv():'';
+  const add=(k,title,sub)=>{const b=document.createElement('button');b.type='button';b.className='qrow'+((k==='auto'&&!pick)||k===pick?' on':'');b.dataset.go='p:'+k;
+    b.innerHTML='<svg class="qic" viewBox="0 0 24 24" aria-hidden="true"><path d="'+((k==='auto'&&!pick)||k===pick?'M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z':'M12 2a10 10 0 100 20 10 10 0 000-20zm0 18a8 8 0 110-16 8 8 0 010 16z')+'"/></svg><span><b></b><small></small></span>';
+    b.querySelector('b').textContent=title;b.querySelector('small').textContent=sub;box.appendChild(b)};
+  if(!curLyr){const p=document.createElement('p');p.className='qhint';p.textContent='No song is playing.';box.appendChild(p);return}
+  add('auto','Automatic',now&&!pick?'Showing '+provName(now):'Your sources, in your order');
+  provList().filter(p=>p.on).forEach(p=>add(p.k,provName(p.k),p.k===now?'Showing now':PROVS[p.k].desc));
+}
 $('gear').onclick=()=>$('panel').classList.contains('open')?closePanel():openPanel();
 $('pclose').onclick=closePanel;
 function nudgeVol(d){if(src==='spotify'){if(!$('spvol').disabled)spSetVol(+$('spvol').value+d);return}S.volume=Math.max(0,Math.min(100,S.volume+d));syncInputs();onSetting('volume');save()}
@@ -4122,11 +4251,11 @@ function barsGrad(){
   gradBW=W;return gradB=g;
 }
 function drawBars(mirror){
-  const step=W/N,gp=step*S.gap/100,bw=Math.max(1,step-gp),maxH=H*(mirror?.42:.9),by=mirror?H/2:H*.97,rd=S.round&&ctx.roundRect&&bw>2,r=bw/2;
+  const edge=Math.ceil(W/N*(glowOn()?.5:.18))+1,step=(W-edge*2)/N,gp=step*S.gap/100,bw=Math.max(1,step-gp),maxH=H*(mirror?.42:.9),by=mirror?H/2:H*.97,rd=S.round&&ctx.roundRect&&bw>2,r=bw/2;   // room at both ends for the glow and the dark edge, so neither is cut off
   ctx.fillStyle=barsGrad();
   const pass=(gr,al)=>{ctx.globalAlpha=al;ctx.beginPath();
     const hMin=rd?bw:3;   // silent bars rest as small dots (rounded) instead of flat dashes
-    for(let i=0;i<N;i++){const h=Math.max(hMin,vals[i]*maxH),x=i*step+gp/2-gr,y=by-h-gr,hh=(mirror?h*2:h)+gr*2,ww=bw+gr*2;
+    for(let i=0;i<N;i++){const h=Math.max(hMin,vals[i]*maxH),x=edge+i*step+gp/2-gr,y=by-h-gr,hh=(mirror?h*2:h)+gr*2,ww=bw+gr*2;
       rd?ctx.roundRect(x,y,ww,hh,Math.min(r+gr,hh/2)):ctx.rect(x,y,ww,hh)}
     ctx.fill()};
   if(!S.low){ctx.save();ctx.beginPath();ctx.rect(0,0,W,H);ctx.clip();ctx.fillStyle='#000';pass(Math.max(1,bw*.14),.14);ctx.fillStyle=barsGrad();   // a soft dark edge, so the bars never melt into the background
@@ -4170,9 +4299,9 @@ function frame(now){
   fAcc+=Math.min(now-fPrev,100);fPrev=now;
   if(fAcc<iv-.5)return;fAcc=Math.min(fAcc-iv,iv);
   const dt=Math.min(now-last,50);last=now;
-  const pl=playing();andPoll();sample(dt,now);beatTick(now,dt);drawLiveBg(now,dt);
+  const pl=playing();andPoll();sample(dt,now);beatTick(now,dt);drawLiveBg(now,dt);kwTick(now);
   lyricsTick();desyncTick(now);uiTick(now);if(palDirty)buildPal();palTick(now);
-  if(body.classList.contains('cvlive')&&now-lastCv>90&&now>coverAnimEnd&&cvv.readyState>=2&&!document.hidden){lastCv=now;cvFrame()}   // not during the cover's animation
+  if(!kwOn&&body.classList.contains('cvlive')&&now-lastCv>90&&now>coverAnimEnd&&cvv.readyState>=2&&!document.hidden){lastCv=now;cvFrame()}   // not during the cover's animation
   const active=pl||mxv>.003||!!capStream||idleK>.005;
   // the cover and title stay still (no beat pulse)
   if(!active&&!wasActive&&!dirty)return;
@@ -4361,7 +4490,7 @@ function homeButtons(){   // the home screen's buttons follow what's going on (a
 function leaveHome(){if(!body.classList.contains('home'))return;body.classList.remove('home');if(src!=='none'||loaded)$('empty').classList.add('gone')}
 $('brand').onclick=goHome;
 window.vvBack=()=>{   // the Android back button: closes what's open in the app, in this order; false = nothing was
-  if(qsOpen()){qsClose();return true}
+  if(qsOpen()){if(qsScr!=='main')qsGo('main');else qsClose();return true}
   if(!WZ.hidden){wzDone();return true}
   if($('panel').classList.contains('open')){if(PHONE&&!$('pwin').classList.contains('plist')){phoneSetList(true);return true}closePanel();return true}
   if(popOpen($('devpanel'))){devClose();return true}
@@ -4501,6 +4630,7 @@ $('fpsEl').style.display=S.fps?'block':'none';
 body.classList.toggle('cvnoart',!!S.cvNoArt);applyCredPos();applyLyrOpts();applyPhone();bridgeConnect();updBridge();applyFont();applyBgStyle();setupBands();applyView();applyLow();resize();renderBg();updChips();updPlayIcon();updQuick();updNeed();
 requestAnimationFrame(frame);
 poke();
+if(!S.low)setTimeout(kwInit,600);
 (async()=>{
   // fresh open (nothing in this tab yet): restore what the server kept for this device
   if(PREFS&&!store.get('pulse4')){

@@ -500,8 +500,11 @@ Made by [BOZKOW](https://github.com/BOZKOW), built together with [Claude Code](h
 The "Spicy Lyrics" lyrics font option uses [Inter](https://rsms.me/inter/) by Rasmus Andersson (SIL Open Font License
 1.1, `web/InterVariable-LICENSE.txt`), or the device's own San Francisco font on Apple devices.
 
-The phone design follows [Spicy Lyrics Mobile](https://github.com/spicylyrics/mobile) by TX24 (AGPL-3.0): its
-layout, sizes, monochrome palette, glass buttons and controls.
+The phone layout follows [Spicy Lyrics Mobile](https://github.com/spicylyrics/mobile) by TX24 (AGPL-3.0): its
+layout, controls and quick settings, in Vibe Visualizer's own design.
+
+The moving background is drawn with [Kawarp](https://github.com/better-lyrics/kawarp) (MIT, from the Better Lyrics
+project), as Spicy Lyrics does: a WebGL Kawase blur with a slow liquid warp.
 
 The lyrics animation (word and letter springs, fill gradient, line dimming and blur), the instrumental-break dots,
 the credits layout and the way romanization is done are ported from
