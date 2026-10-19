@@ -740,6 +740,7 @@ body.phone #lcredit>*{white-space:nowrap}body.phone #lcredit img{width:14px;heig
 body.phone.uihide #lcredit{bottom:calc(var(--sab,0px) + 74px)!important}
 body.phone[data-view=lyrics] #lcredit{bottom:calc(var(--stageb,190px) + 6px)!important}
 body.phone.uihide[data-view=lyrics] #lcredit{bottom:calc(var(--sab,0px) + 8px)!important}
+/* the lyrics end above the credits (their real height), the bars and the controls, lower when those hide */
 body.phone[data-view=both]:not(.phpl):is(.hl,.lm) #lyr{bottom:calc(var(--stageb,190px) + 80px + var(--credh,20px))!important}
 body.phone.uihide[data-view=both]:not(.phpl):is(.hl,.lm) #lyr{bottom:calc(var(--sab,0px) + 90px + var(--credh,20px))!important}
 body.phone[data-view=lyrics]:not(.phpl) #lyr{bottom:calc(var(--stageb,190px) + 22px + var(--credh,20px))!important}
@@ -749,7 +750,7 @@ body.phone.phpl #lcredit{display:none!important}
 body.phone:not(.phpl) #stage{grid-template-columns:var(--sl-cov) minmax(0,1fr);grid-template-rows:var(--sl-cov) minmax(0,1fr);grid-template-areas:"art txt" "ly ly"}
 body.phone:not(.phpl) #artw{width:var(--sl-cov)}
 body.phone:not(.phpl) #nextup{display:none}
-body.phone #lyr{left:0;-webkit-mask-image:linear-gradient(transparent,#000 5%,#000 74%,transparent 98%);mask-image:linear-gradient(transparent,#000 5%,#000 74%,transparent 98%)}
+body.phone #lyr{left:0;-webkit-mask-image:linear-gradient(transparent 3%,#000 5.5%,#000 74%,transparent 98%);mask-image:linear-gradient(transparent 3%,#000 5.5%,#000 74%,transparent 98%)}   /* the line before the sung one is hidden, not cut into a sliver under the cover */
 body.phone #ly{padding:0 calc(var(--sl-sider) + 4px) 0 calc(var(--sl-side) + 4px)}
 body.phone #lyr{left:calc(-1*var(--sl-side) - 4px)!important;right:calc(-1*var(--sl-sider) - 4px)!important}   /* the lyrics' area runs to the screen's edges, the text keeps its place: blur and glow fade out instead of being cut off */
 body.phone .ll{font-size:calc(clamp(26px,7.2vw,34px)*var(--ls));line-height:1.16}
@@ -805,7 +806,7 @@ body.phone #slrow .ib{width:46px!important;height:46px!important;border-radius:5
 body.phone #slrow .ib:not(.on){background:rgba(255,255,255,.08)!important}
 /* phones: no live blur anywhere it's redrawn all the time (it heats the phone); solid glass instead */
 body.phone #notes .note,body.phone #corner .toast,body.phone #cappanel,body.phone #netpanel,body.phone #devpanel,body.phone #lprob .pr,body.phone #pwin,body.phone #panel,body.phone #setup .sw,body.phone #setup{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
-body.phone #notes .note,body.phone #corner .toast,body.phone #cappanel,body.phone #netpanel,body.phone #devpanel{background:rgba(28,28,32,.96)!important}
+body.phone #notes .note,body.phone #corner .toast,body.phone #cappanel,body.phone #netpanel,body.phone #devpanel{background:rgb(28,28,32)!important}
 body.phone #pwin{background:rgba(18,18,26,.98)!important}body.phone #panel{background:rgba(4,4,12,.6)!important}
 body.phone .lq::before,body.phone .lq::after,body.phone .lqr{display:none!important}   /* no pointer-following highlights on a touch screen */
 body.phone #slrow .ib svg{width:21px;height:21px}
@@ -847,13 +848,9 @@ body.phone.phpl #viz{opacity:1!important;top:0!important}
 /* the bars: a strip right above the controls (lower when they hide), never under them */
 body.phone[data-view=both]:not(.phpl) #viz{position:fixed;top:auto!important;left:var(--sl-side);right:var(--sl-sider);height:56px;bottom:calc(var(--stageb,190px) + 4px);z-index:4;transition:bottom .35s var(--e-out),opacity .3s;pointer-events:none}
 body.phone.uihide[data-view=both]:not(.phpl) #viz{bottom:calc(var(--sab,0px) + 14px)}
-body.phone[data-view=both]:not(.phpl):is(.hl,.lm) #lyr{bottom:calc(var(--stageb,190px) + 62px)!important}
-body.phone.uihide[data-view=both]:not(.phpl):is(.hl,.lm) #lyr{bottom:calc(var(--sab,0px) + 74px)!important}
-body.phone[data-view=lyrics]:not(.phpl) #lyr{bottom:var(--stageb,190px)!important}
-body.phone.uihide[data-view=lyrics]:not(.phpl) #lyr{bottom:calc(var(--sab,0px) + 8px)!important}   /* the lyrics end above the bars and the controls (lower when those hide) */
 /* Next up: a pill above the bars in the last 30 seconds (in the player layout, under the song) */
 body.phone:not(.phpl) #nextup{display:flex!important;position:fixed;left:var(--sl-side);right:auto;max-width:calc(100% - var(--sl-side) - var(--sl-sider));bottom:calc(var(--stageb,190px) + 72px + var(--credh,20px));
-  margin:0;z-index:6;padding:6px 14px 6px 6px;border-radius:99px;background:rgba(28,28,32,.92)!important;border:1px solid rgba(255,255,255,.12);box-shadow:0 8px 24px rgba(0,0,0,.35);backdrop-filter:none!important;transition:bottom .35s var(--e-out)}
+  margin:0;z-index:6;padding:6px 14px 6px 6px;border-radius:99px;background:rgb(28,28,32)!important;border:1px solid rgba(255,255,255,.12);box-shadow:0 8px 24px rgba(0,0,0,.35);backdrop-filter:none!important;transition:bottom .35s var(--e-out)}
 body.phone:not(.phpl) #nextup[hidden]{display:none!important}
 body.phone.uihide:not(.phpl) #nextup{bottom:calc(var(--sab,0px) + 82px + var(--credh,20px))}
 body.phone[data-view=lyrics]:not(.phpl) #nextup{bottom:calc(var(--stageb,190px) + 14px + var(--credh,20px))}body.phone.uihide[data-view=lyrics]:not(.phpl) #nextup{bottom:calc(var(--sab,0px) + 16px + var(--credh,20px))}
@@ -956,17 +953,17 @@ body.phone #bar input[type=range]::-webkit-slider-thumb{opacity:1!important;widt
   background:radial-gradient(circle at 35% 30%,#fff 0,rgba(255,255,255,.92) 40%,rgba(225,225,240,.7) 100%)!important;box-shadow:0 2px 8px rgba(0,0,0,.35)!important}
 body.phone #bar input[type=range]:active::-webkit-slider-runnable-track{height:8px!important}
 body.phone #bar input[type=range]:active::-webkit-slider-thumb{transform:scale(1.25);margin-top:-4px!important}
-body.phone #nextup{background:var(--ph-glass),rgba(22,22,38,.92)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 10px 26px rgba(0,0,0,.4)!important}
+body.phone #nextup{background:var(--ph-glass),rgb(22,22,38)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 10px 26px rgba(0,0,0,.4)!important}
 /* quick toggles: a bottom sheet attached to the bottom edge, glass tiles, the accent for what's on */
 body.phone #qs:not([hidden]){left:0;right:0;bottom:0;max-width:none;border-radius:28px 28px 0 0!important;padding:10px calc(18px + var(--sar,0px)) calc(20px + var(--sab,0px)) calc(18px + var(--sal,0px));
-  background:var(--ph-glass),rgba(18,18,30,.97)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 -14px 40px rgba(0,0,0,.45)!important}
+  background:var(--ph-glass),rgb(18,18,30)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 -14px 40px rgba(0,0,0,.45)!important}
 /* snackbars in the app's glass */
-body.phone #notes .note,body.phone #corner .toast{background:var(--ph-glass),rgba(22,22,38,.97)!important;border-radius:20px!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.16),0 10px 28px rgba(0,0,0,.45)!important}
+body.phone #notes .note,body.phone #corner .toast{background:var(--ph-glass),rgb(22,22,38)!important;border-radius:20px!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.16),0 10px 28px rgba(0,0,0,.45)!important}
 body.phone #notes .note .nact .btn{color:var(--ph-acc)!important}
 body.phone #notes .note .nact .btn.pri{background:#fff!important;color:#111!important;border-radius:99px}
 /* Settings: a large title, a pill search bar, categories and settings as rounded cards with small gaps */
 body.phone #pwin,body.phone #panel{background:radial-gradient(120% 60% at 0% 0%,rgba(139,124,255,.14),transparent 60%),radial-gradient(90% 50% at 100% 100%,rgba(54,201,255,.08),transparent 60%),#0c0c15!important}
-body.phone #phead,body.phone #pwin.psrch #pnav{background:rgba(12,12,21,.97)!important}
+body.phone #phead,body.phone #pwin.psrch #pnav{background:rgb(12,12,21)!important}
 body.phone #ptitle{font-size:34px!important;font-weight:800!important;letter-spacing:-.02em!important;padding:26px 20px 18px 6px!important}
 body.phone #phead{font-size:22px!important;font-weight:700!important}
 body.phone #psearch{margin:0 16px 18px!important;border-radius:28px!important;padding:15px 20px 15px 50px!important;background:var(--ph-surf) no-repeat 18px 50%/20px url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ffffff99'%3E%3Cpath d='M15.5 14h-.8l-.3-.3A6.5 6.5 0 109.5 16a6.5 6.5 0 004.2-1.6l.3.3v.8l5 5 1.5-1.5-5-5zm-6 0a4.5 4.5 0 110-9 4.5 4.5 0 010 9z'/%3E%3C/svg%3E")!important}
@@ -1086,8 +1083,8 @@ body.phone.land.land.land.land.land #dock::after{-webkit-mask-image:linear-gradi
 body.phone.home #dock,body.phone.home #lcredit,body.phone.home #nextup,body.phone.home #lyback{opacity:0!important;visibility:hidden!important;pointer-events:none!important}
 body.phone #empty{padding:calc(var(--sat,0px) + 24px) calc(24px + var(--sar,0px)) calc(var(--sab,0px) + 24px) calc(24px + var(--sal,0px))!important}
 body.phone #devpanel{left:50%!important;top:50%!important;right:auto!important;bottom:auto!important;width:min(440px,calc(100% - 32px))!important;max-height:calc(100% - var(--sat,0px) - var(--sab,0px) - 48px);overflow:auto;
-  transform:translate(-50%,-50%);transform-origin:center!important;border-radius:28px!important;padding:18px 16px 16px!important;background:var(--ph-glass),rgba(18,18,30,.97)!important;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 24px 60px rgba(0,0,0,.55)!important;z-index:14!important;animation:devpop .3s var(--e-out)!important}
+  transform:translate(-50%,-50%);transform-origin:center!important;border-radius:28px!important;padding:18px 16px 16px!important;background:var(--ph-glass),rgb(18,18,30)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 24px 60px rgba(0,0,0,.55),0 0 0 100vmax rgba(0,0,0,.45)!important;z-index:14!important;animation:devpop .3s var(--e-out)!important}
 @keyframes devpop{from{opacity:0;transform:translate(-50%,-46%) scale(.96)}}
 body.phone #devpanel .nph{padding:0 6px 10px}body.phone #devpanel .nph b{font-size:20px;font-weight:800}
 body.phone #devpanel .drow{border-radius:6px!important;background:var(--ph-surf)!important;margin-bottom:3px;padding:12px 14px!important}
@@ -1096,17 +1093,25 @@ body.phone #devpanel .drow:only-child{border-radius:20px!important}
 body.phone #devpanel .drow.on{background:color-mix(in srgb,var(--acc) 22%,rgba(255,255,255,.06))!important}
 body.phone #devpanel .hint{padding:8px 6px 0;font-size:12.5px}
 body.phone #setup{padding:calc(var(--sat,0px) + 12px) calc(12px + var(--sar,0px)) calc(var(--sab,0px) + 12px) calc(12px + var(--sal,0px))!important}
-body.phone #setup .sw{max-height:100%!important;border-radius:28px!important;border:0!important;background:var(--ph-glass),rgba(18,18,30,.97)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 24px 60px rgba(0,0,0,.55)!important}
+body.phone #setup .sw{max-height:100%!important;border-radius:28px!important;border:0!important;background:var(--ph-glass),rgb(18,18,30)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 24px 60px rgba(0,0,0,.55)!important}
 /* 1. the song's title and artist (phones) keep their shadow: they hide what runs past their box (for … and the
-   gliding title), so the box gets room around the text and the shadow fades out inside it */
-body.phone #ttl{padding:12px 16px!important;margin:-12px -16px!important}
-body.phone #sub{padding:12px 16px!important;margin:-10px -16px -12px!important}
+   gliding title), so the box gets room above and below for a shadow that fits in it, and its sides fade out over
+   10px (inside the gap to the cover) instead of cutting the text or the shadow off */
+body.phone #ttl,body.phone #sub{text-shadow:0 1px 2px rgba(0,0,0,.5),0 2px 10px rgba(0,0,0,.4);
+  -webkit-mask-image:linear-gradient(90deg,transparent,#000 10px,#000 calc(100% - 10px),transparent);mask-image:linear-gradient(90deg,transparent,#000 10px,#000 calc(100% - 10px),transparent)}
+body.phone.cvmode #ttl,body.phone.cvmode #sub{text-shadow:0 1px 2px rgba(0,0,0,.7),0 2px 10px rgba(0,0,0,.6)}
+body.phone #ttl.mq,body.phone #sub.mq{-webkit-mask-image:linear-gradient(90deg,transparent,#000 10px,#000 85%,transparent);mask-image:linear-gradient(90deg,transparent,#000 10px,#000 85%,transparent)}
+body.phone #ttl{padding:14px 10px!important;margin:-14px -10px!important}
+body.phone #sub{padding:14px 10px!important;margin:-12px -10px -14px!important}
+body.phone.land.land.land.land.land #sub{margin:-13px -10px -14px!important}
 /* 3. a shadow behind the lyrics (computer and phone): a soft shade behind the lyrics' area, so they read on a bright
-   background; on phones the line being sung gets its drop shadow too (one line: cheap) */
-#right::before{content:"";position:absolute;inset:-4% -6% -4% -8%;z-index:0;pointer-events:none;opacity:0;transition:opacity .6s;
-  background:radial-gradient(ellipse 70% 60% at 42% 45%,rgba(0,0,0,.34),rgba(0,0,0,.14) 55%,rgba(0,0,0,0) 78%)}
+   background. The shade is an ellipse that fits inside its box and fades to nothing before every edge (a shade cut
+   off by its box drew a straight line), and it stays off the cover. On phones the line being sung gets its drop
+   shadow too (one line: cheap) */
+#right::before{content:"";position:absolute;inset:-4% -6% -4% 0;z-index:0;pointer-events:none;opacity:0;transition:opacity .6s;
+  background:radial-gradient(closest-side at 50% 46%,rgba(0,0,0,.34),rgba(0,0,0,.14) 60%,rgba(0,0,0,.04) 85%,rgba(0,0,0,0))}
 body.hl:not([data-view=viz]) #right::before{opacity:1}
-body.phone #right::before{inset:-2% calc(-1*var(--sl-sider)) -2% calc(-1*var(--sl-side));background:radial-gradient(ellipse 85% 55% at 40% 40%,rgba(0,0,0,.36),rgba(0,0,0,.14) 60%,rgba(0,0,0,0) 85%)}
+body.phone #right::before{inset:-2% calc(-1*var(--sl-sider)) -2% calc(-1*var(--sl-side));background:radial-gradient(closest-side at 50% 42%,rgba(0,0,0,.36),rgba(0,0,0,.14) 60%,rgba(0,0,0,.04) 85%,rgba(0,0,0,0))}
 body.phone.phpl #right::before{opacity:0}
 body.android:not(.low) #lyr:not(.st) .ll.a{filter:drop-shadow(0 4px 12px rgba(0,0,0,.32))}
 </style>
