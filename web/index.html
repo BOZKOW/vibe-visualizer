@@ -1893,7 +1893,7 @@ function setSource(s){
   hideEmpty();updChips();updPlayIcon();
 }
 function resize(){
-  dpr=Math.min(devicePixelRatio||1,PHONE?1.5:2)*(S.low?.6:parseFloat(S.scale));   // phones: the bars don't need the screen's full sharpnessW=viz.clientWidth;H=viz.clientHeight;
+  dpr=Math.min(devicePixelRatio||1,PHONE?1.5:2)*(S.low?.6:parseFloat(S.scale));W=viz.clientWidth;H=viz.clientHeight;   // phones: the bars don't need the screen's full sharpness
   if(!W||!H)return;cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);ctx.setTransform(cv.width/W,0,0,cv.height/H,0,0);gradB=null;dirty=true;
 }
 new ResizeObserver(()=>{resize();place()}).observe(viz);
