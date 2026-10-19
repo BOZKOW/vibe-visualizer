@@ -1964,6 +1964,17 @@ const redirectUri=()=>location.protocol==='http:'||location.protocol==='https:'?
 const lsGet=k=>{try{return localStorage.getItem(k)}catch(e){return null}},lsSet=(k,v)=>{try{v==null?localStorage.removeItem(k):localStorage.setItem(k,v)}catch(e){}};
 const APP_IN=!!(AND||MAC);
 const appBounce=(()=>{const q=new URLSearchParams(location.search);return !APP_IN&&/^a\./.test(q.get('state')||'')&&(q.has('code')||q.has('error'))?q:null})();
+// back in the app without a login (Spotify stopped on its own account page, or the browser was closed): say why and
+// offer again, or logging in inside the app instead
+function appLoginCheck(){
+  if(!APP_IN||document.hidden||SP.access)return;
+  const at=+lsGet('vv_sp_at')||0;if(!at||Date.now()-at<2500||Date.now()-at>15*60000)return;
+  lsSet('vv_sp_at',null);
+  notify({key:'loginback',kind:'warn',title:'Spotify isn’t connected yet',
+    msg:'If Spotify only showed “Logged in as …”, the login in your browser worked but it didn’t come back. Try again: now that you’re logged in, Spotify asks you to agree and then comes back. Or log in right here in the app.',
+    actions:[{label:'Log in inside the app',fn:()=>spLogin(true)},{label:'Try again',pri:true,fn:()=>spLogin()}]});
+}
+document.addEventListener('visibilitychange',()=>setTimeout(appLoginCheck,1200));
 function appBounceShow(){   // in the browser, after logging in for one of the apps: back to the app
   const q=appBounce,link='vibevisualizer://callback?'+q.toString(),bad=q.has('error');
   history.replaceState({},'',location.pathname);
@@ -1976,7 +1987,7 @@ function appBounceShow(){   // in the browser, after logging in for one of the a
   document.body.appendChild(d);
   if(!bad)setTimeout(()=>{location.href=link},400);   // straight back when the browser allows it; the button otherwise
 }
-async function spLogin(){
+async function spLogin(inApp){   // inApp: the app's own window instead of the browser
   if(!C.spotId.trim()){toast('Add your Spotify Client ID first (Settings → Spotify).','warn');openPanel('spotify');return}
   if(!redirectUri()){toast('Spotify login needs this page served over http://127.0.0.1 and not opened as a file. Run: python -m http.server 8000','warn',10000);openPanel('spotify');return}
   if(!(window.crypto&&crypto.subtle)){toast('Spotify login needs a secure context. Open the page via http://127.0.0.1:8000 or https.');return}
@@ -1986,7 +1997,8 @@ async function spLogin(){
     const st2=APP_IN?'a.'+st:st;   // a.: an app's login, handed back to it from the browser
     sessionStorage.setItem('sp_v',v);sessionStorage.setItem('sp_s',st2);if(APP_IN){lsSet('vv_sp_v',v);lsSet('vv_sp_s',st2)}   // the app may be closed while the browser logs in
     const u='https://accounts.spotify.com/authorize?'+new URLSearchParams({client_id:C.spotId.trim(),response_type:'code',redirect_uri:redirectUri(),code_challenge_method:'S256',code_challenge:ch,state:st2,scope:SPS});
-    if(AND&&AND.login&&AND.login(u))return;location.href=u;
+    if(APP_IN&&!inApp){lsSet('vv_sp_at',String(Date.now()))}else lsSet('vv_sp_at',null);
+    if(AND&&!inApp&&AND.login&&AND.login(u))return;location.href=u;
   }catch(e){toast('Could not start Spotify login: '+e.message)}
 }
 async function spToken(extra){
@@ -1997,7 +2009,7 @@ async function spToken(extra){
 }
 async function spCallback(){
   if(appBounce)return false;   // this is the browser finishing an app's login: the app does the rest
-  const q=new URLSearchParams(location.search);
+  const q=new URLSearchParams(location.search);if(q.has('code')||q.has('error'))lsSet('vv_sp_at',null);
   if(!q.has('code')&&!q.has('error'))return false;
   history.replaceState({},'',location.pathname);
   if(q.get('error')){lsSet('vv_sp_v',null);lsSet('vv_sp_s',null);toast('Spotify login was cancelled or refused ('+q.get('error')+').','warn');return false}
