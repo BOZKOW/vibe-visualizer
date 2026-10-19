@@ -699,108 +699,119 @@ body.android #corner{margin-top:var(--sat,0px);right:calc(16px + var(--sar,0px))
   #corner{top:58px}
   .ll{font-size:calc(clamp(20px,3.3vw,40px)*var(--ls))}
 }
-/* ===================== the phone design: a music player (the Android app, and phones' browsers) =====================
-   The same app and functions, shown the way a phone music player is. Player (the Visualizer view): "Playing from" at
-   the top, big artwork, the bars under it, title and artist with the heart, then the controls straight on the
-   background. Lyrics: the song shrinks to a small header and the lyrics fill the screen (Both: with the bars strip).
-   A Spotify Canvas fills the whole screen behind everything. Landscape: artwork left, everything else right. */
+/* ===================== the phone design, after Spicy Lyrics Mobile by TX24 (github.com/spicylyrics/mobile, AGPL-3.0) =====================
+   Lyrics: the cover in the top-left corner (15% of the page's height, lined up with the lyrics' 5% side inset, as far
+   below the top as it is from the side), the song text centred beside it, the lyrics filling the rest, left-aligned,
+   the line being sung near the top. The controls hide while music plays: a tap brings them back over a dark shade,
+   a thin timeline with the times under it, plain white transport glyphs and a row of round glass buttons.
+   Player (the Visualizer view): the cover large and centred with the song under it, and the bars. Chrome is
+   monochrome white (92/60/35/18%), as in Spicy Lyrics Mobile. Landscape: cover and song left, lyrics right. */
 #qsbtn,#lybtn,#qs,#qsback,#nowfrom,#tl,#tr{display:none}
-body.phone{--ph-l:calc(22px + var(--sal,0px));--ph-r:calc(22px + var(--sar,0px));--ph-top:calc(60px + var(--sat,0px))}
-/* header: logo · "Playing from …" · Settings */
-body.phone #top{display:grid;grid-template-columns:44px minmax(0,1fr) 44px;column-gap:8px;padding:calc(8px + var(--sat,env(safe-area-inset-top,0px))) calc(12px + var(--sar,0px)) 10px calc(12px + var(--sal,0px));background:none}
-body.phone #top .grp{overflow:visible;padding:0;justify-content:flex-end}
-body.phone #top .grp>*:not(#gear){display:none!important}
-body.phone #seg{display:none}
-body.phone #gear{background:none!important;border:0!important;box-shadow:none!important}
-body.phone #top .brand span{display:none}
-body.phone #nowfrom{display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:0;line-height:1.2;text-align:center;grid-column:2;grid-row:1}
-#nowfrom small{font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
-#nowfrom b{font-size:13.5px;font-weight:700;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-/* the stage: its pieces placed straight into one grid */
+body.phone{--sl-side:max(5vw,calc(var(--sal,0px) + 8px));--sl-sider:max(5vw,calc(var(--sar,0px) + 8px));--sl-top:max(5vw,calc(var(--sat,0px) + 6px));
+  --sl-cov:min(15vh,34vw);--sl-t1:rgba(255,255,255,.92);--sl-t2:rgba(255,255,255,.6);--sl-t3:rgba(255,255,255,.35)}
+body.phone #top{display:none}   /* no top bar: Settings sits with the other buttons */
 body.phone #left,body.phone #info{display:contents}
-body.phone #stage{display:grid;column-gap:14px;row-gap:16px;padding:var(--ph-top) var(--ph-r) var(--stageb,200px) var(--ph-l)}
-body.phone #artw{grid-area:art;margin:0;border-radius:10px;box-shadow:0 18px 50px rgba(0,0,0,.45)}
+body.phone #stage{display:grid;column-gap:calc(var(--sl-cov)*.13);row-gap:0;padding:var(--sl-top) var(--sl-sider) 0 var(--sl-side)}
+body.phone #artw{grid-area:art;margin:0;border-radius:calc(var(--sl-cov)*.08);box-shadow:0 9px 20px 0 rgba(0,0,0,.27)}
 body.phone #txt{grid-area:txt;min-width:0;align-self:center;text-align:left}
-body.phone #like{grid-area:like;align-self:center;width:44px;height:44px;background:none!important;border:0!important;box-shadow:none!important}
-body.phone #like svg{width:26px;height:26px}
 body.phone #right{grid-area:ly;min-height:0}
-body.phone #ttl{font-size:22px;line-height:1.2;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:0}
-body.phone #sub{font-size:15px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:3px}
-body.phone #status,body.phone #lstat{display:none}
-body.phone #nextup{margin-top:10px;max-width:100%}
-/* player */
-body.phone[data-view=viz] #stage{grid-template-columns:minmax(0,1fr) auto;grid-template-rows:minmax(0,1fr) 64px auto;grid-template-areas:"art art" "ly ly" "txt like"}
-body.phone[data-view=viz] #artw{align-self:center;justify-self:center;width:min(100%,calc(100vh - var(--ph-top) - var(--stageb,200px) - 190px));min-width:120px}
-body.phone[data-view=viz] #lcredit{display:none}   /* no lyrics on screen, so no lyrics credits */
-/* lyrics (and both): a small header */
-body.phone:not([data-view=viz]) #stage{grid-template-columns:52px minmax(0,1fr) auto;grid-template-rows:auto minmax(0,1fr);grid-template-areas:"art txt like" "ly ly ly";row-gap:10px}
-body.phone:not([data-view=viz]) #artw{width:52px;border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,.35)}
-body.phone:not([data-view=viz]) #ph{font-size:22px}
-body.phone:not([data-view=viz]) #ttl{font-size:16.5px}body.phone:not([data-view=viz]) #sub{font-size:13.5px;margin-top:1px}
+body.phone:not([data-view=viz]) #right{margin-top:12px}
+body.phone #ttl{font-size:clamp(19px,calc(var(--sl-cov)*.2),26px);line-height:1.2;font-weight:700;color:var(--sl-t1);margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+body.phone #sub{font-size:clamp(14px,calc(var(--sl-cov)*.125),17px);line-height:1.3;color:rgba(255,255,255,.7);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+body.phone #status,body.phone #lstat,body.phone #nowfrom{display:none}
+body.phone #ttl.mq,body.phone #sub.mq{text-overflow:clip;-webkit-mask-image:linear-gradient(90deg,#000 88%,transparent);mask-image:linear-gradient(90deg,#000 88%,transparent)}
+body.phone #ttl.mq>span,body.phone #sub.mq>span{display:inline-block;padding-right:2.5em;animation:slmq var(--mqd,9s) linear 1.6s infinite}
+@keyframes slmq{0%,12%{transform:translateX(0)}88%,100%{transform:translateX(var(--mqx,0px))}}   /* a long title glides along (header marquee) */
+/* credits: one quiet line under the artist, whenever lyrics are on screen */
+body.phone #txt #lcredit{position:static!important;display:block;margin-top:4px;max-width:100%!important;font-size:11px;line-height:1.35;color:var(--sl-t3);text-shadow:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;animation:none}
+body.phone #txt #lcredit>*{display:inline;opacity:1}body.phone #txt #lcredit>*+*::before{content:" · "}
+body.phone #txt #lcredit .cinfo{display:inline}body.phone #txt #lcredit img{display:none}
+body.phone[data-view=viz] #lcredit{display:none!important}
+/* lyrics (and both) */
+body.phone:not([data-view=viz]) #stage{grid-template-columns:var(--sl-cov) minmax(0,1fr);grid-template-rows:var(--sl-cov) minmax(0,1fr);grid-template-areas:"art txt" "ly ly"}
+body.phone:not([data-view=viz]) #artw{width:var(--sl-cov)}
 body.phone:not([data-view=viz]) #nextup{display:none}
-body.phone #lyr{left:-6px}
-body.phone .ll{font-size:calc(27px*var(--ls))}
-body.phone[data-view=both]:is(.hl,.lm) #lyr,body.phone.xfocus[data-view=both]:is(.hl,.lm) #lyr{bottom:92px}
+body.phone #lyr{left:0;-webkit-mask-image:linear-gradient(transparent,#000 9%,#000 72%,transparent 98%);mask-image:linear-gradient(transparent,#000 9%,#000 72%,transparent 98%)}
+body.phone #ly{padding:0}
+body.phone .ll{font-size:calc(clamp(26px,7.2vw,34px)*var(--ls));line-height:1.16}
+body.phone[data-view=both]:is(.hl,.lm) #lyr,body.phone.xfocus[data-view=both]:is(.hl,.lm) #lyr{bottom:86px}
 body.phone[data-view=both]:is(.hl,.lm) #viz{top:calc(100% - 80px)}
-/* small notes over the lyrics get a backing, so they never sit on lyric text */
-body.phone #lprob:not(.big) .pr{background:rgba(16,16,26,.82);padding:9px 12px;border-radius:14px;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
-/* credits: one quiet line above the controls */
-body.phone #lcredit{flex-direction:row;flex-wrap:wrap;column-gap:.6em;row-gap:0;font-size:11px;left:var(--ph-l)!important;max-width:calc(100% - 44px - var(--sal,0px) - var(--sar,0px))!important}
-body.phone #lcredit>*{white-space:nowrap}
-/* a Canvas fills the screen, as in Spotify's app; the player shows it instead of the artwork */
+body.phone #lmsg{padding:0}
+body.phone #lprob:not(.big) .pr{background:rgba(28,28,32,.88);padding:9px 12px;border-radius:14px}
+/* player: the cover large and centred, the song under it, the bars, then the controls */
+body.phone[data-view=viz] #stage{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) auto 70px;grid-template-areas:"art" "txt" "ly";row-gap:18px;padding-bottom:var(--stageb,230px)}
+body.phone[data-view=viz] #artw{align-self:end;justify-self:center;width:min(100%,calc(100vh - var(--sl-top) - var(--stageb,230px) - 190px));min-width:120px;border-radius:12px}
+body.phone[data-view=viz] #txt{text-align:center;align-self:start}
+body.phone[data-view=viz] #ttl{font-size:clamp(22px,6.4vw,30px)}body.phone[data-view=viz] #sub{font-size:clamp(15px,4.2vw,19px)}
+/* a Canvas fills the page behind everything, as in Spotify's app */
 body.phone #cvpane{left:0;right:0;width:auto;top:0;bottom:0;height:auto;-webkit-mask-image:none;mask-image:none}
-body.phone #cvpane::after{background:linear-gradient(to top,rgba(0,0,0,.82),rgba(0,0,0,.25) 45%,transparent 60%),linear-gradient(to bottom,rgba(0,0,0,.5),transparent 20%)}
+body.phone #cvpane::after{background:linear-gradient(to top,rgba(0,0,0,.8),rgba(0,0,0,.25) 45%,transparent 60%),linear-gradient(to bottom,rgba(0,0,0,.45),transparent 25%)}
 body.phone.cvmode[data-view=viz] #artw{visibility:hidden}
-body.phone.cvmode:not([data-view=viz]) #cvpane{opacity:.45}
-/* the controls, straight on the background */
-body.phone #dock{left:0;right:0;width:auto;margin:0;transform:none;bottom:0;padding:10px calc(14px + var(--sar,0px)) calc(12px + var(--sab,env(safe-area-inset-bottom,0px))) calc(14px + var(--sal,0px));
-  background:linear-gradient(transparent,rgba(0,0,0,.28) 30%,rgba(0,0,0,.42))}
-body.phone.uihide #dock{transform:translateY(20px)}
-body.phone #bar{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));grid-template-areas:"seek seek seek seek seek" "shuf prev play next rep" "dev . lyb . qs";
-  justify-items:center;align-items:center;gap:6px 0;padding:0 8px;background:none!important;border:0!important;box-shadow:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;border-radius:0}
+body.phone.cvmode:not([data-view=viz]) #cvpane{opacity:.4}
+/* the controls: a dark shade from the bottom, the timeline, the transport, the glass buttons */
+body.phone #dock{left:0;right:0;width:auto;margin:0;transform:none;bottom:0;padding:110px var(--sl-sider) calc(16px + var(--sab,env(safe-area-inset-bottom,0px))) var(--sl-side);
+  background:linear-gradient(to top,rgba(0,0,0,.72),rgba(0,0,0,.55) 50%,rgba(0,0,0,0));pointer-events:none}
+body.phone #dock::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+  -webkit-mask-image:linear-gradient(to top,#000 55%,transparent);mask-image:linear-gradient(to top,#000 55%,transparent)}   /* the lyrics blur away under the controls */
+body.low.phone #dock::before{display:none}
+body.phone #bar{pointer-events:auto}
+body.phone.uihide #dock{opacity:0;transform:translateY(14px)}
+body.phone #bar{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));grid-template-areas:"seek seek seek seek seek" "shuf prev play next rep" "btns btns btns btns btns";
+  justify-items:center;align-items:center;gap:10px 0;max-width:560px;margin:0 auto;padding:0;background:none!important;border:0!important;box-shadow:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;border-radius:0}
 body.phone #bar>.lqr{display:none}
 body.phone #spx,body.phone #volwrap:not([hidden]){display:contents}
-body.phone #seekwrap{grid-area:seek;width:100%;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;row-gap:0}
+body.phone #seekwrap{grid-area:seek;width:100%;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;row-gap:4px}
 body.phone #seek{grid-column:1/-1;width:100%}
 body.phone #time{display:none}
-body.phone #tl,body.phone #tr{display:block;font-size:11.5px;font-weight:600;color:var(--dim);font-variant-numeric:tabular-nums;margin-top:-3px}body.phone #tr{text-align:right}
+body.phone #tl,body.phone #tr{display:block;font-size:13px;font-weight:600;color:var(--sl-t2);font-variant-numeric:tabular-nums}body.phone #tr{text-align:right}
 body.phone #shuf{grid-area:shuf}body.phone #prev{grid-area:prev}body.phone #play{grid-area:play}body.phone #next{grid-area:next}body.phone #rep{grid-area:rep}
-body.phone #devbtn{grid-area:dev;justify-self:start}body.phone #lybtn{display:grid;grid-area:lyb}body.phone #qsbtn{display:grid;grid-area:qs;justify-self:end}
-body.phone #bar .ib,body.phone #like,body.phone #gear{width:48px;height:48px;background:none!important;border:0!important;box-shadow:none!important;color:#fff;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
-body.phone #like.on{color:#1ed760}
-body.phone #bar .ib svg{width:26px;height:26px}
-body.phone #prev svg,body.phone #next svg{width:34px;height:34px}
-body.phone #bar .ib:disabled{opacity:.35}
-body.phone #shuf.on,body.phone #rep.on,body.phone #lybtn.on{color:var(--acc)}
-body.phone #shuf.on::after,body.phone #rep.on::after,body.phone #lybtn.on::after{content:"";position:absolute;bottom:3px;left:50%;width:4px;height:4px;margin-left:-2px;border-radius:50%;background:currentColor}
-body.phone #shuf,body.phone #rep,body.phone #lybtn{position:relative}
-body.phone #bar #play{width:70px!important;height:70px!important;background:#fff!important;color:#111!important;box-shadow:0 8px 26px rgba(0,0,0,.35)!important}
-body.phone #play svg{width:32px;height:32px}
-body.phone #devbtn svg,body.phone #lybtn svg,body.phone #qsbtn svg{width:23px;height:23px}
-body.phone #spmute,body.phone #mute,body.phone #spvol,body.phone #spvolval,body.phone #volume,body.phone #volval{display:none!important}   /* the phone's volume buttons (and Mute in the quick toggles) */
-body.phone #bar input[type=range]{height:22px}
-body.phone #bar input[type=range]::-webkit-slider-runnable-track{height:5px}
-body.phone #bar input[type=range]::-webkit-slider-thumb{width:14px;height:14px;margin-top:-4.5px}
-body.phone #corner{top:var(--ph-top)!important;right:calc(14px + var(--sar,0px));width:calc(100% - 28px - var(--sal,0px) - var(--sar,0px))}
-/* landscape: artwork left; title, lyrics or bars right; the controls in one row */
+/* the glass row: like · player/lyrics · devices · quick toggles · Settings (whatever applies), centred */
+body.phone #slrow{grid-area:btns;display:flex;justify-content:center;gap:14px;width:100%}
+#slrow{display:none}
+body.phone #slrow #lybtn,body.phone #slrow #qsbtn{display:grid}
+body.phone #bar .ib{background:none!important;border:0!important;box-shadow:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;color:var(--sl-t1)}
+body.phone #shuf,body.phone #rep{width:44px;height:44px;color:var(--sl-t2)}body.phone #shuf svg,body.phone #rep svg{width:22px;height:22px}
+body.phone #prev,body.phone #next{width:60px;height:56px}body.phone #prev svg,body.phone #next svg{width:36px;height:36px}
+body.phone #bar #play{width:64px!important;height:64px!important;background:none!important;color:var(--sl-t1)!important}body.phone #play svg{width:46px;height:46px}
+body.phone #bar .ib:disabled{opacity:.3}
+body.phone #shuf.on,body.phone #rep.on{color:#fff}
+body.phone #shuf.on::after,body.phone #rep.on::after{content:"";position:absolute;bottom:4px;left:50%;width:4px;height:4px;margin-left:-2px;border-radius:50%;background:#fff}
+body.phone #shuf,body.phone #rep{position:relative}
+body.phone #slrow .ib{width:46px!important;height:46px!important;border-radius:50%;color:var(--sl-t1);
+  background:rgba(0,0,0,.10)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.36),inset 0 0 0 1px rgba(255,255,255,.16),inset 0 -1px 0 rgba(255,255,255,.18),0 10px 24px -8px rgba(8,10,18,.42)!important;
+  backdrop-filter:blur(12px)!important;-webkit-backdrop-filter:blur(12px)!important;transition:transform .15s,background .2s}
+body.phone #slrow .ib svg{width:21px;height:21px}
+body.phone #slrow .ib:active{transform:scale(.94)}
+body.phone #slrow .ib.on{background:rgba(255,255,255,.92)!important;color:#000}
+body.phone #like.on{color:#000}
+body.phone #slrow .ib:not(.on) svg{opacity:.92}
+body.phone #spmute,body.phone #mute,body.phone #spvol,body.phone #spvolval,body.phone #volume,body.phone #volval{display:none!important}   /* the phone's volume buttons (Mute is a quick toggle) */
+/* the timeline: a 10px bar, white fill over a faint track with a hairline, no knob */
+body.phone #bar input[type=range]{height:24px}
+body.phone #bar input[type=range]::-webkit-slider-runnable-track{height:10px;border-radius:99px;background:linear-gradient(90deg,rgba(255,255,255,.92) var(--p,0%),rgba(0,0,0,.14) var(--p,0%));box-shadow:inset 0 0 0 1px rgba(255,255,255,.16)}
+body.phone #bar input[type=range]::-webkit-slider-thumb{width:10px;height:10px;margin-top:0;opacity:0;border:0;box-shadow:none}
+body.phone #bar input[type=range]:active::-webkit-slider-runnable-track{height:14px}
+body.phone #bar input[type=range]:active::-webkit-slider-thumb{margin-top:2px}
+body.phone #corner{top:calc(var(--sl-top) + 4px)!important;right:var(--sl-sider);width:calc(100% - var(--sl-side) - var(--sl-sider))}
+/* landscape: the cover and song on the left, the lyrics on the right, the controls under the lyrics */
 @media(orientation:landscape){
-  body.phone{--ph-top:calc(48px + var(--sat,0px))}
-  body.phone #top{padding-top:calc(4px + var(--sat,0px));padding-bottom:4px}
-  body.phone #stage,body.phone[data-view=viz] #stage,body.phone:not([data-view=viz]) #stage{grid-template-columns:auto minmax(0,1fr) auto;grid-template-rows:auto minmax(0,1fr);grid-template-areas:"art txt like" "art ly ly";column-gap:22px;row-gap:8px}
-  body.phone #artw,body.phone[data-view=viz] #artw,body.phone:not([data-view=viz]) #artw{width:calc(100vh - var(--ph-top) - var(--stageb,90px));min-width:60px;align-self:start;border-radius:10px}
-  body.phone:not([data-view=viz]) #ttl,body.phone #ttl{font-size:19px}body.phone #sub{font-size:14px}
+  body.phone{--sl-cov:min(calc(100vh - 2*var(--sl-top) - 92px),38vw)}
+  body.phone #stage,body.phone[data-view=viz] #stage,body.phone:not([data-view=viz]) #stage{grid-template-columns:var(--sl-cov) minmax(0,1fr);grid-template-rows:auto auto minmax(0,1fr);
+    grid-template-areas:"art ly" "txt ly" ". ly";column-gap:5vw;row-gap:14px;padding-bottom:0}
+  body.phone #artw,body.phone[data-view=viz] #artw,body.phone:not([data-view=viz]) #artw{width:var(--sl-cov);align-self:start;justify-self:start;border-radius:12px}
+  body.phone #txt,body.phone[data-view=viz] #txt{align-self:start;text-align:left}
+  body.phone #ttl,body.phone[data-view=viz] #ttl{font-size:20px}body.phone #sub,body.phone[data-view=viz] #sub{font-size:15px}
+  body.phone .ll{font-size:calc(24px*var(--ls))}
   body.phone #nextup{display:none}
-  body.phone .ll{font-size:calc(22px*var(--ls))}
-  body.phone[data-view=both]:is(.hl,.lm) #lyr,body.phone.xfocus[data-view=both]:is(.hl,.lm) #lyr{bottom:66px}
-  body.phone[data-view=both]:is(.hl,.lm) #viz{top:calc(100% - 58px)}
-  body.phone[data-view=viz] #lcredit{display:none}
-  body.phone #dock{padding-top:4px;padding-bottom:calc(6px + var(--sab,0px))}
-  body.phone #bar{display:flex;flex-wrap:nowrap;gap:2px;padding:0}
-  body.phone #bar .ib{width:42px;height:42px}body.phone #bar .ib svg{width:22px;height:22px}body.phone #prev svg,body.phone #next svg{width:28px;height:28px}
-  body.phone #bar #play{width:50px!important;height:50px!important}body.phone #play svg{width:26px;height:26px}
-  body.phone #seekwrap{flex:1 1 auto;display:flex;flex-wrap:nowrap;align-items:center;gap:8px;margin:0 8px}
-  body.phone #seek{flex:1 1 auto;width:auto;order:2}body.phone #tl{order:1;margin:0}body.phone #tr{order:3;margin:0}
-  body.phone #devbtn,body.phone #qsbtn{justify-self:auto}
+  body.phone[data-view=viz] #lcredit{display:none!important}
+  body.phone #dock{left:calc(var(--sl-side) + var(--sl-cov) + 5vw - 52px);padding-left:40px;padding-top:120px;padding-bottom:calc(8px + var(--sab,0px));
+    -webkit-mask-image:linear-gradient(90deg,transparent,#000 40px);mask-image:linear-gradient(90deg,transparent,#000 40px)}   /* over the lyrics only, its left edge soft */
+  body.phone #bar{grid-template-columns:auto auto auto auto auto minmax(0,1fr);grid-template-areas:"shuf prev play next rep seek" "btns btns btns btns btns btns";gap:2px 4px;max-width:none}
+  body.phone #seekwrap{padding-left:10px;box-sizing:border-box}
+  body.phone #slrow{justify-content:flex-end}
+  body.phone #slrow .ib{width:40px!important;height:40px!important}
+  body.phone[data-view=both]:is(.hl,.lm) #lyr{bottom:66px}
+  body.phone[data-view=both]:is(.hl,.lm) #viz{top:calc(100% - 60px)}
   body.phone #corner{width:min(360px,50vw)}
 }
 /* quick toggles: a bottom sheet of tiles */
@@ -824,7 +835,7 @@ body.phone #qs.drag{transition:none}
 .qtile svg{width:24px;height:24px;fill:currentColor}
 .qtile b{display:block;font-size:13px;line-height:1.2}.qtile small{display:block;font-size:11px;font-weight:600;color:var(--dim);margin-top:2px;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
 .qtile span{display:block;min-width:0;max-width:100%}
-.qtile.on{background:var(--acc);border-color:transparent;color:#111}.qtile.on small{color:rgba(0,0,0,.65)}
+.qtile.on{background:rgba(255,255,255,.92);border-color:transparent;color:#000}.qtile.on small{color:rgba(0,0,0,.6)}
 .qtile:active{transform:scale(.95)}.qtile:disabled{opacity:.35}
 body.low #qs:not([hidden]){transition:none}
 /* the browser's page after logging in to Spotify for one of the apps */
@@ -907,9 +918,9 @@ body.low #bar input[type=range]::-webkit-slider-thumb{transition:none}
 #hprob{border-radius:var(--r-md);background:var(--g-grad),rgba(40,32,14,.4);box-shadow:var(--g-sh),var(--g-hi);backdrop-filter:var(--g-blur);-webkit-backdrop-filter:var(--g-blur)}
 #hprob.err{background:var(--g-grad),rgba(44,16,20,.42)}
 /* the quick toggles sheet in glass */
-body.phone #qs:not([hidden]){background:var(--g-grad),rgba(18,18,32,.72);border-color:var(--g-bd);box-shadow:0 -10px 50px rgba(0,0,0,.45),var(--g-hi);backdrop-filter:blur(36px) saturate(170%);-webkit-backdrop-filter:blur(36px) saturate(170%)}
+body.phone #qs:not([hidden]){background:rgba(28,28,32,.88);border-color:var(--g-bd);box-shadow:0 -10px 50px rgba(0,0,0,.45),var(--g-hi);backdrop-filter:blur(36px) saturate(170%);-webkit-backdrop-filter:blur(36px) saturate(170%)}
 .qtile{background:linear-gradient(145deg,rgba(255,255,255,.15),rgba(255,255,255,.05));border-color:rgba(255,255,255,.16);box-shadow:inset 0 1px 0 rgba(255,255,255,.18)}
-.qtile.on{background:var(--acc);box-shadow:0 6px 20px -6px var(--acc),inset 0 1px 0 rgba(255,255,255,.4)}
+.qtile.on{background:rgba(255,255,255,.92);box-shadow:inset 0 1px 0 rgba(255,255,255,.5)}
 body.low #qs:not([hidden]){backdrop-filter:none;-webkit-backdrop-filter:none;background:rgba(20,20,32,.97)}
 /* the Spicy Lyrics parts in the same glass: scrub preview (floating glass), loading skeleton (frosted bars), refined credits */
 #scrubtip{border-radius:var(--r-sm);padding:5px 11px;background:var(--g-grad),var(--g-float);border-color:var(--g-bd);box-shadow:0 8px 24px rgba(0,0,0,.35),var(--g-hi);
@@ -1719,7 +1730,12 @@ const AND=window.VVAndroid||null;   // inside the Android app: Vibe Bridge is bu
 // the phone design: in the Android app, and in a phone's browser (a touch screen whose short side is a phone's)
 const PHONE=!!AND||(matchMedia('(pointer:coarse)').matches&&Math.min(screen.width,screen.height)<600);
 if(PHONE){body.classList.add('phone');
-  const lk=$('like');lk.classList.add('spx');$('info').appendChild(lk);   // the heart sits beside the title, as in a phone player
+  // the round glass buttons under the transport (Spicy Lyrics Mobile's floating row): like, player/lyrics, devices,
+  // quick toggles, Settings
+  const row=document.createElement('div');row.id='slrow';$('bar').appendChild(row);
+  const lk=$('like');lk.classList.add('spx');const dv=$('devbtn');dv.classList.add('spx');
+  [lk,$('lybtn'),dv,$('qsbtn'),$('gear')].forEach(b=>row.appendChild(b));
+  $('txt').appendChild($('lcredit'));   // the lyrics credits: a quiet line under the artist
 }
 const bridgeBuf=new Uint8Array(1024);let bridgeOn=false,bridgeAt=0,bridgeDev='',bridgeVia='';
 const bl={local:{ws:null,on:false,t:0,at:0,dev:''},relay:{ws:null,on:false,t:0,at:0,dev:''}};
@@ -2573,6 +2589,7 @@ function applyLyrOpts(){   // Spicy Lyrics style options
   const last=L.filter(l=>!l.dots).pop();body.classList.toggle('credr',!!(S.lcredLast&&last&&last.opp));
 }
 function applyCredPos(){
+  if(PHONE){body.classList.remove('credly');return}   // phones: the credits live under the artist in the header
   const under=S.credPos==='lyrics',el=$('lcredit');body.classList.toggle('credly',under);
   if(under&&el.parentNode!==$('right'))$('right').appendChild(el);
   else if(!under&&el.parentNode!==body)body.insertBefore(el,$('dock'));
@@ -2804,6 +2821,7 @@ function place(){
   const el=lEls[Math.max(lsi>=0?lsi:li,0)];if(!el)return;
   const hh=S.xFocus&&S.view==='both'?lyr.clientHeight*.74-24:lyr.clientHeight;   // Focus mode in Both: same middle as before
   let y=hh*.38-(el.offsetTop+el.offsetHeight/2);
+  if(PHONE&&!S.xFocus){ly.style.transform='translateY('+(Math.max(28,hh*.1)-el.offsetTop)+'px)';return}   // phones: the line being sung near the top, as Spicy Lyrics Mobile scrolls
   const top=hh*.16;if(el.offsetTop+y<top)y=top-el.offsetTop;   // a tall line (long text, a translation under it) moves down so its top stays out of the fade
   ly.style.transform='translateY('+y+'px)';
 }
@@ -3556,8 +3574,17 @@ scrubTip($('spvol'),f=>$('spvol').disabled?null:Math.round(f*100)+'%');
 function uiTick(now){
   if(now-lastUi<240)return;lastUi=now;nextUpTick();
   const d=curDur(),t=curTime();$('time').textContent=fmt(t)+' / '+fmt(d);
-  if(PHONE){$('tl').textContent=fmt(t);$('tr').textContent=d?'-'+fmt(Math.max(0,d-t)):'0:00';phoneHead()}
+  if(PHONE){$('tl').textContent=fmt(t);$('tr').textContent=d?'-'+fmt(Math.max(0,d-t)):'0:00';phoneHead();phoneMarquee()}
   if(!seeking){const sk=$('seek');sk.value=d?t/d*1000:0;fill(sk)}
+}
+// phones: a title or artist too long for its line glides along it (Spicy Lyrics Mobile's header marquee)
+let mqKey='';
+function phoneMarquee(){
+  const k=ttl.textContent+'|'+sub.textContent+'|'+innerWidth+'|'+S.view;if(k===mqKey)return;mqKey=k;
+  [ttl,sub].forEach(el=>{el.classList.remove('mq');if(el.firstElementChild&&el.firstElementChild.tagName==='SPAN'&&el.children.length===1)el.textContent=el.textContent;
+    if(rmOn()||S.low||el.scrollWidth<=el.clientWidth+2)return;
+    const t=el.textContent,sp=document.createElement('span');sp.textContent=t;el.textContent='';el.appendChild(sp);el.classList.add('mq');
+    const over=sp.offsetWidth-el.clientWidth;el.style.setProperty('--mqx',-over+'px');el.style.setProperty('--mqd',Math.max(6,over/28+4)+'s')});
 }
 // the phone player's header: where the music comes from
 let phKey='';
@@ -3677,6 +3704,7 @@ const QI={   // tile icons (24×24 paths)
   open:'M10 4H4a2 2 0 00-2 2v12a2 2 0 002 2h16a2 2 0 002-2V8a2 2 0 00-2-2h-8l-2-2z',
   net:'M12 21l3.6-4.8A6 6 0 0012 15a6 6 0 00-3.6 1.2zm0-18C8 3 4.3 4.3 1.4 6.6L3.2 9A13 13 0 0112 6a13 13 0 018.8 3l1.8-2.4A16 16 0 0012 3zm0 6a10 10 0 00-6.6 2.4l1.8 2.4A7 7 0 0112 12a7 7 0 014.8 1.8l1.8-2.4A10 10 0 0012 9z',
   set:'M4 7h10v2H4zm12 0h4v2h-4zM4 15h4v2H4zm6 0h10v2H10zM14 5h2v6h-2zM8 13h2v6H8z',
+  home:'M12 3l9 8h-3v9h-5v-6h-2v6H6v-9H3z',
   mute:'M3 9v6h4l5 5V4L7 9H3zm13.5 3l2.5-2.5-1-1-2.5 2.5L13 8.5l-1 1 2.5 2.5-2.5 2.5 1 1 2.5-2.5 2.5 2.5 1-1z'};
 // each tile: what it says, whether it's on, and what a tap does (the same functions as the desktop's buttons)
 const QT=[
@@ -3692,6 +3720,7 @@ const QT=[
   {k:'net',name:'Connection',on:()=>false,sub:()=>$('netbtn').classList.contains('bad')?'Not reachable':($('netms').textContent||'–'),fn:()=>{qsClose();setTimeout(()=>$('netbtn').click(),300)}},
   {k:'mute',name:'Mute',on:()=>src==='spotify'?(+$('spvol').value===0):muted,sub:()=>src==='spotify'?($('spvol').disabled?'Not on this device':(+$('spvol').value===0?'Muted':$('spvol').value+'%')):(muted?'Muted':S.volume+'%'),
     fn:()=>{if(src==='spotify'){if(!$('spvol').disabled)$('spmute').click()}else{muted=!muted;applyVolume()}}},
+  {k:'home',name:'Home',on:()=>false,sub:()=>'Start page',fn:()=>{qsClose();goHome()}},
   {k:'set',name:'Settings',on:()=>false,sub:()=>'Everything else',fn:()=>{qsClose();openPanel()}}];
 (function buildQs(){
   const g=$('qsgrid');

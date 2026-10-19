@@ -408,11 +408,12 @@ so lyrics, Canvas, your settings and updates all come from the server, the same 
   Spotify comes back to your server's address, the Redirect URI you already registered, and the page there has an
   **Open Vibe Visualizer** button that takes the login back to the app. Your Client ID comes over from your other
   devices by itself.
-- **A phone music player:** the player shows "Playing from Spotify", big artwork (or the song's Canvas filling the
-  screen), the bars under it, title and artist with the heart, then the seek bar and controls. The lyrics button
-  switches to the lyrics, with the song as a small header. **Quick toggles** (the four squares, or swipe up on the
-  controls) hold the view switch and tiles for translation, romanization, resync, Focus lyrics, Canvas, the phone's
-  sound, low power, Spotify, opening a file, the connection, mute and Settings. Phones' browsers get the same design.
+- **Designed after [Spicy Lyrics Mobile](https://github.com/spicylyrics/mobile) by TX24:** the cover in the top-left
+  corner with the song beside it, the lyrics filling the screen with the line being sung near the top, and the
+  controls hidden while music plays (tap to bring them back): a thin timeline, plain transport glyphs and a row of
+  round glass buttons (like, player view, devices, quick toggles, Settings). The player view shows the cover large
+  with your bars under it. **Quick toggles** hold the view switch and tiles for translation, romanization, resync,
+  Focus lyrics, Canvas, the phone's sound, low power, Spotify, opening a file, the connection, mute, home and Settings.
 - The screen stays on while the app is open, the back button closes Settings and panels first, and nothing runs in
   the background.
 - **Building it yourself:** the app is in `android/` (plain Java, no libraries). GitHub Actions builds it on every
@@ -498,6 +499,9 @@ Made by [BOZKOW](https://github.com/BOZKOW), built together with [Claude Code](h
 
 The "Spicy Lyrics" lyrics font option uses [Inter](https://rsms.me/inter/) by Rasmus Andersson (SIL Open Font License
 1.1, `web/InterVariable-LICENSE.txt`), or the device's own San Francisco font on Apple devices.
+
+The phone design follows [Spicy Lyrics Mobile](https://github.com/spicylyrics/mobile) by TX24 (AGPL-3.0): its
+layout, sizes, monochrome palette, glass buttons and controls.
 
 The lyrics animation (word and letter springs, fill gradient, line dimming and blur), the instrumental-break dots,
 the credits layout and the way romanization is done are ported from
