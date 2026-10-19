@@ -827,6 +827,11 @@ body.phone #qs.drag{transition:none}
 .qtile.on{background:var(--acc);border-color:transparent;color:#111}.qtile.on small{color:rgba(0,0,0,.65)}
 .qtile:active{transform:scale(.95)}.qtile:disabled{opacity:.35}
 body.low #qs:not([hidden]){transition:none}
+/* the browser's page after logging in to Spotify for one of the apps */
+#appbounce{position:fixed;inset:0;z-index:100;display:grid;place-items:center;padding:24px;background:rgba(7,7,12,.92);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px)}
+#appbounce .abx{display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;max-width:340px}
+#appbounce b{font-size:22px}#appbounce p{margin:0;color:var(--dim);line-height:1.45}#appbounce small{color:var(--faint)}
+#appbounce .btn{margin-top:8px;padding:14px 26px;font-size:16px;text-decoration:none}
 </style>
 <style id="glassui">
 /* ===== Design: Glass (Settings → Appearance → Design). Classic turns this whole sheet off. ===== */
@@ -1952,23 +1957,35 @@ let SP=store.get('pulse_sp')||{};
 const spSave=()=>{store.set('pulse_sp',SP);pushPrefs()};
 const b64u=b=>btoa(String.fromCharCode(...new Uint8Array(b))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
 const MAC=window.VVMac||null;
-const redirectUri=()=>AND&&AND.callback?AND.callback():MAC&&MAC.callback?MAC.callback():location.protocol==='http:'||location.protocol==='https:'?location.origin+location.pathname:'';   // app logins return from the browser to the app
+// Spotify always comes back to this page's own address (the one registered for the computer). The apps log in in the
+// browser: there this page sees an app's login (state "a.…") and hands it to the app with a button, which browsers
+// always let through (a redirect straight to the app's own address is often blocked silently)
+const redirectUri=()=>location.protocol==='http:'||location.protocol==='https:'?location.origin+location.pathname:'';
 const lsGet=k=>{try{return localStorage.getItem(k)}catch(e){return null}},lsSet=(k,v)=>{try{v==null?localStorage.removeItem(k):localStorage.setItem(k,v)}catch(e){}};
-const appRedirectKey=AND?'vv_andredir':'vv_macredir';
-async function spLogin(go){
-  if((AND||MAC)&&!go&&!lsGet(appRedirectKey)){   // once: the app's login comes back to its own address, which Spotify has to know
-    notify({key:'andlogin',kind:'warn',title:'One step before logging in',msg:'In the Spotify developer dashboard (developer.spotify.com → your app → Settings → Redirect URIs), add this address next to the one you already have, and save:',
-      list:[redirectUri()],actions:[{label:'Copy address',fn:async()=>{try{await navigator.clipboard.writeText(redirectUri());toast('Copied.','ok',1800)}catch(e){}spLogin()}},
-        {label:'It’s added, log in',pri:true,fn:()=>{lsSet(appRedirectKey,'1');spLogin(true)}}]});
-    return}
+const APP_IN=!!(AND||MAC);
+const appBounce=(()=>{const q=new URLSearchParams(location.search);return !APP_IN&&/^a\./.test(q.get('state')||'')&&(q.has('code')||q.has('error'))?q:null})();
+function appBounceShow(){   // in the browser, after logging in for one of the apps: back to the app
+  const q=appBounce,link='vibevisualizer://callback?'+q.toString(),bad=q.has('error');
+  history.replaceState({},'',location.pathname);
+  const d=document.createElement('div');d.id='appbounce';
+  d.innerHTML='<div class="abx"><img src="logo.svg" alt="" width="64" height="64"><b></b><p></p><a class="btn pri"></a><small></small></div>';
+  d.querySelector('b').textContent=bad?'Spotify login didn’t finish':'Logged in to Spotify';
+  d.querySelector('p').textContent=bad?'Spotify said: '+q.get('error')+'. Go back to the app and try again.':'One more tap: go back to the Vibe Visualizer app to finish connecting.';
+  const a=d.querySelector('a');a.href=link;a.textContent='Open Vibe Visualizer';
+  d.querySelector('small').textContent='You can close this browser tab afterwards.';
+  document.body.appendChild(d);
+  if(!bad)setTimeout(()=>{location.href=link},400);   // straight back when the browser allows it; the button otherwise
+}
+async function spLogin(){
   if(!C.spotId.trim()){toast('Add your Spotify Client ID first (Settings → Spotify).','warn');openPanel('spotify');return}
   if(!redirectUri()){toast('Spotify login needs this page served over http://127.0.0.1 and not opened as a file. Run: python -m http.server 8000','warn',10000);openPanel('spotify');return}
   if(!(window.crypto&&crypto.subtle)){toast('Spotify login needs a secure context. Open the page via http://127.0.0.1:8000 or https.');return}
   try{
     const v=b64u(crypto.getRandomValues(new Uint8Array(48))),st=b64u(crypto.getRandomValues(new Uint8Array(12)));
     const ch=b64u(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(v)));
-    sessionStorage.setItem('sp_v',v);sessionStorage.setItem('sp_s',st);if(AND||MAC){lsSet('vv_sp_v',v);lsSet('vv_sp_s',st)}   // the app may be closed while the browser logs in
-    const u='https://accounts.spotify.com/authorize?'+new URLSearchParams({client_id:C.spotId.trim(),response_type:'code',redirect_uri:redirectUri(),code_challenge_method:'S256',code_challenge:ch,state:st,scope:SPS});
+    const st2=APP_IN?'a.'+st:st;   // a.: an app's login, handed back to it from the browser
+    sessionStorage.setItem('sp_v',v);sessionStorage.setItem('sp_s',st2);if(APP_IN){lsSet('vv_sp_v',v);lsSet('vv_sp_s',st2)}   // the app may be closed while the browser logs in
+    const u='https://accounts.spotify.com/authorize?'+new URLSearchParams({client_id:C.spotId.trim(),response_type:'code',redirect_uri:redirectUri(),code_challenge_method:'S256',code_challenge:ch,state:st2,scope:SPS});
     if(AND&&AND.login&&AND.login(u))return;location.href=u;
   }catch(e){toast('Could not start Spotify login: '+e.message)}
 }
@@ -1979,6 +1996,7 @@ async function spToken(extra){
   SP={access:j.access_token,refresh:j.refresh_token||SP.refresh,exp:Date.now()+j.expires_in*1000-30000,scope:j.scope||SP.scope||''};spSave();
 }
 async function spCallback(){
+  if(appBounce)return false;   // this is the browser finishing an app's login: the app does the rest
   const q=new URLSearchParams(location.search);
   if(!q.has('code')&&!q.has('error'))return false;
   history.replaceState({},'',location.pathname);
@@ -4154,6 +4172,7 @@ poke();
   if(AND&&!S.andTuned){S.andTuned=true;S.lblur=false;applyLB();syncInputs();save()}   // once, for settings saved before the app had its own defaults
   if(PREFS&&store.get('pulse_cfg'))saveC();   // re-save so removed legacy key fields also disappear from the server copy
   spicyStatus();
+  if(appBounce){appBounceShow();return}   // the browser finishing an app's Spotify login: only the way back to the app
   const ok=await spCallback();
   if(ok||SP.access)setSource('spotify');
   else if(!store.get('pulse_setup'))wzOpen();
