@@ -2047,7 +2047,7 @@ if(PHONE){body.classList.add('phone');
   [lk,$('lybtn'),dv,$('syncbtn'),$('srcbtn'),$('qbtn'),$('pipbtn'),$('rotbtn'),$('qsbtn'),$('gear')].forEach(b=>row.appendChild(b));
   $('qbtn').classList.add('spx');
 }
-const bridgeBuf=new Uint8Array(1024);let bridgeOn=false,bridgeAt=0,bridgeDev='',bridgeVia='';
+const bridgeBuf=new Uint8Array(1024),andGlide=new Float32Array(1024);let bridgeOn=false,bridgeAt=0,bridgeDev='',bridgeVia='';
 const bl={local:{ws:null,on:false,t:0,at:0,dev:''},relay:{ws:null,on:false,t:0,at:0,dev:''}};
 const bridgeLive=()=>bridgeOn&&performance.now()-bridgeAt<600;
 function bridgeState(){
@@ -4217,7 +4217,8 @@ function sample(dt,now){
   const viaBridge=!liveAudio()&&bridgeLive();realAudio=liveAudio()||viaBridge;   // the Vibe Bridge app: the sound of the whole computer (the Spotify app too)
   if(liveAudio()||viaBridge){
     // the analyser smooths once per read: scaled to the frame time, so the bars move the same at 60 and 240 fps
-    if(viaBridge)data.set(bridgeBuf);else{analyser.smoothingTimeConstant=Math.pow(.35,dt/16.7);analyser.getByteFrequencyData(data)}
+    if(viaBridge&&AND&&bridgeVia==='local'){const k=1-Math.exp(-dt/38);for(let i=0;i<1024;i++){andGlide[i]+=(bridgeBuf[i]-andGlide[i])*k;data[i]=andGlide[i]}}   // the phone's sound comes 20 times a second: glide between readings instead of jumping
+    else if(viaBridge)data.set(bridgeBuf);else{analyser.smoothingTimeConstant=Math.pow(.35,dt/16.7);analyser.getByteFrequencyData(data)}
     if(capStream&&!capHeard){for(let k=0;k<64;k++)if(data[k]){capHeard=true;break}}
     let mx=0;
     for(let i=0;i<N;i++){
