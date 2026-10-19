@@ -25,6 +25,7 @@ domain is needed.
 - [Updating](#updating)
 - [Using it on Linux](#using-it-on-linux)
 - [Using it on Windows](#using-it-on-windows)
+- [Android app](#android-app)
 - [Third-party services](#third-party-services)
 - [Privacy](#privacy)
 - [Keyboard shortcuts](#keyboard-shortcuts)
@@ -368,6 +369,27 @@ already does. Changes to the helper itself still need `git pull && docker compos
   **Entire screen** and turn on **Also share system audio**. That carries everything Windows plays, including the
   Spotify app. If *Stereo Mix* is turned on in the Windows sound settings, it shows up in the device list too.
 - **Media keys and the Windows media flyout** control local files and show their title and cover.
+
+## Android app
+
+**Vibe Visualizer for Android** (Android 8 or newer, phones and tablets) opens your Vibe Visualizer server full screen,
+so lyrics, Canvas, your settings and updates all come from the server, the same as on your computer.
+
+- **Install:** download `vibe-visualizer-android.apk` from the [Releases page](../../releases) on the phone, open it
+  and allow installing apps from your browser when Android asks.
+- **First start:** type your server's address (`https://NAME.ts.net`). Keep the **Tailscale** app connected on the
+  phone. To change the address later: *Settings → Help & about → Android app*.
+- **The bars follow what the phone plays**, the Spotify app included: Vibe Bridge is built in. Allow the audio
+  permission when the app asks. It only reads the sound's spectrum through Android's Visualizer; nothing is recorded
+  or sent anywhere. A few phones don't allow this; the bars then use the ambient motion.
+- **Spotify login** happens inside the app with your email or username and password (Spotify's *Continue with
+  Google/Apple* buttons don't work inside apps). Use the same Client ID; the Redirect URI is your server address, as
+  on the computer.
+- The screen stays on while the app is open, the back button closes Settings and panels first, and nothing runs in
+  the background.
+- **Building it yourself:** the app is in `android/` (plain Java, no libraries). GitHub Actions builds it on every
+  change and publishes it when a tag like `android-v1.0.0` is pushed. Without the release key (the
+  `ANDROID_KEYSTORE_B64` and `ANDROID_KEYSTORE_PASS` secrets) the build is signed with a debug key.
 
 ## Third-party services
 

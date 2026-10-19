@@ -1,0 +1,38 @@
+// Vibe Visualizer for Android: a small client that opens your Vibe Visualizer server full screen, with Vibe Bridge
+// built in (the bars follow what the phone plays). Plain Java, no libraries.
+plugins { id "com.android.application" }
+
+def ks = System.getenv("VV_KEYSTORE")   // the release key (GitHub secret); without it the build is signed with a debug key
+
+android {
+    namespace "io.github.bozkow.vibevisualizer"
+    compileSdk 34
+    defaultConfig {
+        applicationId "io.github.bozkow.vibevisualizer"
+        minSdk 26
+        targetSdk 34
+        versionCode((System.getenv("VV_VERSION_CODE") ?: "1") as int)
+        versionName System.getenv("VV_VERSION_NAME") ?: "1.0.0"
+    }
+    signingConfigs {
+        release {
+            if (ks) {
+                storeFile file(ks)
+                storeType "pkcs12"
+                storePassword System.getenv("VV_KS_PASS")
+                keyAlias "vv"
+                keyPassword System.getenv("VV_KS_PASS")
+            }
+        }
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig ks ? signingConfigs.release : signingConfigs.debug
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}

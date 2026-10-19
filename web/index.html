@@ -646,6 +646,36 @@ body.wz #empty,body.popen #empty{opacity:0;transition:opacity .3s}   /* nothing 
 /* low performance mode: no blur behind the glass, a bit more opaque instead */
 body.low .ib,body.low .chip,body.low select,body.low .prow,body.low #cappanel,body.low #netpanel,body.low #setup .sw,body.low #setup{backdrop-filter:none;-webkit-backdrop-filter:none}
 body.low #cappanel,body.low #netpanel,body.low #setup .sw{background:rgba(20,20,32,.95)}
+/* ---------- phones and tablets (the Android app, or a narrow window) ---------- */
+body.android #fs,body.android #captab{display:none}   /* the app is full screen already; WebView can't share a tab */
+@media(max-width:760px){   /* portrait: the view switch gets its own row, the buttons scroll sideways when they don't fit */
+  #top{grid-template-columns:auto minmax(0,1fr);row-gap:10px;padding:calc(10px + env(safe-area-inset-top,0px)) 12px 18px}
+  #seg{grid-row:2;grid-column:1/-1;justify-self:center}
+  #top .grp{justify-content:safe flex-end;overflow-x:auto;scrollbar-width:none;min-width:0;max-width:100%;padding:3px 2px}
+  #top .grp::-webkit-scrollbar{display:none}
+  #capt{display:none}#capbtn{padding:8px 11px}
+  #stage{padding-top:calc(124px + env(safe-area-inset-top,0px))}
+  #bar{padding:12px 16px;gap:10px 12px}
+  #corner{top:118px}
+}
+@media(max-height:520px) and (orientation:landscape){   /* a phone on its side: everything a bit smaller, the bottom bar one row */
+  #top{padding:calc(8px + env(safe-area-inset-top,0px)) 14px 12px}
+  #top .ib{width:34px;height:34px}#top .chip{padding:6px 11px}#seg button{padding:5px 11px}
+  #capt{display:none}
+  #stage{padding-top:58px;padding-bottom:132px;gap:28px;grid-template-columns:minmax(0,30vw) 1fr}   /* room for the credits above the bar */
+  body.credly #stage{padding-bottom:86px}
+  body.cvmode #stage{grid-template-columns:minmax(0,40vw) 1fr}
+  #artw,body.cvmode #artw{width:min(100%,calc(100vh - 250px))}
+  body.credly #artw,body.credly.cvmode #artw{width:min(100%,calc(100vh - 200px))}
+  #info{gap:10px}#ttl{font-size:18px}
+  #dock{bottom:calc(10px + env(safe-area-inset-bottom,0px))}
+  #bar{flex-wrap:nowrap;padding:7px 12px;gap:8px}
+  #bar .ib{width:36px;height:36px}#play{width:44px;height:44px}
+  #seekwrap{min-width:0;flex:1}
+  #volume,#volval,#spvol,#spvolval{display:none}   /* the phone's volume buttons do that */
+  #corner{top:58px}
+  .ll{font-size:calc(clamp(20px,3.3vw,40px)*var(--ls))}
+}
 </style>
 <style id="glassui">
 /* ===== Design: Glass (Settings → Appearance → Design). Classic turns this whole sheet off. ===== */
@@ -942,6 +972,10 @@ body.low #scrubtip{backdrop-filter:none;-webkit-backdrop-filter:none;background:
   <div class="f chk" data-k="xFocus"><label><input type="checkbox" id="xFocus"> Focus mode<small>The line being sung is sharp in the middle and stays until it’s sung to the end. The next line flies in from the bottom 200 ms before it’s sung; if it starts while the middle line is still going, it waits right under it, sharp. Finished lines fly up and disappear, and instrumental breaks stay empty, without the dots. Lyrics without timing just scroll slowly with the song.</small></label></div>
 
   <h4>Help</h4>
+  <div id="andbox" hidden><p class="sub-h">Android app</p>
+  <p class="stat" id="andstat"></p>
+  <div class="row2"><button class="btn sm" id="andsrv">Change server address</button></div>
+  <p class="hint">The app opens your server, so this page updates with the server. Only the app itself (rarely) needs a new APK from the GitHub Releases page.</p></div>
   <p class="sub-h">Updates</p>
   <p class="stat" id="updstat">Not checked yet.</p>
   <div class="row2"><button class="btn sm" id="updcheck">Check for updates</button><button class="btn sm pri" id="updgo" hidden>Update now</button></div>
@@ -1505,17 +1539,19 @@ const liveAudio=()=>!!capStream||(src==='file'&&filePlaying());
 // two ways to reach it: straight on this computer (ws://127.0.0.1), or through your server, which every page can
 // always reach (and other devices too). The bridge on this computer wins when both work.
 const BRIDGE_LOCAL='ws://127.0.0.1:47120',BRIDGE_RELAY=PREFS?(location.protocol==='https:'?'wss://':'ws://')+location.host+'/api/bridge/listen':null;
+const AND=window.VVAndroid||null;   // inside the Android app: Vibe Bridge is built in (the phone's own sound)
 const bridgeBuf=new Uint8Array(1024);let bridgeOn=false,bridgeAt=0,bridgeDev='',bridgeVia='';
 const bl={local:{ws:null,on:false,t:0,at:0,dev:''},relay:{ws:null,on:false,t:0,at:0,dev:''}};
 const bridgeLive=()=>bridgeOn&&performance.now()-bridgeAt<600;
 function bridgeState(){
   const now=performance.now(),loc=bl.local.on&&now-bl.local.at<1500,rel=bl.relay.on&&now-bl.relay.at<1500;
   const was=bridgeOn;bridgeOn=loc||rel;bridgeVia=loc?'local':rel?'relay':'';bridgeDev=(loc?bl.local:bl.relay).dev;
-  if(bridgeOn&&!was)toast('Vibe Bridge connected'+(bridgeVia==='relay'?' through your server':'')+': the bars follow the computer’s sound.','ok',3500);
+  if(bridgeOn&&!was)toast(AND&&bridgeVia==='local'?'The bars follow what this phone plays.':'Vibe Bridge connected'+(bridgeVia==='relay'?' through your server':'')+': the bars follow the computer’s sound.','ok',3500);
   if(!bridgeOn&&was)toast('Vibe Bridge stopped. The bars go back to the other sources.','warn',3500);
   updBridge();
 }
 function bridgeOpen(kind){
+  if(kind==='local'&&AND){AND.start();return}   // the app's own bridge, read each frame by andPoll()
   const b=bl[kind],url=kind==='local'?BRIDGE_LOCAL:BRIDGE_RELAY;clearTimeout(b.t);
   if(!S.bridge||b.ws||!url)return;
   try{b.ws=new WebSocket(url)}catch(e){b.ws=null;b.t=setTimeout(()=>bridgeOpen(kind),15000);return}
@@ -1532,11 +1568,18 @@ function bridgeOpen(kind){
   b.ws.onerror=()=>{};
 }
 function bridgeConnect(){bridgeOpen('local');bridgeOpen('relay')}
-setInterval(()=>{if(S.bridge&&bridgeOn&&performance.now()-bridgeAt>1500)bridgeState()},1000);   // notice when frames stop
-function bridgeStop(){['local','relay'].forEach(k=>{const b=bl[k];clearTimeout(b.t);if(b.ws){const w=b.ws;b.ws=null;b.on=false;w.onclose=null;w.close()}});bridgeOn=false;updBridge()}
+setInterval(()=>{if(S.bridge&&bridgeOn&&performance.now()-bridgeAt>1500)bridgeState();if(AND&&S.bridge&&!bridgeOn)updBridge()},1000);   // notice when frames stop
+function andPoll(){   // the Android app's newest frame (base64, empty when there's nothing new)
+  if(!AND||!S.bridge)return;let f='';try{f=AND.frame()}catch(e){return}if(!f)return;
+  const x=atob(f),n=Math.min(1024,x.length),now=performance.now();for(let i=0;i<n;i++)bridgeBuf[i]=x.charCodeAt(i);
+  const b=bl.local;b.at=now;bridgeAt=now;if(!b.on){b.on=true;b.dev='this phone';bridgeState()}
+}
+function bridgeStop(){if(AND){try{AND.stop()}catch(e){}bl.local.on=false}['local','relay'].forEach(k=>{const b=bl[k];clearTimeout(b.t);if(b.ws){const w=b.ws;b.ws=null;b.on=false;w.onclose=null;w.close()}});bridgeOn=false;updBridge()}
 function updBridge(){
   const el=$('bridgestat');
-  if(el)el.textContent=!S.bridge?'Off.':bridgeOn?'Connected '+(bridgeVia==='relay'?'through your server':'on this computer')+(bridgeDev?' · listening to '+bridgeDev:'')+'.':'Not connected. On the computer that plays the music, start Vibe Bridge'+(PREFS&&location.protocol==='https:'?' with:  vibe-bridge --server '+location.host:'')+'  (see the README).';
+  if(el&&AND&&!bridgeOn&&S.bridge){let st='';try{st=AND.status()}catch(e){}
+    el.textContent=st==='permission'?'Built into the app: allow the audio permission when Android asks (or in Android’s settings for Vibe Visualizer), and the bars follow what this phone plays.':/^error/.test(st)?'This phone doesn’t let apps read its sound ('+st.slice(7)+'). The bars use the ambient motion instead.':'Built into the app: waiting for the phone’s sound…'}
+  else if(el)el.textContent=!S.bridge?'Off.':bridgeOn?(AND&&bridgeVia==='local'?'Built into the app · listening to what this phone plays.':'Connected '+(bridgeVia==='relay'?'through your server':'on this computer')+(bridgeDev?' · listening to '+bridgeDev:'')+'.'):'Not connected. On the computer that plays the music, start Vibe Bridge'+(PREFS&&location.protocol==='https:'?' with:  vibe-bridge --server '+location.host:'')+'  (see the README).';
   $('capbtn').classList.toggle('bridge',bridgeOn);updCapLabel();
 }
 let spSlew=null,spSnap=false;
@@ -1645,7 +1688,7 @@ function updCapLabel(){
     t=capKind==='device'?(n||'Input device'):'Tab audio';
     tip='Bars follow: '+(capKind==='device'?(tr&&tr.label||'an input device'):isWin?'shared computer sound':'a shared tab or screen')+'. Click to stop.'}
   else if(src==='file'&&filePlaying()){t='This file';tip='Bars follow: the file that’s playing. Click to use your computer’s sound instead.'}
-  else if(bridgeOn){t='Vibe Bridge';tip='Bars follow: Vibe Bridge '+(bridgeVia==='relay'?'through your server':'on this computer')+(bridgeDev?' · listening to '+bridgeDev:'')+'.'}
+  else if(bridgeOn){t='Vibe Bridge';tip='Bars follow: Vibe Bridge '+(AND&&bridgeVia==='local'?'(what this phone plays)':bridgeVia==='relay'?'through your server':'on this computer')+(bridgeDev?' · listening to '+bridgeDev:'')+'.'}
   else if(src==='spotify'&&spPlaying()){t='Ambient';tip='Bars follow: a gentle ambient motion (Spotify’s audio can’t be read). Click to capture your computer’s sound, or start Vibe Bridge.'}
   else{t='No audio';tip='Nothing for the bars to follow. Click to capture your computer’s sound (Spotify app, browser tab…).'}
   const key=t+'|'+tip;if(key===capLabelKey)return;capLabelKey=key;
@@ -3525,7 +3568,7 @@ function frame(now){
   fAcc+=Math.min(now-fPrev,100);fPrev=now;
   if(fAcc<iv-.5)return;fAcc=Math.min(fAcc-iv,iv);
   const dt=Math.min(now-last,50);last=now;
-  const pl=playing();sample(dt,now);beatTick(now,dt);drawLiveBg(now,dt);
+  const pl=playing();andPoll();sample(dt,now);beatTick(now,dt);drawLiveBg(now,dt);
   lyricsTick();desyncTick(now);uiTick(now);if(palDirty)buildPal();palTick(now);
   if(body.classList.contains('cvlive')&&now-lastCv>90&&now>coverAnimEnd&&cvv.readyState>=2&&!document.hidden){lastCv=now;cvFrame()}   // not during the cover's animation
   const active=pl||mxv>.003||!!capStream||idleK>.005;
@@ -3688,6 +3731,15 @@ function homeButtons(){   // the home screen's buttons follow what's going on (a
 }
 function leaveHome(){if(!body.classList.contains('home'))return;body.classList.remove('home');if(src!=='none'||loaded)$('empty').classList.add('gone')}
 $('brand').onclick=goHome;
+window.vvBack=()=>{   // the Android back button: closes what's open in the app, in this order; false = nothing was
+  if(!WZ.hidden){wzDone();return true}
+  if($('panel').classList.contains('open')){closePanel();return true}
+  if(popOpen($('devpanel'))){devClose();return true}
+  for(const id of ['cappanel','netpanel'])if(popOpen($(id))){closePop($(id));$('netbtn').classList.remove('on');return true}
+  if(body.classList.contains('home')&&(src!=='none'||loaded)){leaveHome();return true}
+  return false};
+if(AND){body.classList.add('android');$('andbox').hidden=false;$('andsrv').onclick=()=>AND.changeServer();
+  try{$('andstat').textContent='App version '+AND.version()+' · server '+AND.server()}catch(e){}}
 
 $('brand').onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();goHome()}};
 $('hback').onclick=leaveHome;
