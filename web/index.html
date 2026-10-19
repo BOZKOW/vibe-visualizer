@@ -1128,8 +1128,7 @@ function toast(msg,type,ms){
   tbox.appendChild(d);setTimeout(bye,ms||6500);
   while(tbox.children.length>4)tbox.firstChild.remove();
 }
-// errors are shown as a notification card and saved on the server: see appError() below
-addEventListener('unhandledrejection',e=>toast('Something failed: '+((e.reason&&e.reason.message)||e.reason||'unknown error')));
+// errors are shown where the lyrics go and saved on the server: see appError() below
 
 /* ================= settings (one store) ================= */
 const LANGS=[['en','English'],['cs','Czech'],['sk','Slovak'],['de','German'],['es','Spanish'],['fr','French'],['it','Italian'],['pt','Portuguese'],['pl','Polish'],['nl','Dutch'],['sv','Swedish'],['da','Danish'],['no','Norwegian'],['fi','Finnish'],['hu','Hungarian'],['ro','Romanian'],['el','Greek'],['tr','Turkish'],['uk','Ukrainian'],['ru','Russian'],['ar','Arabic'],['he','Hebrew'],['hi','Hindi'],['th','Thai'],['vi','Vietnamese'],['id','Indonesian'],['tl','Filipino'],['ja','Japanese'],['ko','Korean'],['zh-CN','Chinese (Simplified)'],['zh-TW','Chinese (Traditional)']];
@@ -1495,7 +1494,7 @@ function palTick(now){
 
 /* ================= state + sources ================= */
 let capKind='',ac,analyser,gainNode,data=new Uint8Array(1024),url=null,muted=false,capStream=null,capNode=null,capFull=null,capHeard=false;
-let loaded=false,src='none',spState=null,spFetched=0,spTimer=0,spId=null,backoff=0,spErrAt=0,spRateN=0,spRateSaid=false,spRateAt=0,spRelay=null;
+let loaded=false,src='none',spState=null,spFetched=0,spTimer=0,spId=null,backoff=0,spErrAt=0,spRateN=0,spRateAt=0,spRelay=null;
 let W=0,H=0,dpr=1,bass=0,mxv=0,peak=.3,dirty=true,wasActive=false;
 const filePlaying=()=>loaded&&!audio.paused&&!audio.ended;
 const spPlaying=()=>!!(spState&&spState.playing);
@@ -1769,7 +1768,7 @@ async function spApi(path,method,body,raw,again){
   }
   const via=PREFS&&spRelay!==false&&Date.now()-spRelayDown>60000;   // (straight to Spotify for a minute after the server failed)   // through your server when opened from it: Spotify's Retry-After becomes readable
   let r;try{r=await timed('spotify',()=>fetch((via?'/api/spweb':'https://api.spotify.com/v1')+path,{method:method||'GET',headers:Object.assign({Authorization:'Bearer '+SP.access},body?{'Content-Type':'application/json'}:{}),body:body?JSON.stringify(body):undefined}))}catch(e){if(via){spRelayDown=Date.now();netKick();return spApi(path,method,body,raw,again)}throw new Error('Could not reach Spotify (offline?).')}   // your server is down: ask Spotify directly
-  if(via&&(spRelay==null||(r.status>=502&&r.status<=504&&r.headers.get('X-Via')!=='vv-helper'))){if(r.status>=502&&r.status<=504){spRelayDown=Date.now();netKick();return spApi(path,method,body,raw,again)}spRelay=r.headers.get('X-Via')==='vv-helper';if(!spRelay)return spApi(path,method,body,raw)}   // an older server helper: go direct
+  if(via&&(spRelay==null||(r.status>=502&&r.status<=504&&r.headers.get('X-Via')!=='vv-helper'))){if(r.status>=502&&r.status<=504){spRelayDown=Date.now();netKick();return spApi(path,method,body,raw,again)}spRelay=r.headers.get('X-Via')==='vv-helper';if(!spRelay)return spApi(path,method,body,raw,again)}   // an older server helper: go direct
   if(r.status===204)return null;
   if(r.status===401){
     if(!again&&SP.refresh){try{await spToken({grant_type:'refresh_token',refresh_token:SP.refresh});return spApi(path,method,body,raw,true)}catch(e){}}   // renew the login once first
@@ -1818,8 +1817,11 @@ function problemsNow(home){
   return out.sort((a,b)=>b.pr-a.pr);
 }
 function showProblems(el,list,max){
-  if(!list.length){if(!el.hidden)el.hidden=true;el._k='';return}
-  const key=JSON.stringify(list.slice(0,max));if(el._k===key&&!el.hidden)return;el._k=key;   // only redraw when something changed
+  if(!list.length){if(!el.hidden)el.hidden=true;el._k=el._shape='';return}
+  const shown=list.slice(0,max),key=JSON.stringify(shown);if(el._k===key&&!el.hidden)return;el._k=key;   // only redraw when something changed
+  const shape=JSON.stringify([shown.map(p=>[p.k,p.t,!!p.ok]),list.length]);
+  if(el._shape===shape&&!el.hidden){el.querySelectorAll('.pr small').forEach((sm,i)=>{if(shown[i]&&sm.textContent!==shown[i].s)sm.textContent=shown[i].s});return}   // same problems, new wording (a countdown): just the text
+  el._shape=shape;
   el.classList.toggle('err',list[0].k==='err');el.textContent='';
   list.slice(0,max).forEach((p,i)=>{const r=document.createElement('div');r.className='pr'+(i?' more':'')+(p.k==='err'?' err':'');
     const ic=document.createElement('i');ic.setAttribute('aria-hidden','true');ic.textContent='!';
@@ -1857,9 +1859,9 @@ async function spPoll(){
     const t1=performance.now();spRtt=t1-t0;
     const mid=t0+(t1-t0)/2;   // auto resync: Spotify read the position somewhere during the request, so count it from the midpoint
     if(spBC)spBC.postMessage({d,wall:Date.now()-(t1-mid)});
-    spApply(d,mid);spRateN=0;spRateSaid=false;backoff=0;spErrMsg='';
+    spApply(d,mid);spRateN=0;backoff=0;spErrMsg='';
   }catch(e){
-    if(e.rate){if(spBC)spBC.postMessage({until:backoff});if(!spRateSaid){spRateSaid=true;toast(e.message,'warn',6000)}}   // a rate limit isn't an error: one calm note, no red dot
+    if(e.rate){if(spBC)spBC.postMessage({until:backoff});renderProblem()}   // a rate limit isn't an error: the waiting note with its countdown says it, no red dot
     else{spErrMsg=e.message;spErrRetry=true;if(Date.now()-spErrAt>20000){spErrAt=Date.now();toast(e.message)}updChips(true)}
   }finally{if(spErrRetry){spErrRetry=false;clearTimeout(spTimer);spTimer=setTimeout(spPoll,3000)}else spSched()}   // after an error, try again in 3 s so it clears quickly
 }
@@ -2185,7 +2187,7 @@ function joinWords(ws,ts){   // ws: words (text, sp = followed by a space), ts: 
     const ok=run.length>1&&run.every(w=>w.text.trim()&&!/\s/.test(w.text.trim()))&&!run.slice(0,-1).some(w=>/[-‐-―]$/.test(w.text))&&!run.some(w=>UNSPACED.test(w.text))
       &&rt.every((x,k)=>!k||x.t-rt[k-1].end<=.1)&&(()=>{const du=rt[rt.length-1].end-rt[0].t,ch=run.reduce((s,w)=>s+w.text.length,0);if(du<=0||!ch)return false;
         return rt.every((x,k)=>{const ts_=(x.end-x.t)/du,cs=run[k].text.length/ch;return ts_>=cs/3&&ts_<=cs*3})})();
-    if(ok){out.push({text:run.map((w,k)=>k<run.length-1?w.text:w.text).join(''),sp:run[run.length-1].sp,rom:run.some(w=>w.rom)?run.map(w=>w.rom||w.text).join(''):null});tout.push({t:rt[0].t,end:Math.max(...rt.map(x=>x.end))})}
+    if(ok){out.push({text:run.map(w=>w.text).join(''),sp:run[run.length-1].sp,rom:run.some(w=>w.rom)?run.map(w=>w.rom||w.text).join(''):null});tout.push({t:rt[0].t,end:Math.max(...rt.map(x=>x.end))})}
     else{run.forEach((w,k)=>{out.push(w);tout.push(rt[k])})}
     i=e;
   }
@@ -2358,7 +2360,7 @@ function checkPace(r,dur){
   if(!src&&last&&last.t>dur-.5)src=last.t+Math.max(2,dur*.03);   // a line after the end can't be right
   if(src&&Math.abs(src-dur)/dur<.12){lPace=src/dur;toast('Lyrics timing adjusted to this version of the song ('+(lPace>1?'+':'')+((lPace-1)*100).toFixed(1)+'% pace).','ok',4000)}
 }
-function applyLyrics(r){clearTimeout(lyLoadT);ly.classList.remove('leave');checkPace(r,curDur());dsSong();lyEnter();lCredit=r.credit||(r.label?{source:null}:null);L=(r.sync?interludes(r.lines):r.lines.filter(l=>!l.dots)).map(l=>Object.assign({},l));lsync=r.sync;renderLyrics(r.label);decorate()}
+function applyLyrics(r){clearTimeout(lyLoadT);ly.classList.remove('leave');checkPace(r,curDur());dsSong();lyEnter();lCredit=r.credit||(r.label?{source:null}:null);L=(r.sync?interludes(r.lines):r.lines.filter(l=>!l.dots)).map(l=>Object.assign({},l));lsync=r.sync;renderLyrics(r.label);decorate(true)}
 
 /* ---------- translation + romanization (Google Translate's free web endpoint, unofficial) ---------- */
 const GT='https://translate.googleapis.com/translate_a/single?client=dict-chrome-ex&sl=auto&dt=t&dt=rm&tl=';
@@ -2489,11 +2491,11 @@ async function romanizeLyrics(lines){
     for(const b of l.bg||[])if(b.words&&b.words.some(w=>w.rom)&&!b.rom)b.rom=join(b.words);
   }
 }
-async function decorate(){
+async function decorate(fresh){   // fresh: lyrics just drawn, nothing on them to take away
   const tok=++trTok,lines=L.filter(l=>!l.dots&&l.text);
   L.forEach(l=>{l.tr=l.rom=null});
   const wantRom=S.romMode!=='off'&&lines.some(l=>nonLatin(l.text)),wantTr=!!S.tr;
-  if(!lines.length||(!wantRom&&!wantTr)){if(L.length)renderLyrics(null,true);return}
+  if(!lines.length||(!wantRom&&!wantTr)){if(L.length&&!fresh)renderLyrics(null,true);return}
   // romanization/translation that came with the lyrics (Spicy Lyrics) is used first; Google fills the gaps.
   // The API's translations are assumed to be English, so they're only used when translating into English.
   const skip0=new Set(S.trSkip.split(',').filter(Boolean));skip0.add(S.trTo.split('-')[0]);
@@ -2812,7 +2814,7 @@ function lyricsTick(){
   // every line still being sung is active, not just the newest: a duet line can start while another is going
   let ak=i>=0&&!out?i+',':'';
   for(let k=i-1;k>=0&&k>=i-6;k--){const l=L[k];if(l.dots)continue;const ek=lineEnd(l);if(ek!=null&&t>=l.t&&t<ek)ak+=k+','}
-  ly.classList.toggle('allsung',(()=>{let n=L.length-1;while(n>=0&&L[n].dots)n--;return i>=n&&(out||i>n)})());
+  ly.classList.toggle('allsung',(()=>{let n=L.length-1;while(n>=0&&L[n].dots)n--;return i>n||(i===n&&(out||(e==null&&t>=L[n].t+4)))})());
   if(i!==li||out!==lOut||fi!==lfi||fo!==lfo||fn!==lfn||fs!==lfs||ak!==lActKey){lOut=out;lsi=si;lfi=fi;lfo=fo;lfn=fn;lfs=fs;lAct=new Set(ak.split(',').filter(Boolean).map(Number));lActKey=ak;setActive(i)}else if(si!==lsi){lsi=si;place()}
   wordsTick(t);
 }
@@ -2978,10 +2980,9 @@ async function loadLyrics(m,tok){
   }
   if(tok!==coverTok)return;
   if(!errs.length)lcPut(key,null);   // remember "none" for a day; failures aren't remembered
-  if(errs.length)clearLyrics('Couldn’t load lyrics','A lyrics source didn’t answer.','none',[   // Try again / Copy details, as in Spicy Lyrics 6.4.0
+  if(errs.length)clearLyrics('Couldn’t load lyrics',errs.join(' · '),'none',[   // Try again / Copy details, as in Spicy Lyrics 6.4.0
     {label:'Try again',pri:true,fn:()=>{lcache.delete(key);lcDel(key);loadLyrics(m,coverTok)}},
     {label:'Copy details',fn:async()=>{try{await navigator.clipboard.writeText(m.artist+' – '+m.title+'\n'+errs.join('\n'));toast('Details copied.','ok',2000)}catch(e){toast('Couldn’t copy.','warn')}}}]);else clearLyrics('No lyrics for this song','It may be instrumental, or none of your lyrics sources has it. You can drop a .lrc or .ttml file here.','none');
-  if(errs.length)toast('Lyrics lookup problem. '+errs.join(' · '),'warn',8000);
 }
 async function spicyStatus(){
   const out=$('lyrstatus');
@@ -3395,6 +3396,7 @@ $('pclose').onclick=closePanel;
 function nudgeVol(d){if(src==='spotify'){if(!$('spvol').disabled)spSetVol(+$('spvol').value+d);return}S.volume=Math.max(0,Math.min(100,S.volume+d));syncInputs();onSetting('volume');save()}
 addEventListener('keydown',e=>{
   if(!WZ.hidden){if(e.key==='Escape')wzDone();return}
+  if(e.ctrlKey||e.metaKey||e.altKey)return;   // Ctrl+F, Ctrl+P, Ctrl+R… stay the browser's
   const tg=e.target.tagName;if(tg==='SELECT'||(tg==='INPUT'&&e.target.type!=='range'&&e.target.type!=='checkbox'))return;
   if(e.key==='Escape'){closePanel();leaveHome()}
   else if(e.code==='Space'&&tg!=='BUTTON'){e.preventDefault();toggle()}
@@ -3663,10 +3665,11 @@ function reportError(kind,msg,where,stack){
 function appError(msg,where,stack){
   reportError('error',msg,where,stack);
   const now=Date.now();if(now-errSeen<8000)return;errSeen=now;   // at most one card every few seconds
-  appProb={t:'Something went wrong',s:String(msg).slice(0,200)+(PREFS?' (saved on your server, see Settings → Help & about)':''),at:now};renderProblem();
+  appProb={k:'err',t:'Something went wrong',s:String(msg).slice(0,200)+(PREFS?' (saved on your server, see Settings → Help & about)':''),at:now};renderProblem();
 }
 addEventListener('error',e=>{if(e.message)appError(e.message,(e.filename||'').split('/').pop()+':'+e.lineno,e.error&&e.error.stack)});
-addEventListener('unhandledrejection',e=>{const r=e.reason;appError(r&&r.message||String(r),'promise',r&&r.stack)});
+addEventListener('unhandledrejection',e=>{const r=e.reason;if(r&&(r.name==='AbortError'||(r.name==='NotAllowedError'&&/play/i.test(r.message||''))))return;   // a cancelled request, a blocked autoplay: nothing went wrong
+  appError(r&&r.message||String(r),'promise',r&&r.stack)});
 async function loadErrors(){
   const box=$('errlog');box.textContent='Loading…';
   try{const r=await fetch('/api/report',{cache:'no-store'}),v=await r.json();box.textContent='';
