@@ -391,8 +391,12 @@ struct VibeWebView: NSViewRepresentable {
     func makeNSView(context: Context) -> WKWebView {
         let configuration = WKWebViewConfiguration()
         configuration.websiteDataStore = .default()
+        // what the page can ask the app: where the Spotify login comes back to, and the app's version (Settings →
+        // Help & about compares it with the newest Mac release)
+        let version = (Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "")
+            .filter { $0.isLetter || $0.isNumber || $0 == "." || $0 == "-" }
         let appBridge = WKUserScript(
-            source: "window.VVMac={callback:()=>\"vibevisualizer://callback\"};",
+            source: "window.VVMac={callback:()=>\"vibevisualizer://callback\",version:()=>\"\(version)\"};",
             injectionTime: .atDocumentStart,
             forMainFrameOnly: true
         )

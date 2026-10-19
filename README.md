@@ -15,6 +15,21 @@ domain is needed.
 > [Spicy Lyrics API](https://developers.spicylyrics.org) with your own key, and its lyrics animation is ported from
 > the Spicy Lyrics source code (see [Credits](#credits) and [License](#license)).
 
+## Where it runs
+
+Your server runs Vibe Visualizer once; every device opens it from there (over Tailscale), so settings, lyrics and
+updates are shared.
+
+| On | Use | Get it |
+| --- | --- | --- |
+| Any computer or phone | The web app in a browser, installable as an app (Chrome, Edge, Safari) | Open `https://NAME.ts.net` |
+| Android phones and tablets | [Android app](#android-app): a music-player design, with the phone's own sound for the bars | `vibe-visualizer-android.apk` on the [Releases page](../../releases) (beta) |
+| Mac | [macOS app](#macos-app): your server in its own window | `Vibe-Visualizer-macOS.dmg` on the [Releases page](../../releases) (beta) |
+| Windows and Linux (the computer that plays the music) | [Vibe Bridge](#vibe-bridge-bars-from-the-spotify-app): the bars follow everything it plays | `vibe-bridge-…` on the [Releases page](../../releases) |
+
+The apps only show your server: the page itself updates with the server (*Settings → Help & about → Update now*),
+and each app tells you there when a new version of the app itself is out.
+
 ## Contents
 
 - [Features](#features)
@@ -25,8 +40,8 @@ domain is needed.
 - [Updating](#updating)
 - [Using it on Linux](#using-it-on-linux)
 - [Using it on Windows](#using-it-on-windows)
-- [macOS app](#macos-app)
 - [Android app](#android-app)
+- [macOS app](#macos-app)
 - [Third-party services](#third-party-services)
 - [Privacy](#privacy)
 - [Keyboard shortcuts](#keyboard-shortcuts)
@@ -139,6 +154,9 @@ your devices ──Tailscale HTTPS──▶ tailscale serve ──▶ 127.0.0.1:
                                                                                    ├─ NetEase lyrics lookup
                                                                                    └─ updates from GitHub (web/)
 ```
+
+The Android and macOS apps open the same address as a browser does and only add what a browser can't: the phone's
+own sound for the bars, logging in to Spotify through your browser, a window of its own.
 
 ## Setup
 
@@ -403,22 +421,29 @@ so lyrics, Canvas, your settings and updates all come from the server, the same 
 
 ## macOS app
 
-The native macOS app (macOS 13 or newer) opens your existing Vibe Visualizer server in its own WebKit window.
-It does not install or run the server for you; keep Tailscale connected if your server is reached through your tailnet.
+**Vibe Visualizer for macOS** (macOS 13 or newer) opens your Vibe Visualizer server in its own window, so lyrics,
+Canvas, your settings and updates all come from the server, the same as in a browser. It doesn't run the server
+itself; keep Tailscale connected on the Mac if your server is reached through your tailnet.
 
-- **Download:** GitHub Actions builds a drag-to-Applications `.dmg` on changes to `macos/` or `web/index.html` and
-  uploads it as a workflow artifact.
-- **Build:** open `macos/VibeVisualizer.xcodeproj` in Xcode and build the `VibeVisualizer` scheme. To package a built
-  app as a disk image, run `bash macos/package-dmg.sh "/path/to/Vibe Visualizer.app"`. Without an argument, the script
-  packages the Release build at `macos/build/Build/Products/Release/`.
-- **First start:** enter your server's HTTPS address, such as `https://NAME.ts.net`. Change it later with the gear
-  button in the app. The app keeps its browser data separate from Safari and other apps.
-- **Spotify login:** when prompted, add `vibevisualizer://callback` as a Redirect URI in your Spotify app's developer
-  dashboard. Sign-in opens in your default browser and returns to the Mac app.
-- **Files and audio:** the app uses macOS's file picker for local audio and lyrics files. Allow microphone or screen
-  capture only if you choose an audio-capture option in the visualizer.
-- **Build it yourself:** the app is in `macos/` (SwiftUI and WebKit, no third-party dependencies). The distributed app
-  is unsigned and not notarized; macOS may ask you to confirm that you want to open it.
+- **Install:** download `Vibe-Visualizer-macOS.dmg` from the [Releases page](../../releases), open it and drag
+  *Vibe Visualizer* to *Applications*. The app isn't signed by Apple yet, so the first time, right-click it and choose
+  *Open* (or allow it under *System Settings → Privacy & Security*).
+- **First start:** type your server's address (`https://NAME.ts.net`). Change it later with the gear button in the
+  app's window. The app keeps its own browser data, separate from Safari.
+- **Spotify login** opens in your default browser and comes back to the app. Once, add `vibevisualizer://callback`
+  as a second Redirect URI in your Spotify app (developer.spotify.com → your app → Settings); the app shows this
+  before the first login, and it's the same address the Android app uses.
+- **Bars from the Spotify app:** there's no Vibe Bridge for macOS yet. Install a loopback device such as
+  [BlackHole](https://github.com/ExistentialAudio/BlackHole), send the Mac's sound to it (a Multi-Output Device in
+  *Audio MIDI Setup* keeps your speakers playing), and pick it with the microphone button; it's marked 🔊.
+  Local files work as they are.
+- **Files** open with the Mac's own file picker (music, lyrics files, a cover or a Canvas video).
+- **Updates:** *Settings → Help & about → Mac app* shows the app's version and, when a newer one is out, what changed
+  and a download button.
+- **Building it yourself:** the app is in `macos/` (SwiftUI and WebKit, no third-party libraries). Open
+  `macos/VibeVisualizer.xcodeproj` in Xcode and build the `VibeVisualizer` scheme; `bash macos/package-dmg.sh` turns the
+  Release build into a `.dmg`. GitHub Actions builds the `.dmg` on every change (a workflow artifact) and publishes it
+  when a tag like `macos-v0.1.0` is pushed.
 
 ## Third-party services
 
@@ -469,7 +494,7 @@ Click any lyric line to jump to it.
 ## Credits
 
 Made by [BOZKOW](https://github.com/BOZKOW), built together with [Claude Code](https://claude.com/claude-code)
-(Anthropic's Claude Opus).
+(Anthropic's Claude Opus). The macOS app was made by Nikki Honzulů.
 
 The "Spicy Lyrics" lyrics font option uses [Inter](https://rsms.me/inter/) by Rasmus Andersson (SIL Open Font License
 1.1, `web/InterVariable-LICENSE.txt`), or the device's own San Francisco font on Apple devices.

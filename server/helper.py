@@ -11,7 +11,7 @@ GET /spotify-lyrics?id=<track id>   ->  Spotify's own lyrics via the web player 
 GET /netease?title=&artist=&duration=  ->  NetEase Cloud Music lyrics (unofficial API)
 GET/PUT/DELETE /prefs              ->  per-device Vibe Visualizer preferences, keyed by the device's Tailscale IP
 GET  /version                      ->  installed web app version, the newest one on GitHub, release notes, recent
-                                        changes and the newest Android app release
+                                        changes and the newest Android and macOS app releases
 POST /report, GET /report, DELETE /report  ->  error reports from the app, kept on this server (errors.jsonl in PREFS_DIR)
 WS   /bridge/push, /bridge/listen  ->  relay for Vibe Bridge: a bridge pushes its bar data, the app's pages listen
 POST /update                       ->  download the newest web app files from GitHub into WEB_DIR
@@ -396,30 +396,35 @@ def recent_notes(n=15):
         return []
 
 
-android_cache = {"at": 0, "v": None}
+apps_cache = {"at": 0, "v": None}
 
 
-def android_latest():
-    """The newest Android app release (by when it was published), its notes and its APK link. Kept for 30 minutes."""
-    if android_cache["v"] is not None and time.time() - android_cache["at"] < 1800:
-        return android_cache["v"]
-    v = {}
+def apps_latest():
+    """The newest release of each app (Android, macOS), by when it was published: version, notes and download link.
+    One GitHub request, kept for 30 minutes."""
+    if apps_cache["v"] is not None and time.time() - apps_cache["at"] < 1800:
+        return apps_cache["v"]
+    out = {}
     try:
-        rels = [r for r in gh_get("https://api.github.com/repos/%s/releases?per_page=30" % UPDATE_REPO)
-                if r.get("tag_name", "").startswith("android-v") and not r.get("draft")]
+        rels = [r for r in gh_get("https://api.github.com/repos/%s/releases?per_page=50" % UPDATE_REPO) if not r.get("draft")]
         rels.sort(key=lambda r: r.get("published_at") or "", reverse=True)
-        if rels:
-            r = rels[0]
-            apk = next((a["browser_download_url"] for a in r.get("assets", []) if a["name"].endswith(".apk")), "")
-            v = {"tag": r["tag_name"], "version": r["tag_name"][len("android-v"):], "title": r.get("name") or r["tag_name"],
-                 "date": r.get("published_at") or "", "beta": bool(r.get("prerelease")), "url": r.get("html_url", ""), "apk": apk,
-                 "points": [l.strip()[2:].strip() for l in (r.get("body") or "").splitlines() if l.strip().startswith(("- ", "* "))][:20]}
+        for kind, prefix, ext in (("android", "android-v", ".apk"), ("macos", "macos-v", ".dmg")):
+            r = next((r for r in rels if r.get("tag_name", "").startswith(prefix)), None)
+            if not r:
+                out[kind] = {}
+                continue
+            dl = next((a["browser_download_url"] for a in r.get("assets", []) if a["name"].endswith(ext)), "")
+            out[kind] = {"tag": r["tag_name"], "version": r["tag_name"][len(prefix):], "title": r.get("name") or r["tag_name"],
+                         "date": r.get("published_at") or "", "beta": bool(r.get("prerelease")), "url": r.get("html_url", ""),
+                         "apk" if ext == ".apk" else "dmg": dl, "file": dl,
+                         "points": [l.strip()[2:].strip() for l in (r.get("body") or "").splitlines()
+                                    if l.strip().startswith(("- ", "* "))][:20]}
     except Exception as e:
-        log("android release:", e)
-        if android_cache["v"] is not None:
-            return android_cache["v"]
-    android_cache.update(at=time.time(), v=v)
-    return v
+        log("app releases:", e)
+        if apps_cache["v"] is not None:
+            return apps_cache["v"]
+    apps_cache.update(at=time.time(), v=out)
+    return out
 
 
 ERR_FILE = os.path.join(PREFS_DIR, "errors.jsonl")
@@ -730,8 +735,9 @@ async def handle(reader, writer):
                 if latest.get("sha") and (not cur or cur.get("sha") != latest["sha"]):
                     notes = await asyncio.to_thread(release_notes, cur and cur.get("sha"), latest["sha"])
                 recent = await asyncio.to_thread(recent_notes)
-                android = await asyncio.to_thread(android_latest)
-                status, out = 200, {"installed": cur, "latest": latest, "notes": notes, "recent": recent, "android": android,
+                apps = await asyncio.to_thread(apps_latest)
+                status, out = 200, {"installed": cur, "latest": latest, "notes": notes, "recent": recent,
+                                    "android": apps.get("android", {}), "macos": apps.get("macos", {}),
                                     "can_update": web_dir_writable(), "repo": UPDATE_REPO}
             elif method != "POST":
                 status, out = 405, {"error": "use POST"}

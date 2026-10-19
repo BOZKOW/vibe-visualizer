@@ -1131,12 +1131,12 @@ body.low #scrubtip{backdrop-filter:none;-webkit-backdrop-filter:none;background:
   <div class="f chk" data-k="xFocus"><label><input type="checkbox" id="xFocus"> Focus mode<small>The line being sung is sharp in the middle and stays until it’s sung to the end. The next line flies in from the bottom 200 ms before it’s sung; if it starts while the middle line is still going, it waits right under it, sharp. Finished lines fly up and disappear, and instrumental breaks stay empty, without the dots. Lyrics without timing just scroll slowly with the song.</small></label></div>
 
   <h4>Help</h4>
-  <div id="andbox" hidden><p class="sub-h">Android app</p>
+  <div id="andbox" hidden><p class="sub-h" id="apphead">Android app</p>
   <p class="stat" id="andstat"></p>
   <div class="row2"><button class="btn sm pri" id="andget" hidden>Download the new app</button><button class="btn sm" id="andsrv">Change server address</button></div>
   <p class="hint" id="andedge"></p>
   <div id="andnotes" class="relnotes"></div>
-  <p class="hint">The app opens your server, so this page updates with the server. Only the app itself (rarely) needs a new APK from the GitHub Releases page.</p></div>
+  <p class="hint" id="apphint">The app opens your server, so this page updates with the server. Only the app itself (rarely) needs a new APK from the GitHub Releases page.</p></div>
   <p class="sub-h">Updates</p>
   <p class="stat" id="updstat">Not checked yet.</p>
   <div class="row2"><button class="btn sm" id="updcheck">Check for updates</button><button class="btn sm pri" id="updgo" hidden>Update now</button></div>
@@ -3934,17 +3934,19 @@ const helpOpen=()=>$('panel').classList.contains('open')&&pageNow==='help';   //
 // the Android app itself: its version against the newest app release on GitHub (only the APK, not the page, which
 // comes from your server)
 const verCmp=(a,b)=>{const p=x=>String(x||'').split(/[.-]/).map(n=>parseInt(n,10)||0);const A=p(a),B=p(b);for(let i=0;i<Math.max(A.length,B.length);i++){if((A[i]||0)!==(B[i]||0))return(A[i]||0)-(B[i]||0)}return 0};
-function andUpdate(r){
-  if(!AND)return;let mine='';try{mine=AND.version()}catch(e){}
+const APPK=AND?'android':MAC?'macos':'';   // inside one of the apps: its own updates are shown too
+function appUpdate(v){
+  if(!APPK)return;const r=v&&v[APPK],app=AND||MAC,file=r&&(r.apk||r.dmg||r.file);let mine='';try{mine=app.version()}catch(e){}
   const st=$('andstat'),go=$('andget'),newer=!!(r&&r.version&&verCmp(r.version,mine)>0);
-  let srv='';try{srv=AND.server()}catch(e){}
-  st.textContent='App version '+(mine||'?')+(r&&r.version?(newer?' · new version '+r.version+(r.beta?' beta':'')+' is out':' · the newest')+'':'')+(srv?' · server '+srv:'');
-  go.hidden=!newer||!r.apk;if(newer)go.textContent='Download app '+r.version;
-  go.onclick=()=>{location.href=r.apk};   // opens in the phone's browser, which downloads it; open the file to install over this one
+  let srv='';try{srv=AND?AND.server():''}catch(e){}
+  st.textContent='App version '+(mine||'?')+(r&&r.version?(newer?' · new version '+r.version+(r.beta?' beta':'')+' is out':' · the newest'):'')+(srv?' · server '+srv:'');
+  go.hidden=!newer||!file;if(newer)go.textContent='Download '+(MAC?'Mac app ':'app ')+r.version;
+  const get=()=>{location.href=file};   // opens in the browser, which downloads it; open the file to install over this one
+  go.onclick=get;
   showNotes(r&&r.points&&r.points.length?[{title:r.title||('App '+r.version),date:r.date,points:r.points,sha:r.tag}]:[],$('andnotes'),{fresh:new Set(newer?[r.tag]:[]),open:1,none:' '});
-  let skip='';try{skip=localStorage.getItem('vv_andskip')||''}catch(e){}
-  if(newer&&r.apk&&skip!==r.tag&&!helpOpen())notify({key:'andupd',kind:'ok',title:'New app version '+r.version+(r.beta?' beta':''),sub:'You have '+(mine||'an older one'),list:(r.points||[]).slice(0,5),
-    actions:[{label:'Later',fn:()=>{try{localStorage.setItem('vv_andskip',r.tag)}catch(e){}}},{label:'Download',pri:true,fn:()=>{location.href=r.apk}}]});
+  const key=AND?'vv_andskip':'vv_macskip';let skip='';try{skip=localStorage.getItem(key)||''}catch(e){}
+  if(newer&&file&&skip!==r.tag&&!helpOpen())notify({key:'appupd',kind:'ok',title:'New '+(MAC?'Mac ':'')+'app version '+r.version+(r.beta?' beta':''),sub:'You have '+(mine||'an older one'),list:(r.points||[]).slice(0,5),
+    actions:[{label:'Later',fn:()=>{try{localStorage.setItem(key,r.tag)}catch(e){}}},{label:'Download',pri:true,fn:get}]});
 }
 async function checkUpdate(manual){
   const out=$('updstat'),go=$('updgo');
@@ -3960,7 +3962,7 @@ async function checkUpdate(manual){
     if(newer&&!v.can_update)out.textContent+=' To update from here, the web folder has to be mounted into the helper (see the README).';
     const fresh=new Set(newer?(v.notes||[]).map(n=>n.sha):[]),recent=(v.recent&&v.recent.length?v.recent:v.notes)||[];
     showNotes(recent,null,{fresh,cur:cur&&cur.sha&&cur.sha.slice(0,7),none:newer?'':'You have the newest version.'});
-    andUpdate(v.android);
+    appUpdate(v);
     let skip='';try{skip=localStorage.getItem('vv_skip')||''}catch(e){}
     if(newer&&v.can_update&&(manual||skip!==lat.sha)&&!helpOpen()){   // a notification card with what's new
       const ls=noteLines(v.notes||[]);
@@ -4042,6 +4044,9 @@ function andEdges(){
   const e=$('andedge');if(e)e.textContent='Kept clear of the camera: top '+(st.getPropertyValue('--sat')||'0px')+', left '+(st.getPropertyValue('--sal')||'0px')+', right '+(st.getPropertyValue('--sar')||'0px')+', bottom '+(st.getPropertyValue('--sab')||'0px')+(edgeGuess?' (the app reported nothing, so the top is guessed)':'')+'.';
 }
 if(AND){let q=0;const go=()=>{clearTimeout(q);q=setTimeout(andEdges,250)};addEventListener('resize',go);[300,1500,4000].forEach(t=>setTimeout(andEdges,t))}
+if(MAC){body.classList.add('mac');$('andbox').hidden=false;$('apphead').textContent='Mac app';$('andsrv').hidden=true;
+  $('apphint').textContent='The app opens your server, so this page updates with the server. Only the app itself (rarely) needs a new .dmg from the GitHub Releases page. The server address is changed with the gear button in the app’s window.';
+  try{$('andstat').textContent='App version '+(MAC.version?MAC.version():'?')}catch(e){}}
 if(AND){body.classList.add('android');$('andbox').hidden=false;$('andsrv').onclick=()=>AND.changeServer();
   try{$('andstat').textContent='App version '+AND.version()+' · server '+AND.server()}catch(e){}}
 
