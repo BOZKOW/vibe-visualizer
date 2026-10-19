@@ -53,6 +53,7 @@ body.low #bgl{display:none}
 #shade{position:fixed;inset:0;background:radial-gradient(ellipse at 70% 50%,rgba(0,0,0,.15),rgba(0,0,0,.55));opacity:0;transition:opacity .8s;pointer-events:none}
 body.cvlive #cvblur,body.cvlive #shade{opacity:1}
 body.cvlive #bg{opacity:0}
+body.kwon.cvlive:not(.low) #bg{opacity:1}   /* with Kawarp, the Canvas video is blurred into the background itself */
 
 /* ---------- canvas video (left half) ---------- */
 #cvpane{position:fixed;left:0;top:0;bottom:0;width:56vw;opacity:0;pointer-events:none;transition:opacity .8s;-webkit-mask-image:linear-gradient(90deg,#000 0%,#000 40%,rgba(0,0,0,.93) 50%,rgba(0,0,0,.76) 61%,rgba(0,0,0,.5) 72%,rgba(0,0,0,.25) 83%,rgba(0,0,0,.08) 93%,transparent 100%);mask-image:linear-gradient(90deg,#000 0%,#000 40%,rgba(0,0,0,.93) 50%,rgba(0,0,0,.76) 61%,rgba(0,0,0,.5) 72%,rgba(0,0,0,.25) 83%,rgba(0,0,0,.08) 93%,transparent 100%)}   /* a long, eased fade: the video melts into the blur, no edge */
@@ -1882,7 +1883,7 @@ let fadeT;function fadeBake(){
    slow liquid warp, from the cover, or from the Canvas video while one plays. Drawn small (it's a blur) from this
    page's own frame loop, so the frame cap holds; the speed follows the music. Without WebGL, the drifting layers
    below stay. */
-let kw=null,kwOn=false,kwTried=false,kwLast=0,kwSpdAt=0,kwVid=false;
+let kw=null,kwOn=false,kwTried=false,kwLast=0,kwSpdAt=0,kwVid=false,kwVidBad='';
 const kwPasses=()=>Math.max(2,Math.min(12,Math.round(2+S.bgblur/60*6))),kwSat=()=>1.5*S.sat/170,kwDim=()=>Math.max(0,Math.min(.85,1-S.bri/100));   // Brightness: a black tint, free in the shader
 function kwSize(){const c=$('kw'),k=PHONE?.3:.45;c.width=Math.max(64,Math.round(innerWidth*k));c.height=Math.max(64,Math.round(innerHeight*k));if(kw)try{kw.resize()}catch(e){}}
 async function kwInit(){
@@ -1896,7 +1897,8 @@ async function kwInit(){
 function kwFeed(){   // the cover (or the Canvas video while one plays live) into the background
   if(!kw)return;
   try{const vid=body.classList.contains('cvlive')&&!cvTaint&&cvv.readyState>=2;
-    if(vid){if(!kwVid){kw.loadVideo(cvv,{frameRate:PHONE?15:24});kwVid=true}return}
+    const vsrc=cvv.getAttribute('src')||'';
+    if(vid&&kwVidBad!==vsrc){if(!kwVid){kw.loadVideo(cvv,{frameRate:PHONE?15:24,onError:()=>{kwVid=false;kwVidBad=vsrc;kwFeed()}});kwVid=true}return}   // a video it can't read: the blurred cover instead
     if(kwVid){kw.unloadVideo();kwVid=false}
     if(curImg)kw.loadImageElement(curImg);else kw.loadGradient(rawCols.map(c=>'rgb('+c.join(',')+')'),135)}
   catch(e){console.warn('Kawarp:',e&&e.message)}
