@@ -740,10 +740,10 @@ body.phone #lcredit>*{white-space:nowrap}body.phone #lcredit img{width:14px;heig
 body.phone.uihide #lcredit{bottom:calc(var(--sab,0px) + 74px)!important}
 body.phone[data-view=lyrics] #lcredit{bottom:calc(var(--stageb,190px) + 6px)!important}
 body.phone.uihide[data-view=lyrics] #lcredit{bottom:calc(var(--sab,0px) + 8px)!important}
-body.phone[data-view=both]:not(.phpl):is(.hl,.lm) #lyr{bottom:calc(var(--stageb,190px) + 84px)!important}
-body.phone.uihide[data-view=both]:not(.phpl):is(.hl,.lm) #lyr{bottom:calc(var(--sab,0px) + 94px)!important}
-body.phone[data-view=lyrics]:not(.phpl) #lyr{bottom:calc(var(--stageb,190px) + 26px)!important}
-body.phone.uihide[data-view=lyrics]:not(.phpl) #lyr{bottom:calc(var(--sab,0px) + 28px)!important}
+body.phone[data-view=both]:not(.phpl):is(.hl,.lm) #lyr{bottom:calc(var(--stageb,190px) + 80px + var(--credh,20px))!important}
+body.phone.uihide[data-view=both]:not(.phpl):is(.hl,.lm) #lyr{bottom:calc(var(--sab,0px) + 90px + var(--credh,20px))!important}
+body.phone[data-view=lyrics]:not(.phpl) #lyr{bottom:calc(var(--stageb,190px) + 22px + var(--credh,20px))!important}
+body.phone.uihide[data-view=lyrics]:not(.phpl) #lyr{bottom:calc(var(--sab,0px) + 24px + var(--credh,20px))!important}
 body.phone.phpl #lcredit{display:none!important}
 /* lyrics (and both) */
 body.phone:not(.phpl) #stage{grid-template-columns:var(--sl-cov) minmax(0,1fr);grid-template-rows:var(--sl-cov) minmax(0,1fr);grid-template-areas:"art txt" "ly ly"}
@@ -852,11 +852,11 @@ body.phone.uihide[data-view=both]:not(.phpl):is(.hl,.lm) #lyr{bottom:calc(var(--
 body.phone[data-view=lyrics]:not(.phpl) #lyr{bottom:var(--stageb,190px)!important}
 body.phone.uihide[data-view=lyrics]:not(.phpl) #lyr{bottom:calc(var(--sab,0px) + 8px)!important}   /* the lyrics end above the bars and the controls (lower when those hide) */
 /* Next up: a pill above the bars in the last 30 seconds (in the player layout, under the song) */
-body.phone:not(.phpl) #nextup{display:flex!important;position:fixed;left:var(--sl-side);right:auto;max-width:calc(100% - var(--sl-side) - var(--sl-sider));bottom:calc(var(--stageb,190px) + 92px);
+body.phone:not(.phpl) #nextup{display:flex!important;position:fixed;left:var(--sl-side);right:auto;max-width:calc(100% - var(--sl-side) - var(--sl-sider));bottom:calc(var(--stageb,190px) + 72px + var(--credh,20px));
   margin:0;z-index:6;padding:6px 14px 6px 6px;border-radius:99px;background:rgba(28,28,32,.92)!important;border:1px solid rgba(255,255,255,.12);box-shadow:0 8px 24px rgba(0,0,0,.35);backdrop-filter:none!important;transition:bottom .35s var(--e-out)}
 body.phone:not(.phpl) #nextup[hidden]{display:none!important}
-body.phone.uihide:not(.phpl) #nextup{bottom:calc(var(--sab,0px) + 100px)}
-body.phone[data-view=lyrics]:not(.phpl) #nextup{bottom:calc(var(--stageb,190px) + 30px)}body.phone.uihide[data-view=lyrics]:not(.phpl) #nextup{bottom:calc(var(--sab,0px) + 34px)}
+body.phone.uihide:not(.phpl) #nextup{bottom:calc(var(--sab,0px) + 82px + var(--credh,20px))}
+body.phone[data-view=lyrics]:not(.phpl) #nextup{bottom:calc(var(--stageb,190px) + 14px + var(--credh,20px))}body.phone.uihide[data-view=lyrics]:not(.phpl) #nextup{bottom:calc(var(--sab,0px) + 16px + var(--credh,20px))}
 body.phone #nextup img{width:34px;height:34px;border-radius:99px}body.phone #nextup b{font-size:13.5px}body.phone #nextup span{font-size:12px}
 /* a Canvas behind: blurred (the light, already-blurred copy, and the cover stays) or sharp (the video itself) */
 body.phone.cvsoft #cvpane{opacity:0!important}
@@ -1097,6 +1097,18 @@ body.phone #devpanel .drow.on{background:color-mix(in srgb,var(--acc) 22%,rgba(2
 body.phone #devpanel .hint{padding:8px 6px 0;font-size:12.5px}
 body.phone #setup{padding:calc(var(--sat,0px) + 12px) calc(12px + var(--sar,0px)) calc(var(--sab,0px) + 12px) calc(12px + var(--sal,0px))!important}
 body.phone #setup .sw{max-height:100%!important;border-radius:28px!important;border:0!important;background:var(--ph-glass),rgba(18,18,30,.97)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 24px 60px rgba(0,0,0,.55)!important}
+/* 1. the song's title and artist (phones) keep their shadow: they hide what runs past their box (for … and the
+   gliding title), so the box gets room around the text and the shadow fades out inside it */
+body.phone #ttl{padding:12px 16px!important;margin:-12px -16px!important}
+body.phone #sub{padding:12px 16px!important;margin:-10px -16px -12px!important}
+/* 3. a shadow behind the lyrics (computer and phone): a soft shade behind the lyrics' area, so they read on a bright
+   background; on phones the line being sung gets its drop shadow too (one line: cheap) */
+#right::before{content:"";position:absolute;inset:-4% -6% -4% -8%;z-index:0;pointer-events:none;opacity:0;transition:opacity .6s;
+  background:radial-gradient(ellipse 70% 60% at 42% 45%,rgba(0,0,0,.34),rgba(0,0,0,.14) 55%,rgba(0,0,0,0) 78%)}
+body.hl:not([data-view=viz]) #right::before{opacity:1}
+body.phone #right::before{inset:-2% calc(-1*var(--sl-sider)) -2% calc(-1*var(--sl-side));background:radial-gradient(ellipse 85% 55% at 40% 40%,rgba(0,0,0,.36),rgba(0,0,0,.14) 60%,rgba(0,0,0,0) 85%)}
+body.phone.phpl #right::before{opacity:0}
+body.android:not(.low) #lyr:not(.st) .ll.a{filter:drop-shadow(0 4px 12px rgba(0,0,0,.32))}
 </style>
 <style id="glassui">
 /* ===== Design: Glass (Settings → Appearance → Design). Classic turns this whole sheet off. ===== */
