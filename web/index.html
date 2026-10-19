@@ -1551,7 +1551,7 @@ function bridgeState(){
   updBridge();
 }
 function bridgeOpen(kind){
-  if(kind==='local'&&AND){AND.start();return}   // the app's own bridge, read each frame by andPoll()
+  if(kind==='local'&&AND){if(S.bridge)AND.start();return}   // the app's own bridge, read each frame by andPoll()
   const b=bl[kind],url=kind==='local'?BRIDGE_LOCAL:BRIDGE_RELAY;clearTimeout(b.t);
   if(!S.bridge||b.ws||!url)return;
   try{b.ws=new WebSocket(url)}catch(e){b.ws=null;b.t=setTimeout(()=>bridgeOpen(kind),15000);return}
@@ -1572,7 +1572,7 @@ setInterval(()=>{if(S.bridge&&bridgeOn&&performance.now()-bridgeAt>1500)bridgeSt
 function andPoll(){   // the Android app's newest frame (base64, empty when there's nothing new)
   if(!AND||!S.bridge)return;let f='';try{f=AND.frame()}catch(e){return}if(!f)return;
   const x=atob(f),n=Math.min(1024,x.length),now=performance.now();for(let i=0;i<n;i++)bridgeBuf[i]=x.charCodeAt(i);
-  const b=bl.local;b.at=now;bridgeAt=now;if(!b.on){b.on=true;b.dev='this phone';bridgeState()}
+  const b=bl.local;b.at=now;bridgeAt=now;if(!b.on){b.on=true;b.dev='this phone'}if(!bridgeOn)bridgeState();   // back after a pause too
 }
 function bridgeStop(){if(AND){try{AND.stop()}catch(e){}bl.local.on=false}['local','relay'].forEach(k=>{const b=bl[k];clearTimeout(b.t);if(b.ws){const w=b.ws;b.ws=null;b.on=false;w.onclose=null;w.close()}});bridgeOn=false;updBridge()}
 function updBridge(){
