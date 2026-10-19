@@ -998,6 +998,7 @@ body.low #scrubtip{backdrop-filter:none;-webkit-backdrop-filter:none;background:
   <div id="andbox" hidden><p class="sub-h">Android app</p>
   <p class="stat" id="andstat"></p>
   <div class="row2"><button class="btn sm pri" id="andget" hidden>Download the new app</button><button class="btn sm" id="andsrv">Change server address</button></div>
+  <p class="hint" id="andedge"></p>
   <div id="andnotes" class="relnotes"></div>
   <p class="hint">The app opens your server, so this page updates with the server. Only the app itself (rarely) needs a new APK from the GitHub Releases page.</p></div>
   <p class="sub-h">Updates</p>
@@ -3805,6 +3806,18 @@ window.vvBack=()=>{   // the Android back button: closes what's open in the app,
   for(const id of ['cappanel','netpanel'])if(popOpen($(id))){closePop($(id));$('netbtn').classList.remove('on');return true}
   if(body.classList.contains('home')&&(src!=='none'||loaded)){leaveHome();return true}
   return false};
+// the camera cutout: the app says how much of each edge it covers. Asked here (on start, turning the phone) instead of
+// only waiting to be told; an app that says nothing still gets the top kept clear when the phone is upright
+let edgeGuess=false;
+function andEdges(){
+  if(!AND)return;const st=root.style;let v='';try{v=AND.insets?AND.insets():''}catch(e){}
+  const n=v.split(',').map(Number),up=innerHeight>innerWidth;
+  if(n.length===4&&n.every(isFinite)&&(n.some(x=>x>0)||!up)){edgeGuess=false;['--sat','--sab','--sal','--sar'].forEach((k,i)=>st.setProperty(k,n[i]+'px'))}
+  else if(up&&!(parseFloat(st.getPropertyValue('--sat'))>0)){edgeGuess=true;st.setProperty('--sat','36px')}   // upright, nothing reported: room for a punch hole
+  else if(!up&&edgeGuess){edgeGuess=false;st.setProperty('--sat','0px')}
+  const e=$('andedge');if(e)e.textContent='Kept clear of the camera: top '+(st.getPropertyValue('--sat')||'0px')+', left '+(st.getPropertyValue('--sal')||'0px')+', right '+(st.getPropertyValue('--sar')||'0px')+', bottom '+(st.getPropertyValue('--sab')||'0px')+(edgeGuess?' (the app reported nothing, so the top is guessed)':'')+'.';
+}
+if(AND){let q=0;const go=()=>{clearTimeout(q);q=setTimeout(andEdges,250)};addEventListener('resize',go);[300,1500,4000].forEach(t=>setTimeout(andEdges,t))}
 if(AND){body.classList.add('android');$('andbox').hidden=false;$('andsrv').onclick=()=>AND.changeServer();
   try{$('andstat').textContent='App version '+AND.version()+' · server '+AND.server()}catch(e){}}
 
