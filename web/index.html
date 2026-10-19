@@ -103,7 +103,7 @@ body.low .artghost{display:none}body.low #art.swap{animation:none}
 body.cvmode #txt::before{background:radial-gradient(closest-side,rgba(0,0,0,.55),rgba(0,0,0,.25) 60%,rgba(0,0,0,0))}
 #sub,#status{text-shadow:0 1px 2px rgba(0,0,0,.55),0 4px 14px rgba(0,0,0,.45)}
 /* the line being sung floats above the background */
-body:not(.low) #lyr:not(.st) .ll.a,body.xfocus:not(.low) #lyr:not(.st) .ll.fv{filter:drop-shadow(0 6px 16px rgba(0,0,0,.35)) drop-shadow(0 1px 1px rgba(0,0,0,.2))}
+body:not(.low):not(.android) #lyr:not(.st) .ll.a,body.xfocus:not(.low):not(.android) #lyr:not(.st) .ll.fv{filter:drop-shadow(0 6px 16px rgba(0,0,0,.35)) drop-shadow(0 1px 1px rgba(0,0,0,.2))}
 body.low #artw::after{display:none}
 #status,#lstat{font-size:12px;color:var(--faint);margin-top:6px}
 body.cvmode #ttl,body.cvmode #sub{text-shadow:0 1px 2px rgba(0,0,0,.7),0 2px 8px rgba(0,0,0,.6),0 8px 28px rgba(0,0,0,.6)}   /* over a busy Canvas video */
@@ -135,7 +135,7 @@ body[data-view=viz] #lyr{display:none}
 .ll.a .lt,.ll.a .w,.ll.a .c{-webkit-background-clip:text;background-clip:text;text-shadow:0 0 var(--text-shadow-blur-radius) rgba(255,255,255,var(--text-shadow-opacity));
   background-image:linear-gradient(var(--gradient-degrees),rgba(255,255,255,var(--gradient-alpha)) var(--gradient-position),rgba(255,255,255,var(--gradient-alpha-end)) calc(var(--gradient-position) + 20% + var(--gradient-offset)))}
 .ll.a .lt.wt,.ll.a .w.lg{background-image:none;text-shadow:none}   /* words and split letters paint their own fill */
-#lyr:not(.st) .ll:not(.dots){cursor:pointer}#lyr:not(.st) .ll:not(.a):not(.dots):hover{opacity:1;--bl:0px;--fb:0px}   /* synced lines can be clicked to jump there */
+#lyr:not(.st) .ll:not(.dots){cursor:pointer}@media(hover:hover){#lyr:not(.st) .ll:not(.a):not(.dots):hover{opacity:1;--bl:0px;--fb:0px}}   /* synced lines can be clicked to jump there (a touch screen would keep the tapped line lit) */
 /* untimed lyrics: plain bright text (they never blur, so no shadow trick), with a soft shadow for depth */
 #lyr.st .ll{opacity:1}
 #lyr.st .ll .lt,#lyr.st .ll .lt .w{-webkit-text-fill-color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.3),0 4px 18px rgba(0,0,0,.28)}
@@ -194,7 +194,7 @@ body.low .ll .w,body.low .ll .w .c{scale:1;transform:none}
 .pb:hover{background:rgba(255,255,255,.2)}.pb:active{transform:scale(.88)}.pb:disabled{opacity:.25;cursor:default}
 /* lyrics credit: under the cover, on screen whenever lyrics are (Spicy Lyrics attribution rules) */
 /* lyrics credit: always in the bottom-left corner, beside the dock (or just above it when there's no room) */
-#lcredit{position:fixed;left:var(--pad);bottom:var(--credb,calc(16px + env(safe-area-inset-bottom,0px)));max-width:var(--credw,min(420px,calc(100vw - var(--pad)*2)));z-index:6;display:flex;flex-direction:column;gap:.25em;font-size:12px;line-height:1.45;font-weight:600;color:#fff;overflow-wrap:anywhere;text-shadow:0 1px 10px rgba(0,0,0,.75);animation:fadein .6s;transition:bottom .35s var(--e-out)}
+#lcredit{position:fixed;left:var(--pad);bottom:var(--credb,calc(16px + var(--sab,env(safe-area-inset-bottom,0px))));max-width:var(--credw,min(420px,calc(100vw - var(--pad)*2)));z-index:6;display:flex;flex-direction:column;gap:.25em;font-size:12px;line-height:1.45;font-weight:600;color:#fff;overflow-wrap:anywhere;text-shadow:0 1px 10px rgba(0,0,0,.75);animation:fadein .6s;transition:bottom .35s var(--e-out)}
 #lcredit a{color:inherit;text-decoration:underline;text-underline-offset:2px}
 .cprov{opacity:.5}.cwrit{opacity:.6}.cdim{opacity:.5}
 .cinfo{display:flex;align-items:center;flex-wrap:wrap}.cinfo .cdim+.cwho{margin-left:.3em}
@@ -284,7 +284,7 @@ body.home #lprob,body.low #lprob{backdrop-filter:none;-webkit-backdrop-filter:no
 body.hl #lmsg,body[data-view=viz] #lmsg{display:none}
 
 /* ---------- top bar ---------- */
-#top{position:fixed;top:0;left:0;right:0;align-items:center;justify-content:space-between;gap:12px;padding:calc(12px + env(safe-area-inset-top,0px)) 16px 22px;z-index:5;background:linear-gradient(rgba(0,0,0,.4),transparent);transition:opacity .35s,transform .35s}
+#top{position:fixed;top:0;left:0;right:0;align-items:center;justify-content:space-between;gap:12px;padding:calc(12px + var(--sat,env(safe-area-inset-top,0px))) 16px 22px;z-index:5;background:linear-gradient(rgba(0,0,0,.4),transparent);transition:opacity .35s,transform .35s}
 .brand{font-weight:800;letter-spacing:-.02em;font-size:17px;display:flex;align-items:center;gap:8px;cursor:pointer;border-radius:12px;padding:4px 8px;margin:-4px -8px;transition:background .2s,transform .4s var(--e-spring)}
 .brand:hover{background:rgba(255,255,255,.08)}.brand:active{transform:scale(.95)}
 .brand i{width:10px;height:10px;border-radius:50%;background:var(--acc);box-shadow:0 0 14px var(--acc)}
@@ -306,7 +306,7 @@ body.hl #lmsg,body[data-view=viz] #lmsg{display:none}
 #fpsEl{position:fixed;bottom:6px;left:10px;font-size:11px;color:var(--faint);display:none;z-index:3}
 
 /* ---------- bottom bar ---------- */
-#dock{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(calc(-50% + var(--dockx,0px)));width:min(1080px,calc(100% - 32px));z-index:5;transition:opacity .35s,transform .35s}
+#dock{position:fixed;left:50%;bottom:calc(18px + var(--sab,env(safe-area-inset-bottom,0px)));transform:translateX(calc(-50% + var(--dockx,0px)));width:min(1080px,calc(100% - 32px));z-index:5;transition:opacity .35s,transform .35s}
 body.uihide #dock{opacity:0;transform:translate(calc(-50% + var(--dockx,0px)),12px);pointer-events:none;visibility:hidden;transition:opacity .35s,transform .35s,visibility 0s .35s}
 body.uihide #top{opacity:0;transform:translateY(-10px);pointer-events:none}
 body.idle{cursor:none}
@@ -385,7 +385,8 @@ body.home #empty #hback:not([hidden])+#pick{background:var(--glass);color:var(--
 #pnone{color:var(--faint);font-size:13px}
 @media(max-width:700px){#pwin{grid-template-columns:1fr;grid-template-rows:auto 1fr;height:100%}
   #pnav{flex-direction:row;flex-wrap:nowrap;overflow-x:auto;border-right:0;border-bottom:1px solid var(--line);padding:12px;align-items:center}
-  #ptitle,#psearch{display:none}#pnav .pn{flex:none}#pbody{padding:20px 18px 26px}}
+  #ptitle,#psearch{display:none}#pnav .pn{flex:none}#pbody{padding:20px 18px 26px}
+  #pnav{margin-right:56px;border-bottom:0}#pbody{border-top:1px solid var(--line)}}   /* the tabs scroll beside the close button, not under it */
 h4{margin:14px 0 -4px;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint)}
 .f{position:relative;display:flex;flex-direction:column;gap:4px;color:var(--dim);font-size:12px;font-weight:600;padding-right:26px}
 .f.chk{flex-direction:row;align-items:center;gap:8px}
@@ -423,7 +424,7 @@ body.xbgpop #lyr:not(.st) .ll:not(.a) .sub.bgv{max-height:0;margin-top:0;opacity
   transition:max-height .5s var(--e-out),transform .3s var(--e-out),opacity .12s ease-out,margin .5s var(--e-out)}
 body.lminimal.xkeep #lyr:not(.st) .ll.p.sa:not(.dp){opacity:.45;pointer-events:auto;--fb:0px}   /* Keep overlapping lines: sung after a line still going, it stays, dimmed */
 .ll{position:relative}
-body.lhover #lyr:not(.st) .ll:not(.dots):not(.a):hover::before{content:"";position:absolute;inset:0 -.3em;border-radius:.35em;background:rgba(255,255,255,.08);pointer-events:none}
+@media(hover:hover){body.lhover #lyr:not(.st) .ll:not(.dots):not(.a):hover::before{content:"";position:absolute;inset:0 -.3em;border-radius:.35em;background:rgba(255,255,255,.08);pointer-events:none}}
 body.lduet #ly.duet .ll:not(.opp):not(.dots){padding-right:14%}body.lduet #ly.duet .ll.opp{padding-left:14%}
 body.credly.credr #lcredit{left:auto;right:0;align-items:flex-end;text-align:right}
 body.nosmooth #ly{transition:none}
@@ -648,27 +649,33 @@ body.low .ib,body.low .chip,body.low select,body.low .prow,body.low #cappanel,bo
 body.low #cappanel,body.low #netpanel,body.low #setup .sw{background:rgba(20,20,32,.95)}
 /* ---------- phones and tablets (the Android app, or a narrow window) ---------- */
 body.android #fs,body.android #captab{display:none}   /* the app is full screen already; WebView can't share a tab */
+body.android #volume,body.android #volval,body.android #spvol,body.android #spvolval{display:none}   /* the phone's volume buttons do that */
+/* the app draws under the camera cutout and sends its size (--sat/--sab/--sal/--sar): nothing important goes under it */
+body.android #stage{padding-left:calc(var(--pad) + var(--sal,0px));padding-right:calc(var(--pad) + var(--sar,0px))}
+body.android #top{padding-left:calc(16px + var(--sal,0px));padding-right:calc(16px + var(--sar,0px))}
+body.android #dock{width:calc(100% - 32px - var(--sal,0px) - var(--sar,0px));margin-left:calc((var(--sal,0px) - var(--sar,0px))/2)}
+body.android #lcredit{left:calc(var(--pad) + var(--sal,0px))}
 @media(max-width:760px){   /* portrait: the view switch gets its own row, the buttons scroll sideways when they don't fit */
-  #top{grid-template-columns:auto minmax(0,1fr);row-gap:10px;padding:calc(10px + env(safe-area-inset-top,0px)) 12px 18px}
+  #top{grid-template-columns:auto minmax(0,1fr);row-gap:10px;padding:calc(10px + var(--sat,env(safe-area-inset-top,0px))) 12px 18px}
   #seg{grid-row:2;grid-column:1/-1;justify-self:center}
   #top .grp{justify-content:safe flex-end;overflow-x:auto;scrollbar-width:none;min-width:0;max-width:100%;padding:3px 2px}
   #top .grp::-webkit-scrollbar{display:none}
   #capt{display:none}#capbtn{padding:8px 11px}
-  #stage{padding-top:calc(124px + env(safe-area-inset-top,0px))}
-  #bar{padding:12px 16px;gap:10px 12px}
+  #stage{padding-top:calc(124px + var(--sat,env(safe-area-inset-top,0px)));padding-bottom:var(--stageb,150px)}
+  #bar{padding:12px 16px;gap:10px 12px;justify-content:center}
+  #seekwrap{order:9;flex:1 1 100%;margin:0 4px}   /* the buttons on one row, the seek bar under them */
   #corner{top:118px}
 }
 @media(max-height:520px) and (orientation:landscape){   /* a phone on its side: everything a bit smaller, the bottom bar one row */
-  #top{padding:calc(8px + env(safe-area-inset-top,0px)) 14px 12px}
+  #top{padding:calc(8px + var(--sat,env(safe-area-inset-top,0px))) 14px 12px}
   #top .ib{width:34px;height:34px}#top .chip{padding:6px 11px}#seg button{padding:5px 11px}
   #capt{display:none}
-  #stage{padding-top:58px;padding-bottom:132px;gap:28px;grid-template-columns:minmax(0,30vw) 1fr}   /* room for the credits above the bar */
-  body.credly #stage{padding-bottom:86px}
+  #stage{padding-top:58px;padding-bottom:var(--stageb,132px);gap:28px;grid-template-columns:minmax(0,30vw) 1fr}   /* ends where the bar (and the credits above it) begin */
   body.cvmode #stage{grid-template-columns:minmax(0,40vw) 1fr}
   #artw,body.cvmode #artw{width:min(100%,calc(100vh - 250px))}
   body.credly #artw,body.credly.cvmode #artw{width:min(100%,calc(100vh - 200px))}
   #info{gap:10px}#ttl{font-size:18px}
-  #dock{bottom:calc(10px + env(safe-area-inset-bottom,0px))}
+  #dock{bottom:calc(10px + var(--sab,env(safe-area-inset-bottom,0px)))}
   #bar{flex-wrap:nowrap;padding:7px 12px;gap:8px}
   #bar .ib{width:36px;height:36px}#play{width:44px;height:44px}
   #seekwrap{min-width:0;flex:1}
@@ -1167,7 +1174,8 @@ function toast(msg,type,ms){
 /* ================= settings (one store) ================= */
 const LANGS=[['en','English'],['cs','Czech'],['sk','Slovak'],['de','German'],['es','Spanish'],['fr','French'],['it','Italian'],['pt','Portuguese'],['pl','Polish'],['nl','Dutch'],['sv','Swedish'],['da','Danish'],['no','Norwegian'],['fi','Finnish'],['hu','Hungarian'],['ro','Romanian'],['el','Greek'],['tr','Turkish'],['uk','Ukrainian'],['ru','Russian'],['ar','Arabic'],['he','Hebrew'],['hi','Hindi'],['th','Thai'],['vi','Vietnamese'],['id','Indonesian'],['tl','Filipino'],['ja','Japanese'],['ko','Korean'],['zh-CN','Chinese (Simplified)'],['zh-TW','Chinese (Traditional)']];
 const navLang=(()=>{const l=(navigator.language||'en').toLowerCase(),m=LANGS.find(x=>x[0].toLowerCase()===l)||LANGS.find(x=>x[0].split('-')[0]===l.split('-')[0]);return m?m[0]:'en'})();
-const DEF={bridge:true,xFocus:false,bgStyle:'dynamic',lfont:'vv',lsimple:false,lminimal:false,lhover:true,lduet:true,lcredLast:false,lsmooth:true,learly:false,learlyMs:250,lseekFade:true,lnotice:true,volshow:true,fpscap:'0',credPos:'corner',cvNoArt:false,capDev:'',romMode:'replace',tr:false,trTo:navLang,trSkip:'',theme:'cover',c1:'#ff5a5f',c2:'#4f8cff',auto:true,boost:100,resp:25,blur:0,bars:72,gap:28,glow:false,round:true,scale:'1',fps:false,bgblur:60,bri:70,sat:170,bgspeed:100,online:true,volume:100,view:'both',lprov:'spicy:1,spotify:1,lrclib:1,netease:1',loff:0,lsize:100,lblur:true,canvasOn:true,low:false,perfAsk:true,anim:'system',lDesync:'ask',design:'glass',uiHide:'idle',xRefCred:true,xScrub:true,xSkeleton:true,xKeep:true,xBgPop:false,xRefSimple:false,ljoin:false};
+const DEF={bridge:true,xFocus:false,bgStyle:'dynamic',lfont:'vv',lsimple:false,lminimal:false,lhover:true,lduet:true,lcredLast:false,lsmooth:true,learly:false,learlyMs:250,lseekFade:true,lnotice:true,volshow:true,fpscap:'0',credPos:'corner',cvNoArt:false,capDev:'',romMode:'replace',tr:false,trTo:navLang,trSkip:'',theme:'cover',c1:'#ff5a5f',c2:'#4f8cff',auto:true,boost:100,resp:25,blur:0,bars:72,gap:28,glow:false,round:true,scale:'1',fps:false,bgblur:60,bri:70,sat:170,bgspeed:100,online:true,volume:100,view:'both',lprov:'spicy:1,spotify:1,lrclib:1,netease:1',loff:0,lsize:100,lblur:true,canvasOn:true,low:false,perfAsk:true,anim:'system',lDesync:'ask',design:'glass',uiHide:'idle',xRefCred:true,xScrub:true,xSkeleton:true,xKeep:true,xBgPop:false,xRefSimple:false,ljoin:false,andTuned:false};
+if(window.VVAndroid)DEF.lblur=false;   // phones: blurring every lyric line costs more than half of the page's drawing time
 const CFGD={spotId:'',canvasUrl:''},OLDCFG=['spicyUrl','spicyHdr','spicyPfx','spicyKey'];   // old fields that kept a key in the browser: always removed
 // Everything (settings, API keys, Spotify login, setup progress) lives in sessionStorage:
 // it survives a reload and the Spotify login redirect, and the browser deletes it when the tab is closed.
@@ -1648,6 +1656,8 @@ function placeCredit(){
   if(show&&room>=need-1){const mid=Math.max(0,(k.offsetHeight-cr.offsetHeight)/2);   // centred against the bar
     root.style.setProperty('--credb',Math.max(12,bottom+mid)+'px');root.style.setProperty('--credw',Math.min(420,room)+'px')}
   else{root.style.setProperty('--credb',(innerHeight-top+10)+'px');root.style.setProperty('--credw',(iw-pad*2)+'px')}
+  // phones: the stage ends where the bar (and the credits above it) begin, so the bars are never drawn under them
+  root.style.setProperty('--stageb',Math.round(innerHeight-top+12+(show&&room<need-1?cr.offsetHeight+10:0))+'px');
 }
 {let q=0;const ro=new ResizeObserver(()=>{cancelAnimationFrame(q);q=requestAnimationFrame(placeCredit)});   // next frame: resizing the bar here would loop
 ro.observe($('dock'));ro.observe($('lcredit'))}addEventListener('resize',placeCredit);
@@ -3466,10 +3476,15 @@ function poke(){
   if(body.classList.contains('uihide')||body.classList.contains('idle'))body.classList.remove('uihide','idle');clearTimeout(tm);   // touch <body> only when it changes: on every mouse move it restyled the whole page
   if(playing()&&S.uiHide!=='never'&&!$('panel').classList.contains('open'))tm=setTimeout(()=>{
     const a=document.activeElement;
-    if($('dock').matches(':hover')||$('top').matches(':hover')||(a&&a.tagName==='SELECT')||['devpanel','cappanel','netpanel'].some(id=>popOpen($(id))))return poke();   // not while a panel is open
+    if((!touchUI&&($('dock').matches(':hover')||$('top').matches(':hover')))||(a&&a.tagName==='SELECT')||['devpanel','cappanel','netpanel'].some(id=>popOpen($(id))))return poke();   // not while a panel is open
     body.classList.add('uihide','idle');
   },2800);
 }
+// touch: a tapped button stays ":hover" (so the bar would never hide again), and while the controls are hidden the
+// first tap only brings them back instead of also jumping the lyrics or pausing
+let touchUI=false,wakeTap=false;
+addEventListener('pointerdown',e=>{touchUI=e.pointerType!=='mouse';wakeTap=touchUI&&body.classList.contains('uihide')},{capture:true,passive:true});
+addEventListener('click',e=>{if(wakeTap){wakeTap=false;e.stopPropagation();e.preventDefault()}},true);
 ['mousemove','pointerdown','touchstart','keydown'].forEach(ev=>addEventListener(ev,poke,{passive:true}));
 
 /* ================= analysis ================= */
@@ -3841,6 +3856,7 @@ poke();
     try{const r=await fetch(PREFS,{cache:'no-store'});if(r.ok){const p=await r.json();if(p&&p.S)applyRemote(p)}}catch(e){}
   }
   prefsReady=true;
+  if(AND&&!S.andTuned){S.andTuned=true;S.lblur=false;applyLB();syncInputs();save()}   // once, for settings saved before the app had its own defaults
   if(PREFS&&store.get('pulse_cfg'))saveC();   // re-save so removed legacy key fields also disappear from the server copy
   spicyStatus();
   const ok=await spCallback();

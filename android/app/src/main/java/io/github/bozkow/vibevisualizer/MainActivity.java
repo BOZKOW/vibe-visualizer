@@ -17,6 +17,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.text.InputType;
+import android.view.DisplayCutout;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowInsets;
@@ -49,17 +50,28 @@ public class MainActivity extends Activity {
     private boolean tapWanted, askedAudio, errorShown, gone;
     private ValueCallback<Uri[]> fileCb;
     private PermissionRequest micReq;
+    private String insetsJs = "";
 
     @Override protected void onCreate(Bundle saved) {
         super.onCreate(saved);
         prefs = getSharedPreferences("vv", MODE_PRIVATE);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);   // a visualizer you watch: the screen stays on
+        if (Build.VERSION.SDK_INT >= 28) {   // use the whole screen, beside the camera cutout too (Android leaves a black band otherwise)
+            WindowManager.LayoutParams lp = getWindow().getAttributes();
+            lp.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
+            getWindow().setAttributes(lp);
+        }
         web = new WebView(this);
         web.setBackgroundColor(Color.rgb(7, 7, 12));
         FrameLayout root = new FrameLayout(this);
         root.addView(web);
         setContentView(root);
         immersive();
+        root.setOnApplyWindowInsetsListener((v, ins) -> {
+            insets(ins);   // edge to edge, so the keyboard doesn't resize the page by itself: keep Settings' fields above it
+            if (Build.VERSION.SDK_INT >= 30) v.setPadding(0, 0, 0, ins.getInsets(WindowInsets.Type.ime()).bottom);
+            return ins;
+        });
 
         WebSettings s = web.getSettings();
         s.setJavaScriptEnabled(true);
@@ -79,6 +91,7 @@ public class MainActivity extends Activity {
                 try { startActivity(new Intent(Intent.ACTION_VIEW, u)); } catch (ActivityNotFoundException ignored) { }
                 return true;   // other sites (GitHub, a lyrics maker's profile) open in the browser
             }
+            @Override public void onPageFinished(WebView v, String url) { if (!insetsJs.isEmpty()) v.evaluateJavascript(insetsJs, null); }
             @Override public void onReceivedError(WebView v, WebResourceRequest r, WebResourceError e) {
                 if (r.isForMainFrame()) cantReach(String.valueOf(e.getDescription()), e.getErrorCode() == ERROR_HOST_LOOKUP);
             }
@@ -256,9 +269,25 @@ public class MainActivity extends Activity {
         catch (PackageManager.NameNotFoundException e) { return "?"; }
     }
 
+    /** Tells the page how much of each edge the camera cutout covers (CSS px), as --sat/--sab/--sal/--sar. */
+    private void insets(WindowInsets ins) {
+        float d = getResources().getDisplayMetrics().density;
+        int t = 0, b = 0, l = 0, r = 0;
+        if (Build.VERSION.SDK_INT >= 28) {
+            DisplayCutout c = ins.getDisplayCutout();
+            if (c != null) { t = c.getSafeInsetTop(); b = c.getSafeInsetBottom(); l = c.getSafeInsetLeft(); r = c.getSafeInsetRight(); }
+        }
+        String js = "(function(s){s.setProperty('--sat','" + Math.round(t / d) + "px');s.setProperty('--sab','" + Math.round(b / d)
+            + "px');s.setProperty('--sal','" + Math.round(l / d) + "px');s.setProperty('--sar','" + Math.round(r / d)
+            + "px')})(document.documentElement.style)";
+        if (js.equals(insetsJs)) return;
+        insetsJs = js;
+        web.evaluateJavascript(js, null);
+    }
+
     private void immersive() {   // full screen; a swipe from the edge shows the system bars for a moment
         if (Build.VERSION.SDK_INT >= 30) {
-            getWindow().setDecorFitsSystemWindows(true);
+            getWindow().setDecorFitsSystemWindows(false);
             WindowInsetsController c = getWindow().getInsetsController();
             if (c != null) {
                 c.hide(WindowInsets.Type.statusBars() | WindowInsets.Type.navigationBars());
@@ -266,7 +295,8 @@ public class MainActivity extends Activity {
             }
         } else {
             getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-                | View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION);
+                | View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
         }
     }
 
