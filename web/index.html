@@ -657,6 +657,7 @@ body.low #cappanel,body.low #netpanel,body.low #setup .sw{background:rgba(20,20,
 body.android{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}   /* a long press doesn't select the page in blue */
 body.android input,body.android textarea,body.android .relnotes,body.android #errlog{-webkit-user-select:text;user-select:text}
 body.android #fs,body.android #captab{display:none}
+body:not(.android) .andonly{display:none!important}   /* settings only the Android app can do */
 @media(max-width:760px){body.android #lowbtn{display:none}}   /* in Settings → Performance; so the top buttons fit a phone */   /* the app is full screen already; WebView can't share a tab */
 body.android #volume,body.android #volval,body.android #spvol,body.android #spvolval{display:none}   /* the phone's volume buttons do that */
 /* the app draws under the camera cutout and sends its size (--sat/--sab/--sal/--sar): nothing important goes under it */
@@ -769,7 +770,8 @@ body.phone #tl,body.phone #tr{display:block;font-size:13px;font-weight:600;color
 body.phone #shuf{grid-area:shuf}body.phone #prev{grid-area:prev}body.phone #play{grid-area:play}body.phone #next{grid-area:next}body.phone #rep{grid-area:rep}
 /* the glass row: like · player/lyrics · devices · quick toggles · Settings (whatever applies), centred */
 body.phone #slrow{grid-area:btns;display:flex;justify-content:center;gap:14px;width:100%}
-#slrow,#qbtn,#srcbtn{display:none}
+#slrow,#qbtn,#srcbtn,#pipbtn,#rotbtn{display:none}
+body.phone.android #slrow #pipbtn,body.phone.android #slrow #rotbtn{display:grid}
 body.phone #slrow #lybtn,body.phone #slrow #qsbtn,body.phone #slrow #qbtn,body.phone #slrow #srcbtn{display:grid}
 body.phone #slrow .phx{display:none!important}   /* switched off in Settings → Phone */
 body.phone #slrow #syncbtn.gone{display:none}
@@ -825,6 +827,14 @@ body.phone #corner{top:calc(var(--sl-top) + 4px)!important;right:var(--sl-sider)
   body.phone[data-view=both]:is(.hl,.lm) #viz{top:calc(100% - 60px)}
   body.phone #corner{width:min(360px,50vw)}
 }
+/* floating lyrics (picture-in-picture): only the lyrics, the line being sung in the middle, the credits line under */
+body.pip #top,body.pip #dock,body.pip #corner,body.pip #qs,body.pip #qsback,body.pip #panel,body.pip #setup,body.pip #lprob,body.pip #lmsg small{display:none!important}
+body.pip #stage{padding:6px 10px!important;grid-template-columns:minmax(0,1fr)!important;grid-template-rows:minmax(0,1fr) auto!important;grid-template-areas:"ly" "txt"!important;row-gap:2px!important}
+body.pip #artw,body.pip #ttl,body.pip #sub,body.pip #nextup{display:none!important}
+body.pip #txt{text-align:center!important}body.pip #txt #lcredit{display:block!important;font-size:8px;margin:0}
+body.pip #right{margin:0!important}
+body.pip .ll{font-size:17px!important;text-align:center}body.pip #lyr{-webkit-mask-image:linear-gradient(transparent,#000 25%,#000 75%,transparent);mask-image:linear-gradient(transparent,#000 25%,#000 75%,transparent)}
+body.pip[data-view=both] #viz{display:none}body.pip[data-view=both] #lyr{bottom:0!important}
 /* quick toggles: a bottom sheet of tiles */
 body.phone #qsback:not([hidden]){display:block;position:fixed;inset:0;z-index:12;background:rgba(0,0,0,.45);opacity:0;transition:opacity .3s}
 body.phone #qsback.on{opacity:1}
@@ -1043,6 +1053,8 @@ body.low #scrubtip{backdrop-filter:none;-webkit-backdrop-filter:none;background:
     <button class="ib" id="lybtn" aria-label="Lyrics" aria-pressed="false" title="Lyrics"><svg viewBox="0 0 24 24"><path d="M4 5h11v2H4zm0 4h11v2H4zm0 4h7v2H4zm13-8h3v9.5a3.5 3.5 0 11-2-3.16V5z"/></svg></button>
     <button class="ib" id="qbtn" aria-label="Up next" title="Up next"><svg viewBox="0 0 24 24"><path d="M3 6h12v2H3zm0 5h12v2H3zm0 5h8v2H3zm14-3v-3h2v3h3v2h-3v3h-2v-3h-3v-2z"/></svg></button>
     <button class="ib" id="srcbtn" aria-label="Other lyrics" title="Wrong lyrics? Try another source"><svg viewBox="0 0 24 24"><path d="M4 5h11v2H4zm0 4h11v2H4zm0 4h7v2H4zm13.6-1.4L20 10v6h-6l2.2-2.2A4 4 0 0013 13l-1.4-1.4a6 6 0 016 0zM14 20l-2.4 2v-6h6l-2.2 2.2A4 4 0 0018 19l1.4 1.4A6 6 0 0114 20z"/></svg></button>
+    <button class="ib" id="pipbtn" aria-label="Floating lyrics" title="Floating lyrics"><svg viewBox="0 0 24 24"><path d="M19 11h-8v6h8v-6zm4 8V5a2 2 0 00-2-2H3a2 2 0 00-2 2v14c0 1.1.9 2 2 2h18a2 2 0 002-2zm-2 0H3V5h18v14z"/></svg></button>
+    <button class="ib" id="rotbtn" aria-label="Rotate" title="Rotate the screen"><svg viewBox="0 0 24 24"><path d="M16.5 3.5L15 5l2 2H11a6 6 0 00-6 6h2a4 4 0 014-4h6l-2 2 1.5 1.5L21 8zM8 21h11a2 2 0 002-2v-5h-2v5H8z"/></svg></button>
     <button class="ib" id="qsbtn" aria-label="Quick toggles" aria-haspopup="dialog" title="Quick toggles"><svg viewBox="0 0 24 24"><path d="M4 4h7v7H4zm9 0h7v7h-7zM4 13h7v7H4zm9 0h7v7h-7z" opacity=".9"/></svg></button>
     <div id="volwrap">
       <button class="ib" id="mute" aria-label="Mute"><svg viewBox="0 0 24 24" id="vi"></svg></button>
@@ -1160,6 +1172,9 @@ body.low #scrubtip{backdrop-filter:none;-webkit-backdrop-filter:none;background:
   <div class="f chk" data-k="phYear"><label><input type="checkbox" id="phYear"> Release year<small>After the artist, when Spotify or the file says it.</small></label></div>
   <div class="f" data-k="phHide"><span class="lb">Hide the controls after</span><select id="phHide"><option value="2">2 seconds</option><option value="3">3 seconds</option><option value="5">5 seconds</option><option value="8">8 seconds</option><option value="never">Never</option></select><small class="hint">While music plays. A tap brings them back.</small></div>
   <div class="f chk" data-k="phHidePaused"><label><input type="checkbox" id="phHidePaused"> Hide while paused too<small>Without it, the controls stay while the music is paused.</small></label></div>
+  <div class="f chk andonly" data-k="phPip"><label><input type="checkbox" id="phPip"> Floating lyrics when you leave<small>Going home while music plays keeps the lyrics in a small window over other apps (picture-in-picture).</small></label></div>
+  <div class="f andonly" data-k="phHaptic"><span class="lb">Music haptics</span><select id="phHaptic"><option value="off">Off</option><option value="beats">With the beat</option><option value="lines">On each new line</option></select><small class="hint">Short pulses you can feel. The beat needs the bars to follow the music (Phone sound).</small></div>
+  <div class="f chk andonly" data-k="phHz"><label><input type="checkbox" id="phHz"> Smoother motion (120 Hz)<small>Off: the app runs at 60 Hz, which keeps the phone much cooler and saves battery.</small></label></div>
   <p class="sub-h">Buttons under the controls</p>
   <div class="f chk" data-k="phbLike"><label><input type="checkbox" id="phbLike"> Like<small>Save the song to your Liked Songs (Spotify).</small></label></div>
   <div class="f chk" data-k="phbView"><label><input type="checkbox" id="phbView"> Player or lyrics<small>Switch between the big cover with the bars and the lyrics.</small></label></div>
@@ -1167,6 +1182,8 @@ body.low #scrubtip{backdrop-filter:none;-webkit-backdrop-filter:none;background:
   <div class="f chk" data-k="phbSync"><label><input type="checkbox" id="phbSync"> Resync<small>Line the lyrics up with Spotify again.</small></label></div>
   <div class="f chk" data-k="phbSrc"><label><input type="checkbox" id="phbSrc"> Other lyrics<small>Wrong lyrics? Try the next source for this song.</small></label></div>
   <div class="f chk" data-k="phbQueue"><label><input type="checkbox" id="phbQueue"> Up next<small>What Spotify plays next.</small></label></div>
+  <div class="f chk andonly" data-k="phbPip"><label><input type="checkbox" id="phbPip"> Floating lyrics<small>Float the lyrics over other apps now.</small></label></div>
+  <div class="f chk andonly" data-k="phbRot"><label><input type="checkbox" id="phbRot"> Rotate<small>Turn the screen sideways, or back.</small></label></div>
   <div class="f chk" data-k="phbQs"><label><input type="checkbox" id="phbQs"> Quick toggles<small>The sheet of tiles.</small></label></div>
   <div class="f chk" data-k="phbSet"><label><input type="checkbox" id="phbSet"> Settings<small>Shown anyway when the quick toggles are off, so Settings stays in reach.</small></label></div>
   <h4>Performance</h4>
@@ -1398,7 +1415,7 @@ function toast(msg,type,ms){
 /* ================= settings (one store) ================= */
 const LANGS=[['en','English'],['cs','Czech'],['sk','Slovak'],['de','German'],['es','Spanish'],['fr','French'],['it','Italian'],['pt','Portuguese'],['pl','Polish'],['nl','Dutch'],['sv','Swedish'],['da','Danish'],['no','Norwegian'],['fi','Finnish'],['hu','Hungarian'],['ro','Romanian'],['el','Greek'],['tr','Turkish'],['uk','Ukrainian'],['ru','Russian'],['ar','Arabic'],['he','Hebrew'],['hi','Hindi'],['th','Thai'],['vi','Vietnamese'],['id','Indonesian'],['tl','Filipino'],['ja','Japanese'],['ko','Korean'],['zh-CN','Chinese (Simplified)'],['zh-TW','Chinese (Traditional)']];
 const navLang=(()=>{const l=(navigator.language||'en').toLowerCase(),m=LANGS.find(x=>x[0].toLowerCase()===l)||LANGS.find(x=>x[0].split('-')[0]===l.split('-')[0]);return m?m[0]:'en'})();
-const DEF={bridge:true,xFocus:false,bgStyle:'dynamic',lfont:'vv',lsimple:false,lminimal:false,lhover:true,lduet:true,lcredLast:false,lsmooth:true,learly:false,learlyMs:250,lseekFade:true,lnotice:true,volshow:true,fpscap:'0',credPos:'corner',cvNoArt:false,capDev:'',romMode:'replace',tr:false,trTo:navLang,trSkip:'',theme:'cover',c1:'#ff5a5f',c2:'#4f8cff',auto:true,boost:100,resp:25,blur:0,bars:72,gap:28,glow:false,round:true,scale:'1',fps:false,bgblur:60,bri:70,sat:170,bgspeed:100,online:true,volume:100,view:'both',lprov:'spicy:1,spotify:1,lrclib:1,netease:1',loff:0,lsize:100,lblur:true,canvasOn:true,low:false,perfAsk:true,anim:'system',lDesync:'ask',design:'glass',uiHide:'idle',xRefCred:true,xScrub:true,xSkeleton:true,xKeep:true,xBgPop:false,xRefSimple:false,ljoin:false,lbgBr:false,phHead:'large',phYear:true,phHide:'3',phHidePaused:false,phbLike:true,phbView:true,phbDev:true,phbSync:false,phbSrc:false,phbQueue:false,phbQs:true,phbSet:true,andTuned:false};
+const DEF={bridge:true,xFocus:false,bgStyle:'dynamic',lfont:'vv',lsimple:false,lminimal:false,lhover:true,lduet:true,lcredLast:false,lsmooth:true,learly:false,learlyMs:250,lseekFade:true,lnotice:true,volshow:true,fpscap:'0',credPos:'corner',cvNoArt:false,capDev:'',romMode:'replace',tr:false,trTo:navLang,trSkip:'',theme:'cover',c1:'#ff5a5f',c2:'#4f8cff',auto:true,boost:100,resp:25,blur:0,bars:72,gap:28,glow:false,round:true,scale:'1',fps:false,bgblur:60,bri:70,sat:170,bgspeed:100,online:true,volume:100,view:'both',lprov:'spicy:1,spotify:1,lrclib:1,netease:1',loff:0,lsize:100,lblur:true,canvasOn:true,low:false,perfAsk:true,anim:'system',lDesync:'ask',design:'glass',uiHide:'idle',xRefCred:true,xScrub:true,xSkeleton:true,xKeep:true,xBgPop:false,xRefSimple:false,ljoin:false,lbgBr:false,phHead:'large',phYear:true,phHide:'3',phHidePaused:false,phbLike:true,phbView:true,phbDev:true,phbSync:false,phbSrc:false,phbQueue:false,phbQs:true,phbSet:true,phbPip:false,phbRot:false,phPip:false,phHaptic:'off',phHz:false,andTuned:false};
 if(window.VVAndroid)DEF.lblur=false;   // phones: blurring every lyric line costs more than half of the page's drawing time
 const CFGD={spotId:'',canvasUrl:''},OLDCFG=['spicyUrl','spicyHdr','spicyPfx','spicyKey'];   // old fields that kept a key in the browser: always removed
 // Everything (settings, API keys, Spotify login, setup progress) lives in sessionStorage:
@@ -1647,6 +1664,7 @@ function beatTick(now,dt){
   if(bass-bassSlow>.07&&now-lastOnset>240){
     if(lastOnset&&now-lastOnset<1500){onsetGaps.push(now-lastOnset);if(onsetGaps.length>16)onsetGaps.shift()}
     lastOnset=now;bgKick=1;bgTempo=0;
+    if(hapticsOn('beats'))buzz(14,Math.round(Math.min(255,90+(bass-bassSlow)*900)));   // music haptics: the beat
   }
   bgKick*=Math.exp(-dt/260);
 }
@@ -1781,7 +1799,7 @@ if(PHONE){body.classList.add('phone');
   // quick toggles, Settings
   const row=document.createElement('div');row.id='slrow';$('bar').appendChild(row);
   const lk=$('like');lk.classList.add('spx');const dv=$('devbtn');dv.classList.add('spx');
-  [lk,$('lybtn'),dv,$('syncbtn'),$('srcbtn'),$('qbtn'),$('qsbtn'),$('gear')].forEach(b=>row.appendChild(b));
+  [lk,$('lybtn'),dv,$('syncbtn'),$('srcbtn'),$('qbtn'),$('pipbtn'),$('rotbtn'),$('qsbtn'),$('gear')].forEach(b=>row.appendChild(b));
   $('qbtn').classList.add('spx');
   $('txt').appendChild($('lcredit'));   // the lyrics credits: a quiet line under the artist
 }
@@ -2869,6 +2887,7 @@ async function decorate(fresh){   // fresh: lyrics just drawn, nothing on them t
   renderLyrics(null,true);
 }
 function setActive(i){
+  if(i!==li&&i>=0&&L[i]&&!L[i].dots&&hapticsOn('lines'))buzz(22,140);   // music haptics: each new line
   li=i;if(S.xBgPop)placeUntil=performance.now()+650;   // background vocals sliding in or out change the line's height: follow it
   for(let j=0;j<lEls.length;j++){
     const d=Math.abs(j-i),sa=j<i&&lAct.size&&j>Math.min(...lAct)?' sa':'',c=lEls[j].dataset.b+sa+(lfi!==-2?(j===lfi&&!lfo?' fv':'')+(lfnSet.has(j)?' fn'+(lfsSet.has(j)?' fs':''):'')+(j<lfi||(j===lfi&&lfo)?' fu':''):'')+(lAct.has(j)?' a':j===i?(lOut?' p dp':' a'):j<i?' p':'')+(lAct.has(j)?'':d===1?' d1':d===2?' d2':d===3?' d3':d===4?' d4':d===5?' d5':d>5?' dx':'');
@@ -2881,7 +2900,7 @@ function place(){
   const el=lEls[Math.max(lsi>=0?lsi:li,0)];if(!el)return;
   const hh=S.xFocus&&S.view==='both'?lyr.clientHeight*.74-24:lyr.clientHeight;   // Focus mode in Both: same middle as before
   let y=hh*.38-(el.offsetTop+el.offsetHeight/2);
-  if(PHONE&&!S.xFocus){ly.style.transform='translateY('+(Math.max(28,hh*.1)-el.offsetTop)+'px)';return}   // phones: the line being sung near the top, as Spicy Lyrics Mobile scrolls
+  if(PHONE&&!S.xFocus&&!body.classList.contains('pip')){ly.style.transform='translateY('+(Math.max(28,hh*.1)-el.offsetTop)+'px)';return}   // phones: the line being sung near the top, as Spicy Lyrics Mobile scrolls
   const top=hh*.16;if(el.offsetTop+y<top)y=top-el.offsetTop;   // a tall line (long text, a translation under it) moves down so its top stays out of the fade
   ly.style.transform='translateY('+y+'px)';
 }
@@ -3432,7 +3451,7 @@ addEventListener('drop',async e=>{e.preventDefault();
 
 /* ================= transport + UI ================= */
 let lastPI=null;
-function updPlayIcon(){const p=playing();if(p===lastPI)return;lastPI=p;$('pi').innerHTML=p?'<path d="M7 5h4v14H7zm6 0h4v14h-4z"/>':'<path d="M8 5v14l11-7z"/>';bump($('pi'))}
+function updPlayIcon(){const p=playing();if(PHONE)appPhoneNative();if(p===lastPI)return;lastPI=p;$('pi').innerHTML=p?'<path d="M7 5h4v14H7zm6 0h4v14h-4z"/>':'<path d="M8 5v14l11-7z"/>';bump($('pi'))}
 // control Spotify itself (needs the playback-control permission; Spotify only allows it with Premium)
 async function spCtl(method,path,body){
   if(SP.access&&SP.scope&&!/user-modify-playback-state/.test(SP.scope)){spAskScope();return false}
@@ -3676,9 +3695,25 @@ function applyPhone(){
   ['large','medium','small','hidden'].forEach(k=>body.classList.toggle('phh-'+k,S.phHead===k));
   const set=(id,on)=>$(id).classList.toggle('phx',!on);
   set('like',S.phbLike);set('lybtn',S.phbView);set('devbtn',S.phbDev);set('syncbtn',S.phbSync);set('srcbtn',S.phbSrc);set('qbtn',S.phbQueue);set('qsbtn',S.phbQs);
+  set('pipbtn',S.phbPip);set('rotbtn',S.phbRot);
   set('gear',S.phbSet||!S.phbQs);   // Settings stays in reach
+  appPhoneNative();
   mqKey='';subShow();
 }
+// the Android app's own parts: refresh rate, floating lyrics, haptics, rotation
+let pipAutoSent=null;
+function appPhoneNative(){
+  if(!AND)return;
+  try{if(AND.hz)AND.hz(S.phHz?0:60)}catch(e){}
+  const want=!!(S.phPip&&playing());if(want!==pipAutoSent){pipAutoSent=want;try{if(AND.pipAuto)AND.pipAuto(want)}catch(e){}}
+}
+let pipView=null;
+window.vvPip=on=>{body.classList.toggle('pip',!!on);if(on){qsClose();closePanel();if(S.view==='viz'){pipView='viz';S.view='lyrics';applyView()}}
+  else if(pipView){S.view=pipView;pipView=null;applyView()}setTimeout(place,80)};   // floating: only the lyrics (the player view shows them while floating)
+$('pipbtn').onclick=()=>{try{if(!(AND&&AND.pip&&AND.pip()))toast('Floating lyrics need Android 8 or newer and the app 0.5 or newer.','warn',4000)}catch(e){}};
+$('rotbtn').onclick=()=>{try{if(AND&&AND.rotate)$('rotbtn').classList.toggle('on',AND.rotate());else toast('Rotating needs the app 0.5 or newer.','warn',3000)}catch(e){}};
+let buzzAt=0;function buzz(ms,amp){const n=performance.now();if(n-buzzAt<110)return;buzzAt=n;try{AND.buzz(ms,amp)}catch(e){}}
+const hapticsOn=k=>PHONE&&AND&&AND.buzz&&S.phHaptic===k&&playing()&&!document.hidden;
 // the artist line, with the release year after it on phones
 let curYear='',curArtist='';
 function subShow(a){if(a!=null)curArtist=a;sub.textContent=curArtist+(PHONE&&S.phYear&&curYear?' · '+curYear:'')}
@@ -3811,6 +3846,7 @@ const QI={   // tile icons (24×24 paths)
   net:'M12 21l3.6-4.8A6 6 0 0012 15a6 6 0 00-3.6 1.2zm0-18C8 3 4.3 4.3 1.4 6.6L3.2 9A13 13 0 0112 6a13 13 0 018.8 3l1.8-2.4A16 16 0 0012 3zm0 6a10 10 0 00-6.6 2.4l1.8 2.4A7 7 0 0112 12a7 7 0 014.8 1.8l1.8-2.4A10 10 0 0012 9z',
   set:'M4 7h10v2H4zm12 0h4v2h-4zM4 15h4v2H4zm6 0h10v2H10zM14 5h2v6h-2zM8 13h2v6H8z',
   home:'M12 3l9 8h-3v9h-5v-6h-2v6H6v-9H3z',
+  pip:'M19 11h-8v6h8v-6zm4 8V5a2 2 0 00-2-2H3a2 2 0 00-2 2v14c0 1.1.9 2 2 2h18a2 2 0 002-2zm-2 0H3V5h18v14z',
   src:'M4 5h11v2H4zm0 4h11v2H4zm0 4h7v2H4zm13.6-1.4L20 10v6h-6l2.2-2.2A4 4 0 0013 13l-1.4-1.4a6 6 0 016 0z',
   queue:'M3 6h12v2H3zm0 5h12v2H3zm0 5h8v2H3zm14-3v-3h2v3h3v2h-3v3h-2v-3h-3v-2z',
   mute:'M3 9v6h4l5 5V4L7 9H3zm13.5 3l2.5-2.5-1-1-2.5 2.5L13 8.5l-1 1 2.5 2.5-2.5 2.5 1 1 2.5-2.5 2.5 2.5 1-1z'};
@@ -3830,6 +3866,7 @@ const QT=[
     fn:()=>{if(src==='spotify'){if(!$('spvol').disabled)$('spmute').click()}else{muted=!muted;applyVolume()}}},
   {k:'src',name:'Other lyrics',on:()=>false,sub:()=>L.length?'Now: '+((PROVS[lyProv()]&&PROVS[lyProv()].name)||'—'):'No lyrics',dis:()=>!curLyr,fn:()=>{qsClose();lyOther()}},
   {k:'queue',name:'Up next',on:()=>false,sub:()=>src==='spotify'?'Spotify’s queue':'Spotify only',dis:()=>src!=='spotify',fn:()=>qsShow('queue')},
+  {k:'pip',name:'Floating lyrics',on:()=>false,sub:()=>AND&&AND.pip?'Over other apps':'App 0.5+',dis:()=>!(AND&&AND.pip),fn:()=>{qsClose();setTimeout(()=>$('pipbtn').click(),350)}},
   {k:'home',name:'Home',on:()=>false,sub:()=>'Start page',fn:()=>{qsClose();goHome()}},
   {k:'set',name:'Settings',on:()=>false,sub:()=>'Everything else',fn:()=>{qsClose();openPanel()}}];
 (function buildQs(){
@@ -4012,7 +4049,7 @@ function frame(now){
   requestAnimationFrame(frame);perfTick(now);
   // Limit frame rate: time adds up between screen refreshes and a frame is drawn once a whole frame's worth has
   // passed, so 120 on a 144 Hz screen really gives 120 (comparing each gap alone would give 72)
-  const iv=1000/Math.min(+S.fpscap||HZMAX,S.low?30:PHONE?60:HZMAX);   // phones: 60 at most (a 120 Hz screen would double the work and the heat for no visible gain)
+  const iv=1000/Math.min(+S.fpscap||HZMAX,S.low?30:PHONE?(S.phHz?120:60):HZMAX);   // phones: 60 at most (a 120 Hz screen would double the work and the heat for no visible gain)
   fAcc+=Math.min(now-fPrev,100);fPrev=now;
   if(fAcc<iv-.5)return;fAcc=Math.min(fAcc-iv,iv);
   const dt=Math.min(now-last,50);last=now;

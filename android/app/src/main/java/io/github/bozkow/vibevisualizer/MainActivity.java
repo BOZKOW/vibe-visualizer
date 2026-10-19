@@ -62,6 +62,7 @@ public class MainActivity extends Activity {
             lp.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
             getWindow().setAttributes(lp);
         }
+        setHz(prefs.getBoolean("hz120", false) ? 0 : 60);
         web = new WebView(this);
         web.setBackgroundColor(Color.rgb(7, 7, 12));
         FrameLayout root = new FrameLayout(this);
@@ -188,6 +189,44 @@ public class MainActivity extends Activity {
 
     @Override protected void onNewIntent(Intent i) { super.onNewIntent(i); setIntent(i); loginReturn(i); }
 
+    // ---------- refresh rate, floating lyrics ----------
+    private boolean pipAuto, landscape;
+
+    /** 60 Hz unless asked otherwise: a 120 Hz screen doubles the work (and the heat) for lyrics and bars. */
+    private void setHz(int rate) {
+        WindowManager.LayoutParams lp = getWindow().getAttributes();
+        lp.preferredRefreshRate = rate;
+        if (Build.VERSION.SDK_INT >= 23) {
+            android.view.Display d = getWindowManager().getDefaultDisplay();
+            int id = 0;
+            if (rate > 0) for (android.view.Display.Mode m : d.getSupportedModes())
+                if (Math.abs(m.getRefreshRate() - rate) < 1 && m.getPhysicalWidth() == d.getMode().getPhysicalWidth()
+                    && m.getPhysicalHeight() == d.getMode().getPhysicalHeight()) { id = m.getModeId(); break; }
+            lp.preferredDisplayModeId = id;
+        }
+        getWindow().setAttributes(lp);
+    }
+
+    private android.app.PictureInPictureParams pipBuild() {
+        android.app.PictureInPictureParams.Builder b = new android.app.PictureInPictureParams.Builder().setAspectRatio(new android.util.Rational(16, 9));
+        if (Build.VERSION.SDK_INT >= 31) b.setAutoEnterEnabled(pipAuto).setSeamlessResizeEnabled(false);
+        return b.build();
+    }
+    private void pipParams() { if (Build.VERSION.SDK_INT >= 26) try { setPictureInPictureParams(pipBuild()); } catch (Exception ignored) { } }
+    private void enterPip() { if (Build.VERSION.SDK_INT >= 26) try { enterPictureInPictureMode(pipBuild()); } catch (Exception ignored) { } }
+
+    @Override protected void onUserLeaveHint() {   // Home pressed while music plays: float (Android 12+ does it by itself)
+        super.onUserLeaveHint();
+        if (pipAuto && Build.VERSION.SDK_INT >= 26 && Build.VERSION.SDK_INT < 31) enterPip();
+    }
+
+    @Override public void onPictureInPictureModeChanged(boolean on, android.content.res.Configuration c) {
+        super.onPictureInPictureModeChanged(on, c);
+        if (!gone) web.evaluateJavascript("window.vvPip&&vvPip(" + on + ")", null);
+    }
+
+    private boolean floating() { return Build.VERSION.SDK_INT >= 24 && isInPictureInPictureMode(); }
+
     // ---------- the server ----------
     private boolean inApp(Uri u) {
         String server = prefs.getString("server", ""), host = u.getHost() == null ? "" : u.getHost();
@@ -305,6 +344,24 @@ public class MainActivity extends Activity {
         @JavascriptInterface public String server() { return prefs.getString("server", ""); }
         @JavascriptInterface public void changeServer() { runOnUiThread(() -> askServer(false)); }
         @JavascriptInterface public String callback() { return CALLBACK; }
+        /** The screen's refresh rate for this window: 60, or 0 for the phone's own (120 Hz on many). */
+        @JavascriptInterface public void hz(int rate) { prefs.edit().putBoolean("hz120", rate == 0).apply(); runOnUiThread(() -> setHz(rate)); }
+        /** Floating lyrics: picture-in-picture now, or by itself when you leave the app (while music plays). */
+        @JavascriptInterface public boolean pip() { if (Build.VERSION.SDK_INT < 26) return false; runOnUiThread(MainActivity.this::enterPip); return true; }
+        @JavascriptInterface public void pipAuto(boolean on) { pipAuto = on; runOnUiThread(MainActivity.this::pipParams); }
+        /** Music haptics: one short pulse (ms, strength 1-255). */
+        @JavascriptInterface public void buzz(int ms, int amp) {
+            android.os.Vibrator v = getSystemService(android.os.Vibrator.class);
+            if (v == null || !v.hasVibrator()) return;
+            if (Build.VERSION.SDK_INT >= 26) v.vibrate(android.os.VibrationEffect.createOneShot(Math.max(1, Math.min(ms, 60)), Math.max(1, Math.min(amp, 255))));
+        }
+        /** Turns the screen to landscape, or back; returns whether it's held in landscape now. */
+        @JavascriptInterface public boolean rotate() {
+            landscape = !landscape;
+            runOnUiThread(() -> setRequestedOrientation(landscape ? android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+                : android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED));
+            return landscape;
+        }
         @JavascriptInterface public String insets() { return edges; }
         @JavascriptInterface public boolean login(String url) {   // only Spotify's login page, in the browser
             Uri u = Uri.parse(url);
@@ -390,7 +447,7 @@ public class MainActivity extends Activity {
     }
 
     @Override protected void onResume() { super.onResume(); if (!gone) web.onResume(); if (tapWanted && hasAudio()) tap.start(); }
-    @Override protected void onPause() { super.onPause(); if (!gone) web.onPause(); tap.stop(); }   // nothing runs in the background
+    @Override protected void onPause() { super.onPause(); if (floating()) return; if (!gone) web.onPause(); tap.stop(); }   // nothing runs in the background (floating lyrics keep going)
     @Override protected void onSaveInstanceState(Bundle out) { super.onSaveInstanceState(out); if (!gone) web.saveState(out); }
     @Override protected void onDestroy() { tap.stop(); if (!gone) web.destroy(); super.onDestroy(); }
 }

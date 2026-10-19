@@ -6,6 +6,8 @@
     <!-- Vibe Bridge: Android's Visualizer reads what the phone plays (the Spotify app too). Nothing is recorded or sent. -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+    <!-- music haptics: short pulses to the beat (off unless switched on in Settings → Phone) -->
+    <uses-permission android:name="android.permission.VIBRATE" />
     <!-- Android 11+: to find the browsers that can open Spotify's login as a tab over the app -->
     <queries>
         <intent>
@@ -29,6 +31,8 @@
             android:name=".MainActivity"
             android:exported="true"
             android:launchMode="singleTask"
+            android:supportsPictureInPicture="true"
+            android:resizeableActivity="true"
             android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|uiMode|density"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
