@@ -51,6 +51,7 @@ public class MainActivity extends Activity {
     private ValueCallback<Uri[]> fileCb;
     private PermissionRequest micReq;
     private String insetsJs = "";
+    private volatile String edges = "0,0,0,0";   // top,bottom,left,right in CSS px, for the page to ask any time
 
     @Override protected void onCreate(Bundle saved) {
         super.onCreate(saved);
@@ -268,6 +269,7 @@ public class MainActivity extends Activity {
         @JavascriptInterface public String server() { return prefs.getString("server", ""); }
         @JavascriptInterface public void changeServer() { runOnUiThread(() -> askServer(false)); }
         @JavascriptInterface public String callback() { return CALLBACK; }
+        @JavascriptInterface public String insets() { return edges; }
         @JavascriptInterface public boolean login(String url) {   // only Spotify's login page, in the browser
             Uri u = Uri.parse(url);
             if (!"https".equals(u.getScheme()) || !"accounts.spotify.com".equals(u.getHost())) return false;
@@ -303,6 +305,15 @@ public class MainActivity extends Activity {
             DisplayCutout c = ins.getDisplayCutout();
             if (c != null) { t = c.getSafeInsetTop(); b = c.getSafeInsetBottom(); l = c.getSafeInsetLeft(); r = c.getSafeInsetRight(); }
         }
+        if (Build.VERSION.SDK_INT >= 30) {
+            // the cutout as an inset type too, and upright the (hidden) status bar's height: it always covers the
+            // punch hole, also on phones that report no cutout while the status bar is hidden
+            android.graphics.Insets dc = ins.getInsets(WindowInsets.Type.displayCutout());
+            t = Math.max(t, dc.top); b = Math.max(b, dc.bottom); l = Math.max(l, dc.left); r = Math.max(r, dc.right);
+            boolean upright = getResources().getConfiguration().orientation == android.content.res.Configuration.ORIENTATION_PORTRAIT;
+            if (upright) t = Math.max(t, ins.getInsetsIgnoringVisibility(WindowInsets.Type.statusBars()).top);
+        }
+        edges = Math.round(t / d) + "," + Math.round(b / d) + "," + Math.round(l / d) + "," + Math.round(r / d);
         String js = "(function(s){s.setProperty('--sat','" + Math.round(t / d) + "px');s.setProperty('--sab','" + Math.round(b / d)
             + "px');s.setProperty('--sal','" + Math.round(l / d) + "px');s.setProperty('--sar','" + Math.round(r / d)
             + "px')})(document.documentElement.style)";

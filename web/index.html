@@ -699,6 +699,106 @@ body.android #corner{margin-top:var(--sat,0px);right:calc(16px + var(--sar,0px))
   #corner{top:58px}
   .ll{font-size:calc(clamp(20px,3.3vw,40px)*var(--ls))}
 }
+/* ===================== the phone design (the Android app, and phones' browsers) =====================
+   One layer over the same app: the same buttons and functions, laid out for a thumb. Portrait: a slim header, the
+   song as a small card, lyrics filling the screen, phone bars in a strip above the controls, and a control card at
+   the bottom (seek, a big transport row, then like · devices · quick toggles · mute). The quick toggles open as a
+   bottom sheet. Landscape: the cover left, lyrics right, the controls in one row. */
+#qsbtn,#qs,#qsback{display:none}
+body.phone #qsbtn{display:grid}
+body.phone{--ph-side:calc(14px + var(--sal,0px));--ph-sider:calc(14px + var(--sar,0px))}
+/* header: logo · view switch · Settings (everything else is in the quick toggles) */
+body.phone #top{display:grid;grid-template-columns:auto 1fr auto;row-gap:0;column-gap:10px;padding:calc(8px + var(--sat,env(safe-area-inset-top,0px))) var(--ph-sider) 14px var(--ph-side)}
+body.phone #top .grp{overflow:visible;justify-content:flex-end;padding:0}
+body.phone #top .grp>*:not(#gear){display:none!important}
+body.phone #seg{grid-row:1;grid-column:2;justify-self:center}
+body.phone #seg button{padding:6px 12px;font-size:12.5px}
+body.phone #top .brand span{display:none}
+/* the stage: song card on top, lyrics (and the bars strip) below, ending where the controls begin */
+body.phone #stage{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr);gap:14px;
+  padding:calc(62px + var(--sat,0px)) var(--ph-sider) var(--stageb,190px) var(--ph-side)}
+body.phone #left{justify-content:flex-start}
+body.phone #info,body.phone.cvmode #info{flex-direction:row;align-items:center;gap:14px;text-align:left}
+body.phone #artw,body.phone.cvmode #artw{width:68px;flex:none;border-radius:14px;margin:0}
+body.phone #ph{font-size:26px}
+body.phone #txt{min-width:0;flex:1}
+body.phone #ttl{font-size:19px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+body.phone #sub{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+body.phone #status,body.phone #lstat{display:none}
+body.phone #nextup{margin-top:8px;padding:5px 10px 5px 5px;max-width:100%}body.phone #nextup img{width:30px;height:30px}
+body.phone #lyr{left:-6px}
+body.phone .ll{font-size:calc(26px*var(--ls))}
+body.phone[data-view=both]:is(.hl,.lm) #lyr{bottom:96px}
+body.phone[data-view=both]:is(.hl,.lm) #viz{top:calc(100% - 84px)}
+body.phone.xfocus[data-view=both]:is(.hl,.lm) #lyr{bottom:96px}
+/* visualizer view: a big cover, the title under it, mirrored bars below */
+body.phone[data-view=viz] #stage{grid-template-rows:auto minmax(0,1fr)}
+body.phone[data-view=viz] #info{flex-direction:column;align-items:center;text-align:center;gap:16px}
+body.phone[data-view=viz] #artw{width:min(68vw,calc(100vh - var(--stageb,190px) - 330px));min-width:120px;border-radius:22px}
+body.phone[data-view=viz] #txt{flex:none;width:100%}
+/* credits: one compact line above the controls */
+body.phone #lcredit{flex-direction:row;flex-wrap:wrap;column-gap:.6em;row-gap:0;font-size:11px;left:var(--ph-side)!important;max-width:calc(100% - 28px - var(--sal,0px) - var(--sar,0px))!important}
+body.phone #lcredit>*{white-space:nowrap}
+/* the control card */
+body.phone #dock{width:auto;left:var(--ph-side);right:var(--ph-sider);transform:none;margin:0;bottom:calc(10px + var(--sab,env(safe-area-inset-bottom,0px)))}
+body.phone.uihide #dock{transform:translateY(16px)}
+body.phone #bar{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));grid-template-areas:"seek seek seek seek seek" "shuf prev play next rep" "like dev qs smute vmute";
+  justify-items:center;align-items:center;gap:8px 0;padding:12px 12px 10px;border-radius:28px}
+body.phone #spx,body.phone #volwrap:not([hidden]){display:contents}
+body.phone #seekwrap{grid-area:seek;width:100%;margin:0;padding:0 6px;flex-wrap:wrap;gap:0;justify-content:flex-end}
+body.phone #seek{flex:1 1 100%;width:100%}
+body.phone #time{font-size:11.5px;margin-top:-2px}
+body.phone #shuf{grid-area:shuf}body.phone #prev{grid-area:prev}body.phone #play{grid-area:play}body.phone #next{grid-area:next}body.phone #rep{grid-area:rep}
+body.phone #like{grid-area:like}body.phone #devbtn{grid-area:dev}body.phone #qsbtn{grid-area:qs}body.phone #spmute{grid-area:smute}body.phone #mute{grid-area:vmute}
+body.phone #bar .ib{width:44px;height:44px}body.phone #bar .ib svg{width:22px;height:22px}
+body.phone #play{width:62px!important;height:62px!important}body.phone #play svg{width:28px;height:28px}
+body.phone #spvol,body.phone #spvolval,body.phone #volume,body.phone #volval{display:none!important}
+body.phone #corner{top:calc(62px + var(--sat,0px))!important;right:var(--ph-sider);width:calc(100% - 28px - var(--sal,0px) - var(--sar,0px))}
+/* landscape: cover left, lyrics right, one row of controls */
+@media(orientation:landscape){
+  body.phone #top{padding-top:calc(6px + var(--sat,0px));padding-bottom:8px}
+  body.phone #top .ib{width:36px;height:36px}
+  body.phone #stage{grid-template-columns:minmax(0,36vw) minmax(0,1fr);grid-template-rows:minmax(0,1fr);gap:24px;padding-top:calc(52px + var(--sat,0px))}
+  body.phone #left{justify-content:center}
+  body.phone #info,body.phone.cvmode #info{flex-direction:column;align-items:flex-start;gap:10px}
+  body.phone #artw,body.phone.cvmode #artw{width:min(100%,calc(100vh - var(--stageb,96px) - 130px));min-width:64px;border-radius:16px}
+  body.phone[data-view=viz] #info{align-items:center}
+  body.phone[data-view=viz] #artw{width:min(100%,calc(100vh - var(--stageb,96px) - 130px))}
+  body.phone #txt{width:100%;flex:none}
+  body.phone .ll{font-size:calc(22px*var(--ls))}
+  body.phone[data-view=both]:is(.hl,.lm) #lyr,body.phone.xfocus[data-view=both]:is(.hl,.lm) #lyr{bottom:74px}
+  body.phone[data-view=both]:is(.hl,.lm) #viz{top:calc(100% - 64px)}
+  body.phone #bar{display:flex;flex-wrap:nowrap;gap:4px;padding:6px 10px;border-radius:24px}
+  body.phone #bar .ib{width:38px;height:38px}body.phone #bar .ib svg{width:20px;height:20px}
+  body.phone #play{width:46px!important;height:46px!important}body.phone #play svg{width:24px;height:24px}
+  body.phone #seekwrap{flex:1 1 auto;flex-wrap:nowrap;gap:10px;margin:0 6px;padding:0}
+  body.phone #seek{flex:1 1 auto;width:auto}body.phone #time{margin:0}
+  body.phone #corner{top:calc(52px + var(--sat,0px))!important;width:min(360px,50vw)}
+}
+/* quick toggles: a bottom sheet of tiles */
+body.phone #qsback:not([hidden]){display:block;position:fixed;inset:0;z-index:12;background:rgba(0,0,0,.45);opacity:0;transition:opacity .3s}
+body.phone #qsback.on{opacity:1}
+body.phone #qs:not([hidden]){display:flex;flex-direction:column;gap:14px;position:fixed;z-index:13;left:calc(8px + var(--sal,0px));right:calc(8px + var(--sar,0px));bottom:calc(8px + var(--sab,0px));
+  max-width:620px;margin:0 auto;max-height:calc(100% - 40px - var(--sat,0px));overflow-y:auto;overscroll-behavior:contain;padding:10px 16px 18px;border-radius:30px;
+  background:rgba(20,20,34,.94);border:1px solid rgba(255,255,255,.14);box-shadow:0 -10px 50px rgba(0,0,0,.5);
+  transform:translateY(calc(100% + 30px));transition:transform .45s var(--e-soft,cubic-bezier(.34,1.3,.64,1));touch-action:pan-y}
+body.phone #qs.on{transform:translateY(var(--qsdrag,0px))}
+body.phone #qs.drag{transition:none}
+.qsgrab{width:42px;height:5px;border-radius:9px;background:rgba(255,255,255,.3);margin:2px auto 0;flex:none}
+.qshead{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:0 4px}.qshead b{font-size:17px}.qshead small{color:var(--dim);font-size:12.5px;font-weight:600;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#qsview{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;padding:4px;border-radius:16px;background:rgba(255,255,255,.07)}
+#qsview button{padding:10px 0;border-radius:12px;font-weight:700;font-size:13.5px;color:var(--dim);background:none;border:0;transition:background .25s,color .25s}
+#qsview button.on{background:#fff;color:#111}
+#qsgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+@media(orientation:landscape){#qsgrid{grid-template-columns:repeat(6,minmax(0,1fr))}}
+.qtile{display:flex;flex-direction:column;align-items:flex-start;justify-content:space-between;gap:10px;min-height:92px;padding:12px;border-radius:20px;text-align:left;
+  background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);color:#fff;transition:background .25s,color .25s,transform .2s}
+.qtile svg{width:24px;height:24px;fill:currentColor}
+.qtile b{display:block;font-size:13px;line-height:1.2}.qtile small{display:block;font-size:11px;font-weight:600;color:var(--dim);margin-top:2px;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+.qtile span{display:block;min-width:0;max-width:100%}
+.qtile.on{background:var(--acc);border-color:transparent;color:#111}.qtile.on small{color:rgba(0,0,0,.65)}
+.qtile:active{transform:scale(.95)}.qtile:disabled{opacity:.35}
+body.low #qs:not([hidden]){transition:none}
 </style>
 <style id="glassui">
 /* ===== Design: Glass (Settings → Appearance → Design). Classic turns this whole sheet off. ===== */
@@ -773,6 +873,11 @@ body.low #bar input[type=range]::-webkit-slider-thumb{transition:none}
 #pwin,#setup .sw{border-radius:var(--r-lg)}
 #hprob{border-radius:var(--r-md);background:var(--g-grad),rgba(40,32,14,.4);box-shadow:var(--g-sh),var(--g-hi);backdrop-filter:var(--g-blur);-webkit-backdrop-filter:var(--g-blur)}
 #hprob.err{background:var(--g-grad),rgba(44,16,20,.42)}
+/* the quick toggles sheet in glass */
+body.phone #qs:not([hidden]){background:var(--g-grad),rgba(18,18,32,.72);border-color:var(--g-bd);box-shadow:0 -10px 50px rgba(0,0,0,.45),var(--g-hi);backdrop-filter:blur(36px) saturate(170%);-webkit-backdrop-filter:blur(36px) saturate(170%)}
+.qtile{background:linear-gradient(145deg,rgba(255,255,255,.15),rgba(255,255,255,.05));border-color:rgba(255,255,255,.16);box-shadow:inset 0 1px 0 rgba(255,255,255,.18)}
+.qtile.on{background:var(--acc);box-shadow:0 6px 20px -6px var(--acc),inset 0 1px 0 rgba(255,255,255,.4)}
+body.low #qs:not([hidden]){backdrop-filter:none;-webkit-backdrop-filter:none;background:rgba(20,20,32,.97)}
 /* the Spicy Lyrics parts in the same glass: scrub preview (floating glass), loading skeleton (frosted bars), refined credits */
 #scrubtip{border-radius:var(--r-sm);padding:5px 11px;background:var(--g-grad),var(--g-float);border-color:var(--g-bd);box-shadow:0 8px 24px rgba(0,0,0,.35),var(--g-hi);
   backdrop-filter:blur(30px) saturate(170%);-webkit-backdrop-filter:blur(30px) saturate(170%)}
@@ -871,6 +976,7 @@ body.low #scrubtip{backdrop-filter:none;-webkit-backdrop-filter:none;background:
       <button class="ib" id="spmute" aria-label="Mute Spotify"><svg viewBox="0 0 24 24" id="spvi"></svg></button>
       <input type="range" id="spvol" min="0" max="100" value="50" aria-label="Spotify volume"><span id="spvolval"></span>
     </div>
+    <button class="ib" id="qsbtn" aria-label="Quick toggles" aria-haspopup="dialog" title="Quick toggles"><svg viewBox="0 0 24 24"><path d="M4 4h7v7H4zm9 0h7v7h-7zM4 13h7v7H4zm9 0h7v7h-7z" opacity=".9"/></svg></button>
     <div id="volwrap">
       <button class="ib" id="mute" aria-label="Mute"><svg viewBox="0 0 24 24" id="vi"></svg></button>
       <input type="range" id="volume" min="0" max="100" aria-label="Volume" title="Double-click to reset">
@@ -998,6 +1104,7 @@ body.low #scrubtip{backdrop-filter:none;-webkit-backdrop-filter:none;background:
   <div id="andbox" hidden><p class="sub-h">Android app</p>
   <p class="stat" id="andstat"></p>
   <div class="row2"><button class="btn sm pri" id="andget" hidden>Download the new app</button><button class="btn sm" id="andsrv">Change server address</button></div>
+  <p class="hint" id="andedge"></p>
   <div id="andnotes" class="relnotes"></div>
   <p class="hint">The app opens your server, so this page updates with the server. Only the app itself (rarely) needs a new APK from the GitHub Releases page.</p></div>
   <p class="sub-h">Updates</p>
@@ -1136,6 +1243,13 @@ body.low #scrubtip{backdrop-filter:none;-webkit-backdrop-filter:none;background:
   </div>
 </div>
 
+<div id="qsback" hidden></div>
+<section id="qs" role="dialog" aria-modal="true" aria-labelledby="qst" hidden>
+  <div class="qsgrab" aria-hidden="true"></div>
+  <div class="qshead"><b id="qst">Quick toggles</b><small id="qss"></small></div>
+  <div id="qsview" role="tablist" aria-label="View"><button data-v="viz">Visualizer</button><button data-v="lyrics">Lyrics</button><button data-v="both">Both</button></div>
+  <div id="qsgrid"></div>
+</section>
 <div id="corner"><div id="notes" aria-live="polite"></div><div id="toasts" aria-live="polite"></div></div>
 <input type="file" id="file" accept="audio/*" hidden>
 <input type="file" id="coverfile" accept="image/*" hidden>
@@ -1312,7 +1426,7 @@ function liquidMove(p,box,axis){
   clearTimeout(p._t);p.classList.add('stretch');set(u);p._t=setTimeout(()=>{p.classList.remove('stretch');set(box)},150);
 }
 function movePill(){const b=$('seg').querySelector('button.on'),p=$('segpill');if(!b||!b.offsetWidth)return;liquidMove(p,{left:b.offsetLeft,width:b.offsetWidth},'x');requestAnimationFrame(()=>p.classList.add('ready'))}
-function applyView(){body.dataset.view=S.view;document.querySelectorAll('#seg button').forEach(b=>b.classList.toggle('on',b.dataset.v===S.view));movePill();if(S.view!=='viz')place();dirty=true}
+function applyView(){if(PHONE&&N&&N!==Math.min(S.low?Math.min(S.bars,48):S.bars,S.view==='viz'?48:40)){setupBands();palDirty=true}body.dataset.view=S.view;document.querySelectorAll('#seg button').forEach(b=>b.classList.toggle('on',b.dataset.v===S.view));movePill();if(S.view!=='viz')place();dirty=true}
 addEventListener('resize',movePill);if(document.fonts)document.fonts.ready.then(movePill);
 document.querySelectorAll('#seg button').forEach(b=>b.onclick=()=>{S.view=b.dataset.v;applyView();save()});
 function applyLow(){
@@ -1525,7 +1639,8 @@ const isAudio=f=>(f.type||'').startsWith('audio/')||/\.(mp3|wav|ogg|m4a|flac|aac
 /* ================= palette + bands ================= */
 let N=0,vals,raw,edges,pal=[],gradB=null,gradBW=0,palDirty=true;
 function setupBands(){
-  N=S.low?Math.min(S.bars,48):S.bars;vals=new Float32Array(N);raw=new Float32Array(N);edges=new Array(N+1);
+  N=S.low?Math.min(S.bars,48):S.bars;if(PHONE)N=Math.min(N,S.view==='viz'?48:40);   // phone bars: fewer and thicker on a narrow screen
+  vals=new Float32Array(N);raw=new Float32Array(N);edges=new Array(N+1);
   const lo=2,hi=Math.min(1023,Math.round(11000/((ac?ac.sampleRate:48000)/2048)));   // up to ~11 kHz: above that most music is nearly silent
   for(let i=0;i<=N;i++)edges[i]=Math.floor(lo*Math.pow(hi/lo,i/N));
   gradB=null;
@@ -1566,6 +1681,9 @@ const liveAudio=()=>!!capStream||(src==='file'&&filePlaying());
 // always reach (and other devices too). The bridge on this computer wins when both work.
 const BRIDGE_LOCAL='ws://127.0.0.1:47120',BRIDGE_RELAY=PREFS?(location.protocol==='https:'?'wss://':'ws://')+location.host+'/api/bridge/listen':null;
 const AND=window.VVAndroid||null;   // inside the Android app: Vibe Bridge is built in (the phone's own sound)
+// the phone design: in the Android app, and in a phone's browser (a touch screen whose short side is a phone's)
+const PHONE=!!AND||(matchMedia('(pointer:coarse)').matches&&Math.min(screen.width,screen.height)<600);
+if(PHONE)body.classList.add('phone');
 const bridgeBuf=new Uint8Array(1024);let bridgeOn=false,bridgeAt=0,bridgeDev='',bridgeVia='';
 const bl={local:{ws:null,on:false,t:0,at:0,dev:''},relay:{ws:null,on:false,t:0,at:0,dev:''}};
 const bridgeLive=()=>bridgeOn&&performance.now()-bridgeAt<600;
@@ -3468,11 +3586,69 @@ function liquid(el){
   const up=()=>el.classList.remove('press');el.addEventListener('pointerup',up);el.addEventListener('pointercancel',up);
   el.addEventListener('pointerleave',()=>{up();r=null;cancelAnimationFrame(q);q=0;['--dx','--dy','--ax','--ay'].forEach(k=>{delete last[k];el.style.removeProperty(k)})});
 }
-const LQ_SEL='.ib,.chip,.btn,#seg button,#pnav .pn,.prow,.opt,#nextup,#bar';
+const LQ_SEL='.ib,.chip,.btn,#seg button,#pnav .pn,.prow,.opt,#nextup,#bar,.qtile';
 document.querySelectorAll(LQ_SEL).forEach(liquid);
 // controls added later (panels, rows): only look at what was added, not the whole page on every change
 new MutationObserver(ms=>{for(const m of ms)for(const n of m.addedNodes){if(n.nodeType!==1||n.classList.contains('lqr'))continue;
   if(n.matches(LQ_SEL))liquid(n);if(n.firstElementChild)n.querySelectorAll(LQ_SEL).forEach(liquid)}}).observe(document.body,{childList:true,subtree:true});
+/* ---------- quick toggles (phones): a bottom sheet of tiles for what the desktop has in its top bar ---------- */
+const QI={   // tile icons (24×24 paths)
+  tr:'M12.9 15.1l-2.5-2.5A17.5 17.5 0 0014 6h3V4h-7V2H8v2H1v2h11.2A15.7 15.7 0 019 11.4 15.6 15.6 0 016.7 8H4.7a17.6 17.6 0 003 4.6l-5.1 5 1.4 1.4 5-5 3.1 3.1.8-2zM18.5 10h-2L12 22h2l1.1-3h4.8l1.1 3h2l-4.5-12zm-2.6 7l1.6-4.3 1.6 4.3h-3.2z',
+  rom:'M3 5h8v2H8v12H6V7H3zm10 4h8v2h-3v8h-2v-8h-3z',
+  sync:'M12 4V1L8 5l4 4V6a6 6 0 016 6 6 6 0 01-.7 2.8l1.46 1.46A8 8 0 0020 12a8 8 0 00-8-8zm0 14a6 6 0 01-6-6c0-1 .25-1.97.7-2.8L5.24 7.74A8 8 0 004 12a8 8 0 008 8v3l4-4-4-4v3z',
+  focus:'M12 8a4 4 0 100 8 4 4 0 000-8zM3 5v4h2V5h4V3H5a2 2 0 00-2 2zm2 10H3v4a2 2 0 002 2h4v-2H5v-4zm14 4h-4v2h4a2 2 0 002-2v-4h-2v4zm0-16h-4v2h4v4h2V5a2 2 0 00-2-2z',
+  canvas:'M4 4h16a2 2 0 012 2v12a2 2 0 01-2 2H4a2 2 0 01-2-2V6a2 2 0 012-2zm6 4v8l6-4z',
+  bridge:'M12 14a3 3 0 003-3V5a3 3 0 00-6 0v6a3 3 0 003 3zm5-3a5 5 0 01-10 0H5a7 7 0 006 6.9V21h2v-3.1A7 7 0 0019 11z',
+  low:'M13 2L4 14h6l-1 8 9-12h-6l1-8z',
+  spotify:'M12 2a10 10 0 100 20 10 10 0 000-20zm4.6 14.4a.6.6 0 01-.9.2c-2.4-1.5-5.4-1.8-8.9-1a.6.6 0 11-.3-1.2c3.9-.9 7.2-.5 9.9 1.1.3.2.4.6.2.9zm1.2-2.7a.8.8 0 01-1.1.3c-2.7-1.7-6.9-2.2-10.1-1.2a.8.8 0 11-.5-1.5c3.7-1.1 8.3-.6 11.4 1.3.4.3.5.8.3 1.1zm.1-2.8C14.7 9 9.4 8.8 6.3 9.7a1 1 0 11-.6-1.9c3.5-1.1 9.4-.9 13.1 1.3a1 1 0 01-.9 1.8z',
+  open:'M10 4H4a2 2 0 00-2 2v12a2 2 0 002 2h16a2 2 0 002-2V8a2 2 0 00-2-2h-8l-2-2z',
+  net:'M12 21l3.6-4.8A6 6 0 0012 15a6 6 0 00-3.6 1.2zm0-18C8 3 4.3 4.3 1.4 6.6L3.2 9A13 13 0 0112 6a13 13 0 018.8 3l1.8-2.4A16 16 0 0012 3zm0 6a10 10 0 00-6.6 2.4l1.8 2.4A7 7 0 0112 12a7 7 0 014.8 1.8l1.8-2.4A10 10 0 0012 9z',
+  set:'M4 7h10v2H4zm12 0h4v2h-4zM4 15h4v2H4zm6 0h10v2H10zM14 5h2v6h-2zM8 13h2v6H8z'};
+// each tile: what it says, whether it's on, and what a tap does (the same functions as the desktop's buttons)
+const QT=[
+  {k:'tr',name:'Translate',on:()=>!!S.tr,sub:()=>S.tr?((LANGS.find(x=>x[0]===S.trTo)||['',S.trTo])[1]):'Off',fn:()=>toggleTr()},
+  {k:'rom',name:'Romanize',on:()=>S.romMode!=='off',sub:()=>S.romMode==='off'?'Off':S.romMode==='below'?'Under the line':'Instead',fn:()=>toggleRom()},
+  {k:'sync',name:'Resync lyrics',on:()=>false,sub:()=>lsync&&L.length?'Tap to resync':'No synced lyrics',dis:()=>!(lsync&&L.length),fn:()=>resyncNow()},
+  {k:'focus',name:'Focus lyrics',on:()=>!!S.xFocus,sub:()=>S.xFocus?'One line at a time':'Off',fn:()=>quickSet('xFocus',!S.xFocus,S.xFocus?'Focus mode off':'Focus mode on')},
+  {k:'canvas',name:'Canvas',on:()=>!!S.canvasOn,sub:()=>!S.canvasOn?'Off':body.classList.contains('cvmode')?'Playing':'When a song has one',fn:()=>quickSet('canvasOn',!S.canvasOn,S.canvasOn?'Canvas off':'Canvas on')},
+  {k:'bridge',name:AND?'Phone sound':'Vibe Bridge',on:()=>!!S.bridge,sub:()=>!S.bridge?'Off':bridgeOn?'Bars follow the music':'Waiting for sound',fn:()=>quickSet('bridge',!S.bridge,S.bridge?'The bars no longer follow the sound':'The bars follow the sound')},
+  {k:'low',name:'Low power',on:()=>!!S.low,sub:()=>S.low?'Light effects':'Off',fn:()=>{S.low=!S.low;applyLow();save();refreshReset()}},
+  {k:'spotify',name:'Spotify',on:()=>src==='spotify',sub:()=>$('spt').textContent.replace(/^Spotify · /,'')||'—',fn:()=>{qsClose();$('spchip').click()}},
+  {k:'open',name:'Open a file',on:()=>src==='file',sub:()=>src==='file'?'A song is open':'Music or lyrics',fn:()=>{qsClose();$('file').click()}},
+  {k:'net',name:'Connection',on:()=>false,sub:()=>$('netbtn').classList.contains('bad')?'Not reachable':($('netms').textContent||'–'),fn:()=>{qsClose();setTimeout(()=>$('netbtn').click(),300)}},
+  {k:'set',name:'Settings',on:()=>false,sub:()=>'Everything else',fn:()=>{qsClose();openPanel()}}];
+(function buildQs(){
+  const g=$('qsgrid');
+  QT.forEach(t=>{const b=document.createElement('button');b.type='button';b.className='qtile';b.dataset.k=t.k;
+    b.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="'+QI[t.k]+'"/></svg><span><b></b><small></small></span>';b.querySelector('b').textContent=t.name;
+    b.onclick=()=>{t.fn();bump(b);setTimeout(qsRender,60);setTimeout(qsRender,700)};g.appendChild(b);t.el=b});
+  $('qsview').querySelectorAll('button').forEach(b=>b.onclick=()=>{S.view=b.dataset.v;applyView();save();qsRender()});
+})();
+function qsRender(){
+  if(!qsOpen())return;
+  QT.forEach(t=>{const on=t.on(),b=t.el;b.classList.toggle('on',on);b.setAttribute('aria-pressed',on);b.disabled=!!(t.dis&&t.dis());
+    const sm=b.querySelector('small'),v=t.sub();if(sm.textContent!==v)sm.textContent=v});
+  $('qsview').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.v===S.view));
+  $('qss').textContent=[ttl.textContent&&ttl.textContent!=='Nothing playing'?ttl.textContent:'',$('capt').textContent].filter(Boolean).join(' · ');
+}
+const qsOpen=()=>!$('qs').hidden&&$('qs').classList.contains('on');
+let qsT=0;
+function qsShow(){const q=$('qs'),b=$('qsback');clearTimeout(qsT);q.hidden=b.hidden=false;q.style.removeProperty('--qsdrag');poke();
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{q.classList.add('on');b.classList.add('on');qsRender()}))}
+function qsClose(){const q=$('qs'),b=$('qsback');if(q.hidden)return;q.classList.remove('on','drag');b.classList.remove('on');q.style.removeProperty('--qsdrag');
+  clearTimeout(qsT);qsT=setTimeout(()=>{q.hidden=b.hidden=true;poke()},S.low?0:420)}
+setInterval(qsRender,1000);
+$('qsbtn').onclick=()=>qsOpen()?qsClose():qsShow();
+$('qsback').onclick=qsClose;
+// swipe up on the controls opens the sheet; dragging the sheet down closes it
+{let y0=null;const bar=$('bar');
+ bar.addEventListener('touchstart',e=>{y0=e.target.closest('input')?null:e.touches[0].clientY},{passive:true});
+ bar.addEventListener('touchmove',e=>{if(y0!=null&&y0-e.touches[0].clientY>46){y0=null;qsShow()}},{passive:true});
+ bar.addEventListener('touchend',()=>{y0=null},{passive:true});
+ const q=$('qs');let d0=null,dy=0;
+ q.addEventListener('touchstart',e=>{d0=q.scrollTop<=0?e.touches[0].clientY:null;dy=0},{passive:true});
+ q.addEventListener('touchmove',e=>{if(d0==null)return;dy=Math.max(0,e.touches[0].clientY-d0);if(dy>4){q.classList.add('drag');q.style.setProperty('--qsdrag',dy+'px')}},{passive:true});
+ q.addEventListener('touchend',()=>{if(d0==null)return;d0=null;q.classList.remove('drag');if(dy>90)qsClose();else q.style.removeProperty('--qsdrag')},{passive:true})}
 $('gear').onclick=()=>$('panel').classList.contains('open')?closePanel():openPanel();
 $('pclose').onclick=closePanel;
 function nudgeVol(d){if(src==='spotify'){if(!$('spvol').disabled)spSetVol(+$('spvol').value+d);return}S.volume=Math.max(0,Math.min(100,S.volume+d));syncInputs();onSetting('volume');save()}
@@ -3503,9 +3679,9 @@ addEventListener('keydown',e=>{
 let tm;
 function poke(){
   if(body.classList.contains('uihide')||body.classList.contains('idle'))body.classList.remove('uihide','idle');clearTimeout(tm);   // touch <body> only when it changes: on every mouse move it restyled the whole page
-  if(playing()&&S.uiHide!=='never'&&!$('panel').classList.contains('open'))tm=setTimeout(()=>{
+  if(playing()&&S.uiHide!=='never'&&!$('panel').classList.contains('open')&&!qsOpen())tm=setTimeout(()=>{
     const a=document.activeElement;
-    if((!touchUI&&($('dock').matches(':hover')||$('top').matches(':hover')))||(a&&a.tagName==='SELECT')||['devpanel','cappanel','netpanel'].some(id=>popOpen($(id))))return poke();   // not while a panel is open
+    if((!touchUI&&($('dock').matches(':hover')||$('top').matches(':hover')))||(a&&a.tagName==='SELECT')||['devpanel','cappanel','netpanel'].some(id=>popOpen($(id)))||qsOpen())return poke();   // not while a panel is open
     body.classList.add('uihide','idle');
   },2800);
 }
@@ -3629,7 +3805,7 @@ function frame(now){
   if(S.blur>0&&active&&!S.low){ctx.globalCompositeOperation='destination-out';ctx.fillStyle='rgba(0,0,0,'+(1-S.blur/100*.9).toFixed(3)+')';ctx.fillRect(0,0,cv.width,cv.height);ctx.globalCompositeOperation='source-over'}
   else ctx.clearRect(0,0,cv.width,cv.height);
   ctx.setTransform(cv.width/W,0,0,cv.height/H,0,0);   // and stretch the drawing to fill the canvas exactly
-  drawBars(false);
+  drawBars(PHONE&&S.view==='viz');   // the phone's visualizer view: bars mirrored around the middle
   if(S.fps){fc++;if(now-ft>500){$('fpsEl').textContent=Math.round(fc*1000/(now-ft))+' fps';fc=0;ft=now}}
 }
 
@@ -3801,12 +3977,25 @@ function homeButtons(){   // the home screen's buttons follow what's going on (a
 function leaveHome(){if(!body.classList.contains('home'))return;body.classList.remove('home');if(src!=='none'||loaded)$('empty').classList.add('gone')}
 $('brand').onclick=goHome;
 window.vvBack=()=>{   // the Android back button: closes what's open in the app, in this order; false = nothing was
+  if(qsOpen()){qsClose();return true}
   if(!WZ.hidden){wzDone();return true}
   if($('panel').classList.contains('open')){closePanel();return true}
   if(popOpen($('devpanel'))){devClose();return true}
   for(const id of ['cappanel','netpanel'])if(popOpen($(id))){closePop($(id));$('netbtn').classList.remove('on');return true}
   if(body.classList.contains('home')&&(src!=='none'||loaded)){leaveHome();return true}
   return false};
+// the camera cutout: the app says how much of each edge it covers. Asked here (on start, turning the phone) instead of
+// only waiting to be told; an app that says nothing still gets the top kept clear when the phone is upright
+let edgeGuess=false;
+function andEdges(){
+  if(!AND)return;const st=root.style;let v='';try{v=AND.insets?AND.insets():''}catch(e){}
+  const n=v.split(',').map(Number),up=innerHeight>innerWidth;
+  if(n.length===4&&n.every(isFinite)&&(n.some(x=>x>0)||!up)){edgeGuess=false;['--sat','--sab','--sal','--sar'].forEach((k,i)=>st.setProperty(k,n[i]+'px'))}
+  else if(up&&!(parseFloat(st.getPropertyValue('--sat'))>0)){edgeGuess=true;st.setProperty('--sat','36px')}   // upright, nothing reported: room for a punch hole
+  else if(!up&&edgeGuess){edgeGuess=false;st.setProperty('--sat','0px')}
+  const e=$('andedge');if(e)e.textContent='Kept clear of the camera: top '+(st.getPropertyValue('--sat')||'0px')+', left '+(st.getPropertyValue('--sal')||'0px')+', right '+(st.getPropertyValue('--sar')||'0px')+', bottom '+(st.getPropertyValue('--sab')||'0px')+(edgeGuess?' (the app reported nothing, so the top is guessed)':'')+'.';
+}
+if(AND){let q=0;const go=()=>{clearTimeout(q);q=setTimeout(andEdges,250)};addEventListener('resize',go);[300,1500,4000].forEach(t=>setTimeout(andEdges,t))}
 if(AND){body.classList.add('android');$('andbox').hidden=false;$('andsrv').onclick=()=>AND.changeServer();
   try{$('andstat').textContent='App version '+AND.version()+' · server '+AND.server()}catch(e){}}
 
