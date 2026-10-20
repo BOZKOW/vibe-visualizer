@@ -23,12 +23,13 @@ updates are shared.
 | On | Use | Get it |
 | --- | --- | --- |
 | Any computer or phone | The web app in a browser, installable as an app (Chrome, Edge, Safari) | Open `https://NAME.ts.net` |
-| Android phones and tablets | [Android app](#android-app): a music-player design, with the phone's own sound for the bars | `vibe-visualizer-android.apk` on the [Releases page](../../releases) (beta) |
 | Mac | [macOS app](#macos-app): your server in its own window | `Vibe-Visualizer-macOS.dmg` on the [Releases page](../../releases) (beta) |
 | Windows and Linux (the computer that plays the music) | [Vibe Bridge](#vibe-bridge-bars-from-the-spotify-app): the bars follow everything it plays | `vibe-bridge-…` on the [Releases page](../../releases) |
 
-The apps only show your server: the page itself updates with the server (*Settings → Help & about → Update now*),
-and each app tells you there when a new version of the app itself is out.
+The macOS app only shows your server: the page itself updates with the server (*Settings → Help & about → Update
+now*), and the app tells you there when a new version of the app itself is out.
+
+The old Android app is out of support; a new, standalone one is planned (see [Android app](#android-app)).
 
 ## Contents
 
@@ -40,7 +41,7 @@ and each app tells you there when a new version of the app itself is out.
 - [Updating](#updating)
 - [Using it on Linux](#using-it-on-linux)
 - [Using it on Windows](#using-it-on-windows)
-- [Android app](#android-app)
+- [Android app](#android-app) (out of support)
 - [macOS app](#macos-app)
 - [Third-party services](#third-party-services)
 - [Privacy](#privacy)
@@ -155,8 +156,8 @@ your devices ──Tailscale HTTPS──▶ tailscale serve ──▶ 127.0.0.1:
                                                                                    └─ updates from GitHub (web/)
 ```
 
-The Android and macOS apps open the same address as a browser does and only add what a browser can't: the phone's
-own sound for the bars, logging in to Spotify through your browser, a window of its own.
+The macOS app opens the same address as a browser does and only adds what a browser can't: logging in to Spotify
+through your browser and a window of its own.
 
 ## Setup
 
@@ -391,34 +392,9 @@ already does. Changes to the helper itself still need `git pull && docker compos
 
 ## Android app
 
-**Vibe Visualizer for Android** (Android 8 or newer, phones and tablets) opens your Vibe Visualizer server full screen,
-so lyrics, Canvas, your settings and updates all come from the server, the same as on your computer.
-
-- **Install:** download `vibe-visualizer-android.apk` from the [Releases page](../../releases) on the phone, open it
-  and allow installing apps from your browser when Android asks.
-- **First start:** type your server's address (`https://NAME.ts.net`). Keep the **Tailscale** app connected on the
-  phone. To change the address later: *Settings → Help & about → Android app*.
-- **"Can't be reached" (`ERR_NAME_NOT_RESOLVED`):** the app says which of these it is. The phone isn't asking Tailscale for `.ts.net` names. In the
-  Tailscale app turn on *Settings → Use Tailscale DNS*, and turn **Private DNS** off in Android's settings
-  (*Connections → More connection settings → Private DNS* on Samsung), then reconnect.
-- **The bars follow what the phone plays**, the Spotify app included: Vibe Bridge is built in. Allow the audio
-  permission when the app asks. It only reads the sound's spectrum through Android's Visualizer; nothing is recorded
-  or sent anywhere. A few phones don't allow this; the bars then use the ambient motion.
-- **Spotify login** happens in the phone's browser (where Google/Apple sign-in and an existing Spotify session work).
-  Spotify comes back to your server's address, the Redirect URI you already registered, and the page there has an
-  **Open Vibe Visualizer** button that takes the login back to the app. Your Client ID comes over from your other
-  devices by itself.
-- **Designed after [Spicy Lyrics Mobile](https://github.com/spicylyrics/mobile) by TX24:** the cover in the top-left
-  corner with the song beside it, the lyrics filling the screen with the line being sung near the top, and the
-  controls hidden while music plays (tap to bring them back): a thin timeline, plain transport glyphs and a row of
-  round glass buttons (like, player view, devices, quick toggles, Settings). The player view shows the cover large
-  with your bars under it. **Quick toggles** (the four-squares button) hold the view switch and tiles for translation, romanization, resync,
-  Focus lyrics, Canvas, the phone's sound, low power, Spotify, opening a file, the connection, mute, home and Settings.
-- The screen stays on while the app is open, the back button closes Settings and panels first, and nothing runs in
-  the background.
-- **Building it yourself:** the app is in `android/` (plain Java, no libraries). GitHub Actions builds it on every
-  change and publishes it when a tag like `android-v1.0.0` is pushed. Without the release key (the
-  `ANDROID_KEYSTORE_B64` and `ANDROID_KEYSTORE_PASS` secrets) the build is signed with a debug key.
+> **The Android app is old and out of support.** The Android betas (0.2 to 0.7, `vibe-visualizer-android.apk` on the
+> [Releases page](../../releases)) are no longer updated, and their phone design and app-only features are removed
+> from the web app. A new, standalone Android app is planned. If you installed the old one, you can uninstall it.
 
 ## macOS app
 
@@ -500,8 +476,8 @@ Made by [BOZKOW](https://github.com/BOZKOW), built together with [Claude Code](h
 The "Spicy Lyrics" lyrics font option uses [Inter](https://rsms.me/inter/) by Rasmus Andersson (SIL Open Font License
 1.1, `web/InterVariable-LICENSE.txt`), or the device's own San Francisco font on Apple devices.
 
-The phone layout follows [Spicy Lyrics Mobile](https://github.com/spicylyrics/mobile) by TX24 (AGPL-3.0): its
-layout, controls and quick settings, in Vibe Visualizer's own design.
+Background vocals in brackets and a song's own lyrics delay come from
+[Spicy Lyrics Mobile](https://github.com/spicylyrics/mobile) by TX24 (AGPL-3.0).
 
 The moving background is drawn with [Kawarp](https://github.com/better-lyrics/kawarp) (MIT, from the Better Lyrics
 project), as Spicy Lyrics does: a WebGL Kawase blur with a slow liquid warp.
