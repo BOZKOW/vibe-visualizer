@@ -3197,7 +3197,7 @@ async function loadLyrics(m,tok,opt){
       const r=await FN[p](m);
       if(tok!==coverTok)return;
       if(r&&r.lines.some(l=>!l.dots)){r.prov=p;note(p,'found: '+(r.sync?(r.lines.some(l=>l.words)?'word-synced':'line-synced'):'not synced'),performance.now()-t0);
-        if(!skip.size&&!pk){lcache.set(key,r);lcPut(key,r)}applyLyrics(r);return}
+        if(!skip.size){lcache.set(key,r);lcPut(key,r)}applyLyrics(r);return}
       note(p,'not found',performance.now()-t0);
     }catch(e){if(e.noKey){note(p,'skipped: '+e.message);continue}note(p,'failed: '+e.message,performance.now()-t0);errs.push(PROVS[p].name+': '+e.message)}
   }
