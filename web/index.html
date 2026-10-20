@@ -130,13 +130,15 @@ body.uihide:not(.xfocus)[data-view=both]:is(.hl,.lm) #lyr{bottom:calc(26% + 24px
 body.uihide.xfocus[data-view=both]:is(.hl,.lm) #lyr{bottom:calc(-1*var(--vizdrop,0px));--lyx:var(--vizdrop,0px)}
 
 /* ---------- lyrics ---------- */
-#lyr{left:-20px;overflow:hidden;scrollbar-width:none;-webkit-mask-image:linear-gradient(transparent,#000 var(--lyt,14%),#000 var(--lyb,80%),transparent);mask-image:linear-gradient(transparent,#000 var(--lyt,14%),#000 var(--lyb,80%),transparent)}
+#lyr{left:-60px;right:-40px;overflow:hidden;-webkit-mask-composite:source-in;mask-composite:intersect;scrollbar-width:none;-webkit-mask-image:linear-gradient(transparent,#000 var(--lyt,14%),#000 var(--lyb,80%),transparent),linear-gradient(90deg,transparent,#000 40px,#000 calc(100% - 40px),transparent);mask-image:linear-gradient(transparent,#000 var(--lyt,14%),#000 var(--lyb,80%),transparent),linear-gradient(90deg,transparent,#000 40px,#000 calc(100% - 40px),transparent)}
 body[data-view=viz] #lyr{display:none}
+/* the lyrics' area reaches 40px past the text on both sides and fades out there too, so a blurred line (and one
+   flying off in Focus mode or a duet) fades away instead of being cut off in a straight line; the text keeps its place */
 /* the lyrics' clear band (sharp between the two fades): 14% to 80%, widened by place() for a line too tall for it */
 @property --lyt{syntax:'<length-percentage>';inherits:false;initial-value:14%}
 @property --lyb{syntax:'<length-percentage>';inherits:false;initial-value:80%}
 #lyr{transition:opacity .5s,top .55s var(--e-out),bottom .55s var(--e-out),--lyt .55s var(--e-out),--lyb .55s var(--e-out),--lyx .55s var(--e-out)}
-#ly{position:absolute;left:0;right:0;top:0;padding:0 6% 0 20px;transition:transform .55s var(--e-out);will-change:transform}
+#ly{position:absolute;left:0;right:0;top:0;padding:0 calc(6% + 35.2px) 0 60px;transition:transform .55s var(--e-out);will-change:transform}
 #lyr.st{overflow-y:auto}
 #lyr.st #ly{position:relative;transform:none!important;padding:9vh 6% 40vh 20px}   /* untimed: start near the top, clear of the faded lower edge */
 .ll{font-size:calc(clamp(24px,3.3vw,52px)*var(--ls));font-weight:700;line-height:1.18;letter-spacing:0;padding:.2em 0;opacity:.51;transform-origin:left center;transition:opacity .2s cubic-bezier(.61,1,.88,1),filter .35s ease-out;--bl:0px;
@@ -233,7 +235,7 @@ body.uihide:not(.xfocus)[data-view=both].credly #lcredit{bottom:calc(26% + 24px 
 .ll.a .sub.bgv .w,.ll.a .sub.bgv .c{text-shadow:0 0 var(--text-shadow-blur-radius) rgba(255,255,255,var(--text-shadow-opacity))}
 #lyr.st .ll .sub.bgv{text-shadow:0 0 0 rgba(255,255,255,.6)}
 /* message in the lyrics area: searching / no lyrics */
-#lmsg{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;gap:10px;padding:0 6% 0 20px;pointer-events:none}
+#lmsg{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;gap:10px;padding:0 calc(6% + 35.2px) 0 60px;pointer-events:none}
 #lmsg b{font-size:calc(clamp(22px,2.8vw,42px)*var(--ls));font-weight:800;letter-spacing:-.025em;line-height:1.15;color:rgba(255,255,255,.6)}
 #lmsg small{font-size:14px;font-weight:600;color:var(--faint);max-width:40ch}
 #lmsg:not(:empty){animation:up .6s var(--e-out)}
@@ -465,7 +467,7 @@ body.xfocus #ly.duet .ll.opp .sub{margin-left:auto}
 /* in "Both" the lyrics reach down behind the bars, which are drawn on top */
 body.low.xfocus #lyr:not(.st) .ll{filter:none!important;--bl:0px;--fb:0px;transition-property:opacity,transform}   /* Low performance mode: Focus lyrics move and fade, never blur */
 body.xfocus[data-view=both] #viz{z-index:2}body.xfocus[data-view=both] #lyr{z-index:1}
-body.xfocus[data-view=both]:is(.hl,.lm) #lyr{bottom:0;-webkit-mask-image:linear-gradient(transparent,#000 calc((100% - var(--lyx,0px))*.12),#000 calc((100% - var(--lyx,0px))*.58 + var(--lyx,0px)),transparent calc((100% - var(--lyx,0px))*.74 + var(--lyx,0px)));mask-image:linear-gradient(transparent,#000 calc((100% - var(--lyx,0px))*.12),#000 calc((100% - var(--lyx,0px))*.58 + var(--lyx,0px)),transparent calc((100% - var(--lyx,0px))*.74 + var(--lyx,0px)))}   /* lines fade in from where the bars are, nothing shows between them */
+body.xfocus[data-view=both]:is(.hl,.lm) #lyr{bottom:0;-webkit-mask-image:linear-gradient(transparent,#000 calc((100% - var(--lyx,0px))*.12),#000 calc((100% - var(--lyx,0px))*.58 + var(--lyx,0px)),transparent calc((100% - var(--lyx,0px))*.74 + var(--lyx,0px))),linear-gradient(90deg,transparent,#000 40px,#000 calc(100% - 40px),transparent);mask-image:linear-gradient(transparent,#000 calc((100% - var(--lyx,0px))*.12),#000 calc((100% - var(--lyx,0px))*.58 + var(--lyx,0px)),transparent calc((100% - var(--lyx,0px))*.74 + var(--lyx,0px))),linear-gradient(90deg,transparent,#000 40px,#000 calc(100% - 40px),transparent)}   /* lines fade in from where the bars are, nothing shows between them */
 body.novol #volwrap{display:none}
 .crow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-top:1px solid var(--line);font-size:13px;font-weight:600}
 .crow small{display:block;font-size:11.5px;font-weight:500;color:var(--faint);margin-top:2px;line-height:1.4}.crow .btn{flex:none}
@@ -3805,7 +3807,7 @@ function frame(now){
   const dt=Math.min(now-last,50);last=now;
   const pl=playing();sample(dt,now);beatTick(now,dt);drawLiveBg(now,dt);kwTick(now);
   lyricsTick();desyncTick(now);uiTick(now);if(palDirty)buildPal();palTick(now);
-  if(body.classList.contains('cvlive')&&now-lastCv>90&&now>coverAnimEnd&&cvv.readyState>=2&&!document.hidden){lastCv=now;cvFrame()}   // not during the cover's animation
+  if(body.classList.contains('cvlive')&&now-lastCv>31&&now>coverAnimEnd&&cvv.readyState>=2&&!document.hidden){lastCv=now;cvFrame()}   // the blurred Canvas: 30 times a second, as smooth as the video; not during the cover's animation
   const active=pl||mxv>.003||!!capStream||idleK>.005;
   // the cover and title stay still (no beat pulse)
   if(!active&&!wasActive&&!dirty)return;
