@@ -122,8 +122,12 @@ body[data-view=both]:is(.hl,.lm) #lyr{bottom:calc(26% + 24px)}
 body[data-view=both]:is(.hl,.lm) #viz{top:74%}
 
 /* ---------- lyrics ---------- */
-#lyr{left:-20px;overflow:hidden;scrollbar-width:none;-webkit-mask-image:linear-gradient(transparent,#000 14%,#000 80%,transparent);mask-image:linear-gradient(transparent,#000 14%,#000 80%,transparent)}
+#lyr{left:-20px;overflow:hidden;scrollbar-width:none;-webkit-mask-image:linear-gradient(transparent,#000 var(--lyt,14%),#000 var(--lyb,80%),transparent);mask-image:linear-gradient(transparent,#000 var(--lyt,14%),#000 var(--lyb,80%),transparent)}
 body[data-view=viz] #lyr{display:none}
+/* the lyrics' clear band (sharp between the two fades): 14% to 80%, widened by place() for a line too tall for it */
+@property --lyt{syntax:'<length-percentage>';inherits:false;initial-value:14%}
+@property --lyb{syntax:'<length-percentage>';inherits:false;initial-value:80%}
+#lyr{transition:opacity .5s,top .55s var(--e-out),bottom .55s var(--e-out),--lyt .55s var(--e-out),--lyb .55s var(--e-out)}
 #ly{position:absolute;left:0;right:0;top:0;padding:0 6% 0 20px;transition:transform .55s var(--e-out);will-change:transform}
 #lyr.st{overflow-y:auto}
 #lyr.st #ly{position:relative;transform:none!important;padding:9vh 6% 40vh 20px}   /* untimed: start near the top, clear of the faded lower edge */
@@ -2349,6 +2353,7 @@ function joinWords(ws,ts){   // ws: words (text, sp = followed by a space), ts: 
 }
 function renderLyrics(label,quiet){
   if(!quiet)lLabel=label||'';
+  lyTall=false;lyBand(null);
   ly.textContent='';lEls=[];lAct=new Set();lActKey='';li=-2;lsi=-2;lfi=-2;lfo=false;lfn='';lfs='';lfnSet=new Set();lfsSet=new Set();moving.clear();ly.classList.toggle('duet',L.some(l=>l.opp));stPos=null;ly.style.translate='';if(!quiet)lyr.scrollTop=0;lyr.classList.toggle('st',!lsync&&L.length>0);
   L.forEach((l,idx)=>{
     const d=document.createElement('div');d.className=l.dots?'ll dots':l.opp?'ll opp':'ll';
@@ -2707,7 +2712,25 @@ function place(){
   const hh=S.xFocus&&S.view==='both'?lyr.clientHeight*.74-24:lyr.clientHeight;   // Focus mode in Both: same middle as before
   let y=hh*.38-(el.offsetTop+el.offsetHeight/2);
   const top=hh*.16;if(el.offsetTop+y<top)y=top-el.offsetTop;   // a tall line (long text, a translation under it) moves down so its top stays out of the fade
-  setLyY(y);
+  setLyY(fitLine(el,y));
+}
+// a line too tall for the clear band (long text, a translation and background vocals under it): the band widens so
+// all of it shows sharp, and a line taller than the whole lyrics area scrolls along with the words being sung
+let lyTall=false,lyTallAt=0;
+function lyBand(a,b){if(a==null){lyr.style.removeProperty('--lyt');lyr.style.removeProperty('--lyb')}else{lyr.style.setProperty('--lyt',Math.round(a)+'px');lyr.style.setProperty('--lyb',Math.round(b)+'px')}}
+function sungRow(d){   // how far down the line (px) the words being sung are
+  const t=lyrT();let best=null,bt=-Infinity;
+  const look=(els,ts)=>{for(let j=0;j<els.length&&j<ts.length;j++)if(ts[j].t<=t&&ts[j].t>bt){bt=ts[j].t;best=els[j]}};
+  if(d._ts&&d._w)look(d._w.children,d._ts);(d._bg||[]).forEach(b=>look(b.el.children,b.ts));
+  if(!best)return 0;const r=best.getBoundingClientRect();return r.top-d.getBoundingClientRect().top+r.height/2;
+}
+function fitLine(el,y){
+  const H=lyr.clientHeight,h=el.offsetHeight,m=Math.max(18,H*.05);let t=el.offsetTop+y;lyTall=false;
+  if(S.xFocus||lyFree||!H||(t>=H*.14&&t+h<=H*.8)){lyBand(null);return y}   // it fits: the usual band
+  if(h<=H-2*m)t=Math.max(m,Math.min(t,H-m-h));   // the whole line in view, as high as it needs to go
+  else{lyTall=true;t=Math.max(H-m-h,Math.min(m,H*.4-sungRow(el)));lyBand(m,H-m);return t-el.offsetTop}   // taller than everything: the words being sung stay in view, short fades at both edges
+  lyBand(Math.max(0,Math.min(H*.14,t-2)),Math.min(H,Math.max(H*.8,t+h+2)));
+  return t-el.offsetTop;
 }
 /* Scrolling through the lyrics, as in Spicy Lyrics: the wheel or a finger moves them freely and every line shows, sharp
    (in Focus and Minimal mode too); following the song pauses, and comes back 4 s after the last move or with the
@@ -2977,6 +3000,7 @@ function staticScroll(){
 let placeUntil=0;
 function lyricsTick(){
   if(placeUntil&&performance.now()<placeUntil)place();
+  else if(lyTall&&!lyFree&&performance.now()-lyTallAt>250){lyTallAt=performance.now();place()}   // a line taller than the lyrics area follows the singing
   if(!L.length||S.view==='viz')return;
   if(!lsync){staticScroll();return}
   const t=lyrT(),i=findIdx(t),e=i>=0?lineEnd(L[i]):null,out=e!=null&&t>=e;
