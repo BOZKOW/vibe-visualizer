@@ -121,10 +121,13 @@ body[data-view=lyrics]:is(.hl,.lm) #viz{opacity:0}
 body[data-view=both]:is(.hl,.lm) #lyr{bottom:calc(26% + 24px)}
 body[data-view=both]:is(.hl,.lm) #viz{top:74%}
 /* the controls hidden (music playing, the mouse still): the bars slide down into the room the bar leaves, never over
-   the credits (--vizdrop, from placeCredit), and the lyrics grow by the same; Focus mode keeps its own layout */
+   the credits (--vizdrop, from placeCredit), and the lyrics grow by the same. In Focus mode the lyrics already fill
+   the area and fade out above the bars: the area reaches lower and the fade (--lyx) moves down with the bars */
+@property --lyx{syntax:'<length>';inherits:false;initial-value:0px}
 #viz{transition:opacity .5s,top .55s var(--e-out),bottom .55s var(--e-out),transform .55s var(--e-out)}
-body.uihide:not(.xfocus)[data-view=both]:is(.hl,.lm) #viz{transform:translateY(var(--vizdrop,0px))}
+body.uihide[data-view=both]:is(.hl,.lm) #viz{transform:translateY(var(--vizdrop,0px))}
 body.uihide:not(.xfocus)[data-view=both]:is(.hl,.lm) #lyr{bottom:calc(26% + 24px - var(--vizdrop,0px))}
+body.uihide.xfocus[data-view=both]:is(.hl,.lm) #lyr{bottom:calc(-1*var(--vizdrop,0px));--lyx:var(--vizdrop,0px)}
 
 /* ---------- lyrics ---------- */
 #lyr{left:-20px;overflow:hidden;scrollbar-width:none;-webkit-mask-image:linear-gradient(transparent,#000 var(--lyt,14%),#000 var(--lyb,80%),transparent);mask-image:linear-gradient(transparent,#000 var(--lyt,14%),#000 var(--lyb,80%),transparent)}
@@ -132,7 +135,7 @@ body[data-view=viz] #lyr{display:none}
 /* the lyrics' clear band (sharp between the two fades): 14% to 80%, widened by place() for a line too tall for it */
 @property --lyt{syntax:'<length-percentage>';inherits:false;initial-value:14%}
 @property --lyb{syntax:'<length-percentage>';inherits:false;initial-value:80%}
-#lyr{transition:opacity .5s,top .55s var(--e-out),bottom .55s var(--e-out),--lyt .55s var(--e-out),--lyb .55s var(--e-out)}
+#lyr{transition:opacity .5s,top .55s var(--e-out),bottom .55s var(--e-out),--lyt .55s var(--e-out),--lyb .55s var(--e-out),--lyx .55s var(--e-out)}
 #ly{position:absolute;left:0;right:0;top:0;padding:0 6% 0 20px;transition:transform .55s var(--e-out);will-change:transform}
 #lyr.st{overflow-y:auto}
 #lyr.st #ly{position:relative;transform:none!important;padding:9vh 6% 40vh 20px}   /* untimed: start near the top, clear of the faded lower edge */
@@ -462,7 +465,7 @@ body.xfocus #ly.duet .ll.opp .sub{margin-left:auto}
 /* in "Both" the lyrics reach down behind the bars, which are drawn on top */
 body.low.xfocus #lyr:not(.st) .ll{filter:none!important;--bl:0px;--fb:0px;transition-property:opacity,transform}   /* Low performance mode: Focus lyrics move and fade, never blur */
 body.xfocus[data-view=both] #viz{z-index:2}body.xfocus[data-view=both] #lyr{z-index:1}
-body.xfocus[data-view=both]:is(.hl,.lm) #lyr{bottom:0;-webkit-mask-image:linear-gradient(transparent,#000 12%,#000 58%,transparent 74%);mask-image:linear-gradient(transparent,#000 12%,#000 58%,transparent 74%)}   /* lines fade in from where the bars are, nothing shows between them */
+body.xfocus[data-view=both]:is(.hl,.lm) #lyr{bottom:0;-webkit-mask-image:linear-gradient(transparent,#000 calc((100% - var(--lyx,0px))*.12),#000 calc((100% - var(--lyx,0px))*.58 + var(--lyx,0px)),transparent calc((100% - var(--lyx,0px))*.74 + var(--lyx,0px)));mask-image:linear-gradient(transparent,#000 calc((100% - var(--lyx,0px))*.12),#000 calc((100% - var(--lyx,0px))*.58 + var(--lyx,0px)),transparent calc((100% - var(--lyx,0px))*.74 + var(--lyx,0px)))}   /* lines fade in from where the bars are, nothing shows between them */
 body.novol #volwrap{display:none}
 .crow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-top:1px solid var(--line);font-size:13px;font-weight:600}
 .crow small{display:block;font-size:11.5px;font-weight:500;color:var(--faint);margin-top:2px;line-height:1.4}.crow .btn{flex:none}
@@ -2739,7 +2742,7 @@ function setActive(i){
 function place(){
   if(!lEls.length||lyr.classList.contains('st'))return;
   const el=lEls[Math.max(lsi>=0?lsi:li,0)];if(!el)return;
-  const hh=S.xFocus&&S.view==='both'?lyr.clientHeight*.74-24:lyr.clientHeight;   // Focus mode in Both: same middle as before
+  const hh=S.xFocus&&S.view==='both'?lyr.parentElement.clientHeight*.74-24:lyr.clientHeight;   // Focus mode in Both: same middle as before (the area's own height: it reaches lower while the bar hides)
   let y=hh*.38-(el.offsetTop+el.offsetHeight/2);
   const top=hh*.16;if(el.offsetTop+y<top)y=top-el.offsetTop;   // a tall line (long text, a translation under it) moves down so its top stays out of the fade
   setLyY(fitLine(el,y));
