@@ -1656,7 +1656,18 @@ function updBridge(){
   if(el)el.textContent=!S.bridge?'Off.':bridgeOn?('Connected '+(bridgeVia==='relay'?'through your server':'on this computer')+(bridgeDev?' · listening to '+bridgeDev:'')+'.'):'Not connected. On the computer that plays the music, start Vibe Bridge'+(PREFS&&location.protocol==='https:'?' with:  vibe-bridge --server '+location.host:'')+'  (see the README).';
   $('capbtn').classList.toggle('bridge',bridgeOn);updCapLabel();
 }
-let spSlew=null,spSnap=false;
+let spSlew=null,spSnap=false,spSamples=[];
+// Spotify's position lands a little early or late on every reading (its own estimate, and the request's travel time:
+// the position is counted from the request's midpoint, which can be ±half the round trip off). So the readings since
+// the last skip, seek or pause are averaged: the quickest round trips count most, a stray one is left out, and the
+// clock only moves when they agree it's off by more than 30 ms. Readings in a row that agree on a new place win
+// (three, or two for a move over 0.2 s).
+function spEst(){
+  const s=spSamples;if(!s.length)return null;
+  const offs=s.map(x=>x.off).sort((a,b)=>a-b),med=offs[offs.length>>1];let sw=0,so=0;
+  for(const x of s){if(Math.abs(x.off-med)>250)continue;const w=1/Math.pow(x.rtt/2+80,2);sw+=w;so+=w*x.off}
+  return sw?so/sw:med;
+}
 let spRtt=0,resyncing=false;
 async function resyncNow(){   // manual resync: three fresh readings from Spotify, the most exact one wins, snapped (no gliding)
   if(resyncing)return;resyncing=true;
@@ -1670,7 +1681,7 @@ async function resyncNow(){   // manual resync: three fresh readings from Spotif
         if(!best||spRtt<best.rtt)best={rtt:spRtt,p:spState.progress,at:spFetched,pl:spState.playing};
         if(k<2)await new Promise(r=>setTimeout(r,150));
       }}finally{spSnap=false}
-      if(best&&spState&&spId===id){spState.progress=best.p;spFetched=best.at;spState.playing=best.pl;spSlew=null;if(before!=null)moved=curMs()-before}
+      if(best&&spState&&spId===id){spState.progress=best.p;spFetched=best.at;spState.playing=best.pl;spSlew=null;spSamples=best.pl?[{off:best.p-best.at,rtt:best.rtt}]:[];if(before!=null)moved=curMs()-before}
     }
     const undo=lAdj!==0;lAdj=0;DS.lastFix=0;DS.fixes=0;DS.asked=false;dsReset();   // back to the plain timing: undo any automatic desync fix
     moving.forEach(k=>{if(lEls[k])restLine(lEls[k])});moving.clear();lastWT=0;   // the words start again from the right pose
@@ -2031,9 +2042,18 @@ function spApply(d,mid){   // a player state from Spotify (fetched here or share
   const ep=it.type==='episode',imgs=(ep?it.images:(it.album&&it.album.images))||[];
   const m={ep,id:it.id,uri:it.uri,title:it.name,artist:ep?((it.show&&it.show.name)||''):(it.artists||[]).map(a=>a.name).join(', '),album:ep?'':((it.album&&it.album.name)||''),duration:it.duration_ms/1000,cover:imgs[0]?imgs[0].url:'',artistId:ep?'':((it.artists&&it.artists[0]&&it.artists[0].id)||'')};
   spState={playing:!!d.is_playing,progress:d.progress_ms||0,duration:it.duration_ms};
-  // small differences glide in over ~0.6 s instead of jumping the lyrics; big ones (seek, skip) snap
-  const after=spState.progress+(spState.playing?now-mid:0),err=before==null?null:before-after;
-  spSlew=!spSnap&&err!=null&&it.id===oldId&&spState.playing&&Math.abs(err)<1500&&Math.abs(err)>15?{e:err,at:now}:null;
+  // small differences glide in over ~0.6 s instead of jumping the lyrics; big ones (seek, skip, pause) snap
+  const after=spState.progress+(spState.playing?now-mid:0),same=!spSnap&&before!=null&&it.id===oldId&&spState.playing&&Math.abs(before-after)<1500;
+  if(same){
+    spSamples.push({off:spState.progress-mid,rtt:spRtt});if(spSamples.length>8)spSamples.shift();
+    const l3=spSamples.slice(-3).map(x=>x.off),l2=l3.slice(-2),e0=spEst(),m2=(l2[0]+l2[1])/2;
+    if(spSamples.length>=5&&Math.max(...l3)-Math.min(...l3)<80&&Math.abs(l3.reduce((a,b)=>a+b)/3-e0)>150)spSamples=spSamples.slice(-3);   // it really moved
+    else if(spSamples.length>=4&&Math.abs(l2[0]-l2[1])<60&&Math.abs(m2-e0)>200)spSamples=spSamples.slice(-2);   // a big move: two readings are enough
+    spState.progress=spEst()+now;spFetched=now;   // the position the readings agree on, as of now
+  }else spSamples=spState.playing?[{off:spState.progress-mid,rtt:spRtt}]:[];
+  const err=before==null?null:before-(spState.progress+(spState.playing?now-spFetched:0));
+  if(same&&Math.abs(err)<=30){spState.progress=before;spFetched=now;spSlew=null}   // close enough: the lyrics don't move at all
+  else spSlew=same&&Math.abs(err)>15?{e:err,at:now}:null;
   if(m.id!==spId){spId=m.id;onSpTrack(m)}
   updChips();updSpx();syncCanvasPlay();updPlayIcon();
 }
@@ -3422,7 +3442,7 @@ $('prev').onclick=()=>{bump($('prev'));prevTrack()};$('next').onclick=()=>{bump(
 function toggle(){
   if(src==='spotify'){
     const play=!spPlaying();
-    spCtl('PUT',play?'/me/player/play':'/me/player/pause').then(ok=>{if(ok&&spState){spState.playing=play;spState.progress=Math.round(curTime()*1000);spFetched=performance.now();spSlew=null;updPlayIcon();updChips()}});
+    spCtl('PUT',play?'/me/player/play':'/me/player/pause').then(ok=>{if(ok&&spState){spState.playing=play;spState.progress=Math.round(curTime()*1000);spFetched=performance.now();spSlew=null;spSamples=[];updPlayIcon();updChips()}});
     return;
   }
   if(!loaded){$('file').click();return}
@@ -3458,13 +3478,13 @@ function seekTo(sec){
   sec=Math.max(0,sec);
   if(src==='file'&&audio.duration){audio.currentTime=sec;return true}
   if(src==='spotify'&&spState){const ms=Math.round(sec*1000);
-    spCtl('PUT','/me/player/seek?position_ms='+ms).then(ok=>{if(ok){spState.progress=ms;spFetched=performance.now();spSlew=null;dirty=true}});return true}
+    spCtl('PUT','/me/player/seek?position_ms='+ms).then(ok=>{if(ok){spState.progress=ms;spFetched=performance.now();spSlew=null;spSamples=[];dirty=true}});return true}
   return false;
 }
 $('seek').onchange=()=>{
   seeking=false;
   if(src==='spotify'&&spState){const ms=Math.round($('seek').value/1000*spState.duration);
-    spCtl('PUT','/me/player/seek?position_ms='+ms).then(ok=>{if(ok){spState.progress=ms;spFetched=performance.now();spSlew=null}})}
+    spCtl('PUT','/me/player/seek?position_ms='+ms).then(ok=>{if(ok){spState.progress=ms;spFetched=performance.now();spSlew=null;spSamples=[]}})}
 };
 // Next up: in the last 30 seconds of a Spotify song, ask once what's next in the queue and show it
 let nuFor=null,nuItem=null;
