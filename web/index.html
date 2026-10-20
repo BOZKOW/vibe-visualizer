@@ -120,6 +120,11 @@ body[data-view=lyrics]:is(.hl,.lm) #viz{opacity:0}
 /* "Both": lyrics on top, visualizer in its own strip below, no overlap */
 body[data-view=both]:is(.hl,.lm) #lyr{bottom:calc(26% + 24px)}
 body[data-view=both]:is(.hl,.lm) #viz{top:74%}
+/* the controls hidden (music playing, the mouse still): the bars slide down into the room the bar leaves, never over
+   the credits (--vizdrop, from placeCredit), and the lyrics grow by the same; Focus mode keeps its own layout */
+#viz{transition:opacity .5s,top .55s var(--e-out),bottom .55s var(--e-out),transform .55s var(--e-out)}
+body.uihide:not(.xfocus)[data-view=both]:is(.hl,.lm) #viz{transform:translateY(var(--vizdrop,0px))}
+body.uihide:not(.xfocus)[data-view=both]:is(.hl,.lm) #lyr{bottom:calc(26% + 24px - var(--vizdrop,0px))}
 
 /* ---------- lyrics ---------- */
 #lyr{left:-20px;overflow:hidden;scrollbar-width:none;-webkit-mask-image:linear-gradient(transparent,#000 var(--lyt,14%),#000 var(--lyb,80%),transparent);mask-image:linear-gradient(transparent,#000 var(--lyt,14%),#000 var(--lyb,80%),transparent)}
@@ -214,6 +219,8 @@ body.credly.hl #lyr{bottom:70px}
 body[data-view=both].credly.hl #lyr{bottom:calc(26% + 24px + 70px)}
 body[data-view=both].credly #lcredit{bottom:calc(26% + 24px + 4px)}
 body[data-view=viz].credly #lcredit{display:none}
+body.uihide:not(.xfocus)[data-view=both].credly.hl #lyr{bottom:calc(26% + 24px + 70px - var(--vizdrop,0px))}
+body.uihide:not(.xfocus)[data-view=both].credly #lcredit{bottom:calc(26% + 24px + 4px - var(--vizdrop,0px))}
 /* duet lines sung by the other voice sit on the right; background vocals in smaller italics */
 .ll.opp{text-align:right;transform-origin:right center}
 .ll .sub.bgv{font-size:.75em;font-weight:600;line-height:1.18;margin-top:.1em;color:inherit}   /* background vocals (Spicy Lyrics' bg-line) */
@@ -241,7 +248,7 @@ body[data-view=viz].credly #lcredit{display:none}
 #ly .lcr .sep{margin:0 .45em}#ly .lcr img{width:1.15em;height:1.15em;border-radius:50%;vertical-align:-.2em;margin-right:.3em;opacity:.85}
 body.credr #ly .lcr{margin-left:auto;text-align:right}body.xfocus #ly .lcr{display:none}
 body.credly.credvis #lcredit{opacity:0;pointer-events:none}   /* the credits under the last line are in view: the pinned line steps back */
-#lcredit{transition:opacity .4s}
+#lcredit{transition:opacity .4s}body.credly #lcredit{transition:opacity .4s,bottom .55s var(--e-out)}
 /* scrub preview (Spicy Lyrics 6.4.50 'scrubPreview'): the time or level a click would set */
 #scrubtip{position:fixed;z-index:21;pointer-events:none;padding:4px 9px;border-radius:9px;font-size:12px;font-weight:700;font-variant-numeric:tabular-nums;color:#fff;
   background:rgba(20,20,32,.75);border:1px solid rgba(255,255,255,.2);box-shadow:0 6px 18px rgba(0,0,0,.35);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);transform:translate(-50%,-100%) scale(.7);transform-origin:50% 100%;opacity:0;transition:opacity .15s,transform .3s var(--e-spring)}
@@ -1735,6 +1742,9 @@ function placeCredit(){
   else{root.style.setProperty('--credb',(innerHeight-top+10)+'px');root.style.setProperty('--credw',(iw-pad*2)+'px')}
   root.style.setProperty('--credup',(show&&room<need-1?cr.offsetHeight+8:0)+'px');   // credits above the bar: the cover and title end above them
   root.style.setProperty('--stageb',Math.round(innerHeight-top+12+(show&&room<need-1?cr.offsetHeight+10:0))+'px');
+  {const rr=$('right').getBoundingClientRect(),c=cr.getBoundingClientRect();let floor=innerHeight-28;   // how far the bars can slide down while the bar hides
+    if(show&&c.width&&c.right>rr.left&&c.left<rr.right)floor=Math.min(floor,c.top-8);   // the credits reach under the bars: they stop above them
+    root.style.setProperty('--vizdrop',Math.max(0,Math.round(floor-rr.bottom))+'px')}
 }
 {let q=0;const ro=new ResizeObserver(()=>{cancelAnimationFrame(q);q=requestAnimationFrame(placeCredit)});   // next frame: resizing the bar here would loop
 ro.observe($('dock'));ro.observe($('lcredit'))}addEventListener('resize',placeCredit);
