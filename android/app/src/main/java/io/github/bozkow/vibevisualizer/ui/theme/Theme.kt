@@ -10,10 +10,6 @@ import androidx.compose.material3.LocalTextStyle
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.unit.em
 import androidx.compose.material3.Typography
-import androidx.compose.material3.Shapes
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.ui.unit.dp
-import io.github.bozkow.vibevisualizer.core.S
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.runtime.Composable
@@ -60,39 +56,21 @@ private fun typography(f: FontFamily): Typography {
     )
 }
 
-/** Always dark, like the web app. Android: neutral tones follow your wallpaper (Material You); the accent follows the
- *  cover, as the web app's --acc does, and blends over when the song changes. One UI: Samsung's dark greys and blue,
- *  the phone's own font (Samsung's on a Galaxy), rounder corners. */
+/** Always dark, like the web app. Neutral tones follow your wallpaper (Material You); the accent follows the cover,
+ *  as the web app's --acc does, and blends over when the song changes. */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun VibeTheme(content: @Composable () -> Unit) {
     val ctx = LocalContext.current
     val base = remember { runCatching { dynamicDarkColorScheme(ctx) }.getOrDefault(darkColorScheme()) }
     val acc by animateColorAsState(Visuals.accent, tween(900), label = "accent")
-    val one = S.oneUi
-    val scheme = remember(acc, base, one) { if (one) oneUiScheme(base) else accentScheme(base, acc) }
-    val typo = if (one) typography(FontFamily.Default) else typography(inter())
-    MaterialExpressiveTheme(colorScheme = scheme, motionScheme = MotionScheme.expressive(), shapes = if (one) OneShapes else Shapes(), typography = typo) {
+    val scheme = remember(acc, base) { accentScheme(base, acc) }
+    val typo = typography(inter())
+    MaterialExpressiveTheme(colorScheme = scheme, motionScheme = MotionScheme.expressive(), typography = typo) {
         // text sized by hand everywhere: its line height follows its size, no extra letter spacing
         CompositionLocalProvider(LocalTextStyle provides typo.bodyLarge.copy(lineHeight = 1.38.em, letterSpacing = 0.sp), content = content)
     }
 }
-
-/** One UI's blue (its dark-mode accent) and greys. */
-val OneBlue = Color(0xFF3E91FF)
-val OneCard = Color(0xFF1C1C1C)
-private val OneShapes = Shapes(extraSmall = RoundedCornerShape(10.dp), small = RoundedCornerShape(14.dp), medium = RoundedCornerShape(18.dp),
-    large = RoundedCornerShape(22.dp), extraLarge = RoundedCornerShape(26.dp))
-
-private fun oneUiScheme(b: ColorScheme): ColorScheme = b.copy(
-    primary = OneBlue, onPrimary = Color.White, primaryContainer = Color(0xFF1A3A66), onPrimaryContainer = Color(0xFFD7E7FF),
-    secondary = OneBlue, onSecondary = Color.White, secondaryContainer = Color(0xFF23324A), onSecondaryContainer = Color.White,
-    tertiary = OneBlue, onTertiary = Color.White,
-    background = Color.Black, onBackground = Color(0xFFFAFAFA), surface = Color(0xFF171717), onSurface = Color(0xFFFAFAFA),
-    onSurfaceVariant = Color(0xFFA6A6A6), outline = Color(0xFF4A4A4A), outlineVariant = Color(0xFF2C2C2C),
-    surfaceContainerLowest = Color.Black, surfaceContainerLow = Color(0xFF171717), surfaceContainer = OneCard,
-    surfaceContainerHigh = Color(0xFF242424), surfaceContainerHighest = Color(0xFF2C2C2C),
-)
 
 private fun accentScheme(b: ColorScheme, acc: Color): ColorScheme {
     val dark = Color(0xFF0E0E14)

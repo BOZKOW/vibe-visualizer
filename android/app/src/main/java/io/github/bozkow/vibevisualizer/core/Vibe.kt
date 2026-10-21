@@ -64,8 +64,8 @@ object S {
     val bgspeed get() = s.i("bgspeed")
     val bars get() = s.i("bars")
     val design get() = s.s("design")
-    /** Settings → Appearance → Design: One UI (the look of Samsung's own apps) instead of Android's. */
-    val oneUi get() = s.s("aDesign") == "oneui"
+    /** Settings → Appearance → Design: Glass (frosted glass over the blurred cover) instead of Android's plain look. */
+    val glass get() = s.s("aDesign") == "glass"
     val credPos get() = s.s("credPos")
     val canvasOn get() = s.b("canvasOn")
 }

@@ -132,7 +132,6 @@ import io.github.bozkow.vibevisualizer.engine.Lyr
 import io.github.bozkow.vibevisualizer.engine.Updates
 import io.github.bozkow.vibevisualizer.engine.Visuals
 import io.github.bozkow.vibevisualizer.media.Local
-import io.github.bozkow.vibevisualizer.ui.theme.OneBlue
 import io.github.bozkow.vibevisualizer.spotify.Spotify
 
 private val textShadow = Shadow(Color.Black.copy(alpha = .45f), androidx.compose.ui.geometry.Offset(0f, 2f), 14f)
@@ -329,7 +328,7 @@ private fun EmptyState() {
         Spacer(Modifier.weight(1f))
         Row(verticalAlignment = Alignment.CenterVertically) {
             TextButton(onClick = { E.wizard = true }) { Text("Setup guide") }
-            TextButton(onClick = { E.sheet = "quick" }) { Text("Settings") }
+            TextButton(onClick = { E.openSettings() }) { Text("Settings") }
             TextButton(onClick = { E.openSettings("help") }) { Text("What’s new") }
         }
     }
@@ -392,7 +391,7 @@ private fun SmallToggle(icon: ImageVector?, desc: String, on: Boolean, text: Str
 
 @Composable
 private fun MoreButton() {
-    IconButton(onClick = { E.haptic(); E.sheet = "more" }, Modifier.semantics { contentDescription = "More" }) { Icon(Icons.Rounded.MoreVert, null, tint = Color.White) }
+    IconButton(onClick = { E.haptic(); E.sheet = "quick" }, Modifier.semantics { contentDescription = "Quick settings" }) { Icon(Icons.Rounded.MoreVert, null, tint = Color.White) }
 }
 
 @Composable
@@ -433,9 +432,9 @@ private fun Transport(big: Boolean) {
     Row(Modifier.fillMaxWidth().padding(vertical = if (big) 8.dp else 2.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
         if (sp) CtlIcon(Icons.Rounded.Shuffle, "Shuffle", enabled = Spotify.spState != null && "toggling_shuffle" !in Spotify.disallows, on = Spotify.shuffle) { Spotify.toggleShuffle() }
         else CtlIcon(if (Local.muted) Icons.AutoMirrored.Rounded.VolumeOff else Icons.AutoMirrored.Rounded.VolumeUp, if (Local.muted) "Unmute" else "Mute", enabled = E.src == "file") { Local.muted = !Local.muted }
-        CtlIcon(Icons.Rounded.SkipPrevious, "Previous", size = if (big) 40.dp else 32.dp, enabled = E.src != "none", round = S.oneUi) { E.prev() }
+        CtlIcon(Icons.Rounded.SkipPrevious, "Previous", size = if (big) 40.dp else 32.dp, enabled = E.src != "none") { E.prev() }
         PlayButton(if (big) 76.dp else 60.dp)
-        CtlIcon(Icons.Rounded.SkipNext, "Next", size = if (big) 40.dp else 32.dp, enabled = E.canNext(), round = S.oneUi) { E.next() }
+        CtlIcon(Icons.Rounded.SkipNext, "Next", size = if (big) 40.dp else 32.dp, enabled = E.canNext()) { E.next() }
         if (sp) {
             val r = Spotify.repeat
             CtlIcon(if (r == "track") Icons.Rounded.RepeatOne else Icons.Rounded.Repeat, "Repeat: " + when (r) { "context" -> "all"; "track" -> "this song"; else -> "off" },
@@ -448,8 +447,8 @@ private fun Transport(big: Boolean) {
 @Composable
 private fun BottomBar() {
     val sp = E.src == "spotify"
-    // One UI 9: a floating bar, a pill of its own
-    Row(Modifier.fillMaxWidth().padding(vertical = 4.dp).then(if (S.oneUi) Modifier.padding(horizontal = 24.dp).shadow(12.dp, RoundedCornerShape(50)).clip(RoundedCornerShape(50)).background(Color(0xFF2B2B2B).copy(alpha = .9f)) else Modifier),
+    // Glass: the bar floats as a frosted pill of its own
+    Row(Modifier.fillMaxWidth().padding(vertical = 4.dp).then(if (S.glass) Modifier.padding(horizontal = 28.dp).glass(RoundedCornerShape(50)) else Modifier),
         horizontalArrangement = Arrangement.SpaceAround, verticalAlignment = Alignment.CenterVertically) {
         BarIcon(VIcons.lyrics, "Lyrics", E.screen == "lyrics" && !E.wide || E.wide && E.screen != "viz") { E.show(if (E.screen == "lyrics" && !E.wide) "player" else "lyrics") }
         if (sp) BarIcon(Icons.Rounded.Cast, Spotify.device?.let { "Playing on ${it.name}" } ?: "Choose where Spotify plays", false) { E.sheet = "devices" }
@@ -461,18 +460,16 @@ private fun BottomBar() {
 @Composable
 private fun BarIcon(icon: ImageVector, desc: String, on: Boolean, onClick: () -> Unit) {
     IconButton(onClick = { E.haptic(); onClick() }, Modifier.size(52.dp).semantics { contentDescription = desc },
-        colors = IconButtonDefaults.iconButtonColors(containerColor = if (on && !S.oneUi) Color.White.copy(alpha = .18f) else Color.Transparent, contentColor = if (on) (if (S.oneUi) OneBlue else Color.White) else dim)) {
+        colors = IconButtonDefaults.iconButtonColors(containerColor = if (on) Color.White.copy(alpha = .18f) else Color.Transparent, contentColor = if (on) Color.White else dim)) {
         Icon(icon, null, Modifier.size(24.dp))
     }
 }
 
 @Composable
-private fun CtlIcon(icon: ImageVector, desc: String, size: Dp = 24.dp, enabled: Boolean = true, on: Boolean = false, round: Boolean = false, onClick: () -> Unit) {
-    // round: One UI 9's back and skip, each in a soft circle
-    IconButton(onClick = { E.haptic(); onClick() }, enabled = enabled, modifier = Modifier.size(maxOf(48.dp, size + (if (round) 20.dp else 12.dp))).semantics { contentDescription = desc },
-        colors = IconButtonDefaults.iconButtonColors(containerColor = if (round) Color.White.copy(alpha = .12f) else Color.Transparent, contentColor = if (on) MaterialThemeAccent() else Color.White,
-            disabledContainerColor = if (round) Color.White.copy(alpha = .06f) else Color.Transparent, disabledContentColor = Color.White.copy(alpha = .3f))) {
-        Icon(icon, null, Modifier.size(size * (if (round) .8f else 1f)))
+private fun CtlIcon(icon: ImageVector, desc: String, size: Dp = 24.dp, enabled: Boolean = true, on: Boolean = false, onClick: () -> Unit) {
+    IconButton(onClick = { E.haptic(); onClick() }, enabled = enabled, modifier = Modifier.size(maxOf(48.dp, size + 12.dp)).semantics { contentDescription = desc },
+        colors = IconButtonDefaults.iconButtonColors(containerColor = Color.Transparent, contentColor = if (on) MaterialThemeAccent() else Color.White, disabledContentColor = Color.White.copy(alpha = .3f))) {
+        Icon(icon, null, Modifier.size(size))
     }
 }
 
@@ -482,12 +479,6 @@ private fun CtlIcon(icon: ImageVector, desc: String, size: Dp = 24.dp, enabled: 
 @Composable
 private fun PlayButton(size: Dp) {
     val playing = E.playingState
-    if (S.oneUi) {   // One UI 9's media player: a round button, white, no shape morphing
-        Box(Modifier.size(size).clip(CircleShape).background(Color.White).clickable { E.haptic(); E.toggle() }.semantics { contentDescription = if (playing) "Pause" else "Play" }, contentAlignment = Alignment.Center) {
-            Icon(if (playing) Icons.Rounded.Pause else Icons.Rounded.PlayArrow, null, Modifier.size(size * .5f), tint = Color(0xFF111111))
-        }
-        return
-    }
     val m by animateFloatAsState(if (playing) 1f else 0f, spring(.55f, Spring.StiffnessLow), label = "morph")
     val shape = remember(m) { morphShape(m) }
     Box(Modifier.size(size).clip(shape).background(Color.White).clickable { E.toggle() }.semantics { contentDescription = if (playing) "Pause" else "Play" }, contentAlignment = Alignment.Center) {
@@ -517,10 +508,6 @@ private fun VolumeRow() {
     val dev = Spotify.device
     val canVol = !sp || (dev != null && dev.supportsVolume && dev.volume != null)
     val v = if (sp) (dev?.volume ?: 0) else S.i("volume")
-    if (S.oneUi && canVol) {   // One UI 9's thick volume slider
-        Box(Modifier.padding(vertical = 4.dp)) { ThickSlider(Icons.AutoMirrored.Rounded.VolumeUp, if (sp) "Spotify volume" else "Volume", v, 0, 100) { x -> if (sp) Spotify.setVolume(x) else S.set("volume", x); E.poke() } }
-        return
-    }
     Row(Modifier.fillMaxWidth().height(40.dp), verticalAlignment = Alignment.CenterVertically) {
         Icon(Icons.AutoMirrored.Rounded.VolumeDown, null, Modifier.size(20.dp), tint = Color.White.copy(alpha = if (canVol) .7f else .3f))
         Slider(value = v / 100f, onValueChange = { f -> val x = (f * 100).toInt(); if (sp) Spotify.setVolume(x) else S.set("volume", x); E.poke() }, enabled = canVol,

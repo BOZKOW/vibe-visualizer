@@ -115,7 +115,7 @@ class MainActivity : ComponentActivity() {
             i.action == "io.github.bozkow.vibevisualizer.LYRICS" -> E.show("lyrics")
             i.action == "io.github.bozkow.vibevisualizer.VISUALIZER" -> E.show("viz")
             i.action == "io.github.bozkow.vibevisualizer.OPEN_FILE" -> window.decorView.post { FilePicker.pickAudio() }
-            i.action == "io.github.bozkow.vibevisualizer.SETTINGS" -> E.sheet = "quick"
+            i.action == "io.github.bozkow.vibevisualizer.SETTINGS" -> E.openSettings()
         }
         if (data != null || i.action?.startsWith("android.intent.action.SEND") == true) setIntent(Intent(this, MainActivity::class.java))
     }

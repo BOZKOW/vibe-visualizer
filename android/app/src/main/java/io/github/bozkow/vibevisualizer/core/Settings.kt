@@ -52,7 +52,7 @@ object Defaults {
         "aLock" to false,       // show over the lock screen
         "aHideStatus" to false, // hide the status bar (swipe down to see it)
         "aHideNav" to false,    // hide the navigation bar (swipe up to see it)
-        "aDesign" to "android", // the design: android (Material You, the cover's colors) or oneui (Samsung's)
+        "aDesign" to "android", // the design: android (Material You, the cover's colors) or glass (frosted glass over the cover)
     )
 }
 
@@ -71,6 +71,11 @@ class Settings(ctx: Context) {
         if (sp.getInt("mig", 0) < 1) {
             if (sp.contains("S")) { if (s("fpscap") == "0") v.getValue("fpscap").value = "60"; v.getValue("view").value = "both" }
             sp.edit().putString("S", toJson().toString()).putInt("mig", 1).apply()
+        }
+        // once (0.1.4): One UI is gone; whoever chose it gets Glass
+        if (sp.getInt("mig", 0) < 2) {
+            if (s("aDesign") == "oneui") v.getValue("aDesign").value = "glass"
+            sp.edit().putString("S", toJson().toString()).putInt("mig", 2).apply()
         }
     }
 

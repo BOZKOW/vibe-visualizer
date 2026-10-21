@@ -63,7 +63,6 @@ fun WavySeek(frac: Float, wavy: Boolean, onDrag: (Float) -> Unit, onDone: (Float
     val amp by animateFloatAsState(if (wavy) 1f else 0f, tween(450), label = "amp")
     val drag by rememberUpdatedState(onDrag); val done by rememberUpdatedState(onDone)
     var last by remember { mutableFloatStateOf(0f) }
-    val one = S.oneUi
     Canvas(Modifier.fillMaxWidth().height(30.dp)
         .semantics {
             contentDescription = "Seek"; progressBarRangeInfo = ProgressBarRangeInfo(frac, 0f..1f)
@@ -80,13 +79,6 @@ fun WavySeek(frac: Float, wavy: Boolean, onDrag: (Float) -> Unit, onDone: (Float
             }
         }) {
         val y = size.height / 2; val w = size.width; val x = (frac.coerceIn(0f, 1f) * w)
-        if (one) {   // One UI 9: a thicker, rounded line and a round thumb, no wave
-            val t = 6.dp.toPx()
-            drawLine(Color.White.copy(alpha = if (enabled) .22f else .1f), Offset(t / 2, y), Offset(w - t / 2, y), t, StrokeCap.Round)
-            if (x > 0) drawLine(Color.White, Offset(t / 2, y), Offset(maxOf(t / 2, x), y), t, StrokeCap.Round)
-            if (enabled) drawCircle(Color.White, 8.dp.toPx(), Offset(x.coerceIn(8.dp.toPx(), w - 8.dp.toPx()), y))
-            return@Canvas
-        }
         val sw = 4.dp.toPx(); val gap = 5.dp.toPx(); val a = 3.dp.toPx() * amp; val wl = 26.dp.toPx()
         if (x + gap < w) drawLine(Color.White.copy(alpha = if (enabled) .25f else .12f), Offset(x + gap, y), Offset(w, y), sw, StrokeCap.Round)
         if (x - gap > 0) {

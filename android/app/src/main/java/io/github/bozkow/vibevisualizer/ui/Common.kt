@@ -52,12 +52,10 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.bozkow.vibevisualizer.core.S
-import io.github.bozkow.vibevisualizer.ui.theme.OneCard
 import io.github.bozkow.vibevisualizer.engine.E
 
 /** A frosted surface: Glass (translucent, a rim of light) or Classic (the original, flatter look). */
 fun Modifier.glass(shape: Shape, strong: Boolean = false): Modifier {
-    if (S.oneUi) return this.clip(shape).background(OneCard.copy(alpha = if (strong) .97f else .9f), shape)   // One UI: solid dark cards
     return this.clip(shape)
         .background(Color(0xFF0C0C12).copy(alpha = if (strong) .62f else .42f), shape)
         .background(Brush.verticalGradient(listOf(Color.White.copy(alpha = .09f), Color.White.copy(alpha = .03f))), shape)

@@ -44,7 +44,10 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.shadow
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.layout.ColumnScope
-import io.github.bozkow.vibevisualizer.ui.theme.OneCard
+import androidx.compose.foundation.Image
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import io.github.bozkow.vibevisualizer.engine.Visuals
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -135,7 +138,7 @@ private val pct: (Int) -> String = { "$it%" }
 private fun pages(): List<Page> = listOf(
     Page("look", "Appearance", Icons.Rounded.Palette, listOf(
         Item.Head("Design"),
-        Item.Ch("aDesign", "Design", listOf("android" to "Android", "oneui" to "One UI"), "Android: Material You, with the colors of the cover. One UI: the look of Samsung’s own apps, with dark cards, One UI blue, the phone’s own font and big titles that shrink as you scroll."),
+        Item.Ch("aDesign", "Design", listOf("android" to "Android", "glass" to "Glass"), "Android: Material You, with the colors of the cover. Glass: frosted glass over your cover: Settings, the panels and the sheets let the blurred cover show through."),
         Item.Ch("uiHide", "Controls on the Lyrics and Visualizer screens", listOf("idle" to "Hide while music plays", "never" to "Always visible"), "While music plays, the controls under the lyrics and the visualizer slide away after a few seconds; a tap brings them back."),
         Item.Head("Colors"),
         Item.Ch("theme", "Theme", listOf("cover" to "Cover colors", "aurora" to "Aurora", "sunset" to "Sunset", "neon" to "Neon", "ice" to "Ice", "mono" to "Mono", "custom" to "Custom")),
@@ -275,10 +278,10 @@ fun SettingsScreen() {
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val wide = maxWidth >= 720.dp
         BackHandler { if (q.isNotEmpty()) q = "" else if (!wide && page != null && E.settingsPage == null) page = null else if (!wide && page != null) { page = null } else E.settingsPage = null }
-        Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surfaceContainerLowest) {
+        if (S.glass) GlassBackdrop()   // Glass: the blurred cover shows through
+        Surface(Modifier.fillMaxSize(), color = if (S.glass) Color.Transparent else MaterialTheme.colorScheme.surfaceContainerLowest) {
             Row(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.statusBars.union(WindowInsets.displayCutout).only(WindowInsetsSides.Top)).windowInsetsPadding(WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal))) {
-                if ((wide || page == null || q.isNotEmpty()) && S.oneUi) OnePages(all, page, wide, q, { q = it }, { page = it }, Modifier.then(if (wide) Modifier.width(320.dp) else Modifier.fillMaxWidth()).fillMaxHeight())
-                else if (wide || page == null || q.isNotEmpty()) {
+                if (wide || page == null || q.isNotEmpty()) {
                     Column(Modifier.then(if (wide) Modifier.width(300.dp) else Modifier.fillMaxWidth()).fillMaxHeight()) {
                         Row(Modifier.fillMaxWidth().padding(start = 8.dp, end = 8.dp, top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
                             IconButton(onClick = { E.settingsPage = null }) { Icon(Icons.Rounded.Close, "Close settings") }
@@ -289,6 +292,9 @@ fun SettingsScreen() {
                             trailingIcon = { if (q.isNotEmpty()) IconButton(onClick = { q = "" }) { Icon(Icons.Rounded.Close, "Clear") } },
                             colors = TextFieldDefaults.colors(focusedIndicatorColor = Color.Transparent, unfocusedIndicatorColor = Color.Transparent))
                         if (q.isNotEmpty() && !wide) SearchResults(all, q, Modifier.weight(1f))
+                        else if (S.glass) LazyColumn(Modifier.weight(1f).navigationBarsPadding(), contentPadding = androidx.compose.foundation.layout.PaddingValues(start = 14.dp, end = 14.dp, bottom = 24.dp)) {
+                            glassPages(all, page, wide) { q = ""; page = it }
+                        }
                         else LazyColumn(Modifier.weight(1f).navigationBarsPadding(), contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 24.dp)) {
                             items(all, key = { it.id }) { p ->
                                 val on = wide && (page ?: SettingsUi.last) == p.id
@@ -308,8 +314,7 @@ fun SettingsScreen() {
                         val p = all.find { it.id == (page ?: SettingsUi.last) } ?: all[0]   // two panes: the last page you had open beside the list
                         // Android's shared-axis move: the old page is gone before the new one comes in, nothing overlaps
                         AnimatedContent(p, Modifier.weight(1f), transitionSpec = { (slideInHorizontally(tween(260)) { it / 12 } + fadeIn(tween(200, delayMillis = 90))) togetherWith fadeOut(tween(90)) }, label = "page") { pg ->
-                            if (S.oneUi) OnePage(pg, pg.items.filterIndexed { i, it -> !(i == 0 && it is Item.Head && pg.items.count { x -> x is Item.Head } == 1) }, wide) { page = null }
-                            else Column(Modifier.fillMaxSize()) {
+                            Column(Modifier.fillMaxSize()) {
                                 Row(Modifier.fillMaxWidth().padding(start = 8.dp, end = 16.dp, top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
                                     if (!wide) IconButton(onClick = { page = null }) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back") } else Spacer(Modifier.width(16.dp))
                                     Text(pg.name, fontSize = 24.sp, fontWeight = FontWeight.ExtraBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -340,8 +345,9 @@ private fun SearchResults(all: List<Page>, q: String, modifier: Modifier) {
 @Composable
 private fun ItemsList(items: List<Item>, modifier: Modifier) {
     val st = rememberLazyListState()
-    LazyColumn(modifier.navigationBarsPadding(), state = st, contentPadding = androidx.compose.foundation.layout.PaddingValues(start = 20.dp, end = 20.dp, bottom = 48.dp)) {
-        items(items.size) { i -> Box(Modifier.widthIn(max = 760.dp)) { ItemView(items[i]) } }
+    LazyColumn(modifier.navigationBarsPadding(), state = st, contentPadding = androidx.compose.foundation.layout.PaddingValues(start = if (S.glass) 14.dp else 20.dp, end = if (S.glass) 14.dp else 20.dp, bottom = 48.dp)) {
+        if (S.glass) glassItems(items)
+        else items(items.size) { i -> Box(Modifier.widthIn(max = 760.dp)) { ItemView(items[i]) } }
     }
 }
 
@@ -678,122 +684,56 @@ private fun About() {
     @Suppress("unused") val keep = listOf(Defaults, Net)
 }
 
-/* ================= One UI (Settings → Appearance → Design) =================
-   The look of Samsung's own Settings: a big title in the top third of the screen that shrinks into the bar as the list
-   scrolls (so what you reach for sits lower, nearer your thumb), rows grouped in rounded dark cards, colored round icons. */
-
-private val ONE_ICON = mapOf("look" to 0xFFE85A71, "viz" to 0xFF9B5CE5, "lyrics" to 0xFF3E91FF, "tr" to 0xFF27B3A6, "cache" to 0xFFF2994A,
-    "spotify" to 0xFF1ED760, "perf" to 0xFFF2C230, "android" to 0xFF5FBF56, "exp" to 0xFF8E8E93, "help" to 0xFF4A8FE2)
+/* ================= Glass (Settings → Appearance → Design) =================
+   Frosted glass over your cover: Settings shows the blurred cover behind it, and its rows sit in glass cards. */
 
 @Composable
-private fun OneTitled(title: String, modifier: Modifier, nav: @Composable () -> Unit, content: LazyListScope.() -> Unit) {
-    val st = rememberLazyListState()
-    val dens = LocalDensity.current
-    BoxWithConstraints(modifier) {
-        val bigH = if (maxHeight < 520.dp) 0.dp else maxHeight * .3f   // on its side the screen is too short for it
-        val small by remember(bigH) { derivedStateOf { bigH == 0.dp || st.firstVisibleItemIndex > 0 || st.firstVisibleItemScrollOffset > with(dens) { (bigH - 72.dp).toPx() } } }
-        LazyColumn(Modifier.fillMaxSize().navigationBarsPadding(), state = st, contentPadding = androidx.compose.foundation.layout.PaddingValues(start = 14.dp, end = 14.dp, top = if (bigH == 0.dp) 56.dp else 0.dp, bottom = 48.dp)) {
-            if (bigH > 0.dp) item(key = "title") {
-                Box(Modifier.fillMaxWidth().height(bigH), contentAlignment = Alignment.BottomStart) {
-                    Text(title, Modifier.padding(start = 14.dp, end = 14.dp, bottom = 22.dp), fontSize = 38.sp, lineHeight = 44.sp, fontWeight = FontWeight.SemiBold, color = Color.White, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                }
-            }
-            content()
-        }
-        val a by animateFloatAsState(if (small) 1f else 0f, tween(180), label = "onebar")
-        Row(Modifier.fillMaxWidth().height(56.dp).background(Color.Black.copy(alpha = a)).padding(horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-            nav()
-            Text(title, Modifier.weight(1f).padding(start = 6.dp).alpha(a), fontSize = 20.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-        }
+private fun GlassBackdrop() {
+    Visuals.bakeVer
+    val bm = Visuals.baked
+    Box(Modifier.fillMaxSize().background(io.github.bozkow.vibevisualizer.ui.theme.Bg)) {
+        if (bm != null) { val img = remember(bm) { bm.asImageBitmap() }; Image(img, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
+        Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = .4f)))
     }
 }
 
 @Composable
-private fun OneCardGroup(content: @Composable ColumnScope.() -> Unit) {
-    Column(Modifier.fillMaxWidth().widthIn(max = 760.dp).padding(vertical = 6.dp).clip(RoundedCornerShape(22.dp)).background(OneCard), content = content)
+private fun GlassGroup(content: @Composable ColumnScope.() -> Unit) {
+    Column(Modifier.fillMaxWidth().widthIn(max = 760.dp).padding(vertical = 6.dp).glass(RoundedCornerShape(24.dp)), content = content)
 }
 
 @Composable
-private fun OneDivider() { HorizontalDivider(Modifier.padding(horizontal = 20.dp), thickness = 1.dp, color = Color.White.copy(alpha = .07f)) }
+private fun GlassDivider() { HorizontalDivider(Modifier.padding(horizontal = 18.dp), thickness = 1.dp, color = Color.White.copy(alpha = .08f)) }
 
-/** Settings' first screen, as One UI 8.5 and 9 lay it out: no title bar, the app's own card on top (where Samsung's
- *  account card sits), the pages in cards without descriptions, and the search bar floating at the bottom. */
-@Composable
-private fun OnePages(all: List<Page>, page: String?, wide: Boolean, q: String, setQ: (String) -> Unit, pick: (String) -> Unit, modifier: Modifier) {
-    Box(modifier) {
-        LazyColumn(Modifier.fillMaxSize(), contentPadding = androidx.compose.foundation.layout.PaddingValues(start = 14.dp, end = 14.dp, top = 56.dp, bottom = 120.dp)) {
-            if (q.isNotEmpty() && !wide) {
-                val ql = q.trim().lowercase()
-                val hits = all.mapNotNull { p -> val its = p.items.filter { it !is Item.Head && it !is Item.Sub && it.search.lowercase().contains(ql) }; if (its.isEmpty()) null else p to its }
-                if (hits.isEmpty()) item(key = "none") { Text("No setting matches that.", Modifier.padding(20.dp), color = Color.White.copy(alpha = .6f)) }
-                hits.forEach { (p, its) ->
-                    item(key = "h" + p.id) { OneHeader(p.name) }
-                    item(key = "c" + p.id) { OneCardGroup { its.forEachIndexed { i, x -> if (i > 0) OneDivider(); Box(Modifier.padding(horizontal = 20.dp, vertical = 4.dp)) { ItemView(x) } } } }
-                }
-                return@LazyColumn
-            }
-            item(key = "app") {
-                OneCardGroup {
-                    Row(Modifier.fillMaxWidth().clickable { E.haptic(); setQ(""); pick("help") }.padding(horizontal = 18.dp, vertical = 16.dp), verticalAlignment = Alignment.CenterVertically) {
-                        AppLogo(52.dp)
+/** A page's items in glass cards: one for each section, under its heading. */
+private fun LazyListScope.glassItems(items: List<Item>) {
+    val groups = ArrayList<Pair<Item?, MutableList<Item>>>()
+    for (x in items) when (x) {
+        is Item.Head, is Item.Sub, is Item.Txt -> groups.add(x to ArrayList())
+        else -> { if (groups.isEmpty() || groups.last().first is Item.Txt) groups.add(null to ArrayList()); groups.last().second.add(x) }
+    }
+    groups.forEachIndexed { gi, (h, its) ->
+        if (h != null) item(key = "h$gi") { Box(Modifier.padding(horizontal = 6.dp)) { ItemView(h) } }
+        if (its.isNotEmpty()) item(key = "c$gi") { GlassGroup { its.forEachIndexed { i, x -> if (i > 0) GlassDivider(); Box(Modifier.padding(horizontal = 18.dp, vertical = 2.dp)) { ItemView(x) } } } }
+    }
+}
+
+/** Settings' pages in three glass cards. */
+private fun LazyListScope.glassPages(all: List<Page>, page: String?, wide: Boolean, pick: (String) -> Unit) {
+    listOf(all.take(4), all.drop(4).take(4), all.drop(8)).filter { it.isNotEmpty() }.forEachIndexed { gi, g ->
+        item(key = "g$gi") {
+            GlassGroup {
+                g.forEachIndexed { i, p ->
+                    if (i > 0) GlassDivider()
+                    val on = wide && (page ?: SettingsUi.last) == p.id
+                    Row(Modifier.fillMaxWidth().background(if (on) Color.White.copy(alpha = .1f) else Color.Transparent).clickable { E.haptic(); pick(p.id) }
+                        .padding(horizontal = 18.dp, vertical = 15.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Icon(p.icon, null, Modifier.size(22.dp), tint = Color.White.copy(alpha = .9f))
                         Spacer(Modifier.width(16.dp))
-                        Column(Modifier.weight(1f)) {
-                            Text("Vibe Visualizer", fontSize = 19.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
-                            Text("Version " + io.github.bozkow.vibevisualizer.BuildConfig.VERSION_NAME, fontSize = 13.sp, color = Color.White.copy(alpha = .55f))
-                        }
+                        Text(p.name, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
                     }
                 }
             }
-            listOf(all.take(4), all.drop(4).take(4), all.drop(8)).filter { it.isNotEmpty() }.forEachIndexed { gi, g ->
-                item(key = "g$gi") {
-                    OneCardGroup {
-                        g.forEachIndexed { i, p ->
-                            if (i > 0) OneDivider()
-                            val on = wide && (page ?: SettingsUi.last) == p.id
-                            Row(Modifier.fillMaxWidth().background(if (on) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent).clickable { E.haptic(); setQ(""); pick(p.id) }
-                                .padding(horizontal = 18.dp, vertical = 15.dp), verticalAlignment = Alignment.CenterVertically) {
-                                Box(Modifier.size(34.dp).clip(CircleShape).background(Color(ONE_ICON[p.id] ?: 0xFF3E91FF)), contentAlignment = Alignment.Center) { Icon(p.icon, null, Modifier.size(19.dp), tint = Color.White) }
-                                Spacer(Modifier.width(16.dp))
-                                Text(p.name, Modifier.weight(1f), fontSize = 17.sp, color = Color.White)
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        Row(Modifier.fillMaxWidth().height(56.dp).padding(horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = { E.settingsPage = null }) { Icon(Icons.Rounded.Close, "Close settings") }
-        }
-        // the search bar floats at the bottom, over the list, in reach of your thumb
-        TextField(q, setQ, Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(horizontal = 20.dp, vertical = 14.dp).widthIn(max = 520.dp).fillMaxWidth()
-            .shadow(18.dp, RoundedCornerShape(50)).clip(RoundedCornerShape(50)), singleLine = true,
-            placeholder = { Text("Search settings") }, leadingIcon = { Icon(Icons.Rounded.Search, null) },
-            trailingIcon = { if (q.isNotEmpty()) IconButton(onClick = { setQ("") }) { Icon(Icons.Rounded.Close, "Clear") } },
-            colors = TextFieldDefaults.colors(focusedIndicatorColor = Color.Transparent, unfocusedIndicatorColor = Color.Transparent,
-                focusedContainerColor = Color(0xFF2B2B2B).copy(alpha = .97f), unfocusedContainerColor = Color(0xFF2B2B2B).copy(alpha = .97f)))
-    }
-}
-
-@Composable
-private fun OneHeader(t: String) { Text(t, Modifier.padding(start = 20.dp, top = 18.dp, bottom = 4.dp), fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = Color.White.copy(alpha = .6f)) }
-
-/** A Settings page, One UI style: its sections as cards under their headings. */
-@Composable
-private fun OnePage(pg: Page, items: List<Item>, wide: Boolean, back: () -> Unit) {
-    OneTitled(pg.name, Modifier.fillMaxSize(), nav = { if (!wide) IconButton(onClick = back) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back") } else Spacer(Modifier.width(12.dp)) }) {
-        val groups = ArrayList<Pair<Item?, MutableList<Item>>>()
-        for (x in items) when (x) {
-            is Item.Head, is Item.Sub, is Item.Txt -> groups.add(x to ArrayList())
-            else -> { if (groups.isEmpty() || groups.last().first is Item.Txt) groups.add(null to ArrayList()); groups.last().second.add(x) }
-        }
-        groups.forEachIndexed { gi, (h, its) ->
-            when (h) {
-                is Item.Head -> item(key = "h$gi") { OneHeader(h.t) }
-                is Item.Sub -> item(key = "h$gi") { OneHeader(h.t) }
-                is Item.Txt -> item(key = "h$gi") { Box(Modifier.padding(horizontal = 20.dp, vertical = 4.dp)) { Hint(h.t) } }
-                else -> {}
-            }
-            if (its.isNotEmpty()) item(key = "c$gi") { OneCardGroup { its.forEachIndexed { i, x -> if (i > 0) OneDivider(); Box(Modifier.padding(horizontal = 20.dp, vertical = 4.dp)) { ItemView(x) } } } }
         }
     }
 }

@@ -90,10 +90,9 @@ fun Sheets() {
     val s = E.sheet?.takeIf { it != "quick" } ?: return   // quick settings float on their own (Quick.kt)
     val state = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val close = { E.sheet = null; Ping.open = false; E.poke() }
-    ModalBottomSheet(onDismissRequest = close, sheetState = state, containerColor = MaterialTheme.colorScheme.surfaceContainer, contentColor = Color.White) {
+    ModalBottomSheet(onDismissRequest = close, sheetState = state, containerColor = if (S.glass) Color(0xFF0E0E14).copy(alpha = .72f) else MaterialTheme.colorScheme.surfaceContainer, contentColor = Color.White) {
         Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 22.dp).padding(bottom = 18.dp).navigationBarsPadding()) {
             when (s) {
-                "more" -> MoreSheet()
                 "audio" -> AudioSheet()
                 "net" -> NetSheet()
                 "devices" -> DevicesSheet(close)
@@ -123,38 +122,6 @@ private fun MoreRow(icon: ImageVector, title: String, sub: String? = null, check
         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
         modifier = Modifier.clip(RoundedCornerShape(16.dp)).clickable { E.haptic(); onClick() },
     )
-}
-
-@Composable
-private fun MoreSheet() {
-    val go = { s: String? -> E.sheet = s }
-    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 6.dp)) {
-        Column(Modifier.weight(1f)) {
-            Text(E.title.ifEmpty { "Vibe Visualizer" }, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            if (E.artist.isNotEmpty()) Text(E.artist, fontSize = 14.sp, color = Color.White.copy(alpha = .6f), maxLines = 1, overflow = TextOverflow.Ellipsis)
-        }
-    }
-    if (Lyr.lines > 0 || Lyr.msg != null) {
-        SectionLabel("Lyrics")
-        if (Lyr.needTr) MoreRow(VIcons.translate, "Translate lyrics", "Into " + (io.github.bozkow.vibevisualizer.core.LANGS.find { it.first == S.trTo }?.second ?: S.trTo), S.tr) { toggleTr() }
-        if (Lyr.needRom) MoreRow(Icons.Rounded.Translate, "Romanization", "Latin letters for Japanese, Korean, Chinese, Cyrillic, Greek", S.romMode != "off") { toggleRom() }
-        if (Lyr.needSync) MoreRow(Icons.Rounded.Timer, "Lyrics timing", "Earlier, later, resync") { go("timing") }
-        if (Lyr.lines > 0) MoreRow(Icons.Rounded.SwapHoriz, "Wrong lyrics? Try another source") { go(null); Lyr.other() }
-    }
-    SectionLabel("Playback")
-    MoreRow(Icons.Rounded.LibraryMusic, "Play songs from your phone") { go(null); FilePicker.pickAudio() }
-    if (E.src != "spotify") MoreRow(VIcons.spotify, if (Spotify.connected) "Use Spotify" else "Connect Spotify") { go(null); if (Spotify.connected) E.setSource("spotify") else E.spLogin() }
-    else MoreRow(Icons.Rounded.Cast, "Choose where Spotify plays", Spotify.device?.name?.let { "Playing on $it" }) { go("devices") }
-    MoreRow(Icons.Rounded.GraphicEq, "What the bars hear", Audio.label) { go("audio") }
-    MoreRow(VIcons.bars, "Bars in every view", "Under the cover and the lyrics too", S.view == "both") { S.set("view", if (S.view == "both") "lyrics" else "both") }
-    if (CanvasVideo.active) {
-        MoreRow(Icons.Rounded.BlurOn, "Blur the Canvas", null, S.b("cvBlur")) { S.set("cvBlur", !S.b("cvBlur")) }
-        MoreRow(Icons.Rounded.PhotoSizeSelectSmall, "Smaller cover with the Canvas", null, S.b("cvShrink")) { S.set("cvShrink", !S.b("cvShrink")) }
-    }
-    SectionLabel("App")
-    MoreRow(VIcons.bolt, "Low performance mode", "Turns off blur, glow and the moving background", S.low) { S.set("low", !S.low) }
-    if (Server.set) MoreRow(Icons.Rounded.NetworkCheck, "Connection", "Your server · " + Ping.label) { Ping.open = true; Ping.kick(); go("net") }
-    MoreRow(Icons.Rounded.Settings, "Settings") { go("quick") }
 }
 
 /* ---- what the bars hear ---- */

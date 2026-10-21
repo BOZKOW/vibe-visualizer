@@ -62,7 +62,8 @@ fun VibeRoot() {
             val covered = (setT.currentState && setT.isIdle) || (wizT.currentState && wizT.isIdle)
             // quick settings float over the player, which blurs behind them (as One UI 9's quick panel)
             val qT = remember { MutableTransitionState(false) }; qT.targetState = E.sheet == "quick"
-            val qBlur by animateFloatAsState(if (qT.targetState && !S.low) 22f else 0f, tween(260), label = "qblur")
+            // Glass: the player blurs behind the sheets too
+            val qBlur by animateFloatAsState(if ((qT.targetState || (S.glass && E.sheet != null)) && !S.low) 22f else 0f, tween(260), label = "qblur")
             if (E.inPip) { BackgroundLayer(); PipCanvas(); PipScreen() }
             else {
                 if (!covered) Box(Modifier.fillMaxSize().then(if (qBlur > .1f) Modifier.blur(qBlur.dp) else Modifier)) { BackgroundLayer(); PlayerScreen() }

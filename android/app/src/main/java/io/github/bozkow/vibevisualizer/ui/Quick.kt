@@ -69,9 +69,18 @@ import io.github.bozkow.vibevisualizer.core.S
 import io.github.bozkow.vibevisualizer.engine.CanvasVideo
 import io.github.bozkow.vibevisualizer.engine.E
 import io.github.bozkow.vibevisualizer.engine.Lyr
+import io.github.bozkow.vibevisualizer.engine.FilePicker
+import io.github.bozkow.vibevisualizer.engine.Ping
+import io.github.bozkow.vibevisualizer.audio.Audio
+import io.github.bozkow.vibevisualizer.core.Server
+import io.github.bozkow.vibevisualizer.spotify.Spotify
+import androidx.compose.material.icons.rounded.Cast
+import androidx.compose.material.icons.rounded.GraphicEq
+import androidx.compose.material.icons.rounded.LibraryMusic
+import androidx.compose.material.icons.rounded.NetworkCheck
 
-/** Quick settings: what you change while listening, in a panel that floats over the player (One UI 9's floating Quick
- *  Settings panel; Spicy Lyrics Mobile has one too), before the full Settings. The player blurs behind it. */
+/** Quick settings, from the ⋮ button: what you change while listening, in a panel that floats over the player (as
+ *  Spicy Lyrics Mobile's quick settings), with the full Settings behind the gear. The player blurs behind it. */
 @Composable
 fun QuickPanel(vis: MutableTransitionState<Boolean>) {
     val close = { E.sheet = null; E.poke() }
@@ -84,11 +93,14 @@ fun QuickPanel(vis: MutableTransitionState<Boolean>) {
         Box(Modifier.fillMaxSize().statusBarsPadding().padding(12.dp), contentAlignment = Alignment.TopCenter) {
             val shape = RoundedCornerShape(30.dp)
             Column(Modifier.widthIn(max = 560.dp).fillMaxWidth().heightIn(max = 760.dp).shadow(28.dp, shape).clip(shape)
-                .background(if (S.oneUi) Color(0xFF1E1E1E).copy(alpha = .94f) else MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = .96f))
+                .then(if (S.glass) Modifier.glass(shape, strong = true) else Modifier.background(MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = .96f)))
                 .clickable(remember { MutableInteractionSource() }, null) {}   // taps inside don't close it
                 .verticalScroll(rememberScrollState()).padding(16.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("Quick settings", Modifier.weight(1f).padding(start = 4.dp), fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                    Column(Modifier.weight(1f).padding(start = 4.dp)) {   // the song, and what this is
+                        Text(E.title.ifEmpty { "Quick settings" }, fontSize = 19.sp, fontWeight = FontWeight.Bold, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text(if (E.title.isEmpty()) "Vibe Visualizer" else E.artist.ifEmpty { "Quick settings" }, fontSize = 13.sp, color = Color.White.copy(alpha = .6f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
                     Box(Modifier.size(40.dp).clip(RoundedCornerShape(50)).background(Color.White.copy(alpha = .1f)).clickable { E.haptic(); close(); E.openSettings() }
                         .semantics { contentDescription = "All settings" }, contentAlignment = Alignment.Center) { Icon(Icons.Rounded.Settings, null, Modifier.size(22.dp), tint = Color.White) }
                 }
@@ -120,7 +132,7 @@ fun QuickPanel(vis: MutableTransitionState<Boolean>) {
                 Spacer(Modifier.height(14.dp))
                 Text("Design", Modifier.padding(start = 4.dp, bottom = 6.dp), fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color.White.copy(alpha = .6f))
                 Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(50)).background(Color.White.copy(alpha = .08f)).padding(4.dp)) {
-                    listOf("android" to "Android", "oneui" to "One UI").forEach { (k, l) ->
+                    listOf("android" to "Android", "glass" to "Glass").forEach { (k, l) ->
                         val on = S.str("aDesign") == k
                         Box(Modifier.weight(1f).height(40.dp).clip(RoundedCornerShape(50)).background(if (on) MaterialTheme.colorScheme.primary else Color.Transparent)
                             .clickable { E.haptic(); S.set("aDesign", k) }, contentAlignment = Alignment.Center) {
@@ -131,6 +143,11 @@ fun QuickPanel(vis: MutableTransitionState<Boolean>) {
                 Spacer(Modifier.height(12.dp))
                 if (Lyr.needSync) QuickRow(Icons.Rounded.Timer, "Lyrics timing", "Earlier, later, this output, resync") { E.sheet = "timing" }
                 if (Lyr.lines > 0) QuickRow(Icons.Rounded.SwapHoriz, "Wrong lyrics? Try another source", Lyr.label.ifEmpty { null }) { close(); Lyr.other() }
+                QuickRow(Icons.Rounded.LibraryMusic, "Play songs from your phone", null) { close(); FilePicker.pickAudio() }
+                if (E.src != "spotify") QuickRow(VIcons.spotify, if (Spotify.connected) "Use Spotify" else "Connect Spotify", null) { close(); if (Spotify.connected) E.setSource("spotify") else E.spLogin() }
+                else QuickRow(Icons.Rounded.Cast, "Choose where Spotify plays", Spotify.device?.name?.let { "Playing on $it" }) { E.sheet = "devices" }
+                QuickRow(Icons.Rounded.GraphicEq, "What the bars hear", Audio.label) { E.sheet = "audio" }
+                if (Server.set) QuickRow(Icons.Rounded.NetworkCheck, "Connection", "Your server · " + Ping.label) { Ping.open = true; Ping.kick(); E.sheet = "net" }
                 QuickRow(Icons.Rounded.Settings, "All settings", null) { close(); E.openSettings() }
             }
         }
