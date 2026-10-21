@@ -1,18 +1,13 @@
-Vibe Visualizer for Android 0.0.9 (beta). Android 12 or newer; it installs over 0.0.8 (Settings → Help & about → Update now).
+Vibe Visualizer for Android 0.1.0 (beta). Android 12 or newer; it installs over 0.0.9 (Settings → Help & about → Update now).
 
-### What's new
+### Two designs
 
-- Hide the status bar and Hide the navigation bar (Settings → Phone): a swipe from the edge brings them back for a moment
-- Next up shows on every screen: over the end of the lyrics, under the song on the Visualizer, beside the lyrics on a wide screen
-- The Canvas plays behind the lyrics in picture-in-picture too
-- Canvas blur: a slider for how strong Blur the Canvas is (Settings, next to the other Canvas options)
+Settings → Appearance → Design:
+
+- **Android**: the look so far (Material You, with the colors of the cover). Glass and Classic were the web app's two looks and made no difference here, so they're both this now
+- **One UI**: the look of Samsung's own apps. Samsung's dark greys and One UI blue, the phone's own font (Samsung's on a Galaxy), solid rounded cards, rounder sheets and dialogs. Settings gets One UI's big title, which fills the top of the screen and shrinks into the bar as you scroll, with the pages in rounded cards and colored round icons. The player gets Samsung Music's plain play button and thin seek bar
 
 ### Fixes
 
-- "Wrong lyrics? Try another source" asked Spicy Lyrics again for songs Spicy Lyrics gets from Apple Music
-- Japanese romanization: a small っ at the end of a word doubles the next consonant (だった is "da tta", not "da ta")
-- Your server: a pasted address no longer reads https://https://…, a link to a page on the server is saved as just the server, and the answer to Test and save shows under the button, the whole width
-
-### Checked
-
-Real answers from every lyrics source (Spicy Lyrics, AMLL, Unison, LRCMux, NetEase, Spotify, LRCLIB) now go through the app's own parsers in its tests: word sync, background vocals, duets, credits, interlude dots, translations and romanization all come out right. The Canvas lookup on your server answers too.
+- Duets: the second singer's lines end at the right edge, not toward the middle
+- On a wide screen or a phone on its side, the Canvas fades into the blurred Canvas softly, without a hard line

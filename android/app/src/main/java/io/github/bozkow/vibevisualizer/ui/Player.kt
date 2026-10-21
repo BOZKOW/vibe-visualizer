@@ -132,6 +132,7 @@ import io.github.bozkow.vibevisualizer.engine.NextUp
 import io.github.bozkow.vibevisualizer.engine.Updates
 import io.github.bozkow.vibevisualizer.engine.Visuals
 import io.github.bozkow.vibevisualizer.media.Local
+import io.github.bozkow.vibevisualizer.ui.theme.OneBlue
 import io.github.bozkow.vibevisualizer.spotify.Spotify
 
 private val textShadow = Shadow(Color.Black.copy(alpha = .45f), androidx.compose.ui.geometry.Offset(0f, 2f), 14f)
@@ -463,7 +464,7 @@ private fun BottomBar() {
 @Composable
 private fun BarIcon(icon: ImageVector, desc: String, on: Boolean, onClick: () -> Unit) {
     IconButton(onClick = { E.haptic(); onClick() }, Modifier.size(52.dp).semantics { contentDescription = desc },
-        colors = IconButtonDefaults.iconButtonColors(containerColor = if (on) Color.White.copy(alpha = .18f) else Color.Transparent, contentColor = if (on) Color.White else dim)) {
+        colors = IconButtonDefaults.iconButtonColors(containerColor = if (on && !S.oneUi) Color.White.copy(alpha = .18f) else Color.Transparent, contentColor = if (on) (if (S.oneUi) OneBlue else Color.White) else dim)) {
         Icon(icon, null, Modifier.size(24.dp))
     }
 }
@@ -482,6 +483,12 @@ private fun CtlIcon(icon: ImageVector, desc: String, size: Dp = 24.dp, enabled: 
 @Composable
 private fun PlayButton(size: Dp) {
     val playing = E.playingState
+    if (S.oneUi) {   // One UI (Samsung Music): a big plain glyph, no button shape around it
+        IconButton(onClick = { E.haptic(); E.toggle() }, Modifier.size(size).semantics { contentDescription = if (playing) "Pause" else "Play" }) {
+            Icon(if (playing) Icons.Rounded.Pause else Icons.Rounded.PlayArrow, null, Modifier.size(size * .78f), tint = Color.White)
+        }
+        return
+    }
     val m by animateFloatAsState(if (playing) 1f else 0f, spring(.55f, Spring.StiffnessLow), label = "morph")
     val shape = remember(m) { morphShape(m) }
     Box(Modifier.size(size).clip(shape).background(Color.White).clickable { E.toggle() }.semantics { contentDescription = if (playing) "Pause" else "Play" }, contentAlignment = Alignment.Center) {
@@ -581,12 +588,21 @@ fun Cover(modifier: Modifier = Modifier) {
 private fun CanvasBackdrop(wide: Boolean) {
     val behindLyrics = !wide && E.screen == "lyrics" && !noLyrics()
     val a by animateFloatAsState(if (!CanvasVideo.cvmode) 0f else if (behindLyrics) .25f else 1f, tween(800), label = "canvas")
-    Box((if (wide) Modifier.fillMaxHeight().fillMaxWidth(.56f) else Modifier.fillMaxSize()).alpha(maxOf(a, .01f))
+    Box((if (wide) Modifier.fillMaxHeight().fillMaxWidth(.68f) else Modifier.fillMaxSize()).alpha(maxOf(a, .01f))
         .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }.drawWithContent {
             drawContent()
-            val fade = arrayOf(0f to Color.Black, .45f to Color.Black, .58f to Color.Black.copy(alpha = .85f), .74f to Color.Black.copy(alpha = .5f), .88f to Color.Black.copy(alpha = .18f), 1f to Color.Transparent)
-            drawRect(if (wide) Brush.horizontalGradient(*fade) else Brush.verticalGradient(*fade), blendMode = BlendMode.DstIn)
-            drawRect(Brush.verticalGradient(0f to Color.Black.copy(alpha = .4f), .2f to Color.Transparent, .55f to Color.Transparent, 1f to Color.Black.copy(alpha = .45f)))
+            val shade = Brush.verticalGradient(0f to Color.Black.copy(alpha = .4f), .2f to Color.Transparent, .55f to Color.Transparent, 1f to Color.Black.copy(alpha = .45f))
+            if (wide) {
+                // side by side: the shade fades out with the video (drawn after the fade it stopped in a hard line at the
+                // edge), over a long, eased fade into the blurred Canvas behind
+                drawRect(shade)
+                drawRect(Brush.horizontalGradient(0f to Color.Black, .3f to Color.Black, .45f to Color.Black.copy(alpha = .9f), .6f to Color.Black.copy(alpha = .66f),
+                    .74f to Color.Black.copy(alpha = .38f), .87f to Color.Black.copy(alpha = .14f), 1f to Color.Transparent), blendMode = BlendMode.DstIn)
+            } else {
+                val fade = arrayOf(0f to Color.Black, .45f to Color.Black, .58f to Color.Black.copy(alpha = .85f), .74f to Color.Black.copy(alpha = .5f), .88f to Color.Black.copy(alpha = .18f), 1f to Color.Transparent)
+                drawRect(Brush.verticalGradient(*fade), blendMode = BlendMode.DstIn)
+                drawRect(shade)
+            }
         }) { CanvasVideoView() }
 }
 

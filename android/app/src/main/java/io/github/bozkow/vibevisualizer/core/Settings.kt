@@ -52,6 +52,7 @@ object Defaults {
         "aLock" to false,       // show over the lock screen
         "aHideStatus" to false, // hide the status bar (swipe down to see it)
         "aHideNav" to false,    // hide the navigation bar (swipe up to see it)
+        "aDesign" to "android", // the design: android (Material You, the cover's colors) or oneui (Samsung's)
     )
 }
 

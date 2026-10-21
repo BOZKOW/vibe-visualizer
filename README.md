@@ -418,6 +418,8 @@ What it adds on a phone:
 - Your own songs keep playing in the background, with media controls on the lock screen and Bluetooth.
 - Picture-in-picture lyrics, keep the screen on while music plays, haptics, app shortcuts, and keyboard shortcuts with
   a keyboard (DeX, tablets).
+- Two designs (*Settings → Appearance → Design*): Android (Material You, with the cover's colors) or One UI (the look
+  of Samsung's own apps: big titles that shrink as you scroll, rounded dark cards, One UI blue, the phone's font).
 - Updates from inside the app (*Settings → Help & about*), installed through Android's installer.
 
 The app keeps its own settings on the phone; *Settings → Help & about → Back up settings* copies them to paste into the
