@@ -29,6 +29,7 @@ import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
@@ -59,12 +60,16 @@ fun VibeRoot() {
             val setT = remember { MutableTransitionState(false) }; setT.targetState = E.settingsPage != null
             val wizT = remember { MutableTransitionState(false) }; wizT.targetState = E.wizard
             val covered = (setT.currentState && setT.isIdle) || (wizT.currentState && wizT.isIdle)
+            // quick settings float over the player, which blurs behind them (as One UI 9's quick panel)
+            val qT = remember { MutableTransitionState(false) }; qT.targetState = E.sheet == "quick"
+            val qBlur by animateFloatAsState(if (qT.targetState && !S.low) 22f else 0f, tween(260), label = "qblur")
             if (E.inPip) { BackgroundLayer(); PipCanvas(); PipScreen() }
             else {
-                if (!covered) { BackgroundLayer(); PlayerScreen() }
+                if (!covered) Box(Modifier.fillMaxSize().then(if (qBlur > .1f) Modifier.blur(qBlur.dp) else Modifier)) { BackgroundLayer(); PlayerScreen() }
                 Snacks(Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = 8.dp))
                 if (S.b("fps")) Text(E.fpsText, Modifier.align(Alignment.TopEnd).statusBarsPadding().padding(top = 60.dp, end = 12.dp), fontFamily = FontFamily.Monospace, fontSize = 12.sp, color = Color.White.copy(alpha = .7f))
                 Sheets()
+                QuickPanel(qT)
                 AskDialog()
                 AnimatedVisibility(setT, enter = slideInHorizontally(tween(320)) { it }, exit = slideOutHorizontally(tween(260)) { it }) { SettingsScreen() }
                 AnimatedVisibility(wizT, enter = slideInVertically(tween(320)) { it }, exit = slideOutVertically(tween(260)) { it }) { SetupWizard() }

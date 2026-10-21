@@ -41,6 +41,7 @@ import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.shadow
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.layout.ColumnScope
 import io.github.bozkow.vibevisualizer.ui.theme.OneCard
@@ -355,7 +356,9 @@ fun ItemView(it: Item) {
         is Item.Head -> Text(it.t, Modifier.padding(top = 22.dp, bottom = 6.dp), fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
         is Item.Sub -> SectionLabel(it.t)
         is Item.Txt -> Hint(it.t)
-        is Item.Custom -> Box(Modifier.padding(vertical = 4.dp)) { it.c() }
+        // a Column, not a Box: rows that put several things one under another (the server field, its Test and save
+        // button and its answer) were drawn over each other
+        is Item.Custom -> Column(Modifier.fillMaxWidth().padding(vertical = 4.dp)) { it.c() }
         is Item.Sw -> Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).clickable { E.haptic(); S.set(it.k, !S.b(it.k)) }.padding(vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text(it.t, fontSize = 15.5.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
@@ -707,53 +710,67 @@ private fun OneTitled(title: String, modifier: Modifier, nav: @Composable () -> 
 
 @Composable
 private fun OneCardGroup(content: @Composable ColumnScope.() -> Unit) {
-    Column(Modifier.fillMaxWidth().widthIn(max = 760.dp).padding(vertical = 6.dp).clip(RoundedCornerShape(26.dp)).background(OneCard), content = content)
+    Column(Modifier.fillMaxWidth().widthIn(max = 760.dp).padding(vertical = 6.dp).clip(RoundedCornerShape(22.dp)).background(OneCard), content = content)
 }
 
 @Composable
 private fun OneDivider() { HorizontalDivider(Modifier.padding(horizontal = 20.dp), thickness = 1.dp, color = Color.White.copy(alpha = .07f)) }
 
-/** Settings' first screen, One UI style: the pages in three cards, a search field above them. */
+/** Settings' first screen, as One UI 8.5 and 9 lay it out: no title bar, the app's own card on top (where Samsung's
+ *  account card sits), the pages in cards without descriptions, and the search bar floating at the bottom. */
 @Composable
 private fun OnePages(all: List<Page>, page: String?, wide: Boolean, q: String, setQ: (String) -> Unit, pick: (String) -> Unit, modifier: Modifier) {
-    OneTitled("Settings", modifier, nav = { IconButton(onClick = { E.settingsPage = null }) { Icon(Icons.Rounded.Close, "Close settings") } }) {
-        item(key = "search") {
-            TextField(q, setQ, Modifier.fillMaxWidth().padding(vertical = 6.dp).clip(RoundedCornerShape(26.dp)), singleLine = true,
-                placeholder = { Text("Search") }, leadingIcon = { Icon(Icons.Rounded.Search, null) },
-                trailingIcon = { if (q.isNotEmpty()) IconButton(onClick = { setQ("") }) { Icon(Icons.Rounded.Close, "Clear") } },
-                colors = TextFieldDefaults.colors(focusedIndicatorColor = Color.Transparent, unfocusedIndicatorColor = Color.Transparent, focusedContainerColor = OneCard, unfocusedContainerColor = OneCard))
-        }
-        if (q.isNotEmpty() && !wide) {
-            val ql = q.trim().lowercase()
-            val hits = all.mapNotNull { p -> val its = p.items.filter { it !is Item.Head && it !is Item.Sub && it.search.lowercase().contains(ql) }; if (its.isEmpty()) null else p to its }
-            if (hits.isEmpty()) item(key = "none") { Text("No setting matches that.", Modifier.padding(20.dp), color = Color.White.copy(alpha = .6f)) }
-            hits.forEach { (p, its) ->
-                item(key = "h" + p.id) { OneHeader(p.name) }
-                item(key = "c" + p.id) { OneCardGroup { its.forEachIndexed { i, x -> if (i > 0) OneDivider(); Box(Modifier.padding(horizontal = 20.dp, vertical = 4.dp)) { ItemView(x) } } } }
+    Box(modifier) {
+        LazyColumn(Modifier.fillMaxSize(), contentPadding = androidx.compose.foundation.layout.PaddingValues(start = 14.dp, end = 14.dp, top = 56.dp, bottom = 120.dp)) {
+            if (q.isNotEmpty() && !wide) {
+                val ql = q.trim().lowercase()
+                val hits = all.mapNotNull { p -> val its = p.items.filter { it !is Item.Head && it !is Item.Sub && it.search.lowercase().contains(ql) }; if (its.isEmpty()) null else p to its }
+                if (hits.isEmpty()) item(key = "none") { Text("No setting matches that.", Modifier.padding(20.dp), color = Color.White.copy(alpha = .6f)) }
+                hits.forEach { (p, its) ->
+                    item(key = "h" + p.id) { OneHeader(p.name) }
+                    item(key = "c" + p.id) { OneCardGroup { its.forEachIndexed { i, x -> if (i > 0) OneDivider(); Box(Modifier.padding(horizontal = 20.dp, vertical = 4.dp)) { ItemView(x) } } } }
+                }
+                return@LazyColumn
             }
-            return@OneTitled
-        }
-        listOf(all.take(4), all.drop(4).take(4), all.drop(8)).filter { it.isNotEmpty() }.forEachIndexed { gi, g ->
-            item(key = "g$gi") {
+            item(key = "app") {
                 OneCardGroup {
-                    g.forEachIndexed { i, p ->
-                        if (i > 0) OneDivider()
-                        val on = wide && (page ?: SettingsUi.last) == p.id
-                        Row(Modifier.fillMaxWidth().background(if (on) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent).clickable { E.haptic(); setQ(""); pick(p.id) }
-                            .padding(horizontal = 18.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Box(Modifier.size(36.dp).clip(CircleShape).background(Color(ONE_ICON[p.id] ?: 0xFF3E91FF)), contentAlignment = Alignment.Center) { Icon(p.icon, null, Modifier.size(20.dp), tint = Color.White) }
-                            Spacer(Modifier.width(16.dp))
-                            Column(Modifier.weight(1f)) {
-                                Text(p.name, fontSize = 17.sp, color = Color.White)
-                                // what's inside, as Samsung's Settings lists it: the page's first sections
-                                val sub = p.items.filterIsInstance<Item.Sub>().take(3).joinToString(" • ") { it.t }
-                                if (sub.isNotEmpty()) Text(sub, fontSize = 13.sp, color = Color.White.copy(alpha = .55f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Row(Modifier.fillMaxWidth().clickable { E.haptic(); setQ(""); pick("help") }.padding(horizontal = 18.dp, vertical = 16.dp), verticalAlignment = Alignment.CenterVertically) {
+                        AppLogo(52.dp)
+                        Spacer(Modifier.width(16.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text("Vibe Visualizer", fontSize = 19.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
+                            Text("Version " + io.github.bozkow.vibevisualizer.BuildConfig.VERSION_NAME, fontSize = 13.sp, color = Color.White.copy(alpha = .55f))
+                        }
+                    }
+                }
+            }
+            listOf(all.take(4), all.drop(4).take(4), all.drop(8)).filter { it.isNotEmpty() }.forEachIndexed { gi, g ->
+                item(key = "g$gi") {
+                    OneCardGroup {
+                        g.forEachIndexed { i, p ->
+                            if (i > 0) OneDivider()
+                            val on = wide && (page ?: SettingsUi.last) == p.id
+                            Row(Modifier.fillMaxWidth().background(if (on) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent).clickable { E.haptic(); setQ(""); pick(p.id) }
+                                .padding(horizontal = 18.dp, vertical = 15.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Box(Modifier.size(34.dp).clip(CircleShape).background(Color(ONE_ICON[p.id] ?: 0xFF3E91FF)), contentAlignment = Alignment.Center) { Icon(p.icon, null, Modifier.size(19.dp), tint = Color.White) }
+                                Spacer(Modifier.width(16.dp))
+                                Text(p.name, Modifier.weight(1f), fontSize = 17.sp, color = Color.White)
                             }
                         }
                     }
                 }
             }
         }
+        Row(Modifier.fillMaxWidth().height(56.dp).padding(horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = { E.settingsPage = null }) { Icon(Icons.Rounded.Close, "Close settings") }
+        }
+        // the search bar floats at the bottom, over the list, in reach of your thumb
+        TextField(q, setQ, Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(horizontal = 20.dp, vertical = 14.dp).widthIn(max = 520.dp).fillMaxWidth()
+            .shadow(18.dp, RoundedCornerShape(50)).clip(RoundedCornerShape(50)), singleLine = true,
+            placeholder = { Text("Search settings") }, leadingIcon = { Icon(Icons.Rounded.Search, null) },
+            trailingIcon = { if (q.isNotEmpty()) IconButton(onClick = { setQ("") }) { Icon(Icons.Rounded.Close, "Clear") } },
+            colors = TextFieldDefaults.colors(focusedIndicatorColor = Color.Transparent, unfocusedIndicatorColor = Color.Transparent,
+                focusedContainerColor = Color(0xFF2B2B2B).copy(alpha = .97f), unfocusedContainerColor = Color(0xFF2B2B2B).copy(alpha = .97f)))
     }
 }
 

@@ -80,11 +80,11 @@ fun WavySeek(frac: Float, wavy: Boolean, onDrag: (Float) -> Unit, onDone: (Float
             }
         }) {
         val y = size.height / 2; val w = size.width; val x = (frac.coerceIn(0f, 1f) * w)
-        if (one) {   // One UI (Samsung Music): a thin line and a round thumb, no wave
-            val t = 3.dp.toPx()
-            drawLine(Color.White.copy(alpha = if (enabled) .25f else .12f), Offset(0f, y), Offset(w, y), t, StrokeCap.Round)
-            if (x > 0) drawLine(Color.White, Offset(0f, y), Offset(x, y), t, StrokeCap.Round)
-            if (enabled) drawCircle(Color.White, 6.dp.toPx(), Offset(x, y))
+        if (one) {   // One UI 9: a thicker, rounded line and a round thumb, no wave
+            val t = 6.dp.toPx()
+            drawLine(Color.White.copy(alpha = if (enabled) .22f else .1f), Offset(t / 2, y), Offset(w - t / 2, y), t, StrokeCap.Round)
+            if (x > 0) drawLine(Color.White, Offset(t / 2, y), Offset(maxOf(t / 2, x), y), t, StrokeCap.Round)
+            if (enabled) drawCircle(Color.White, 8.dp.toPx(), Offset(x.coerceIn(8.dp.toPx(), w - 8.dp.toPx()), y))
             return@Canvas
         }
         val sw = 4.dp.toPx(); val gap = 5.dp.toPx(); val a = 3.dp.toPx() * amp; val wl = 26.dp.toPx()

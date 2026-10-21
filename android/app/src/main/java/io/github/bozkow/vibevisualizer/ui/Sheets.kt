@@ -87,7 +87,7 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun Sheets() {
-    val s = E.sheet ?: return
+    val s = E.sheet?.takeIf { it != "quick" } ?: return   // quick settings float on their own (Quick.kt)
     val state = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val close = { E.sheet = null; Ping.open = false; E.poke() }
     ModalBottomSheet(onDismissRequest = close, sheetState = state, containerColor = MaterialTheme.colorScheme.surfaceContainer, contentColor = Color.White) {
@@ -154,7 +154,7 @@ private fun MoreSheet() {
     SectionLabel("App")
     MoreRow(VIcons.bolt, "Low performance mode", "Turns off blur, glow and the moving background", S.low) { S.set("low", !S.low) }
     if (Server.set) MoreRow(Icons.Rounded.NetworkCheck, "Connection", "Your server · " + Ping.label) { Ping.open = true; Ping.kick(); go("net") }
-    MoreRow(Icons.Rounded.Settings, "Settings") { go(null); E.openSettings() }
+    MoreRow(Icons.Rounded.Settings, "Settings") { go("quick") }
 }
 
 /* ---- what the bars hear ---- */

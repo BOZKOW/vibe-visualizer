@@ -90,6 +90,7 @@ import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.shadow
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -334,7 +335,7 @@ private fun EmptyState() {
         Spacer(Modifier.weight(1f))
         Row(verticalAlignment = Alignment.CenterVertically) {
             TextButton(onClick = { E.wizard = true }) { Text("Setup guide") }
-            TextButton(onClick = { E.openSettings() }) { Text("Settings") }
+            TextButton(onClick = { E.sheet = "quick" }) { Text("Settings") }
             TextButton(onClick = { E.openSettings("help") }) { Text("What’s new") }
         }
     }
@@ -438,9 +439,9 @@ private fun Transport(big: Boolean) {
     Row(Modifier.fillMaxWidth().padding(vertical = if (big) 8.dp else 2.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
         if (sp) CtlIcon(Icons.Rounded.Shuffle, "Shuffle", enabled = Spotify.spState != null && "toggling_shuffle" !in Spotify.disallows, on = Spotify.shuffle) { Spotify.toggleShuffle() }
         else CtlIcon(if (Local.muted) Icons.AutoMirrored.Rounded.VolumeOff else Icons.AutoMirrored.Rounded.VolumeUp, if (Local.muted) "Unmute" else "Mute", enabled = E.src == "file") { Local.muted = !Local.muted }
-        CtlIcon(Icons.Rounded.SkipPrevious, "Previous", size = if (big) 40.dp else 32.dp, enabled = E.src != "none") { E.prev() }
+        CtlIcon(Icons.Rounded.SkipPrevious, "Previous", size = if (big) 40.dp else 32.dp, enabled = E.src != "none", round = S.oneUi) { E.prev() }
         PlayButton(if (big) 76.dp else 60.dp)
-        CtlIcon(Icons.Rounded.SkipNext, "Next", size = if (big) 40.dp else 32.dp, enabled = E.canNext()) { E.next() }
+        CtlIcon(Icons.Rounded.SkipNext, "Next", size = if (big) 40.dp else 32.dp, enabled = E.canNext(), round = S.oneUi) { E.next() }
         if (sp) {
             val r = Spotify.repeat
             CtlIcon(if (r == "track") Icons.Rounded.RepeatOne else Icons.Rounded.Repeat, "Repeat: " + when (r) { "context" -> "all"; "track" -> "this song"; else -> "off" },
@@ -453,7 +454,9 @@ private fun Transport(big: Boolean) {
 @Composable
 private fun BottomBar() {
     val sp = E.src == "spotify"
-    Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), horizontalArrangement = Arrangement.SpaceAround, verticalAlignment = Alignment.CenterVertically) {
+    // One UI 9: a floating bar, a pill of its own
+    Row(Modifier.fillMaxWidth().padding(vertical = 4.dp).then(if (S.oneUi) Modifier.padding(horizontal = 24.dp).shadow(12.dp, RoundedCornerShape(50)).clip(RoundedCornerShape(50)).background(Color(0xFF2B2B2B).copy(alpha = .9f)) else Modifier),
+        horizontalArrangement = Arrangement.SpaceAround, verticalAlignment = Alignment.CenterVertically) {
         BarIcon(VIcons.lyrics, "Lyrics", E.screen == "lyrics" && !E.wide || E.wide && E.screen != "viz") { E.show(if (E.screen == "lyrics" && !E.wide) "player" else "lyrics") }
         if (sp) BarIcon(Icons.Rounded.Cast, Spotify.device?.let { "Playing on ${it.name}" } ?: "Choose where Spotify plays", false) { E.sheet = "devices" }
         else BarIcon(Icons.Rounded.GraphicEq, "What the bars hear", false) { E.sheet = "audio" }
@@ -470,10 +473,12 @@ private fun BarIcon(icon: ImageVector, desc: String, on: Boolean, onClick: () ->
 }
 
 @Composable
-private fun CtlIcon(icon: ImageVector, desc: String, size: Dp = 24.dp, enabled: Boolean = true, on: Boolean = false, onClick: () -> Unit) {
-    IconButton(onClick = { E.haptic(); onClick() }, enabled = enabled, modifier = Modifier.size(maxOf(48.dp, size + 12.dp)).semantics { contentDescription = desc },
-        colors = IconButtonDefaults.iconButtonColors(containerColor = Color.Transparent, contentColor = if (on) MaterialThemeAccent() else Color.White, disabledContentColor = Color.White.copy(alpha = .3f))) {
-        Icon(icon, null, Modifier.size(size))
+private fun CtlIcon(icon: ImageVector, desc: String, size: Dp = 24.dp, enabled: Boolean = true, on: Boolean = false, round: Boolean = false, onClick: () -> Unit) {
+    // round: One UI 9's back and skip, each in a soft circle
+    IconButton(onClick = { E.haptic(); onClick() }, enabled = enabled, modifier = Modifier.size(maxOf(48.dp, size + (if (round) 20.dp else 12.dp))).semantics { contentDescription = desc },
+        colors = IconButtonDefaults.iconButtonColors(containerColor = if (round) Color.White.copy(alpha = .12f) else Color.Transparent, contentColor = if (on) MaterialThemeAccent() else Color.White,
+            disabledContainerColor = if (round) Color.White.copy(alpha = .06f) else Color.Transparent, disabledContentColor = Color.White.copy(alpha = .3f))) {
+        Icon(icon, null, Modifier.size(size * (if (round) .8f else 1f)))
     }
 }
 
@@ -483,9 +488,9 @@ private fun CtlIcon(icon: ImageVector, desc: String, size: Dp = 24.dp, enabled: 
 @Composable
 private fun PlayButton(size: Dp) {
     val playing = E.playingState
-    if (S.oneUi) {   // One UI (Samsung Music): a big plain glyph, no button shape around it
-        IconButton(onClick = { E.haptic(); E.toggle() }, Modifier.size(size).semantics { contentDescription = if (playing) "Pause" else "Play" }) {
-            Icon(if (playing) Icons.Rounded.Pause else Icons.Rounded.PlayArrow, null, Modifier.size(size * .78f), tint = Color.White)
+    if (S.oneUi) {   // One UI 9's media player: a round button, white, no shape morphing
+        Box(Modifier.size(size).clip(CircleShape).background(Color.White).clickable { E.haptic(); E.toggle() }.semantics { contentDescription = if (playing) "Pause" else "Play" }, contentAlignment = Alignment.Center) {
+            Icon(if (playing) Icons.Rounded.Pause else Icons.Rounded.PlayArrow, null, Modifier.size(size * .5f), tint = Color(0xFF111111))
         }
         return
     }
@@ -518,6 +523,10 @@ private fun VolumeRow() {
     val dev = Spotify.device
     val canVol = !sp || (dev != null && dev.supportsVolume && dev.volume != null)
     val v = if (sp) (dev?.volume ?: 0) else S.i("volume")
+    if (S.oneUi && canVol) {   // One UI 9's thick volume slider
+        Box(Modifier.padding(vertical = 4.dp)) { ThickSlider(Icons.AutoMirrored.Rounded.VolumeUp, if (sp) "Spotify volume" else "Volume", v, 0, 100) { x -> if (sp) Spotify.setVolume(x) else S.set("volume", x); E.poke() } }
+        return
+    }
     Row(Modifier.fillMaxWidth().height(40.dp), verticalAlignment = Alignment.CenterVertically) {
         Icon(Icons.AutoMirrored.Rounded.VolumeDown, null, Modifier.size(20.dp), tint = Color.White.copy(alpha = if (canVol) .7f else .3f))
         Slider(value = v / 100f, onValueChange = { f -> val x = (f * 100).toInt(); if (sp) Spotify.setVolume(x) else S.set("volume", x); E.poke() }, enabled = canVol,
