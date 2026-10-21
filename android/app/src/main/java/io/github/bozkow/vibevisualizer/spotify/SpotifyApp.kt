@@ -34,6 +34,7 @@ object SpotifyApp {
     val access = mutableStateOf(false)      // notification access given
     var title = ""; var artist = ""; var album = ""; var durMs = 0L
         private set
+    private var art: android.graphics.Bitmap? = null   // the cover the Spotify app shows for its song
     private var state: PlaybackState? = null
     // where the song is, kept from the app's position reports (Spicy Lyrics Mobile's lyric clock): jitter under a
     // frame doesn't move the lyrics, and a stale pause report doesn't throw them back
@@ -85,7 +86,7 @@ object SpotifyApp {
         ctrl?.let { runCatching { it.unregisterCallback(cb) } }
         ctrl = c
         clock.reset(SystemClock.elapsedRealtime()); awaitingReport = false; resyncNext = false
-        if (c == null) { connected.value = false; state = null; title = ""; artist = ""; durMs = 0; onState?.invoke(); return }
+        if (c == null) { connected.value = false; state = null; title = ""; artist = ""; durMs = 0; art = null; onState?.invoke(); return }
         c.registerCallback(cb, main)
         connected.value = true
         state = c.playbackState
@@ -101,6 +102,7 @@ object SpotifyApp {
         artist = m?.getString(MediaMetadata.METADATA_KEY_ARTIST) ?: ""
         album = m?.getString(MediaMetadata.METADATA_KEY_ALBUM) ?: ""
         durMs = m?.getLong(MediaMetadata.METADATA_KEY_DURATION) ?: 0
+        art = m?.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART) ?: m?.getBitmap(MediaMetadata.METADATA_KEY_ART) ?: m?.getBitmap(MediaMetadata.METADATA_KEY_DISPLAY_ICON)
         if (notify && changed && t.isNotEmpty()) { report(state, force = true, trackChanged = true); onTrack?.invoke() }
     }
 
@@ -142,6 +144,10 @@ object SpotifyApp {
         val p = clock.positionAt(SystemClock.elapsedRealtime())
         return (if (durMs > 0) minOf(p, durMs) else p).toDouble()
     }
+
+    /** The Spotify app's cover, if it plays that song. */
+    fun artFor(name: String, durationMs: Double): android.graphics.Bitmap? = art?.takeIf { matches(name, durationMs) && !it.isRecycled }
+        ?.let { if (it.config == android.graphics.Bitmap.Config.HARDWARE) it.copy(android.graphics.Bitmap.Config.ARGB_8888, false) else it }
 
     /** Is the song the Web API says is playing the one in the Spotify app? */
     fun matches(name: String, durationMs: Double): Boolean {

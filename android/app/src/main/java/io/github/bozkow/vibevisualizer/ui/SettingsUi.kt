@@ -631,7 +631,7 @@ private fun ServerUpdates() {
             FilledTonalButton(onClick = { Updates.checkServer(true) }, enabled = Server.set) { Text("Check") }
             if (Updates.serverNew && Updates.serverCan) Button(onClick = { Updates.updateServer() }) { Text("Update now") }
         }
-        Hint("The web app your computers open lives on your server; this downloads its newest version from GitHub onto the server (its settings, keys and saved lyrics stay).")
+        Hint("The web app (what a browser opens from your server) lives on your server; this downloads its newest version from GitHub onto the server (its settings, keys and saved lyrics stay).")
         Updates.serverNotes.take(5).forEachIndexed { i, n -> NoteView(n, i == 0) }
     }
 }

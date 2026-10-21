@@ -45,6 +45,13 @@ object Files {
         .replace(Regex("\\[[^]]*]|\\((?:official|lyrics?|audio|video|hd|hq|remaster|visuali[sz]er|music|explicit)[^)]*\\)", RegexOption.IGNORE_CASE), "")
         .replace(Regex("^\\s*\\d{1,3}[\\s.\\-–]+"), "").replace(Regex("\\s+"), " ").trim()
 
+    /** Android's own album art for a song file (what the phone's music apps show): its picture, or a cover.jpg,
+     *  folder.jpg or AlbumArt.jpg next to it. Null when Android has none. */
+    suspend fun androidArt(u: Uri): android.graphics.Bitmap? = withContext(Dispatchers.IO) {
+        runCatching { Vibe.app.contentResolver.loadThumbnail(u, android.util.Size(1000, 1000), null) }.getOrNull()
+            ?.let { if (it.config == android.graphics.Bitmap.Config.HARDWARE) it.copy(android.graphics.Bitmap.Config.ARGB_8888, false) else it }   // readable, for the colors
+    }
+
     suspend fun tags(u: Uri): Tags = withContext(Dispatchers.IO) {
         val r = MediaMetadataRetriever()
         try {

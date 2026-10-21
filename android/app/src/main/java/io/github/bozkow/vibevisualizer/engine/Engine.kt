@@ -24,7 +24,8 @@ import io.github.bozkow.vibevisualizer.core.now
 import io.github.bozkow.vibevisualizer.core.wall
 import io.github.bozkow.vibevisualizer.lyrics.TrackNameCleaner
 import io.github.bozkow.vibevisualizer.lyrics.SongMeta
-import io.github.bozkow.vibevisualizer.lyrics.norm
+import io.github.bozkow.vibevisualizer.lyrics.Match
+import io.github.bozkow.vibevisualizer.lyrics.firstArtist
 import io.github.bozkow.vibevisualizer.media.Local
 import io.github.bozkow.vibevisualizer.spotify.Spotify
 import io.github.bozkow.vibevisualizer.spotify.SpotifyApp
@@ -176,9 +177,11 @@ object E {
         CanvasVideo.clear(true)
         title = m.title; artist = m.artist; status = "Spotify"; trackVer++
         Vibe.scope.launch {
-            val ok = m.cover.isNotEmpty() && setCover(m.cover, "", tok)
+            var ok = m.cover.isNotEmpty() && setCover(m.cover, "", tok)
+            // no cover from Spotify (or it didn't load): the Spotify app on this phone shows one for the same song
+            if (!ok && tok == coverTok) SpotifyApp.artFor(m.title, m.duration * 1000)?.let { ok = setCoverBitmap(it, "From the Spotify app", tok) }
             if (!ok && tok == coverTok) {
-                if (S.b("online")) { status = "Searching for cover…"; if (!findCover(m.artist + " " + m.title, tok) && tok == coverTok) { status = "No cover found · using default"; resetCover() } }
+                if (S.b("online")) { status = "Searching for cover…"; if (!findCover(m, tok) && tok == coverTok) { status = "No cover found · using default"; resetCover() } }
                 else resetCover()
             }
         }
@@ -219,9 +222,12 @@ object E {
             Lyr.load(meta, tok)
             Local.setMeta(title, artist, tags.picture)
             if (tags.picture != null && setCoverBitmap(Images.decode(tags.picture), "Embedded cover", tok)) return@launch
+            // Android's own album art for the file: its picture, or a cover.jpg / folder.jpg next to it
+            Files.androidArt(uri)?.let { if (tok == coverTok && setCoverBitmap(it, "From this phone", tok)) return@launch }
+            if (tok != coverTok) return@launch
             if (!S.b("online")) { status = "No cover · using default"; return@launch }
             status = "Searching for cover…"
-            if (!findCover(if (meta.artist.isNotEmpty()) meta.artist + " " + meta.title else Files.clean(name), tok) && tok == coverTok) status = "No cover found · using default"
+            if (!findCover(meta.copy(title = meta.title.ifEmpty { Files.clean(name) }), tok) && tok == coverTok) status = "No cover found · using default"
         }
         updPlay()
     }
@@ -251,10 +257,12 @@ object E {
             val d = Net.getJson("https://itunes.apple.com/search?media=music&entity=song&limit=10&term=" + URLEncoder.encode(q, "UTF-8"))
             val a = d.optJSONArray("results") ?: return false
             var res = (0 until a.length()).map { a.getJSONObject(it) }
-            if (want != null) {   // best match first: same title, then same artist
-                val t = norm(want.title); val ar = norm(want.artist)
-                fun score(r: JSONObject): Int { val n = norm(r.optString("trackName")); return (if (n == t) 4 else if (n.startsWith(t) || t.startsWith(n)) 2 else 0) + (if (ar.isNotEmpty() && norm(r.optString("artistName")).contains(ar)) 2 else 0) }
-                res = res.map { score(it) to it }.filter { it.first >= 2 }.sortedByDescending { it.first }.map { it.second }.take(3)
+            if (want != null) {   // only the same song: its title (with or without a version note) and, when known, its artist
+                val ar = Match.key(firstArtist(want.artist))
+                fun titleOk(r: JSONObject) = Match.sameTitle(r.optString("trackName"), want.title) || Match.sameTitle(want.title, r.optString("trackName"))
+                fun artistOk(r: JSONObject) = ar.isEmpty() || Match.key(r.optString("artistName")).contains(ar)
+                fun albumOk(r: JSONObject) = want.album.isNotEmpty() && Match.key(r.optString("collectionName")) == Match.key(want.album)
+                res = res.filter { titleOk(it) && artistOk(it) }.sortedByDescending { albumOk(it) }.take(3)
             }
             for (r in res) {
                 if (tok != coverTok) return true
@@ -265,14 +273,23 @@ object E {
         return false
     }
 
-    suspend fun findCover(q: String, tok: Int): Boolean {
-        if (appleCover(q, tok)) return true
+    /** A cover found online, only when it's this song's: the first search result used to be taken as it came, so
+     *  another song's cover often showed. */
+    suspend fun findCover(want: SongMeta, tok: Int): Boolean {
+        if (want.title.isEmpty()) return false
+        if (appleCover((if (want.artist.isNotEmpty()) firstArtist(want.artist) + " " else "") + want.title, tok, want)) return true
+        // MusicBrainz by the album, when there is one (a release is an album, not a song)
+        if (want.album.isEmpty() || want.artist.isEmpty()) return false
         try {
-            val d = Net.getJson("https://musicbrainz.org/ws/2/release/?fmt=json&limit=3&query=" + URLEncoder.encode(q, "UTF-8"))
+            val q = "release:\"" + want.album.replace("\"", "") + "\" AND artist:\"" + firstArtist(want.artist).replace("\"", "") + "\""
+            val d = Net.getJson("https://musicbrainz.org/ws/2/release/?fmt=json&limit=5&query=" + URLEncoder.encode(q, "UTF-8"))
             val a = d.optJSONArray("releases") ?: return false
+            val ar = Match.key(firstArtist(want.artist))
             for (i in 0 until a.length()) {
                 if (tok != coverTok) return true
                 val r = a.getJSONObject(i)
+                val credit = r.optJSONArray("artist-credit")?.let { c -> (0 until c.length()).joinToString(" ") { c.optJSONObject(it)?.optString("name") ?: "" } } ?: ""
+                if (Match.key(r.optString("title")) != Match.key(want.album) || !Match.key(credit).contains(ar)) continue
                 if (setCover("https://coverartarchive.org/release/" + r.optString("id") + "/front-500", "Found online · " + r.optString("title"), tok)) return true
             }
         } catch (_: Exception) {}

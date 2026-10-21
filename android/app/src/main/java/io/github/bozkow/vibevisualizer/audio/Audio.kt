@@ -11,6 +11,7 @@ import io.github.bozkow.vibevisualizer.core.Vibe
 import io.github.bozkow.vibevisualizer.core.now
 import io.github.bozkow.vibevisualizer.engine.E
 import io.github.bozkow.vibevisualizer.media.Local
+import io.github.bozkow.vibevisualizer.media.Outputs
 import io.github.bozkow.vibevisualizer.spotify.Spotify
 import kotlin.math.exp
 import kotlin.math.floor
@@ -82,7 +83,10 @@ object Audio {
     private fun phoneLive() = phone.running && now() - phone.heardAt < 1500
     private fun micLive() = mic.running
     fun liveAudio() = filePlaying() || micLive() || phoneLive()
-    fun bridgeLive() = bridge.live()
+    /** The music plays on this phone (your files, or the Spotify app playing here): a computer's Vibe Bridge hears
+     *  something else then, so the bars and their label leave it out. */
+    private fun playsHere() = Outputs.here(E.src)
+    fun bridgeLive() = bridge.live() && !playsHere()
 
     /** Seconds the measured sound lags behind what you hear (for the desync detection). */
     fun lag(): Double = when {
@@ -182,8 +186,11 @@ object Audio {
             micLive() -> "Microphone" to "Bars follow: the microphone (the sound in the room)."
             phoneLive() -> "Phone sound" to "Bars follow: everything this phone plays, the Spotify app included."
             bridgeLive() -> "Vibe Bridge" to ("Bars follow: Vibe Bridge through your server" + (if (bridge.device.isNotEmpty()) " · listening to ${bridge.device}" else "") + ".")
-            E.src == "spotify" && Spotify.spPlaying() -> "Ambient" to (if (phone.running) "Bars follow: a gentle ambient motion. Nothing is playing on this phone; start Vibe Bridge on the computer that plays the music for real bars."
-                else "Bars follow: a gentle ambient motion (Spotify’s audio can’t be read). Allow “Phone sound” for real bars from the Spotify app on this phone.")
+            E.src == "spotify" && Spotify.spPlaying() -> "Ambient" to when {
+                playsHere() && phone.running -> "Bars follow: a gentle ambient motion until Phone sound hears the Spotify app on this phone."
+                playsHere() || !phone.running -> "Bars follow: a gentle ambient motion (Spotify’s audio can’t be read). Allow “Phone sound” for real bars from the Spotify app on this phone."
+                else -> "Bars follow: a gentle ambient motion. The music plays on another device; for real bars from a computer, start Vibe Bridge there."
+            }
             phone.running -> "Phone sound" to "Waiting for sound: the bars follow everything this phone plays."
             else -> "No audio" to "Nothing for the bars to follow. Tap to choose what the bars hear."
         }
