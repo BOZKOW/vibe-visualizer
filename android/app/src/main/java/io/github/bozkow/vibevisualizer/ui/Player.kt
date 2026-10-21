@@ -194,6 +194,7 @@ private fun LyricsScreen() {
                 }
                 else LyricsPane(Modifier.fillMaxSize(), areaHeightPx = areaH, padStart = 24f, padEnd = 24f)
             }
+            NextUpCard(Modifier.align(Alignment.BottomCenter).padding(bottom = 8.dp))   // over the lyrics' faded end: nothing moves
         }
         if (S.view == "both") BarsView(Modifier.fillMaxWidth().height(if (hidden) 96.dp else 64.dp).padding(horizontal = 12.dp))
         LyricsCredits()
@@ -215,6 +216,7 @@ private fun VizScreen() {
                 if (!(CanvasVideo.cvmode && S.b("cvNoArt"))) Box(Modifier.fillMaxWidth(.5f).aspectRatio(1f)) { CoverArt(Modifier.fillMaxSize(), corner = 18.dp) }
                 Spacer(Modifier.height(16.dp))
                 Column(Modifier.padding(horizontal = 24.dp)) { TitleRow(big = false, center = true) }
+                NextUpCard(Modifier.padding(top = 10.dp))
             }
             BarsView(Modifier.fillMaxWidth().fillMaxHeight(.44f).align(Alignment.BottomCenter).padding(horizontal = 10.dp))
         }
@@ -242,7 +244,7 @@ private fun Tablet() {
             }
             if (solo && S.view == "both") BarsView(Modifier.fillMaxWidth().height(56.dp).padding(bottom = 6.dp))
             TitleRow(big = true)
-            if (solo) NoLyricsNote()
+            if (solo) { NoLyricsNote(); NextUpCard(Modifier.padding(vertical = 4.dp)) }
             SeekRow()
             Transport(big = true)
             if (S.b("volshow")) VolumeRow()
@@ -268,6 +270,7 @@ private fun LandscapePhone() {
             Column(Modifier.weight(1f)) {
                 TitleRow(big = true)
                 NoLyricsNote()
+                NextUpCard(Modifier.padding(top = 4.dp))
                 if (S.view == "both") BarsView(Modifier.fillMaxWidth().height(72.dp).padding(top = 8.dp))
             }
         }
@@ -302,6 +305,7 @@ private fun RightPane(modifier: Modifier) {
         Box(Modifier.weight(1f).fillMaxWidth().onSizeChanged { areaH = it.height.toFloat() }) {
             if (E.screen == "viz") BarsView(Modifier.fillMaxSize().padding(vertical = 16.dp))
             else LyricsPane(Modifier.fillMaxSize(), areaHeightPx = areaH, padStart = 8f, padEnd = 16f)
+            NextUpCard(Modifier.align(if (E.screen == "viz") Alignment.TopCenter else Alignment.BottomCenter).padding(8.dp))
         }
         if (E.screen != "viz" && S.view == "both") BarsView(Modifier.fillMaxWidth().height(64.dp))
         LyricsCredits()
@@ -583,19 +587,30 @@ private fun CanvasBackdrop(wide: Boolean) {
             val fade = arrayOf(0f to Color.Black, .45f to Color.Black, .58f to Color.Black.copy(alpha = .85f), .74f to Color.Black.copy(alpha = .5f), .88f to Color.Black.copy(alpha = .18f), 1f to Color.Transparent)
             drawRect(if (wide) Brush.horizontalGradient(*fade) else Brush.verticalGradient(*fade), blendMode = BlendMode.DstIn)
             drawRect(Brush.verticalGradient(0f to Color.Black.copy(alpha = .4f), .2f to Color.Transparent, .55f to Color.Transparent, 1f to Color.Black.copy(alpha = .45f)))
-        }) {
-        if (S.b("cvBlur")) BoxWithConstraints(Modifier.fillMaxSize()) {
-            // blurred: the video drawn at a quarter of the size, blurred there and stretched back (cheap, unlike a
-            // full-screen blur every frame)
-            val fw = constraints.maxWidth; val fh = constraints.maxHeight
-            val sw = (fw / 4).coerceAtLeast(1); val sh = (fh / 4).coerceAtLeast(1)
-            val r = (S.bgblur / 60f * 7f).coerceIn(2f, 14f)
-            Box(Modifier.layout { m, _ -> val p = m.measure(Constraints.fixed(sw, sh)); layout(fw, fh) { p.place(0, 0) } }
-                .graphicsLayer { transformOrigin = TransformOrigin(0f, 0f); scaleX = fw / sw.toFloat(); scaleY = fh / sh.toFloat(); renderEffect = BlurEffect(r, r, TileMode.Clamp); compositingStrategy = CompositingStrategy.Offscreen }) {
-                CanvasView()
-            }
-        } else CanvasView()
-    }
+        }) { CanvasVideoView() }
+}
+
+/** The Canvas video filling its box: sharp, or (Blur the Canvas) drawn at a quarter of the size, blurred there and
+ *  stretched back, which is cheap, unlike a full-screen blur every frame. */
+@Composable
+private fun CanvasVideoView() {
+    if (S.b("cvBlur")) BoxWithConstraints(Modifier.fillMaxSize()) {
+        val fw = constraints.maxWidth; val fh = constraints.maxHeight
+        val sw = (fw / 4).coerceAtLeast(1); val sh = (fh / 4).coerceAtLeast(1)
+        val r = S.i("cvBlurAmt").coerceIn(5, 100) / 100f * 14f   // in quarter-size pixels: up to ~56 on the screen
+        Box(Modifier.layout { m, _ -> val p = m.measure(Constraints.fixed(sw, sh)); layout(fw, fh) { p.place(0, 0) } }
+            .graphicsLayer { transformOrigin = TransformOrigin(0f, 0f); scaleX = fw / sw.toFloat(); scaleY = fh / sh.toFloat(); renderEffect = BlurEffect(r, r, TileMode.Clamp); compositingStrategy = CompositingStrategy.Offscreen }) {
+            CanvasView()
+        }
+    } else CanvasView()
+}
+
+/** Picture-in-picture: the Canvas behind the lyrics there too, darkened so they stay readable. */
+@Composable
+fun PipCanvas() {
+    if (!CanvasVideo.active) return
+    val a by animateFloatAsState(if (CanvasVideo.cvmode) 1f else 0f, tween(800), label = "pipcanvas")
+    Box(Modifier.fillMaxSize().alpha(maxOf(a, .01f)).drawWithContent { drawContent(); drawRect(Color.Black.copy(alpha = .45f)) }) { CanvasVideoView() }
 }
 
 @Composable

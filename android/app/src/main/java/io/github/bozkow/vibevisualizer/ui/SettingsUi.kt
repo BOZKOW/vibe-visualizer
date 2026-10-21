@@ -14,6 +14,8 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.union
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.WindowInsetsSides
@@ -33,7 +35,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
@@ -202,7 +203,8 @@ private fun pages(): List<Page> = listOf(
         Item.Sw("canvasOn", "Canvas", "Spotify’s short looping video plays as the background behind the player (found by your server)."),
         Item.Sw("cvNoArt", "Hide the cover while a Canvas plays", "Only the Canvas, no cover in front of it."),
         Item.Sw("cvShrink", "Smaller cover while a Canvas plays", "The cover glides to a smaller size in the middle, so more of the Canvas shows around it."),
-        Item.Sw("cvBlur", "Blur the Canvas", "The Canvas behind the player, softly blurred (as strong as the background’s Blur)."),
+        Item.Sw("cvBlur", "Blur the Canvas", "The Canvas behind the player, softly blurred."),
+        Item.Sl("cvBlurAmt", "Canvas blur", 5, 100, 5, "How strong, with Blur the Canvas on."),
         Item.Custom("Choose canvas video Canvas endpoint") { CanvasSection() },
     )),
     Page("perf", "Performance", VIcons.bolt, listOf(
@@ -218,6 +220,8 @@ private fun pages(): List<Page> = listOf(
         Item.Head("Phone"),
         Item.Sw("aKeepOn", "Keep the screen on while music plays"),
         Item.Sw("aPip", "Picture-in-picture", "Leaving the app while music plays keeps the lyrics in a small window over your other apps."),
+        Item.Sw("aHideStatus", "Hide the status bar", "The bar with the time and notifications at the top. Swipe down from the top to see it for a moment."),
+        Item.Sw("aHideNav", "Hide the navigation bar", "The gesture bar or buttons at the bottom. Swipe up from the bottom to see it for a moment."),
         Item.Sw("aLock", "Show over the lock screen", "The player shows on the lock screen while it’s open (Keep the screen on, docked in a stand)."),
         Item.Sw("aHaptics", "Haptic feedback", "A light tick on taps and toggles."),
         Item.Custom("Notification access battery app info permissions") { PhoneLinks() },
@@ -264,7 +268,7 @@ fun SettingsScreen() {
         val wide = maxWidth >= 720.dp
         BackHandler { if (q.isNotEmpty()) q = "" else if (!wide && page != null && E.settingsPage == null) page = null else if (!wide && page != null) { page = null } else E.settingsPage = null }
         Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surfaceContainerLowest) {
-            Row(Modifier.fillMaxSize().statusBarsPadding().windowInsetsPadding(WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal))) {
+            Row(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.statusBars.union(WindowInsets.displayCutout).only(WindowInsetsSides.Top)).windowInsetsPadding(WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal))) {
                 if (wide || page == null || q.isNotEmpty()) {
                     Column(Modifier.then(if (wide) Modifier.width(300.dp) else Modifier.fillMaxWidth()).fillMaxHeight()) {
                         Row(Modifier.fillMaxWidth().padding(start = 8.dp, end = 8.dp, top = 6.dp), verticalAlignment = Alignment.CenterVertically) {

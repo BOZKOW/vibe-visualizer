@@ -152,12 +152,13 @@ private fun Welcome(f: Boolean, s: Boolean, setF: (Boolean) -> Unit, setS: (Bool
 
 @Composable
 fun ServerField(onDone: () -> Unit = {}) {
-    var t by remember { mutableStateOf(Vibe.cfg.server.removePrefix("https://")) }
+    var t by remember { mutableStateOf(Vibe.cfg.server.removePrefix("https://").removePrefix("http://")) }
     var stat by remember { mutableStateOf("") }
     var h by remember { mutableStateOf<JSONObject?>(null) }
     val scope = rememberCoroutineScope()
     fun test() {
         Vibe.cfg.saveServer(t)
+        t = Vibe.cfg.server.removePrefix("https://").removePrefix("http://")   // what was saved: the address alone
         val b = Server.base ?: run { stat = "Enter your server’s address."; return }
         stat = "Checking your server…"; h = null
         scope.launch {
@@ -170,13 +171,12 @@ fun ServerField(onDone: () -> Unit = {}) {
             }
         }
     }
-    OutlinedTextField(t, { t = it.trim() }, Modifier.fillMaxWidth(), label = { Text("Your server") }, placeholder = { Text("name.your-tailnet.ts.net") }, singleLine = true, prefix = { Text("https://") },
+    // the field shows https:// itself: a pasted address loses its own, so it never reads https://https://
+    OutlinedTextField(t, { t = it.trim().replace(Regex("^https?://", RegexOption.IGNORE_CASE), "") }, Modifier.fillMaxWidth(), label = { Text("Your server") }, placeholder = { Text("name.your-tailnet.ts.net") }, singleLine = true, prefix = { Text("https://") },
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Done), keyboardActions = androidx.compose.foundation.text.KeyboardActions(onDone = { test() }))
-    Row(Modifier.padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-        FilledTonalButton(onClick = { test() }) { Text("Test and save") }
-        Spacer(Modifier.width(12.dp))
-        Text(stat, fontSize = 13.sp, color = Color.White.copy(alpha = .8f), modifier = Modifier.weight(1f))
-    }
+    FilledTonalButton(onClick = { test() }, Modifier.padding(top = 8.dp)) { Text("Test and save") }
+    // the answer under the button, the whole width: an error with its advice is too long to sit beside it
+    if (stat.isNotEmpty()) Text(stat, fontSize = 13.sp, color = Color.White.copy(alpha = .8f), modifier = Modifier.fillMaxWidth().padding(top = 6.dp))
     h?.let { j ->
         FlowRow(Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Tag(if (j.optBoolean("spicy_key")) "✓ Spicy Lyrics key found" else "Spicy Lyrics key not set yet", j.optBoolean("spicy_key"))

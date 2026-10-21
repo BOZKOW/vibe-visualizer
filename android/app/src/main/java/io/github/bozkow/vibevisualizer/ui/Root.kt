@@ -59,7 +59,7 @@ fun VibeRoot() {
             val setT = remember { MutableTransitionState(false) }; setT.targetState = E.settingsPage != null
             val wizT = remember { MutableTransitionState(false) }; wizT.targetState = E.wizard
             val covered = (setT.currentState && setT.isIdle) || (wizT.currentState && wizT.isIdle)
-            if (E.inPip) { BackgroundLayer(); PipScreen() }
+            if (E.inPip) { BackgroundLayer(); PipCanvas(); PipScreen() }
             else {
                 if (!covered) { BackgroundLayer(); PlayerScreen() }
                 Snacks(Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = 8.dp))

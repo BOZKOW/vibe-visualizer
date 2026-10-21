@@ -1,18 +1,18 @@
-Vibe Visualizer for Android 0.0.8 (beta). Android 12 or newer; it installs over 0.0.7 (Settings → Help & about → Update now).
+Vibe Visualizer for Android 0.0.9 (beta). Android 12 or newer; it installs over 0.0.8 (Settings → Help & about → Update now).
 
 ### What's new
 
-- A song without lyrics shows its cover big on the Lyrics screen (and on a wide screen), with a short note under it
-- The bars show in every view: under the cover on Now Playing too (⋮ → Bars in every view to turn them off)
-- Settings opens on its list of pages, not on the page you last had open
-- Blur the Canvas, and Smaller cover with the Canvas (on, as in 0.0.6): two switches in the ⋮ menu while a Canvas plays, and in Settings next to the other Canvas options
-- The moving background is calmer: it follows the tempo and the loudness, a beat only adds a little, and changes ease in
+- Hide the status bar and Hide the navigation bar (Settings → Phone): a swipe from the edge brings them back for a moment
+- Next up shows on every screen: over the end of the lyrics, under the song on the Visualizer, beside the lyrics on a wide screen
+- The Canvas plays behind the lyrics in picture-in-picture too
+- Canvas blur: a slider for how strong Blur the Canvas is (Settings, next to the other Canvas options)
 
-### Cooler and lighter on the battery
+### Fixes
 
-- The moving background is drawn at a small size and stretched (as Spicy Lyrics Mobile does): about 1/50 of the work for the graphics chip, looking the same
-- 60 fps by default, and the screen runs at 60 Hz with it. Settings → Performance → Limit frame rate brings 120 back if you prefer it smoother
-- While paused, the background redraws 20 times a second; the blurred Canvas behind the player is taken 12 times a second instead of 30, without a new picture each time
-- The bars no longer create new objects every frame
+- "Wrong lyrics? Try another source" asked Spicy Lyrics again for songs Spicy Lyrics gets from Apple Music
+- Japanese romanization: a small っ at the end of a word doubles the next consonant (だった is "da tta", not "da ta")
+- Your server: a pasted address no longer reads https://https://…, a link to a page on the server is saved as just the server, and the answer to Test and save shows under the button, the whole width
 
-From 0.0.7 (Spicy Lyrics Mobile by TheX24): faster lyrics lookups with word-synced lyrics preferred, the Unison and LRCMux sources, steadier timing with the Spotify app, lyrics timing per audio output, cleaner names for your own files.
+### Checked
+
+Real answers from every lyrics source (Spicy Lyrics, AMLL, Unison, LRCMux, NetEase, Spotify, LRCLIB) now go through the app's own parsers in its tests: word sync, background vocals, duets, credits, interlude dots, translations and romanization all come out right. The Canvas lookup on your server answers too.

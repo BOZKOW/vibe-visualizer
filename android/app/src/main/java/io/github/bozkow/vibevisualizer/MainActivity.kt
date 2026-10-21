@@ -81,6 +81,7 @@ class MainActivity : ComponentActivity() {
             }
         }
         lifecycleScope.launch { snapshotFlow { S.b("aLock") }.collect { setShowWhenLocked(it) } }
+        lifecycleScope.launch { snapshotFlow { S.b("aHideStatus") to S.b("aHideNav") }.collect { bars() } }
         lifecycleScope.launch { snapshotFlow { S.str("fpscap") to S.low }.collect { (c, low) -> refreshRate(if (low) 60f else c.toFloatOrNull() ?: 0f) } }
     }
 
@@ -126,6 +127,20 @@ class MainActivity : ComponentActivity() {
         Vibe.settings.flush()
     }
     override fun onResume() { super.onResume(); SpotifyApp.refresh(this); Background.resume(); Updates.showConfirm() }
+
+    /** Settings → Phone: the status bar (with the notifications) and the navigation bar hidden or shown. Hidden, a swipe
+     *  from the edge brings them back for a moment. */
+    private fun bars() {
+        val c = WindowCompat.getInsetsController(window, window.decorView)
+        c.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        if (S.b("aHideStatus")) c.hide(WindowInsetsCompat.Type.statusBars()) else c.show(WindowInsetsCompat.Type.statusBars())
+        if (S.b("aHideNav")) c.hide(WindowInsetsCompat.Type.navigationBars()) else c.show(WindowInsetsCompat.Type.navigationBars())
+    }
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus) bars()   // a dialog or the keyboard can bring them back
+    }
 
     /* ---- picture-in-picture ---- */
     private fun pipParams(auto: Boolean) {

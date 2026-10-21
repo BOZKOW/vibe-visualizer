@@ -77,15 +77,19 @@ object Romanizer {
 
     private fun jaRomaji(tk: com.atilika.kuromoji.ipadic.Tokenizer, text: String): String {
         val parts = ArrayList<String>()
+        var gem = false   // the last word ended in っ: it doubles this one's first consonant (だっ た → da tta)
         for (t in tk.tokenize(text)) {
             val s = t.surface
             if (s.isBlank()) continue
             val particle = t.partOfSpeechLevel1 == "助詞"
-            val r = when {
+            val kana = t.reading?.takeIf { it != "*" } ?: s
+            var r = when {
                 particle && s == "は" -> "wa"; particle && s == "へ" -> "e"; particle && s == "を" -> "o"
-                JA.containsMatchIn(s) || HAN.containsMatchIn(s) -> kanaToRomaji(t.reading?.takeIf { it != "*" } ?: s)
+                JA.containsMatchIn(s) || HAN.containsMatchIn(s) -> kanaToRomaji(kana)
                 else -> s
             }
+            if (gem && r.isNotEmpty() && r[0].isLetter() && r[0].lowercaseChar() !in "aeioun") r = (if (r.startsWith("ch")) "t" else r[0].toString()) + r
+            gem = (JA.containsMatchIn(s) || HAN.containsMatchIn(s)) && (kana.endsWith('ッ') || kana.endsWith('っ'))
             parts.add(r)
         }
         return parts.joinToString(" ")   // kuroshiro's "spaced" mode
