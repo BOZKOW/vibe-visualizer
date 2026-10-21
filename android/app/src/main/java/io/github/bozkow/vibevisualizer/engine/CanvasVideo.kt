@@ -37,6 +37,7 @@ object CanvasVideo {
     var blurVer by mutableIntStateOf(0); private set
     private var view: WeakReference<TextureView>? = null
     private var lastCv = 0.0
+    private val grabs = arrayOfNulls<Bitmap>(2); private var grabI = 0   // two small frames, taken in turn (no new bitmap each time)
     private var revealAt = 0.0
 
     private val listener = object : Player.Listener {
@@ -123,13 +124,16 @@ object CanvasVideo {
 
     fun onBackground() { player?.pause() }
 
-    /** The blurred Canvas: 30 times a second, a small frame of the video, blurred, as the background. */
+    /** The blurred Canvas: 12 times a second (it's a blur: more looks the same and costs a copy from the GPU each
+     *  time), a small frame of the video, blurred, as the background. */
     fun frame(t: Double) {
-        if (!cvlive || t - lastCv < 33 || !E.visible) return
+        if (!cvlive || t - lastCv < 80 || !E.visible) return
         lastCv = t
         val tv = view?.get() ?: return
         if (!tv.isAvailable) return
-        val bm = runCatching { tv.getBitmap(48, 48) }.getOrNull() ?: return
+        val bm = grabs[grabI] ?: Bitmap.createBitmap(48, 48, Bitmap.Config.ARGB_8888).also { grabs[grabI] = it }
+        if (runCatching { tv.getBitmap(bm) }.isFailure) return
+        grabI = 1 - grabI
         Visuals.blurBitmap(bm, S.bgblur * .025, S.sat / 100.0, S.bri / 100.0)
         blurred = bm; blurVer++
     }

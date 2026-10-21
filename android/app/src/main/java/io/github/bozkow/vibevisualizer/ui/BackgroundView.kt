@@ -12,6 +12,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -24,7 +25,10 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ColorMatrix
+import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.FilterQuality
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.ShaderBrush
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
@@ -32,6 +36,8 @@ import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
@@ -45,6 +51,7 @@ import io.github.bozkow.vibevisualizer.ui.theme.Bg
 import kotlin.math.cos
 import kotlin.math.hypot
 import kotlin.math.min
+import kotlin.math.roundToInt
 import kotlin.math.sin
 
 /** The background: the cover, alive (a liquid warp of it, as Spicy Lyrics' Kawarp; or drifting layers), a still
@@ -127,16 +134,25 @@ private fun LiquidBackground() {
     val imgS = remember(src) { bs(src) }
     val prevS = remember(prev) { bs(prev) }
     val brush = remember(shader) { ShaderBrush(shader) }
-    Canvas(Modifier.fillMaxSize()) {
-        E.bgTick.longValue
-        shader.setInputShader("img", imgS); shader.setInputShader("prev", prevS)
-        shader.setFloatUniform("res", size.width, size.height)
-        shader.setFloatUniform("t", Background.kwTime.toFloat() * 2.2f)
-        shader.setFloatUniform("mixv", Visuals.kwFade(now()))
-        shader.setFloatUniform("sat", (1.5f * S.sat / 170f))
-        shader.setFloatUniform("dim", (1f - S.bri / 100f).coerceIn(0f, .85f))
-        shader.setFloatUniform("pulse", Background.pulse.coerceIn(0f, 1f))
-        drawRect(brush)
+    // drawn small (320 px on its long side) and stretched with smooth filtering, as Spicy Lyrics Mobile and the web's
+    // Kawarp draw it: the picture is a blur anyway, and the shader runs for about 1/50 of the screen's pixels
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+        val fw = constraints.maxWidth; val fh = constraints.maxHeight
+        if (fw <= 0 || fh <= 0) return@BoxWithConstraints
+        val k = 320f / maxOf(fw, fh)
+        val sw = (fw * k).roundToInt().coerceAtLeast(1); val sh = (fh * k).roundToInt().coerceAtLeast(1)
+        Canvas(Modifier.layout { m, _ -> val p = m.measure(Constraints.fixed(sw, sh)); layout(fw, fh) { p.place(0, 0) } }
+            .graphicsLayer { transformOrigin = TransformOrigin(0f, 0f); scaleX = fw / sw.toFloat(); scaleY = fh / sh.toFloat(); compositingStrategy = CompositingStrategy.Offscreen }) {
+            E.bgTick.longValue
+            shader.setInputShader("img", imgS); shader.setInputShader("prev", prevS)
+            shader.setFloatUniform("res", size.width, size.height)
+            shader.setFloatUniform("t", Background.kwTime.toFloat() * 2.2f)
+            shader.setFloatUniform("mixv", Visuals.kwFade(now()))
+            shader.setFloatUniform("sat", (1.5f * S.sat / 170f))
+            shader.setFloatUniform("dim", (1f - S.bri / 100f).coerceIn(0f, .85f))
+            shader.setFloatUniform("pulse", Background.pulse.coerceIn(0f, 1f))
+            drawRect(brush)
+        }
     }
 }
 

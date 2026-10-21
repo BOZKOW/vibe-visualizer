@@ -18,6 +18,7 @@ object Background {
     var bgT = 0.0; private set            // the drifting layers' clock
     var pulse = 0f; private set           // the bass, smoothed: the layers swell with it
     var kwTime = 0.0; private set         // the liquid warp's clock (Kawarp-style)
+    private var kwSpeed = .1              // its speed, eased: bass hits swell it gently instead of jolting it
     private var lastF = 0.0
     var still by mutableStateOf<Bitmap?>(null); private set   // Artist image / Cover art
     private var stillTok = 0
@@ -27,13 +28,16 @@ object Background {
     fun tick(t: Double, dt: Double) {
         if (!live()) return
         val tempo = if (Audio.bgTempo > 0f) Audio.bgTempo.toDouble() else 1.0
-        bgT += dt / 1000 * (S.bgspeed / 100.0) * (.35 + Audio.bgEnergy * 1.8 + Audio.bgKick * 2.2) * tempo
+        bgT += dt / 1000 * (S.bgspeed / 100.0) * (.3 + Audio.bgEnergy * .9 + Audio.bgKick * .6) * tempo
         pulse += (Audio.bass - pulse) * (1 - exp(-dt / 120)).toFloat()
-        // as Spicy Lyrics moves it: speed 1 while music plays (0.1 paused), times the tempo and the loudness, plus a
-        // pulse on every beat (up to +1.5, fading), within 0.1-3
-        val sp = if (E.playing()) ((tempo * (.5 + min(1.0, Audio.bgEnergy * 2.2) * .7) + 1.5 * Audio.bgKick).coerceIn(.1, 3.0)) else .1
-        kwTime += dt / 1000 * sp * S.bgspeed / 100
-        if (t - lastF >= 16) { lastF = t; E.bgTick.longValue++ }   // 60 times a second at most: a slow blur looks the same
+        // calmer than Spicy Lyrics' speed (which follows every beat): the tempo and the loudness set it, a beat adds a
+        // little, and it eases over about a second, so it only gets livelier when the music does; 0.1 paused
+        val target = if (E.playing()) (tempo * (.35 + min(1.0, Audio.bgEnergy * 2.2) * .4) + .35 * Audio.bgKick).coerceIn(.1, 1.4) else .1
+        kwSpeed += (target - kwSpeed) * (1 - exp(-dt / 900))
+        kwTime += dt / 1000 * kwSpeed * S.bgspeed / 100
+        // redrawn 60 times a second at most while it moves, 20 once it has slowed down for a pause (it looks the same)
+        val every = if (!E.playing() && kwSpeed < .12) 50 else 16
+        if (t - lastF >= every) { lastF = t; E.bgTick.longValue++ }
     }
 
     fun resume() { E.bgTick.longValue++ }

@@ -100,7 +100,14 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.graphics.BlurEffect
+import androidx.compose.ui.graphics.TileMode
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.animation.Crossfade
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
@@ -158,6 +165,7 @@ private fun NowPlaying() {
         Box(Modifier.weight(1f).fillMaxWidth().padding(vertical = 12.dp), contentAlignment = Alignment.Center) {
             if (!(CanvasVideo.cvmode && S.b("cvNoArt"))) CoverArt(Modifier.aspectRatio(1f, matchHeightConstraintsFirst = true).canvasShrink(), corner = 22.dp)
         }
+        if (S.view == "both") BarsView(Modifier.fillMaxWidth().height(48.dp).padding(bottom = 6.dp))
         TitleRow(big = true)
         Spacer(Modifier.height(10.dp))
         SeekRow()
@@ -172,11 +180,20 @@ private fun NowPlaying() {
 @Composable
 private fun LyricsScreen() {
     val hidden = E.uiHidden
+    val big = noLyrics()
     Column(Modifier.fillMaxSize()) {
-        MiniHeader()
+        MiniHeader(showCover = !big)
         var areaH by remember { mutableFloatStateOf(0f) }
         Box(Modifier.weight(1f).fillMaxWidth().onSizeChanged { areaH = it.height.toFloat() }) {
-            LyricsPane(Modifier.fillMaxSize(), areaHeightPx = areaH, padStart = 24f, padEnd = 24f)
+            Crossfade(big, label = "nolyrics") { b ->
+                if (b) Column(Modifier.fillMaxSize().padding(horizontal = 24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Box(Modifier.weight(1f).fillMaxWidth().padding(vertical = 12.dp), contentAlignment = Alignment.Center) {
+                        if (!(CanvasVideo.cvmode && S.b("cvNoArt"))) CoverArt(Modifier.aspectRatio(1f, matchHeightConstraintsFirst = true).canvasShrink(), corner = 22.dp)
+                    }
+                    NoLyricsNote()
+                }
+                else LyricsPane(Modifier.fillMaxSize(), areaHeightPx = areaH, padStart = 24f, padEnd = 24f)
+            }
         }
         if (S.view == "both") BarsView(Modifier.fillMaxWidth().height(if (hidden) 96.dp else 64.dp).padding(horizontal = 12.dp))
         LyricsCredits()
@@ -216,28 +233,45 @@ private fun WideLayout() {
 /** A tablet or an open foldable: Now Playing on the left, the lyrics (or the bars) on the right. */
 @Composable
 private fun Tablet() {
-    Row(Modifier.fillMaxSize().padding(horizontal = 24.dp)) {
-        Column(Modifier.fillMaxHeight().weight(.42f).widthIn(max = 480.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+    val solo = noLyrics() && E.screen != "viz"   // no lyrics: Now Playing alone, the cover big
+    Row(Modifier.fillMaxSize().padding(horizontal = 24.dp), horizontalArrangement = Arrangement.Center) {
+        Column(Modifier.fillMaxHeight().then(if (solo) Modifier.widthIn(max = 560.dp) else Modifier.weight(.42f).widthIn(max = 480.dp)), horizontalAlignment = Alignment.CenterHorizontally) {
             Header()
             Box(Modifier.weight(1f).fillMaxWidth().padding(vertical = 12.dp), contentAlignment = Alignment.Center) {
                 if (!(CanvasVideo.cvmode && S.b("cvNoArt"))) CoverArt(Modifier.aspectRatio(1f, matchHeightConstraintsFirst = true).canvasShrink(), corner = 22.dp)
             }
+            if (solo && S.view == "both") BarsView(Modifier.fillMaxWidth().height(56.dp).padding(bottom = 6.dp))
             TitleRow(big = true)
+            if (solo) NoLyricsNote()
             SeekRow()
             Transport(big = true)
             if (S.b("volshow")) VolumeRow()
             BottomBar()
         }
-        Spacer(Modifier.width(32.dp))
-        RightPane(Modifier.fillMaxHeight().weight(.58f))
+        if (!solo) {
+            Spacer(Modifier.width(32.dp))
+            RightPane(Modifier.fillMaxHeight().weight(.58f))
+        }
     }
 }
 
 /** A phone on its side: the cover and the song on the left, the lyrics (or the bars) on the right, the controls in one row. */
 @Composable
 private fun LandscapePhone() {
+    val solo = noLyrics() && E.screen != "viz"   // no lyrics: the cover as big as the height allows, the song beside it
     Column(Modifier.fillMaxSize().padding(horizontal = 20.dp)) {
-        Row(Modifier.weight(1f).fillMaxWidth()) {
+        if (solo) Row(Modifier.weight(1f).fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.fillMaxHeight().padding(vertical = 10.dp), contentAlignment = Alignment.Center) {
+                if (!(CanvasVideo.cvmode && S.b("cvNoArt"))) CoverArt(Modifier.aspectRatio(1f, matchHeightConstraintsFirst = true).canvasShrink(), corner = 16.dp)
+            }
+            Spacer(Modifier.width(24.dp))
+            Column(Modifier.weight(1f)) {
+                TitleRow(big = true)
+                NoLyricsNote()
+                if (S.view == "both") BarsView(Modifier.fillMaxWidth().height(72.dp).padding(top = 8.dp))
+            }
+        }
+        else Row(Modifier.weight(1f).fillMaxWidth()) {
             Column(Modifier.fillMaxHeight().weight(.34f), horizontalAlignment = Alignment.CenterHorizontally) {
                 Box(Modifier.weight(1f).fillMaxWidth().padding(top = 10.dp, bottom = 8.dp), contentAlignment = Alignment.Center) {
                     if (!(CanvasVideo.cvmode && S.b("cvNoArt"))) CoverArt(Modifier.aspectRatio(1f, matchHeightConstraintsFirst = true), corner = 16.dp)
@@ -323,10 +357,12 @@ private fun Header(modifier: Modifier = Modifier) {
 
 /** Lyrics: a small cover, the song, and the ⋮ menu. */
 @Composable
-private fun MiniHeader() {
+private fun MiniHeader(showCover: Boolean = true) {
     Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 8.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-        Box(Modifier.size(52.dp).clip(RoundedCornerShape(10.dp)).clickable { E.show("player") }) { CoverArt(Modifier.fillMaxSize(), corner = 10.dp, small = true) }
-        Spacer(Modifier.width(12.dp))
+        if (showCover) {   // with no lyrics the big cover is right below
+            Box(Modifier.size(52.dp).clip(RoundedCornerShape(10.dp)).clickable { E.show("player") }) { CoverArt(Modifier.fillMaxSize(), corner = 10.dp, small = true) }
+            Spacer(Modifier.width(12.dp))
+        } else Spacer(Modifier.width(8.dp))
         Column(Modifier.weight(1f).clickable { E.show("player") }) {
             Text(E.title, style = TextStyle(shadow = textShadow), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
             val st = E.statusLine()
@@ -539,7 +575,7 @@ fun Cover(modifier: Modifier = Modifier) {
  *  the video's first frame (which reveals it) can only be drawn into one. */
 @Composable
 private fun CanvasBackdrop(wide: Boolean) {
-    val behindLyrics = !wide && E.screen == "lyrics"
+    val behindLyrics = !wide && E.screen == "lyrics" && !noLyrics()
     val a by animateFloatAsState(if (!CanvasVideo.cvmode) 0f else if (behindLyrics) .25f else 1f, tween(800), label = "canvas")
     Box((if (wide) Modifier.fillMaxHeight().fillMaxWidth(.56f) else Modifier.fillMaxSize()).alpha(maxOf(a, .01f))
         .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }.drawWithContent {
@@ -548,7 +584,38 @@ private fun CanvasBackdrop(wide: Boolean) {
             drawRect(if (wide) Brush.horizontalGradient(*fade) else Brush.verticalGradient(*fade), blendMode = BlendMode.DstIn)
             drawRect(Brush.verticalGradient(0f to Color.Black.copy(alpha = .4f), .2f to Color.Transparent, .55f to Color.Transparent, 1f to Color.Black.copy(alpha = .45f)))
         }) {
-        AndroidView({ ctx -> TextureView(ctx).also { CanvasVideo.bindView(it) } }, Modifier.fillMaxSize(), update = { tv -> tv.post { coverFit(tv) } }, onRelease = { CanvasVideo.unbind(it) })
+        if (S.b("cvBlur")) BoxWithConstraints(Modifier.fillMaxSize()) {
+            // blurred: the video drawn at a quarter of the size, blurred there and stretched back (cheap, unlike a
+            // full-screen blur every frame)
+            val fw = constraints.maxWidth; val fh = constraints.maxHeight
+            val sw = (fw / 4).coerceAtLeast(1); val sh = (fh / 4).coerceAtLeast(1)
+            val r = (S.bgblur / 60f * 7f).coerceIn(2f, 14f)
+            Box(Modifier.layout { m, _ -> val p = m.measure(Constraints.fixed(sw, sh)); layout(fw, fh) { p.place(0, 0) } }
+                .graphicsLayer { transformOrigin = TransformOrigin(0f, 0f); scaleX = fw / sw.toFloat(); scaleY = fh / sh.toFloat(); renderEffect = BlurEffect(r, r, TileMode.Clamp); compositingStrategy = CompositingStrategy.Offscreen }) {
+                CanvasView()
+            }
+        } else CanvasView()
+    }
+}
+
+@Composable
+private fun CanvasView() {
+    AndroidView({ ctx -> TextureView(ctx).also { CanvasVideo.bindView(it) } }, Modifier.fillMaxSize(), update = { tv -> tv.post { coverFit(tv) } }, onRelease = { CanvasVideo.unbind(it) })
+}
+
+/** The lookup is done and found no lyrics (and nothing's wrong with the connection): the cover takes their place. */
+private fun noLyrics() = Lyr.empty && Lyr.lines == 0 && E.problems(false).isEmpty()
+
+/** Under the big cover: why there are no lyrics, and the one thing to do about it. */
+@Composable
+private fun NoLyricsNote(modifier: Modifier = Modifier) {
+    val m = Lyr.msg ?: return
+    val act = m.actions.firstOrNull { it.pri } ?: m.actions.firstOrNull()
+    Row(modifier.padding(top = 2.dp).heightIn(min = 40.dp), verticalAlignment = Alignment.CenterVertically) {
+        Icon(VIcons.lyrics, null, Modifier.size(16.dp), tint = dim)
+        Spacer(Modifier.width(8.dp))
+        Text(m.msg, Modifier.weight(1f, fill = false), fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = dim, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        act?.let { a -> TextButton(onClick = { E.haptic(); a.fn?.invoke() }) { Text(a.label, fontSize = 13.sp) } }
     }
 }
 

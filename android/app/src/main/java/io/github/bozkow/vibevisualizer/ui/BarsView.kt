@@ -4,12 +4,10 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.geometry.RoundRect
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.asAndroidPath
 import androidx.compose.ui.graphics.drawscope.clipRect
 import io.github.bozkow.vibevisualizer.audio.Audio
 import io.github.bozkow.vibevisualizer.core.S
@@ -34,11 +32,13 @@ fun BarsView(modifier: Modifier = Modifier) {
         val edge = ceil(W / n * (if (glow) .5f else .18f)) + 1; val step = (W - edge * 2) / n; val gp = step * S.i("gap") / 100f
         val bw = max(1f, step - gp); val maxH = H * .9f; val by = H * .97f; val rd = S.b("round") && bw > 2; val r = bw / 2
         val brush = st.brush(pal, W)
+        // one path, emptied and refilled for each pass (a drawn path is copied when it's recorded), and the bars added
+        // without a new object each
         fun pass(v: FloatArray, gr: Float): Path {
-            val p = Path(); val hMin = if (rd) bw else 3f
+            val p = st.path; p.rewind(); val ap = p.asAndroidPath(); val hMin = if (rd) bw else 3f
             for (i in 0 until n) {
                 val h = max(hMin, v[i] * maxH); val x = edge + i * step + gp / 2 - gr; val y = by - h - gr; val hh = h + gr * 2; val ww = bw + gr * 2
-                if (rd) { val cr = min(r + gr, hh / 2); p.addRoundRect(RoundRect(Rect(x, y, x + ww, y + hh), CornerRadius(cr))) } else p.addRect(Rect(x, y, x + ww, y + hh))
+                if (rd) { val cr = min(r + gr, hh / 2); ap.addRoundRect(x, y, x + ww, y + hh, cr, cr, android.graphics.Path.Direction.CW) } else ap.addRect(x, y, x + ww, y + hh, android.graphics.Path.Direction.CW)
             }
             return p
         }
@@ -61,6 +61,7 @@ fun BarsView(modifier: Modifier = Modifier) {
 private class BarsState {
     private var key: IntArray? = null; private var w = 0f; private var b: Brush? = null
     val hist = ArrayList<FloatArray>()
+    val path = Path()
     fun brush(pal: IntArray, width: Float): Brush {
         if (b != null && key === pal && w == width) return b!!
         key = pal; w = width

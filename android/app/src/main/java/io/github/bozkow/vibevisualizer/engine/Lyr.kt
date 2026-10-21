@@ -70,6 +70,7 @@ object Lyr {
     var lines by mutableIntStateOf(0); private set                // how many lines (the UI only needs to know when it changes)
     class Msg(val msg: String, val sub: String = "", val kind: String = "", val actions: List<E.Act> = emptyList())
     var msg by mutableStateOf<Msg?>(null); private set
+    var empty by mutableStateOf(false); private set           // the lookup is done and there are no lyrics: the cover takes their place
     var needRom by mutableStateOf(false); private set
     var needTr by mutableStateOf(false); private set
     var needSync by mutableStateOf(false); private set
@@ -416,14 +417,17 @@ object Lyr {
     /** A song change: the old lyrics fade out, and "Looking for lyrics…" only shows if finding the new ones takes a while. */
     fun loading() {
         loadT?.cancel()
+        val was = empty   // from one song without lyrics to the next, the big cover stays while looking
         if (L.isNotEmpty() && !S.low && !E.reduceMotion()) view.leave() else clear("", "", "")
-        loadT = Vibe.scope.launch { delay(500); clear("Looking for lyrics…", "", "load") }
+        empty = was
+        loadT = Vibe.scope.launch { delay(500); clear("Looking for lyrics…", "", "load"); empty = was }
     }
 
     fun clear(m: String, sub: String = "", kind: String = "", actions: List<E.Act> = emptyList()) {
         loadT?.cancel(); view.freeEnd()
         L = emptyList(); lsync = false; credit = null; label = ""
         render(null, false)
+        empty = kind == "none"
         msg = if (m.isEmpty() || (kind == "none" && !S.b("lnotice"))) null else Msg(m, sub, kind, actions)
     }
 
@@ -435,7 +439,7 @@ object Lyr {
         L = (if (r.sync) interludes(r.lines) else r.lines.filter { !it.dots }).map { it.copy() }
         lsync = r.sync
         romDone = false; romJob = null
-        msg = null
+        msg = null; empty = false
         render(r.label, false)
         view.enter()
         decorate(true)

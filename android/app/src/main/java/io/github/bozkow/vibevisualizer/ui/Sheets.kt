@@ -20,6 +20,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Cast
+import androidx.compose.material.icons.rounded.BlurOn
 import androidx.compose.material.icons.rounded.Computer
 import androidx.compose.material.icons.rounded.GraphicEq
 import androidx.compose.material.icons.rounded.LibraryMusic
@@ -72,6 +73,7 @@ import io.github.bozkow.vibevisualizer.core.Server
 import io.github.bozkow.vibevisualizer.core.ago
 import io.github.bozkow.vibevisualizer.engine.Desync
 import io.github.bozkow.vibevisualizer.engine.E
+import io.github.bozkow.vibevisualizer.engine.CanvasVideo
 import io.github.bozkow.vibevisualizer.media.Outputs
 import io.github.bozkow.vibevisualizer.engine.FilePicker
 import io.github.bozkow.vibevisualizer.engine.Lyr
@@ -135,7 +137,6 @@ private fun MoreSheet() {
         SectionLabel("Lyrics")
         if (Lyr.needTr) MoreRow(VIcons.translate, "Translate lyrics", "Into " + (io.github.bozkow.vibevisualizer.core.LANGS.find { it.first == S.trTo }?.second ?: S.trTo), S.tr) { toggleTr() }
         if (Lyr.needRom) MoreRow(Icons.Rounded.Translate, "Romanization", "Latin letters for Japanese, Korean, Chinese, Cyrillic, Greek", S.romMode != "off") { toggleRom() }
-        MoreRow(VIcons.bars, "Bars under the lyrics", null, S.view == "both") { S.set("view", if (S.view == "both") "lyrics" else "both") }
         if (Lyr.needSync) MoreRow(Icons.Rounded.Timer, "Lyrics timing", "Earlier, later, resync") { go("timing") }
         if (Lyr.lines > 0) MoreRow(Icons.Rounded.SwapHoriz, "Wrong lyrics? Try another source") { go(null); Lyr.other() }
     }
@@ -144,6 +145,8 @@ private fun MoreSheet() {
     if (E.src != "spotify") MoreRow(VIcons.spotify, if (Spotify.connected) "Use Spotify" else "Connect Spotify") { go(null); if (Spotify.connected) E.setSource("spotify") else E.spLogin() }
     else MoreRow(Icons.Rounded.Cast, "Choose where Spotify plays", Spotify.device?.name?.let { "Playing on $it" }) { go("devices") }
     MoreRow(Icons.Rounded.GraphicEq, "What the bars hear", Audio.label) { go("audio") }
+    MoreRow(VIcons.bars, "Bars in every view", "Under the cover and the lyrics too", S.view == "both") { S.set("view", if (S.view == "both") "lyrics" else "both") }
+    if (CanvasVideo.active) MoreRow(Icons.Rounded.BlurOn, "Blur the Canvas", null, S.b("cvBlur")) { S.set("cvBlur", !S.b("cvBlur")) }
     SectionLabel("App")
     MoreRow(VIcons.bolt, "Low performance mode", "Turns off blur, glow and the moving background", S.low) { S.set("low", !S.low) }
     if (Server.set) MoreRow(Icons.Rounded.NetworkCheck, "Connection", "Your server · " + Ping.label) { Ping.open = true; Ping.kick(); go("net") }

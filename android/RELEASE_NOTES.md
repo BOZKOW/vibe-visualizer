@@ -1,10 +1,17 @@
-Vibe Visualizer for Android 0.0.7 (beta). Android 12 or newer; it installs over 0.0.6 (Settings → Help & about → Update now).
+Vibe Visualizer for Android 0.0.8 (beta). Android 12 or newer; it installs over 0.0.7 (Settings → Help & about → Update now).
 
-### What's new (from Spicy Lyrics Mobile by TheX24)
+### What's new
 
-- Lyrics show up sooner: the first source gets a second on its own, then the others are asked at the same time. Word-synced lyrics now win over line-synced ones, and a source that keeps failing rests for a while instead of slowing every song down
-- Two more lyrics sources, Unison (community word-synced lyrics, credited to who synced them) and LRCMux, at the end of your list (Settings → Lyrics → Sources)
-- Steadier timing with the Spotify app on this phone: small jitter no longer nudges the lyrics, and pausing or skipping lands the lyrics where the song is
-- Lyrics timing per audio output: your Bluetooth headphones, car or speaker each keep their own setting (⋮ → Lyrics timing)
-- Your own song files named like "03 - Artist - Song (Official Video).mp3" are read as Song by Artist
-- Tapping a line now also counts this song's own delay
+- A song without lyrics shows its cover big on the Lyrics screen (and on a wide screen), with a short note under it
+- The bars show in every view: under the cover on Now Playing too (⋮ → Bars in every view to turn them off)
+- Blur the Canvas: a new switch in the ⋮ menu while a Canvas plays, and in Settings next to the other Canvas options
+- The moving background is calmer: it follows the tempo and the loudness, a beat only adds a little, and changes ease in
+
+### Cooler and lighter on the battery
+
+- The moving background is drawn at a small size and stretched (as Spicy Lyrics Mobile does): about 1/50 of the work for the graphics chip, looking the same
+- 60 fps by default, and the screen runs at 60 Hz with it. Settings → Performance → Limit frame rate brings 120 back if you prefer it smoother
+- While paused, the background redraws 20 times a second; the blurred Canvas behind the player is taken 12 times a second instead of 30, without a new picture each time
+- The bars no longer create new objects every frame
+
+From 0.0.7 (Spicy Lyrics Mobile by TheX24): faster lyrics lookups with word-synced lyrics preferred, the Unison and LRCMux sources, steadier timing with the Spotify app, lyrics timing per audio output, cleaner names for your own files.

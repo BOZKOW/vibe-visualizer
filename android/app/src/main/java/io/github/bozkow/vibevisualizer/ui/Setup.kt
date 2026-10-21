@@ -260,7 +260,7 @@ private fun FinishStep() {
     H("You’re all set")
     P("Last couple of preferences.")
     Row(Modifier.fillMaxWidth().padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-        Column(Modifier.weight(1f)) { Text("Bars under the lyrics", fontWeight = FontWeight.Bold, color = Color.White); Text("The visualizer as a strip below the lyrics, on the Lyrics screen.", fontSize = 13.sp, color = Color.White.copy(alpha = .65f)) }
+        Column(Modifier.weight(1f)) { Text("Bars in every view", fontWeight = FontWeight.Bold, color = Color.White); Text("The visualizer as a strip under the cover and the lyrics, not only on the Visualizer screen.", fontSize = 13.sp, color = Color.White.copy(alpha = .65f)) }
         Switch(S.view == "both", { S.set("view", if (it) "both" else "lyrics") })
     }
     Text("Lyrics credits", fontWeight = FontWeight.Bold, color = Color.White, modifier = Modifier.padding(top = 8.dp))
