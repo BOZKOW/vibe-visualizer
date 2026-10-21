@@ -5,7 +5,7 @@ Vibe Visualizer for Android 0.0.8 (beta). Android 12 or newer; it installs over 
 - A song without lyrics shows its cover big on the Lyrics screen (and on a wide screen), with a short note under it
 - The bars show in every view: under the cover on Now Playing too (⋮ → Bars in every view to turn them off)
 - Settings opens on its list of pages, not on the page you last had open
-- Blur the Canvas: a new switch in the ⋮ menu while a Canvas plays, and in Settings next to the other Canvas options
+- Blur the Canvas, and Smaller cover with the Canvas (on, as in 0.0.6): two switches in the ⋮ menu while a Canvas plays, and in Settings next to the other Canvas options
 - The moving background is calmer: it follows the tempo and the loudness, a beat only adds a little, and changes ease in
 
 ### Cooler and lighter on the battery

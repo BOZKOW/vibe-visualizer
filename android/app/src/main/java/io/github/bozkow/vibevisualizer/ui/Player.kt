@@ -531,7 +531,7 @@ private fun LyricsCredits() {
  *  cover shrinks to the middle); it grows back when there's none. Drawn smaller, not laid out again, so nothing jumps. */
 @Composable
 private fun Modifier.canvasShrink(): Modifier {
-    val k by animateFloatAsState(if (CanvasVideo.cvmode) .56f else 1f, if (S.low || E.reduceMotion()) tween(0) else spring(.85f, Spring.StiffnessVeryLow), label = "cvcover")
+    val k by animateFloatAsState(if (CanvasVideo.cvmode && S.b("cvShrink")) .56f else 1f, if (S.low || E.reduceMotion()) tween(0) else spring(.85f, Spring.StiffnessVeryLow), label = "cvcover")
     return graphicsLayer { scaleX = k; scaleY = k }
 }
 

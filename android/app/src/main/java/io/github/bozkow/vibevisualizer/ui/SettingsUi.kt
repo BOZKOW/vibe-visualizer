@@ -201,6 +201,7 @@ private fun pages(): List<Page> = listOf(
         Item.Head("Canvas"),
         Item.Sw("canvasOn", "Canvas", "Spotify’s short looping video plays as the background behind the player (found by your server)."),
         Item.Sw("cvNoArt", "Hide the cover while a Canvas plays", "Only the Canvas, no cover in front of it."),
+        Item.Sw("cvShrink", "Smaller cover while a Canvas plays", "The cover glides to a smaller size in the middle, so more of the Canvas shows around it."),
         Item.Sw("cvBlur", "Blur the Canvas", "The Canvas behind the player, softly blurred (as strong as the background’s Blur)."),
         Item.Custom("Choose canvas video Canvas endpoint") { CanvasSection() },
     )),

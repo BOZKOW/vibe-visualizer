@@ -21,6 +21,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Cast
 import androidx.compose.material.icons.rounded.BlurOn
+import androidx.compose.material.icons.rounded.PhotoSizeSelectSmall
 import androidx.compose.material.icons.rounded.Computer
 import androidx.compose.material.icons.rounded.GraphicEq
 import androidx.compose.material.icons.rounded.LibraryMusic
@@ -146,7 +147,10 @@ private fun MoreSheet() {
     else MoreRow(Icons.Rounded.Cast, "Choose where Spotify plays", Spotify.device?.name?.let { "Playing on $it" }) { go("devices") }
     MoreRow(Icons.Rounded.GraphicEq, "What the bars hear", Audio.label) { go("audio") }
     MoreRow(VIcons.bars, "Bars in every view", "Under the cover and the lyrics too", S.view == "both") { S.set("view", if (S.view == "both") "lyrics" else "both") }
-    if (CanvasVideo.active) MoreRow(Icons.Rounded.BlurOn, "Blur the Canvas", null, S.b("cvBlur")) { S.set("cvBlur", !S.b("cvBlur")) }
+    if (CanvasVideo.active) {
+        MoreRow(Icons.Rounded.BlurOn, "Blur the Canvas", null, S.b("cvBlur")) { S.set("cvBlur", !S.b("cvBlur")) }
+        MoreRow(Icons.Rounded.PhotoSizeSelectSmall, "Smaller cover with the Canvas", null, S.b("cvShrink")) { S.set("cvShrink", !S.b("cvShrink")) }
+    }
     SectionLabel("App")
     MoreRow(VIcons.bolt, "Low performance mode", "Turns off blur, glow and the moving background", S.low) { S.set("low", !S.low) }
     if (Server.set) MoreRow(Icons.Rounded.NetworkCheck, "Connection", "Your server · " + Ping.label) { Ping.open = true; Ping.kick(); go("net") }
