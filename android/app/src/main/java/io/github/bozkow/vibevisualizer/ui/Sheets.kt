@@ -72,6 +72,7 @@ import io.github.bozkow.vibevisualizer.core.Server
 import io.github.bozkow.vibevisualizer.core.ago
 import io.github.bozkow.vibevisualizer.engine.Desync
 import io.github.bozkow.vibevisualizer.engine.E
+import io.github.bozkow.vibevisualizer.media.Outputs
 import io.github.bozkow.vibevisualizer.engine.FilePicker
 import io.github.bozkow.vibevisualizer.engine.Lyr
 import io.github.bozkow.vibevisualizer.engine.Ping
@@ -283,11 +284,22 @@ private fun TimingSheet() {
     SheetTitle("Lyrics timing")
     val off = S.loff
     Text("All songs: " + (if (off > 0) "+" else "") + off + " ms" + if (off > 0) " (earlier)" else if (off < 0) " (later)" else "", fontWeight = FontWeight.Bold, color = Color.White)
-    Hint("Lyrics behind the music? Move them earlier. Bluetooth headphones usually need a little.")
+    Hint("Lyrics behind the music? Move them earlier.")
     Row(verticalAlignment = Alignment.CenterVertically) {
         OutlinedButton(onClick = { Lyr.nudge(-100) }) { Text("Later") }
         Slider(off / 3000f, { S.set("loff", (Math.round(it * 3000 / 50f) * 50)) }, Modifier.weight(1f).padding(horizontal = 10.dp), valueRange = -1f..1f)
         OutlinedButton(onClick = { Lyr.nudge(100) }) { Text("Earlier") }
+    }
+    Spacer(Modifier.height(14.dp))
+    LaunchedEffect(Unit) { Outputs.refresh() }
+    val oo = Outputs.offMs
+    Text(Outputs.route.label + ": " + (if (oo > 0) "+" else "") + oo + " ms", fontWeight = FontWeight.Bold, color = Color.White)
+    Hint(if (Outputs.here(E.src)) "Headphones, a car or a speaker can run behind: each output keeps its own timing, used whenever it plays (as Spicy Lyrics Mobile does)."
+        else "The music plays on another device now, so this phone’s output timing isn’t used.")
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        OutlinedButton(onClick = { Outputs.set(oo - 50) }) { Text("−50 ms") }
+        OutlinedButton(onClick = { Outputs.set(oo + 50) }) { Text("+50 ms") }
+        if (oo != 0) FilledTonalButton(onClick = { Outputs.set(0) }) { Text("Reset") }
     }
     Spacer(Modifier.height(14.dp))
     val so = Lyr.songOffMs

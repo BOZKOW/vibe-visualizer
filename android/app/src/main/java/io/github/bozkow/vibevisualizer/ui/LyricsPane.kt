@@ -235,12 +235,13 @@ fun CornerCredits(c: Credit, modifier: Modifier = Modifier, alignEnd: Boolean = 
         Row {
             Text("Provided by: ", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
             Text(name + (c.via?.let { " ($it)" } ?: ""), color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.SemiBold,
-                modifier = if (c.source == "lrclib") Modifier.clickable { openUrl("https://lrclib.net") } else Modifier)
+                modifier = when (c.source) { "lrclib" -> Modifier.clickable { openUrl("https://lrclib.net") }; "unison" -> Modifier.clickable { openUrl("https://unison.boidu.dev") }; else -> Modifier })
         }
         if (c.source == "spicy_lyrics") {
             c.maker?.let { Who(it, "Made by ") }
             c.uploader?.let { Who(it, "Uploaded by ") }   // the uploader as the uploader, the maker only when one is given (Spicy Lyrics terms s.6)
         }
+        if (c.source == "unison") c.uploader?.let { Who(it, "Synced by ") }
     }
 }
 
@@ -252,6 +253,10 @@ private fun RefinedCredits(c: Credit, right: Boolean) {
             val st = Modifier
             when {
                 c.source == "file" -> Text("From your file: " + c.name, color = Color.White.copy(alpha = .55f), fontSize = 12.sp, modifier = st)
+                c.source == "unison" && c.uploader != null -> {
+                    Text("Unison community lyrics", color = Color.White.copy(alpha = .55f), fontSize = 12.sp)
+                    Text("·", color = Color.White.copy(alpha = .4f), fontSize = 12.sp); Who(c.uploader, "Synced by")
+                }
                 c.source == "spicy_lyrics" && (c.maker != null || c.uploader != null) -> {
                     Text("Spicy Lyrics community lyrics", color = Color.White.copy(alpha = .55f), fontSize = 12.sp)
                     c.maker?.let { Text("·", color = Color.White.copy(alpha = .4f), fontSize = 12.sp); Who(it, "Made by") }

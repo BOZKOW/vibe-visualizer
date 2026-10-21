@@ -36,7 +36,7 @@ jobs:
         run: |
           case "$GITHUB_REF_NAME" in android-v*) export VV_VERSION_NAME="${GITHUB_REF_NAME#android-v}";; *) export VV_VERSION_NAME="1.0.$GITHUB_RUN_NUMBER-dev";; esac
           echo "VV_VER=$VV_VERSION_NAME" >> "$GITHUB_ENV"
-          cd android && ./gradlew assembleRelease --no-daemon --stacktrace
+          cd android && ./gradlew testReleaseUnitTest assembleRelease --no-daemon --stacktrace   # the unit tests first: a failing one stops the release
           mkdir -p ../out && cp app/build/outputs/apk/release/app-release.apk ../out/vibe-visualizer-android.apk
       - uses: actions/upload-artifact@v4
         with:

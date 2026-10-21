@@ -11,6 +11,7 @@ import androidx.compose.runtime.setValue
 import io.github.bozkow.vibevisualizer.BuildConfig
 import io.github.bozkow.vibevisualizer.core.Net
 import io.github.bozkow.vibevisualizer.core.NetError
+import io.github.bozkow.vibevisualizer.core.Resp
 import io.github.bozkow.vibevisualizer.core.S
 import io.github.bozkow.vibevisualizer.core.Server
 import io.github.bozkow.vibevisualizer.core.Vibe
@@ -22,10 +23,15 @@ import io.github.bozkow.vibevisualizer.lyrics.Line
 import io.github.bozkow.vibevisualizer.lyrics.LyricsCache
 import io.github.bozkow.vibevisualizer.lyrics.LyricsRenderer
 import io.github.bozkow.vibevisualizer.lyrics.LyricsResult
+import io.github.bozkow.vibevisualizer.lyrics.Match
 import io.github.bozkow.vibevisualizer.lyrics.MyLyrics
 import io.github.bozkow.vibevisualizer.lyrics.Parsed
+import io.github.bozkow.vibevisualizer.lyrics.Person
 import io.github.bozkow.vibevisualizer.lyrics.Romanizer
 import io.github.bozkow.vibevisualizer.lyrics.SongMeta
+import io.github.bozkow.vibevisualizer.lyrics.BackoffLadder
+import io.github.bozkow.vibevisualizer.lyrics.Word
+import io.github.bozkow.vibevisualizer.lyrics.firstArtist
 import io.github.bozkow.vibevisualizer.lyrics.checkPace
 import io.github.bozkow.vibevisualizer.lyrics.fromText
 import io.github.bozkow.vibevisualizer.lyrics.guessLatin
@@ -35,12 +41,16 @@ import io.github.bozkow.vibevisualizer.lyrics.nonLatin
 import io.github.bozkow.vibevisualizer.lyrics.parseLRC
 import io.github.bozkow.vibevisualizer.lyrics.parseSpicy
 import io.github.bozkow.vibevisualizer.lyrics.songKeys
+import io.github.bozkow.vibevisualizer.media.Outputs
 import io.github.bozkow.vibevisualizer.spotify.Spotify
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
+import kotlinx.coroutines.cancelChildren
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import java.net.URLEncoder
 import kotlin.math.abs
 
@@ -80,7 +90,9 @@ object Lyr {
     var lPace = 1.0; private set
     var lAdj = 0.0
     var songOffMs by mutableIntStateOf(0); private set
-    fun lyrT() = E.curTime() * lPace + S.loff / 1000.0 + lAdj + songOffMs / 1000.0
+    fun lyrT() = E.curTime() * lPace + offS()
+    /** Every offset on top of the song's time (s): yours, this song's, this output's and any desync fix. */
+    private fun offS() = (S.loff + songOffMs + Outputs.lyricsOffMs(E.src)) / 1000.0 + lAdj
 
     fun curSong(): SongMeta? = cur?.m
 
@@ -93,11 +105,15 @@ object Lyr {
         "local" to Prov("Your lyrics files", "TTML or LRC files you added · kept on this phone"),
         "spicy" to Prov("Spicy Lyrics", "community word-synced lyrics · needs your API key"),
         "amll" to Prov("AMLL TTML DB", "community word-synced TTML lyrics (CC0), found by the Spotify track"),
+        "unison" to Prov("Unison", "community word-synced lyrics from Better Lyrics, credited to who synced them"),
         "spotify" to Prov("Spotify", "Spotify’s own lyrics · needs the sp_dc cookie · unofficial"),
         "lrclib" to Prov("LRCLIB", "free, open lyrics database"),
         "netease" to Prov("NetEase Cloud Music", "strong for Japanese, Chinese, Korean · unofficial"),
+        "lrcmux" to Prov("LRCMux", "word-synced lyrics gathered from other catalogues (KuGou, LRCLIB, …)"),
     )
-    val PROVIDERS = mapOf("amll" to "AMLL TTML DB", "spicy_lyrics" to "Spicy Lyrics", "apple_music" to "Apple Music", "spotify" to "Spotify", "lrclib" to "LRCLIB", "netease" to "NetEase Cloud Music")
+    val PROVIDERS = mapOf("amll" to "AMLL TTML DB", "spicy_lyrics" to "Spicy Lyrics", "apple_music" to "Apple Music", "spotify" to "Spotify", "lrclib" to "LRCLIB", "netease" to "NetEase Cloud Music", "unison" to "Unison", "lrcmux" to "LRCMux")
+    // the sources that can have word-synced lyrics: once line-synced ones are showing, only these are still asked
+    private val WORDY = setOf("local", "spicy", "amll", "unison", "lrcmux")
 
     data class PItem(val k: String, val on: Boolean)
     fun provList(): List<PItem> {
@@ -214,6 +230,66 @@ object Lyr {
         return LyricsResult(ls, true, "NetEase", Credit("netease"))
     }
 
+    // the same song by its names: equal once case, accents and punctuation are gone (Spicy Lyrics Mobile's matcher)
+    private fun sameArtist(theirs: String, ours: String): Boolean {
+        val a = Match.key(theirs); val b = Match.key(ours)
+        return a.isNotEmpty() && b.isNotEmpty() && (a == b || a.contains(b) || b.contains(a) || Match.key(firstArtist(ours)).let { it.isNotEmpty() && a.contains(it) })
+    }
+
+    // Unison (unison.boidu.dev, Better Lyrics' community lyrics), as Spicy Lyrics Mobile asks it: by name, then a search
+    private suspend fun fromUnison(m: SongMeta): LyricsResult? {
+        if (m.title.isEmpty()) return null
+        fun enc(s: String) = URLEncoder.encode(s, "UTF-8")
+        fun fits(o: org.json.JSONObject) = Match.sameTitle(o.optString("song").ifEmpty { o.optString("title") }, m.title) && sameArtist(o.optString("artist"), m.artist)
+        fun result(d: org.json.JSONObject): LyricsResult? {
+            val text = d.optString("lyrics").takeIf { it.isNotBlank() && !d.isNull("lyrics") } ?: return null
+            val f = d.optString("format").lowercase()
+            if (f.isNotEmpty() && f !in setOf("ttml", "lrc", "plain", "txt")) return null
+            val t = fromText(text); if (t.lines.none { !it.dots }) return null
+            val who = d.optJSONObject("submitter")?.let { s -> s.optString("displayName").takeIf { it.isNotBlank() }?.let { n ->
+                val key = s.optString("keyId").takeIf { Regex("[0-9a-f]{16,128}").matches(it) }
+                Person(n, key, key?.let { "https://unison.boidu.dev/curator/$it" }, s.optString("avatarUrl").takeIf { it.startsWith("https://") }) } }
+            return LyricsResult(t.lines, t.sync, "Unison", Credit("unison", uploader = who, writers = t.writers))
+        }
+        suspend fun get(u: String): Resp? { val r = Net.fetch(u, "unison"); if (r.code == 404) return null; if (!r.ok) throw Exception("HTTP ${r.code}"); return r }
+        get("https://unison.boidu.dev/lyrics?song=" + enc(m.title) + "&artist=" + enc(firstArtist(m.artist)))?.json()?.optJSONObject("data")?.let { d -> if (fits(d)) result(d)?.let { return it } }
+        val hits = get("https://unison.boidu.dev/lyrics/search?q=" + enc(firstArtist(m.artist) + " " + m.title))?.json()?.optJSONArray("data") ?: return null
+        val id = (0 until hits.length()).mapNotNull { hits.optJSONObject(it) }.firstOrNull(::fits)?.opt("id")?.toString() ?: return null
+        return get("https://unison.boidu.dev/lyrics/" + enc(id))?.json()?.optJSONObject("data")?.let(::result)
+    }
+
+    // LRCMux (api.lrcmux.dev): word-synced lyrics it gathers from other catalogues, matched by title and length
+    private suspend fun fromLrcmux(m: SongMeta): LyricsResult? {
+        if (m.title.isEmpty() || m.duration <= 0) return null
+        fun enc(s: String) = URLEncoder.encode(s, "UTF-8")
+        val r = Net.fetch("https://api.lrcmux.dev/get?artist=" + enc(firstArtist(m.artist)) + "&title=" + enc(m.title) + "&duration=" + Math.round(m.duration) + "&format=json&level=word", "lrcmux")
+        if (r.code == 404) return null
+        if (!r.ok) throw Exception("HTTP ${r.code}")
+        val j = r.json() ?: throw Exception("not JSON")
+        // it matches on title and length alone, so a remix as long as the song can answer for it
+        val tr = j.optJSONObject("track")
+        if (Match.otherVersion(listOfNotNull(tr?.optString("title"), tr?.optString("album")).joinToString(" "), m.title + " " + m.album)) return null
+        val arr = j.optJSONArray("lines") ?: return null
+        val objs = (0 until arr.length()).mapNotNull { arr.optJSONObject(it) }
+        fun num(o: org.json.JSONObject, k: String) = if (o.has(k) && !o.isNull(k)) o.optDouble(k).takeIf { !it.isNaN() } else null
+        // milliseconds or seconds, decided once for the whole answer
+        val scale = if ((objs.flatMap { listOfNotNull(num(it, "start"), num(it, "end")) }.maxOrNull() ?: 0.0) > 1000) 1000.0 else 1.0
+        val ls = objs.mapNotNull { o ->
+            val text = o.optString("text").trim()
+            val start = num(o, "start")?.div(scale) ?: return@mapNotNull null
+            val wa = o.optJSONArray("words")
+            val words = wa?.let { a -> (0 until a.length()).mapNotNull { a.optJSONObject(it) }.mapNotNull { w ->
+                val x = w.optString("text"); val ws = num(w, "start") ?: return@mapNotNull null
+                if (x.isBlank()) null else Word(ws / scale, num(w, "end")?.div(scale), x.trim(), x.endsWith(" ")) } }?.takeIf { it.isNotEmpty() }
+            words?.let { ws -> ws.forEachIndexed { i, w -> if (i < ws.lastIndex && !w.sp) w.sp = text.contains(w.text + " ") } }
+            if (text.isEmpty() || text == "♪") Line(start, null, "", dots = true)
+            else Line(start, words?.last()?.end ?: num(o, "end")?.div(scale), text, words)
+        }
+        if (ls.none { !it.dots }) return null
+        val via = j.optJSONObject("meta")?.optJSONObject("source")?.optString("name")?.takeIf { it.isNotBlank() }
+        return LyricsResult(ls, true, "LRCMux", Credit("lrcmux", via = via))
+    }
+
     /* ================= one lookup ================= */
 
     /** Every source in your order until one has the song. skip: sources not to ask (another source for this song);
@@ -245,30 +321,83 @@ object Lyr {
             }
         }
         val errs = ArrayList<String>()
-        for (p in order) {
-            val t0 = now()
-            try {
-                val r = when (p) { "local" -> fromLocal(m); "spicy" -> fromSpicy(m); "amll" -> fromAmll(m); "spotify" -> fromSpotifyLyrics(m); "lrclib" -> fromLrclib(m); else -> fromNetease(m) }
-                if (tok != E.coverTok) return
-                if (r != null && r.lines.any { !it.dots }) {
-                    r.prov = p
-                    note(p, "found: " + if (r.sync) (if (r.lines.any { it.words != null }) "word-synced" else "line-synced") else "not synced", (now() - t0).toLong())
-                    if (skipS.isEmpty()) { lcache[key] = r; LyricsCache.put(key, r); refreshCounts() }
-                    apply(r); return
+        val t0 = now()
+        // Spicy Lyrics Mobile's lookup: the first source asks alone (one request usually settles the song); if it misses
+        // or takes over a second, the rest are asked together. Better timing wins (word-synced over line-synced over
+        // not synced), your order breaks ties. The first answer shows as soon as every source above it is done, and a
+        // better-timed one that lands in the next few seconds replaces it.
+        class Got(val r: LyricsResult?, val e: Exception?, val ms: Long)
+        val asks = HashMap<String, Deferred<Got>>()
+        var best: LyricsResult? = null
+        fun canBeat(p: String) = best.let { b -> b == null || rank(b) == 0 || (rank(b) == 1 && p in WORDY) }
+        val resting = order.associateWith { ladder(it).openUntil(wall()) }
+        coroutineScope {
+            fun ask(p: String): Deferred<Got> = asks.getOrPut(p) { async {
+                val a = now()
+                try { Got(fetchFrom(p, m), null, (now() - a).toLong()) }
+                catch (e: kotlinx.coroutines.CancellationException) { throw e }
+                catch (e: Exception) { Got(null, e, (now() - a).toLong()) }
+            } }
+            fun fanOut() { for (q in order) if (resting[q] == null && canBeat(q) && best.let { it == null || rank(it) < 2 }) ask(q) }
+            var fanned = false
+            for (p in order) {
+                if (best.let { it != null && rank(it) == 2 }) break
+                if (!canBeat(p)) continue
+                resting[p]?.let { until -> note(p, "resting after errors, back at " + java.text.DateFormat.getTimeInstance(java.text.DateFormat.SHORT).format(java.util.Date(until))) }
+                if (resting[p] != null) continue
+                val d = ask(p)
+                val lead = !fanned && p != "local"
+                var g: Got? = if (lead) withTimeoutOrNull(1000) { d.await() } else null
+                if (lead && g == null) { fanned = true; fanOut() }
+                if (g == null) g = d.await()
+                if (tok != E.coverTok) break
+                val r = g.r
+                when {
+                    g.e is SkipError -> note(p, "skipped: " + g.e.message)
+                    g.e != null -> {
+                        note(p, "failed: " + (g.e.message ?: g.e.javaClass.simpleName), g.ms)
+                        errs.add(PROVS.getValue(p).name + ": " + (g.e.message ?: "error"))
+                        if (p != "local") ladder(p).failure(wall())
+                    }
+                    r != null && r.lines.any { !it.dots } -> {
+                        ladder(p).success()
+                        r.prov = p
+                        val b = best
+                        val better = b == null || rank(r) > rank(b)
+                        note(p, "found: " + (if (r.sync) (if (r.lines.any { it.words != null }) "word-synced" else "line-synced") else "not synced") + if (b != null && !better) " (not used)" else "", g.ms)
+                        if (better) {
+                            best = r
+                            if (skipS.isEmpty()) { lcache[key] = r; LyricsCache.put(key, r); refreshCounts() }
+                            if (b == null || now() - t0 < 8000) apply(r)   // a late upgrade waits for the next time the song plays
+                            if (tok != E.coverTok) break
+                        }
+                    }
+                    else -> { ladder(p).success(); note(p, "not found", g.ms) }
                 }
-                note(p, "not found", (now() - t0).toLong())
-            } catch (e: SkipError) { note(p, "skipped: " + e.message) }
-            catch (e: kotlinx.coroutines.CancellationException) { throw e }
-            catch (e: Exception) { note(p, "failed: " + (e.message ?: e.javaClass.simpleName), (now() - t0).toLong()); errs.add(PROVS.getValue(p).name + ": " + (e.message ?: "error")) }
+                if (lead) { fanned = true; fanOut() }
+            }
+            coroutineContext.cancelChildren()   // what's still out can't do better
         }
-        if (tok != E.coverTok) return
+        if (tok != E.coverTok || best != null) return
         if (skipS.isNotEmpty()) return otherDone(m, tok)
         if (errs.isEmpty()) LyricsCache.put(key, null)   // remember "none" for a day; failures aren't remembered
         if (errs.isNotEmpty()) clear("Couldn’t load lyrics", errs.first(), "none", listOf(
-            E.Act("Try again", pri = true) { lcache.remove(key); Vibe.scope.launch { LyricsCache.del(key) }; load(m, E.coverTok) },
+            E.Act("Try again", pri = true) { ladders.clear(); lcache.remove(key); Vibe.scope.launch { LyricsCache.del(key) }; load(m, E.coverTok) },
             E.Act("Copy details") { copy(m.artist + " – " + m.title + "\n" + errs.joinToString("\n")); E.copied("Details") }))
         else clear("No lyrics for this song", "It may be instrumental. You can add your own .lrc or .ttml file.", "none", listOf(E.Act("Add a file") { FilePicker.lyrics?.invoke(true) }))
     }
+
+    private suspend fun fetchFrom(p: String, m: SongMeta): LyricsResult? = when (p) {
+        "local" -> fromLocal(m); "spicy" -> fromSpicy(m); "amll" -> fromAmll(m); "spotify" -> fromSpotifyLyrics(m)
+        "lrclib" -> fromLrclib(m); "unison" -> fromUnison(m); "lrcmux" -> fromLrcmux(m); else -> fromNetease(m)
+    }
+
+    /** How well timed: 2 word-synced, 1 line-synced, 0 not synced. */
+    private fun rank(r: LyricsResult) = if (!r.sync) 0 else if (r.lines.any { it.words != null }) 2 else 1
+
+    // a source that fails twice in a row rests a while, longer each time (Spicy Lyrics Mobile's back-off ladder)
+    private val ladders = HashMap<String, BackoffLadder>()
+    private fun ladder(p: String) = synchronized(ladders) { ladders.getOrPut(p) { BackoffLadder() } }
 
     /** "Wrong lyrics?": the next source in your order for this song (not saved); after the last one, back to the first. */
     fun other() {
@@ -299,7 +428,7 @@ object Lyr {
     }
 
     private fun apply(r: LyricsResult) {
-        loadT?.cancel(); view.freeEnd(); songOffLoad()
+        loadT?.cancel(); view.freeEnd(); songOffLoad(); Outputs.refresh()
         lPace = checkPace(r, E.curDur())
         Desync.song()
         credit = r.credit ?: if (r.label.isNotEmpty()) Credit(null) else null
@@ -401,7 +530,7 @@ object Lyr {
         if (view.dragged) return
         view.freeEnd()
         val t = l.t ?: return
-        if (lsync && E.seekTo((t - S.loff / 1000.0 - lAdj) / lPace - if (S.b("lseekFade") && E.src == "spotify") .3 else 0.0)) { view.tapped(i); E.haptic() }
+        if (lsync && E.seekTo((t - offS()) / lPace - if (S.b("lseekFade") && E.src == "spotify") .3 else 0.0)) { view.tapped(i); E.haptic() }
     }
 
     /* ---- timing ---- */
@@ -475,7 +604,7 @@ object Lyr {
         "server: " + (if (Server.set) "set" else "not set") + " · " + Ping.label,
         "source: " + E.src + (if (E.src != "none") " · " + (if (E.playing()) "playing" else "paused") else "") + " · view: " + S.view + " · design: " + S.design + (if (S.low) " · low performance" else ""),
         "song: " + (cur?.m?.let { it.artist + " – " + it.title + (Spotify.spId?.let { id -> " ($id)" } ?: "") } ?: "—"),
-        "lyrics: " + (if (L.isNotEmpty()) (if (lsync) "synced" else "not synced") + " from " + (PROVS[prov() ?: ""]?.name ?: "?") else "none") + " · offset ${S.loff} ms · this song ${songOffMs} ms",
+        "lyrics: " + (if (L.isNotEmpty()) (if (lsync) "synced" else "not synced") + " from " + (PROVS[prov() ?: ""]?.name ?: "?") else "none") + " · offset ${S.loff} ms · this song ${songOffMs} ms · ${Outputs.route.label} ${Outputs.offMs} ms" + (if (Outputs.here(E.src)) "" else " (not playing here)"),
         "last lookup: " + (lookupLog.joinToString("; ") { it.p + " " + it.st + (it.ms?.let { m -> " ${m}ms" } ?: "") }.ifEmpty { "—" }),
         "sources: " + S.str("lprov"),
         "problems: " + E.problems(false).joinToString("; ") { it.t },

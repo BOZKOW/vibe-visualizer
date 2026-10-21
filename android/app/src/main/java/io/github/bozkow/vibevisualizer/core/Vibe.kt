@@ -25,6 +25,7 @@ object Vibe {
         settings = Settings(app)
         cfg = Config(app)
         Net.init(app)
+        io.github.bozkow.vibevisualizer.media.Outputs.init(app)
     }
 }
 

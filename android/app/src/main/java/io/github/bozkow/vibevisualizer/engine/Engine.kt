@@ -22,6 +22,7 @@ import io.github.bozkow.vibevisualizer.core.clockLeft
 import io.github.bozkow.vibevisualizer.core.fmtTime
 import io.github.bozkow.vibevisualizer.core.now
 import io.github.bozkow.vibevisualizer.core.wall
+import io.github.bozkow.vibevisualizer.lyrics.TrackNameCleaner
 import io.github.bozkow.vibevisualizer.lyrics.SongMeta
 import io.github.bozkow.vibevisualizer.lyrics.norm
 import io.github.bozkow.vibevisualizer.ui.SettingsUi
@@ -204,15 +205,18 @@ object E {
         curArtistId = ""
         val tok = ++coverTok
         CanvasVideo.clear(false); Audio.dropBars(); resetCover()
-        val parts = Files.clean(name).split(Regex("\\s[-–]\\s"))
-        title = if (parts.size > 1) parts.drop(1).joinToString(" - ") else Files.clean(name)
-        artist = if (parts.size > 1) parts[0] else ""; status = ""; trackVer++
+        // "03 - Artist - Song (Official Video).mp3" → Song by Artist (Spicy Lyrics Mobile's name cleaner)
+        val fn = TrackNameCleaner.clean(name, "")
+        title = fn.title.ifEmpty { Files.clean(name) }; artist = fn.artist; status = ""; trackVer++
         Lyr.loading()
         Vibe.scope.launch {
             val tags = Files.tags(uri)
             if (tok != coverTok) return@launch
-            tags.title?.let { title = it }; tags.artist?.let { artist = it }
-            val meta = SongMeta(title = tags.title ?: title, artist = tags.artist ?: artist, album = tags.album ?: "", duration = tags.durationMs / 1000.0, file = name)
+            if (tags.title != null || tags.artist != null) {   // tags can be a file name too, or name no artist
+                val tn = TrackNameCleaner.clean(tags.title ?: name, tags.artist ?: "")
+                title = tn.title.ifEmpty { title }; artist = tn.artist.ifEmpty { artist }
+            }
+            val meta = SongMeta(title = title, artist = artist, album = tags.album ?: "", duration = tags.durationMs / 1000.0, file = name)
             Lyr.load(meta, tok)
             Local.setMeta(title, artist, tags.picture)
             if (tags.picture != null && setCoverBitmap(Images.decode(tags.picture), "Embedded cover", tok)) return@launch

@@ -341,7 +341,7 @@ object Spotify {
 
     /** Manual resync: three fresh readings, the most exact one wins, snapped (no gliding). Returns how far it moved. */
     suspend fun resync(): Double? {
-        if (appTiming()) return 0.0
+        if (appTiming()) { SpotifyApp.resync(); return 0.0 }
         val before = if (spState != null) curMs() else null; val id = spId
         spSlew = null; spSnap = true
         var best: Triple<Double, Double, Pair<Double, Boolean>>? = null
