@@ -1,9 +1,6 @@
-Vibe Visualizer for Android 0.0.4 (beta). Android 12 or newer; it installs over 0.0.3.
+Vibe Visualizer for Android 0.0.5 (beta). Android 12 or newer; it installs over 0.0.4 (Settings → Help & about → Update now).
 
 ### What's new
 
-- The Canvas is the background now: the cover stays the cover, and the video fills the screen behind the player, fading into its blurred copy toward the controls (dimmed behind the lyrics, so the words stay sharp)
-- Settings run smoothly: the player stops drawing behind them, changing one setting no longer redraws every row, and the background's blur is only redone once a slider rests
-- Settings no longer overlap: pages change without the old one showing through, Settings slide in like an Android screen, and nothing sits under the gesture bar or the camera cutout
-- The heart on Now Playing is Material's own, lined up with the title, with a little pop when you like a song (the old one could draw wrong; the Spotify logo and other icons are fixed the same way)
-- App updates download and install from inside the app: Update now fetches the new version and hands it straight to Android's installer; the first time Android asks you to allow it, after that updates install by themselves. The progress shows in Settings and under the song
+- Song changes show at once: when you skip in the Spotify app on this phone (or it moves on by itself), Vibe Visualizer asks Spotify for the new song right away instead of up to 15 seconds later, so the old lyrics don't keep running
+- Everything from 0.0.4: the Canvas as the background behind the cover, smooth Settings without overlaps, Material's heart on Now Playing, and updates that download and install from inside the app

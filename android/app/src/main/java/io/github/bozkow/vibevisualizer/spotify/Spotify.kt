@@ -311,17 +311,30 @@ object Spotify {
 
     fun durationMs() = spState?.duration ?: ((meta?.duration ?: 0.0) * 1000)
 
-    /** The Spotify app played, paused, seeked or changed song. */
-    fun onAppState() { if (appTiming()) { isPlaying = SpotifyApp.playing; E.onSpUpdate() } }
-    fun onAppTrack() {
-        if (E.src != "spotify" || !S.b("aSession")) return
-        // ask the Web API for the new song's details (its id), a few times until it has caught up
-        Vibe.scope.launch {
+    // the Spotify app on this phone tells the app at once when it plays, pauses, seeks or changes song
+    init { SpotifyApp.onTrack = { onAppTrack() }; SpotifyApp.onState = { onAppState() } }
+
+    /** The Spotify app played, paused or seeked. If its song isn't the one the Web API last named (a skip), ask now. */
+    fun onAppState() {
+        if (appTiming()) { isPlaying = SpotifyApp.playing; E.onSpUpdate(); return }
+        if (E.src == "spotify" && S.b("aSession") && SpotifyApp.connected.value && SpotifyApp.title.isNotEmpty() && wall() - lastCatch > 5000) catchUp()
+    }
+
+    /** A new song started in the Spotify app. */
+    fun onAppTrack() { if (E.src == "spotify" && S.b("aSession")) catchUp() }
+
+    private var catchJob: Job? = null
+    private var lastCatch = 0L
+    /** Ask the Web API for the new song's details (its id), a few times until it names the song the Spotify app plays. */
+    private fun catchUp() {
+        lastCatch = wall()
+        catchJob?.cancel()
+        catchJob = Vibe.scope.launch {
             for (k in 0 until 4) {
-                delay(if (k == 0) 250 else 800)
+                delay(if (k == 0) 250 else 900)
                 if (E.src != "spotify" || wall() < backoff) return@launch
-                poll(); delay(600)
-                if (meta?.let { SpotifyApp.matches(it.title, it.duration * 1000) } == true) return@launch
+                poll(); delay(700)
+                if (appTiming()) return@launch   // caught up
             }
         }
     }
