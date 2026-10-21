@@ -156,7 +156,7 @@ private fun NowPlaying() {
     Column(Modifier.fillMaxSize().padding(horizontal = 24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
         Header()
         Box(Modifier.weight(1f).fillMaxWidth().padding(vertical = 12.dp), contentAlignment = Alignment.Center) {
-            if (!(CanvasVideo.cvmode && S.b("cvNoArt"))) CoverArt(Modifier.aspectRatio(1f, matchHeightConstraintsFirst = true), corner = 22.dp)
+            if (!(CanvasVideo.cvmode && S.b("cvNoArt"))) CoverArt(Modifier.aspectRatio(1f, matchHeightConstraintsFirst = true).canvasShrink(), corner = 22.dp)
         }
         TitleRow(big = true)
         Spacer(Modifier.height(10.dp))
@@ -220,7 +220,7 @@ private fun Tablet() {
         Column(Modifier.fillMaxHeight().weight(.42f).widthIn(max = 480.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Header()
             Box(Modifier.weight(1f).fillMaxWidth().padding(vertical = 12.dp), contentAlignment = Alignment.Center) {
-                if (!(CanvasVideo.cvmode && S.b("cvNoArt"))) CoverArt(Modifier.aspectRatio(1f, matchHeightConstraintsFirst = true), corner = 22.dp)
+                if (!(CanvasVideo.cvmode && S.b("cvNoArt"))) CoverArt(Modifier.aspectRatio(1f, matchHeightConstraintsFirst = true).canvasShrink(), corner = 22.dp)
             }
             TitleRow(big = true)
             SeekRow()
@@ -490,6 +490,14 @@ private fun LyricsCredits() {
 }
 
 /* ================= cover and Canvas ================= */
+
+/** While a Canvas plays, the cover glides to a smaller size in the middle, so more of the Canvas shows (as the web app's
+ *  cover shrinks to the middle); it grows back when there's none. Drawn smaller, not laid out again, so nothing jumps. */
+@Composable
+private fun Modifier.canvasShrink(): Modifier {
+    val k by animateFloatAsState(if (CanvasVideo.cvmode) .56f else 1f, if (S.low || E.reduceMotion()) tween(0) else spring(.85f, Spring.StiffnessVeryLow), label = "cvcover")
+    return graphicsLayer { scaleX = k; scaleY = k }
+}
 
 /** The cover, in its frame (the Canvas plays behind the player, not in here). */
 @Composable
