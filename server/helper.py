@@ -295,38 +295,52 @@ def gh_get(url, raw=False):
     return data if raw else json.loads(data)
 
 
+# The computer's (web app's) updates carry a version number at the start of their commit title ("1.0.1: Smoother
+# lyrics"). Only commits that change web/ count as its updates and its release notes; the Android and Mac apps
+# have their own releases and notes.
+VER_RE = re.compile(r"^(\d+\.\d+\.\d+):\s*(.*)$", re.S)
+APP_TITLE = re.compile(r"^(Android|macOS|Mac app|Update Info\.plist)\b")
+
+
+def versioned(v):
+    """A version entry ({sha, date, message}) with its version number and its title (the message without the number)."""
+    m = VER_RE.match(v.get("message") or "")
+    return dict(v, version=m.group(1) if m else "", title=(m.group(2) if m else v.get("message") or "").strip())
+
+
 def installed_version():
     try:
-        return json.load(open(os.path.join(WEB_DIR, "version.json")))
-    except (OSError, ValueError):
+        return versioned(json.load(open(os.path.join(WEB_DIR, "version.json"))))
+    except (OSError, ValueError, AttributeError):
         return None
 
 
-latest_cache = {"at": 0, "v": None}
+web_cache = {"at": 0, "v": None}
 
 
-def latest_version():
-    """The newest commit on GitHub that changed the web app. Remembered for 10 minutes: GitHub allows only 60 API
-    requests an hour without a login (shared by everything on the same internet connection). When the API says no,
-    the repository's public commit feed (not rate limited) gives the newest commit instead."""
-    if latest_cache["v"] and time.time() - latest_cache["at"] < 600:
-        return latest_cache["v"]
+def web_commits():
+    """The newest 30 commits that changed the web app. Remembered for 10 minutes: GitHub allows only 60 API requests
+    an hour without a login (shared by everything on the same internet connection). When the API says no, the
+    repository's public commit feed (not rate limited) stands in, without the commits made for the apps."""
+    if web_cache["v"] is not None and time.time() - web_cache["at"] < 600:
+        return web_cache["v"]
     try:
-        c = gh_get("https://api.github.com/repos/%s/commits?sha=%s&path=web&per_page=1" % (UPDATE_REPO, UPDATE_BRANCH))[0]
-        v = {"sha": c["sha"], "date": c["commit"]["committer"]["date"], "message": c["commit"]["message"].splitlines()[0]}
+        cs = gh_get("https://api.github.com/repos/%s/commits?sha=%s&path=web&per_page=30" % (UPDATE_REPO, UPDATE_BRANCH))
     except urllib.error.HTTPError as e:
         if e.code not in (403, 429):
             raise
-        feed = gh_get("https://github.com/%s/commits/%s.atom" % (UPDATE_REPO, UPDATE_BRANCH), raw=True).decode("utf-8", "replace")
-        e1 = re.search(r"<entry>(.*?)</entry>", feed, re.S)
-        sha = e1 and re.search(r"Commit/([0-9a-f]{40})<", e1.group(1))
-        if not sha:
-            raise RuntimeError("GitHub is busy right now (too many requests); try again in a few minutes")
-        upd, title = re.search(r"<updated>([^<]+)</updated>", e1.group(1)), re.search(r"<title>\s*(.*?)\s*</title>", e1.group(1), re.S)
-        import html as _h
-        v = {"sha": sha.group(1), "date": upd.group(1) if upd else "", "message": _h.unescape(title.group(1)).splitlines()[0] if title else ""}
-    latest_cache.update(at=time.time(), v=v)
-    return v
+        cs = [c for c in feed_commits() if not APP_TITLE.match(c["commit"]["message"])]
+    web_cache.update(at=time.time(), v=cs)
+    return cs
+
+
+def latest_version():
+    """The newest commit on GitHub that changed the web app, with its version number."""
+    cs = web_commits()
+    if not cs:
+        raise RuntimeError("GitHub is busy right now (too many requests); try again in a few minutes")
+    c = cs[0]
+    return versioned({"sha": c["sha"], "date": c["commit"]["committer"]["date"], "message": c["commit"]["message"].splitlines()[0]})
 
 
 def note_of(c):
@@ -338,7 +352,9 @@ def note_of(c):
             pts.append(l.strip()[2:].strip())
         elif pts and l.startswith("  ") and l.strip():   # a bullet that wraps onto the next line
             pts[-1] += " " + l.strip()
-    return {"sha": c["sha"][:7], "date": c["commit"]["committer"]["date"], "title": msg[0], "points": pts}
+    m = VER_RE.match(msg[0])
+    return {"sha": c["sha"][:7], "date": c["commit"]["committer"]["date"], "version": m.group(1) if m else "",
+            "title": (m.group(2) if m else msg[0]).strip(), "points": pts}
 
 
 feed_cache = {}
@@ -370,15 +386,16 @@ def feed_commits():
 
 
 def release_notes(cur_sha, new_sha):
-    """What changed since the installed version (newest first, at most 25), from the commit feed; the API when the
-    installed version is older than the feed reaches."""
+    """What changed in the web app since the installed version (newest first, at most 25); when the installed
+    version is older than the list reaches, GitHub's comparison, without the commits made for the apps."""
     try:
-        cs = feed_commits()
+        cs = web_commits()
         shas = [c["sha"] for c in cs]
         if cur_sha in shas:
             commits = cs[:shas.index(cur_sha)]
         elif cur_sha:
-            commits = gh_get("https://api.github.com/repos/%s/compare/%s...%s" % (UPDATE_REPO, cur_sha, new_sha))["commits"][::-1]
+            commits = [c for c in gh_get("https://api.github.com/repos/%s/compare/%s...%s" % (UPDATE_REPO, cur_sha, new_sha))["commits"][::-1]
+                       if not APP_TITLE.match(c["commit"]["message"])]
         else:
             commits = cs[:10]
         return [note_of(c) for c in commits[:25] if not c["commit"]["message"].startswith("Merge ")]
@@ -388,9 +405,9 @@ def release_notes(cur_sha, new_sha):
 
 
 def recent_notes(n=15):
-    """The latest changes, whether installed or not, for Settings → Help & about."""
+    """The web app's latest changes, whether installed or not, for Settings → Help & about."""
     try:
-        return [note_of(c) for c in feed_commits()[:n] if not c["commit"]["message"].startswith("Merge ")]
+        return [note_of(c) for c in web_commits()[:n] if not c["commit"]["message"].startswith("Merge ")]
     except Exception as e:
         log("recent notes:", e)
         return []

@@ -3883,15 +3883,16 @@ $('wzpick').onclick=()=>{wzDone();$('file').click()};
 $('wzsp').onclick=()=>{wzDone();setSource('spotify')};
 $('rerun').onclick=wzOpen;
 // updates: the server helper compares the installed version with the newest on GitHub, lists what changed, and downloads it
-const fmtV=v=>'“'+v.message+'” ('+new Date(v.date).toLocaleDateString()+')';
-const noteLines=notes=>notes.map(n=>n.title);
+const fmtV=v=>(v.version||'“'+(v.title||v.message)+'”')+' ('+new Date(v.date).toLocaleDateString()+')';   // updates carry a version number (older ones only their title)
+const noteTitle=n=>(n.version?n.version+' · ':'')+n.title;
+const noteLines=notes=>notes.map(noteTitle);
 // release notes into Settings → Help & about. o.fresh: shas still to come (marked New); o.cur: the installed one;
 // o.open: how many show their points unfolded (the rest fold them away)
 function showNotes(notes,box,o){
   box=box||$('relnotes');o=o||{};box.textContent='';
   if(!notes||!notes.length){const p=document.createElement('p');p.className='hint';p.textContent=o.none||'No release notes right now.';box.appendChild(p);return}
   let seenCur=false;
-  notes.forEach((n,i)=>{const d=document.createElement('div');d.className='rn';const b=document.createElement('b');b.textContent=n.title;d.appendChild(b);
+  notes.forEach((n,i)=>{const d=document.createElement('div');d.className='rn';const b=document.createElement('b');b.textContent=noteTitle(n);d.appendChild(b);
     const sm=document.createElement('small');sm.textContent=n.date?new Date(n.date).toLocaleDateString():'';d.appendChild(sm);
     const tag=(t,c)=>{const x=document.createElement('span');x.className='rtag'+(c?' '+c:'');x.textContent=t;d.appendChild(x)};
     const isNew=o.fresh&&o.fresh.has(n.sha),isCur=o.cur&&o.cur===n.sha;
@@ -3936,7 +3937,7 @@ async function checkUpdate(manual){
     let skip='';try{skip=localStorage.getItem('vv_skip')||''}catch(e){}
     if(newer&&v.can_update&&(manual||skip!==lat.sha)&&!helpOpen()){   // a notification card with what's new
       const ls=noteLines(v.notes||[]);
-      notify({key:'upd',kind:'ok',title:'Update available',sub:'Released '+new Date(lat.date).toLocaleDateString()+(ls.length>1?' · '+ls.length+' changes':''),list:ls.slice(0,5).concat(ls.length>5?['…and '+(ls.length-5)+' more (Settings → Help & about)']:[]),
+      notify({key:'upd',kind:'ok',title:lat.version?'Version '+lat.version+' is available':'Update available',sub:'Released '+new Date(lat.date).toLocaleDateString()+(ls.length>1?' · '+ls.length+' changes':''),list:ls.slice(0,5).concat(ls.length>5?['…and '+(ls.length-5)+' more (Settings → Help & about)']:[]),
         actions:[{label:'Later',fn:()=>{try{localStorage.setItem('vv_skip',lat.sha)}catch(e){}}},{label:'Update now',pri:true,fn:doUpdate}]});
     }
   }catch(e){out.textContent='Couldn’t check for updates: '+e.message;if(manual)toast('Couldn’t check for updates: '+e.message,'err')}
@@ -3959,8 +3960,8 @@ setTimeout(()=>checkUpdate(false),4000);   // look once in the background after 
 (function whatsNew(){   // right after an update: what changed
   let w=null;try{w=JSON.parse(localStorage.getItem('vv_whatsnew')||'null');localStorage.removeItem('vv_whatsnew')}catch(e){}
   if(!w||!w.v)return;
-  const ls=[];(w.notes||[]).forEach(n=>{ls.push(n.title);(n.points||[]).slice(0,3).forEach(p=>ls.push('· '+p))});
-  setTimeout(()=>{notify({key:'new',kind:'ok',title:'Updated: what’s new',sub:'Released '+new Date(w.v.date).toLocaleDateString(),list:ls.slice(0,12),actions:[{label:'All release notes',fn:()=>{openPanel('help');showNotes(w.notes)}},{label:'Nice',pri:true}]})},1200);
+  const ls=[];(w.notes||[]).forEach(n=>{ls.push(noteTitle(n));(n.points||[]).slice(0,3).forEach(p=>ls.push('· '+p))});
+  setTimeout(()=>{notify({key:'new',kind:'ok',title:w.v.version?'Updated to '+w.v.version+': what’s new':'Updated: what’s new',sub:'Released '+new Date(w.v.date).toLocaleDateString(),list:ls.slice(0,12),actions:[{label:'All release notes',fn:()=>{openPanel('help');showNotes(w.notes)}},{label:'Nice',pri:true}]})},1200);
 })();
 // errors: shown as a notification and saved on the server (Settings → Help & about → Error log) so they can be fixed
 let errSeen=0;
@@ -4021,7 +4022,7 @@ function debugInfo(){
   let appv='';try{appv=MAC&&MAC.version?'Mac '+MAC.version():'browser'}catch(e){}
   const v=updInfo&&updInfo.installed;
   return ['Vibe Visualizer debug info',
-    'page: '+(v?v.sha.slice(0,7)+' ('+v.date+')':'unknown')+' · app: '+appv,
+    'page: '+(v?(v.version?v.version+' · ':'')+v.sha.slice(0,7)+' ('+v.date+')':'unknown')+' · app: '+appv,
     'device: '+navigator.userAgent,'screen: '+innerWidth+'×'+innerHeight+' @'+devicePixelRatio,
     'source: '+src+(spState?' · '+(spPlaying()?'playing':'paused'):'')+' · view: '+S.view+' · design: '+S.design+(S.low?' · low performance':''),
     'song: '+(curLyr&&curLyr.m?(curLyr.m.artist||'')+' – '+(curLyr.m.title||'')+(spId?' ('+spId+')':''):'—'),
