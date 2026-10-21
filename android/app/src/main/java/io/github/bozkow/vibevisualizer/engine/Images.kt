@@ -15,13 +15,20 @@ object Images {
 
     fun cached(url: String): Bitmap? = mem.get(url)
 
-    suspend fun load(url: String, max: Int = 1000): Bitmap? {
-        if (url.isEmpty()) return null
-        mem.get("$url@$max")?.let { return it }
+    /** Why the last picture didn't load (for the debug info). */
+    var lastError = ""; private set
+
+    suspend fun load(url: String, max: Int = 1000, fresh: Boolean = false): Bitmap? {
+        if (url.isEmpty()) { lastError = "no address"; return null }
+        if (!fresh) mem.get("$url@$max")?.let { return it }
         val bytes: ByteArray = if (url.startsWith("content:") || url.startsWith("file:") || url.startsWith("android.resource:"))
-            withContext(Dispatchers.IO) { runCatching { Vibe.app.contentResolver.openInputStream(Uri.parse(url))?.use { it.readBytes() } }.getOrNull() } ?: return null
-        else runCatching { Net.fetch(url).takeIf { it.ok }?.body }.getOrNull() ?: return null
-        val bm = decode(bytes, max) ?: return null
+            withContext(Dispatchers.IO) { runCatching { Vibe.app.contentResolver.openInputStream(Uri.parse(url))?.use { it.readBytes() } }.getOrNull() } ?: run { lastError = "couldn’t open it"; return null }
+        else try {
+            val r = Net.fetch(url, noCache = fresh)
+            if (!r.ok) { lastError = "HTTP ${r.code}"; return null }
+            r.body
+        } catch (e: Exception) { lastError = "not reached (" + (e.message ?: e.javaClass.simpleName) + ")"; return null }
+        val bm = decode(bytes, max) ?: run { lastError = "not a picture it can read (${bytes.size} bytes)"; return null }
         mem.put("$url@$max", bm)
         return bm
     }

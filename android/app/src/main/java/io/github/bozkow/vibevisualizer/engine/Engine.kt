@@ -176,12 +176,17 @@ object E {
         CanvasVideo.clear(true)
         title = m.title; artist = m.artist; status = "Spotify"; trackVer++
         Vibe.scope.launch {
+            // Spotify's cover; once more past the cache if it doesn't load, then its smaller size
             var ok = m.cover.isNotEmpty() && setCover(m.cover, "", tok)
+            if (!ok && tok == coverTok && m.cover.isNotEmpty()) { delay(500); ok = setCover(m.cover, "", tok, fresh = true) }
+            if (!ok && tok == coverTok && m.coverSmall.isNotEmpty()) ok = setCover(m.coverSmall, "", tok, fresh = true)
+            if (tok == coverTok) coverNote = if (ok) "from Spotify" else if (m.cover.isEmpty()) "Spotify gave none" else "Spotify’s didn’t load: " + Images.lastError
             // no cover from Spotify (or it didn't load): the Spotify app on this phone shows one for the same song
-            if (!ok && tok == coverTok) SpotifyApp.artFor(m.title, m.duration * 1000)?.let { ok = setCoverBitmap(it, "From the Spotify app", tok) }
+            if (!ok && tok == coverTok) SpotifyApp.artFor(m.title, m.duration * 1000)?.let { ok = setCoverBitmap(it, "From the Spotify app", tok); if (ok) coverNote += " · from the Spotify app" }
             if (!ok && tok == coverTok) {
-                if (S.b("online")) { status = "Searching for cover…"; if (!findCover(m, tok) && tok == coverTok) { status = "No cover found · using default"; resetCover() } }
+                if (S.b("online")) { status = "Searching for cover…"; ok = findCover(m, tok); if (!ok && tok == coverTok) { status = "No cover found · using default"; resetCover() } }
                 else resetCover()
+                if (tok == coverTok) coverNote += if (ok) " · found online" else " · none online"
             }
         }
         Lyr.load(m, tok)
@@ -235,10 +240,13 @@ object E {
 
     /* ================= cover pipeline ================= */
 
-    suspend fun setCover(url: String, label: String, tok: Int): Boolean {
-        val bm = Images.load(url) ?: return false
+    suspend fun setCover(url: String, label: String, tok: Int, fresh: Boolean = false): Boolean {
+        val bm = Images.load(url, fresh = fresh) ?: return false
         return setCoverBitmap(bm, label, tok)
     }
+
+    /** Where this song's cover came from, or why none did (Settings → Help & about → debug info). */
+    var coverNote = ""; private set
 
     fun setCoverBitmap(bm: android.graphics.Bitmap?, label: String, tok: Int): Boolean {
         if (bm == null || tok != coverTok) return false

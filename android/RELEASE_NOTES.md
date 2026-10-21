@@ -1,6 +1,6 @@
-Vibe Visualizer for Android 0.1.4 (beta). Android 12 or newer; it installs over 0.1.3 (Settings → Help & about → Update now).
+Vibe Visualizer for Android 0.1.5 (beta). Android 12 or newer; it installs over 0.1.4 (Settings → Help & about → Update now).
 
-### Changes
+### Fixes
 
-- The ⋮ button opens quick settings now (the old ⋮ menu is gone, its rows are in there): tiles, sliders, the design, lyrics timing, another source, your songs, Spotify, what the bars hear, the connection, and the gear for all of Settings. Settings itself opens Settings again
-- One UI is gone. The second design is now Glass (Settings → Appearance → Design, or in quick settings): Settings shows your blurred cover through frosted glass cards, quick settings and the sheets are frosted glass over the blurred player, and the bar at the bottom of Now Playing floats as a glass pill. If you had One UI, you get Glass
+- Spotify covers: when Spotify's cover doesn't load the first time, the app tries again past its cache, then Spotify's smaller size of the same cover, then the cover the Spotify app on this phone shows, before searching online
+- The debug info (Settings → Lyrics cache → Copy debug info) now says where the cover came from, or why none did
