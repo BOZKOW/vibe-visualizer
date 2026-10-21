@@ -277,7 +277,7 @@ fun SettingsScreen() {
                         if (q.isNotEmpty() && !wide) SearchResults(all, q, Modifier.weight(1f))
                         else LazyColumn(Modifier.weight(1f).navigationBarsPadding(), contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 24.dp)) {
                             items(all, key = { it.id }) { p ->
-                                val on = page == p.id && wide
+                                val on = wide && (page ?: SettingsUi.last) == p.id
                                 Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 2.dp).clip(RoundedCornerShape(50)).background(if (on) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent)
                                     .clickable { E.haptic(); q = ""; page = p.id }.padding(horizontal = 16.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
                                     Icon(p.icon, null, Modifier.size(22.dp), tint = if (on) MaterialTheme.colorScheme.onSecondaryContainer else Color.White.copy(alpha = .85f))
@@ -291,7 +291,7 @@ fun SettingsScreen() {
                 if (wide || (page != null && q.isEmpty())) {
                     if (wide && q.isNotEmpty()) SearchResults(all, q, Modifier.weight(1f))
                     else {
-                        val p = all.find { it.id == (page ?: "look") } ?: all[0]
+                        val p = all.find { it.id == (page ?: SettingsUi.last) } ?: all[0]   // two panes: the last page you had open beside the list
                         // Android's shared-axis move: the old page is gone before the new one comes in, nothing overlaps
                         AnimatedContent(p, Modifier.weight(1f), transitionSpec = { (slideInHorizontally(tween(260)) { it / 12 } + fadeIn(tween(200, delayMillis = 90))) togetherWith fadeOut(tween(90)) }, label = "page") { pg ->
                             Column(Modifier.fillMaxSize()) {

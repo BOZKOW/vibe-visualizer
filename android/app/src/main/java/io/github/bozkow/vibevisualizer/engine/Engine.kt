@@ -25,7 +25,6 @@ import io.github.bozkow.vibevisualizer.core.wall
 import io.github.bozkow.vibevisualizer.lyrics.TrackNameCleaner
 import io.github.bozkow.vibevisualizer.lyrics.SongMeta
 import io.github.bozkow.vibevisualizer.lyrics.norm
-import io.github.bozkow.vibevisualizer.ui.SettingsUi
 import io.github.bozkow.vibevisualizer.media.Local
 import io.github.bozkow.vibevisualizer.spotify.Spotify
 import io.github.bozkow.vibevisualizer.spotify.SpotifyApp
@@ -327,7 +326,8 @@ object E {
     fun lyricsVisible() = inPip || ((wide || screen == "lyrics") && settingsPage == null && !wizard)
     fun goHome() { settingsPage = null; screen = "player" }
 
-    fun openSettings(page: String? = null) { settingsPage = page ?: SettingsUi.last; poke() }
+    /** Settings, on [page], or on the list of pages to pick from ("" while it's open on the list). */
+    fun openSettings(page: String? = null) { settingsPage = page ?: ""; poke() }
 
     /* ================= the frame loop ================= */
     private var last = 0.0; private var fAcc = 0.0; private var fPrev = 0.0; private var lastUi = 0.0
