@@ -169,7 +169,6 @@ object E {
     fun onSpUpdate() { updPlay(); CanvasVideo.syncPlay() }
 
     fun onSpTrack(m: SongMeta) {
-        NextUp.fly(m)
         curArtistId = m.artistId
         Spotify.likeCheck(m)
         Audio.dropBars()   // the bars drop and grow back with the new song
@@ -381,7 +380,6 @@ object E {
     private fun uiTick(t: Double) {
         if (t - lastUi < 240) return
         lastUi = t
-        NextUp.tick()
         updPlay()
         val d = curDur(); val c = curTime()
         val tt = fmtTime(c) + " / " + fmtTime(d)

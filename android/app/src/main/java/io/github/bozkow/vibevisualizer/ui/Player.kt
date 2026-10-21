@@ -129,7 +129,6 @@ import io.github.bozkow.vibevisualizer.engine.E
 import io.github.bozkow.vibevisualizer.engine.FilePicker
 import io.github.bozkow.vibevisualizer.engine.Images
 import io.github.bozkow.vibevisualizer.engine.Lyr
-import io.github.bozkow.vibevisualizer.engine.NextUp
 import io.github.bozkow.vibevisualizer.engine.Updates
 import io.github.bozkow.vibevisualizer.engine.Visuals
 import io.github.bozkow.vibevisualizer.media.Local
@@ -173,7 +172,6 @@ private fun NowPlaying() {
         SeekRow()
         Transport(big = true)
         if (S.b("volshow")) VolumeRow()
-        NextUpCard(Modifier.padding(top = 4.dp, bottom = 4.dp))
         BottomBar()
     }
 }
@@ -196,7 +194,6 @@ private fun LyricsScreen() {
                 }
                 else LyricsPane(Modifier.fillMaxSize(), areaHeightPx = areaH, padStart = 24f, padEnd = 24f)
             }
-            NextUpCard(Modifier.align(Alignment.BottomCenter).padding(bottom = 8.dp))   // over the lyrics' faded end: nothing moves
         }
         if (S.view == "both") BarsView(Modifier.fillMaxWidth().height(if (hidden) 96.dp else 64.dp).padding(horizontal = 12.dp))
         LyricsCredits()
@@ -218,7 +215,6 @@ private fun VizScreen() {
                 if (!(CanvasVideo.cvmode && S.b("cvNoArt"))) Box(Modifier.fillMaxWidth(.5f).aspectRatio(1f)) { CoverArt(Modifier.fillMaxSize(), corner = 18.dp) }
                 Spacer(Modifier.height(16.dp))
                 Column(Modifier.padding(horizontal = 24.dp)) { TitleRow(big = false, center = true) }
-                NextUpCard(Modifier.padding(top = 10.dp))
             }
             BarsView(Modifier.fillMaxWidth().fillMaxHeight(.44f).align(Alignment.BottomCenter).padding(horizontal = 10.dp))
         }
@@ -246,7 +242,7 @@ private fun Tablet() {
             }
             if (solo && S.view == "both") BarsView(Modifier.fillMaxWidth().height(56.dp).padding(bottom = 6.dp))
             TitleRow(big = true)
-            if (solo) { NoLyricsNote(); NextUpCard(Modifier.padding(vertical = 4.dp)) }
+            if (solo) NoLyricsNote()
             SeekRow()
             Transport(big = true)
             if (S.b("volshow")) VolumeRow()
@@ -272,7 +268,6 @@ private fun LandscapePhone() {
             Column(Modifier.weight(1f)) {
                 TitleRow(big = true)
                 NoLyricsNote()
-                NextUpCard(Modifier.padding(top = 4.dp))
                 if (S.view == "both") BarsView(Modifier.fillMaxWidth().height(72.dp).padding(top = 8.dp))
             }
         }
@@ -307,7 +302,6 @@ private fun RightPane(modifier: Modifier) {
         Box(Modifier.weight(1f).fillMaxWidth().onSizeChanged { areaH = it.height.toFloat() }) {
             if (E.screen == "viz") BarsView(Modifier.fillMaxSize().padding(vertical = 16.dp))
             else LyricsPane(Modifier.fillMaxSize(), areaHeightPx = areaH, padStart = 8f, padEnd = 16f)
-            NextUpCard(Modifier.align(if (E.screen == "viz") Alignment.TopCenter else Alignment.BottomCenter).padding(8.dp))
         }
         if (E.screen != "viz" && S.view == "both") BarsView(Modifier.fillMaxWidth().height(64.dp))
         LyricsCredits()
@@ -664,24 +658,6 @@ private fun coverFit(tv: TextureView) {
     val vw = 720f; val vh = 1280f
     val w = tv.width.toFloat(); val h = tv.height.toFloat(); if (w <= 0 || h <= 0) return
     val s = maxOf(w / vw, h / vh); val m = Matrix(); m.setScale(vw * s / w, vh * s / h, w / 2, h / 2); tv.setTransform(m)
-}
-
-/** Next up: rises in like a drop in the last 30 seconds; melts away. */
-@Composable
-fun NextUpCard(modifier: Modifier = Modifier) {
-    val it = NextUp.item
-    AnimatedVisibility(NextUp.shown && it != null, modifier, enter = fadeIn() + scaleIn(initialScale = .85f) + slideInVertically { it / 2 }, exit = fadeOut() + scaleOut(targetScale = .9f)) {
-        if (it != null) Row(Modifier.widthIn(max = 360.dp).glass(RoundedCornerShape(18.dp)).padding(start = 7.dp, end = 14.dp, top = 7.dp, bottom = 7.dp), verticalAlignment = Alignment.CenterVertically) {
-            val bm by produceState<android.graphics.Bitmap?>(null, it.img) { value = Images.load(it.img, 160) }
-            Box(Modifier.size(40.dp).clip(RoundedCornerShape(10.dp)).background(Color.White.copy(alpha = .1f))) { bm?.let { b -> Image(b.asImageBitmap(), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) } }
-            Spacer(Modifier.width(10.dp))
-            Column {
-                Text("NEXT UP", fontSize = 10.5.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp, color = Color.White.copy(alpha = .45f))
-                Text(it.title, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text(it.artist, fontSize = 12.sp, color = Color.White.copy(alpha = .7f), maxLines = 1, overflow = TextOverflow.Ellipsis)
-            }
-        }
-    }
 }
 
 private var lastRom = "replace"

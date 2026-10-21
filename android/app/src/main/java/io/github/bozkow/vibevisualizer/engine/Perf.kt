@@ -1,43 +1,7 @@
 package io.github.bozkow.vibevisualizer.engine
 
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import io.github.bozkow.vibevisualizer.core.S
-import io.github.bozkow.vibevisualizer.core.Vibe
 import io.github.bozkow.vibevisualizer.core.now
-import io.github.bozkow.vibevisualizer.core.wall
-import io.github.bozkow.vibevisualizer.lyrics.SongMeta
-import io.github.bozkow.vibevisualizer.spotify.Spotify
-import kotlinx.coroutines.launch
-
-/** Next up: in the last 30 seconds of a Spotify song, ask once what's next in the queue and show it. When that song
- *  starts, the card flows into the cover. */
-object NextUp {
-    class Item(val title: String, val artist: String, val img: String)
-    var item by mutableStateOf<Item?>(null); private set
-    var shown by mutableStateOf(false); private set
-    var flyAt by mutableStateOf(0.0); private set        // when the card started flowing into the cover
-    private var forId: String? = null
-
-    fun tick() {
-        val st = Spotify.spState
-        val left = if (E.src == "spotify" && st != null && Spotify.spPlaying()) (Spotify.durationMs() - Spotify.curMs()) / 1000 else Double.POSITIVE_INFINITY
-        val show = left <= 30 && left > -8 && Spotify.repeat != "track"   // stays past the end until the next song is in
-        if (show && forId != Spotify.spId && wall() >= Spotify.backoff) {
-            forId = Spotify.spId; item = null; val id = Spotify.spId
-            Vibe.scope.launch { runCatching { Spotify.queueNext() }.getOrNull()?.let { (t, a, i) -> if (Spotify.spId == id) item = Item(t, a, i) } }
-        }
-        val on = show && item != null && forId == Spotify.spId
-        if (on != shown) shown = on
-    }
-
-    fun fly(m: SongMeta) {
-        val it = item
-        if (shown && it != null && it.title == m.title && !S.low && !E.reduceMotion()) flyAt = now()
-        shown = false
-    }
-}
 
 /** Notices when the phone can't keep up while a song plays (or the battery is low) and offers Low performance mode. */
 object Perf {

@@ -455,17 +455,6 @@ object Spotify {
         }
     }
 
-    /** What plays next (for Next up), or null. */
-    suspend fun queueNext(): Triple<String, String, String>? {
-        val q = api("/me/player/queue") as? JSONObject ?: return null
-        val it = q.optJSONArray("queue")?.optJSONObject(0) ?: return null
-        val ep = it.optString("type") == "episode"
-        val imgs = (if (ep) it.optJSONArray("images") else it.optJSONObject("album")?.optJSONArray("images")) ?: JSONArray()
-        val artists = it.optJSONArray("artists") ?: JSONArray()
-        val a = if (ep) it.optJSONObject("show")?.optString("name") ?: "" else (0 until artists.length()).joinToString(", ") { k -> artists.getJSONObject(k).optString("name") }
-        return Triple(it.optString("name"), a, (imgs.optJSONObject(imgs.length() - 1) ?: imgs.optJSONObject(0))?.optString("url") ?: "")
-    }
-
     /** Local files and other songs: the Spotify track id, found through your Spotify connection. */
     suspend fun idFor(m: SongMeta): String? {
         if (m.id.isNotEmpty()) return m.id
