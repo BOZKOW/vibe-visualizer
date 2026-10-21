@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut android:shortcutId="lyrics" android:enabled="true" android:icon="@drawable/sc_lyrics"
+        android:shortcutShortLabel="@string/sc_lyrics" android:shortcutLongLabel="@string/sc_lyrics_long">
+        <intent android:action="io.github.bozkow.vibevisualizer.LYRICS" android:targetPackage="io.github.bozkow.vibevisualizer"
+            android:targetClass="io.github.bozkow.vibevisualizer.MainActivity" />
+    </shortcut>
+    <shortcut android:shortcutId="viz" android:enabled="true" android:icon="@drawable/sc_viz"
+        android:shortcutShortLabel="@string/sc_viz" android:shortcutLongLabel="@string/sc_viz_long">
+        <intent android:action="io.github.bozkow.vibevisualizer.VISUALIZER" android:targetPackage="io.github.bozkow.vibevisualizer"
+            android:targetClass="io.github.bozkow.vibevisualizer.MainActivity" />
+    </shortcut>
+    <shortcut android:shortcutId="file" android:enabled="true" android:icon="@drawable/sc_file"
+        android:shortcutShortLabel="@string/sc_file" android:shortcutLongLabel="@string/sc_file_long">
+        <intent android:action="io.github.bozkow.vibevisualizer.OPEN_FILE" android:targetPackage="io.github.bozkow.vibevisualizer"
+            android:targetClass="io.github.bozkow.vibevisualizer.MainActivity" />
+    </shortcut>
+    <shortcut android:shortcutId="settings" android:enabled="true" android:icon="@drawable/sc_settings"
+        android:shortcutShortLabel="@string/sc_settings" android:shortcutLongLabel="@string/sc_settings_long">
+        <intent android:action="io.github.bozkow.vibevisualizer.SETTINGS" android:targetPackage="io.github.bozkow.vibevisualizer"
+            android:targetClass="io.github.bozkow.vibevisualizer.MainActivity" />
+    </shortcut>
+</shortcuts>

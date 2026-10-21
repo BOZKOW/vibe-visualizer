@@ -1,0 +1,13 @@
+<tt xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata">
+<head><metadata><ttm:agent type="person" xml:id="v1"/><ttm:agent type="person" xml:id="v2"/>
+<iTunesMetadata><songwriters><songwriter>Test Writer</songwriter><songwriter>Second Writer</songwriter></songwriters></iTunesMetadata></metadata></head>
+<body><div>
+<p begin="6.0" end="9.0" ttm:agent="v1"><span begin="6.0" end="6.5">Hello</span> <span begin="6.5" end="7.0">from</span> <span begin="7.0" end="7.4">the</span> <span begin="7.4" end="9.0">visualizer</span></p>
+<p begin="9.2" end="12.0" ttm:agent="v1"><span begin="9.2" end="9.6">Every</span> <span begin="9.6" end="10.0">word</span> <span begin="10.0" end="10.4">lights</span> <span begin="10.4" end="12.0">up</span><span ttm:role="x-bg"><span begin="11.0" end="11.5">(lights</span> <span begin="11.5" end="12.0">up)</span></span></p>
+<p begin="12.2" end="15.0" ttm:agent="v2"><span begin="12.2" end="12.7">Now</span> <span begin="12.7" end="13.2">the</span> <span begin="13.2" end="13.7">other</span> <span begin="13.7" end="15.0">singer</span></p>
+<p begin="15.2" end="18.5" ttm:agent="v1"><span begin="15.2" end="15.5">A</span> <span begin="15.5" end="16.0">long</span> <span begin="16.0" end="16.4">line</span> <span begin="16.4" end="16.8">that</span> <span begin="16.8" end="17.2">wraps</span> <span begin="17.2" end="17.6">onto</span> <span begin="17.6" end="18.0">another</span> <span begin="18.0" end="18.5">row</span></p>
+<p begin="26.0" end="29.0" ttm:agent="v1"><span begin="26.0" end="26.6">君の</span><span begin="26.6" end="27.2">名前</span><span begin="27.2" end="29.0">を</span></p>
+<p begin="29.2" end="32.0" ttm:agent="v2"><span begin="29.2" end="30.0">사랑해</span> <span begin="30.0" end="32.0">요</span></p>
+<p begin="32.2" end="35.0" ttm:agent="v1"><span begin="32.2" end="32.8">Привет</span> <span begin="32.8" end="35.0">мир</span></p>
+<p begin="35.2" end="40.0" ttm:agent="v1"><span begin="35.2" end="35.8">The</span> <span begin="35.8" end="36.4">last</span> <span begin="36.4" end="40.0">line</span></p>
+</div></body></tt>

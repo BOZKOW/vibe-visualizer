@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- only the settings come along to a new phone: not the Spotify login (secrets.xml) or saved lyrics -->
+<full-backup-content>
+    <include domain="sharedpref" path="settings.xml" />
+</full-backup-content>

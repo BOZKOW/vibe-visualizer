@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- only the settings (and, phone to phone, your lyrics files) come along: never the Spotify login (secrets.xml) -->
+<data-extraction-rules>
+    <cloud-backup>
+        <include domain="sharedpref" path="settings.xml" />
+    </cloud-backup>
+    <device-transfer>
+        <include domain="sharedpref" path="settings.xml" />
+        <include domain="file" path="mylyrics" />
+    </device-transfer>
+</data-extraction-rules>

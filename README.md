@@ -23,13 +23,14 @@ updates are shared.
 | On | Use | Get it |
 | --- | --- | --- |
 | Any computer or phone | The web app in a browser, installable as an app (Chrome, Edge, Safari) | Open `https://NAME.ts.net` |
+| Android phone or tablet | [Android app](#android-app): a native app, using your server for lyrics and Canvas | `vibe-visualizer-android.apk` on the [Releases page](../../releases) (beta) |
 | Mac | [macOS app](#macos-app): your server in its own window | `Vibe-Visualizer-macOS.dmg` on the [Releases page](../../releases) (beta) |
 | Windows and Linux (the computer that plays the music) | [Vibe Bridge](#vibe-bridge-bars-from-the-spotify-app): the bars follow everything it plays | `vibe-bridge-…` on the [Releases page](../../releases) |
 
 The macOS app only shows your server: the page itself updates with the server (*Settings → Help & about → Update
 now*), and the app tells you there when a new version of the app itself is out.
 
-The old Android app is out of support; a new, standalone one is planned (see [Android app](#android-app)).
+On Android there's a native [Android app](#android-app) (beta): `vibe-visualizer-android.apk` on the Releases page.
 
 ## Contents
 
@@ -41,7 +42,7 @@ The old Android app is out of support; a new, standalone one is planned (see [An
 - [Updating](#updating)
 - [Using it on Linux](#using-it-on-linux)
 - [Using it on Windows](#using-it-on-windows)
-- [Android app](#android-app) (out of support)
+- [Android app](#android-app) (beta)
 - [macOS app](#macos-app)
 - [Third-party services](#third-party-services)
 - [Privacy](#privacy)
@@ -392,9 +393,32 @@ already does. Changes to the helper itself still need `git pull && docker compos
 
 ## Android app
 
-> **The Android app is old and out of support.** The Android betas (0.2 to 0.7, `vibe-visualizer-android.apk` on the
-> [Releases page](../../releases)) are no longer updated, and their phone design and app-only features are removed
-> from the web app. A new, standalone Android app is planned. If you installed the old one, you can uninstall it.
+**Vibe Visualizer for Android** (Android 12 or newer, beta) is a native app (Kotlin, Jetpack Compose, Material 3
+Expressive), not the web page in a browser. It has the web app's player, lyrics, visualizer, settings and Spotify
+features, and uses your server (over Tailscale) only for what needs it: Spicy Lyrics, Spotify's own lyrics and Canvas,
+and NetEase. Without a server, LRCLIB, AMLL and your own lyrics files still work.
+
+1. Download `vibe-visualizer-android.apk` from the newest *Vibe Visualizer for Android* release on the
+   [Releases page](../../releases) on the phone and open it (allow installing from your browser when Android asks).
+   If you still have the old app (0.2 to 0.7 and its 1.0.0, marked "old, out of support"), uninstall it first.
+2. The setup guide asks for your server's address (`NAME.your-tailnet.ts.net`). Keep Tailscale connected on the
+   phone; if the server can't be found, turn off Android's Private DNS (it hides Tailscale names).
+3. Spotify logs in with the same Client ID and Redirect URI as the web app: Spotify comes back to your server's page,
+   which hands the login to the app.
+
+What it adds on a phone:
+- **Phone sound**: the bars follow everything the phone plays, the Spotify app included (Android's Visualizer; it
+  needs the microphone permission, and nothing is recorded or sent).
+- **The Spotify app on the phone** (optional, with notification access): exact lyrics timing from its player, song
+  changes at once, far fewer Web API requests, and play/pause/skip/seek without Premium.
+- Your own songs keep playing in the background, with media controls on the lock screen and Bluetooth.
+- Picture-in-picture lyrics, keep the screen on while music plays, haptics, app shortcuts, and keyboard shortcuts with
+  a keyboard (DeX, tablets).
+- Updates from inside the app (*Settings → Help & about*), installed through Android's installer.
+
+The app keeps its own settings on the phone; *Settings → Help & about → Back up settings* copies them to paste into the
+web app or another device, and back. It's built by `.github/workflows/android.yml`; releases are published on
+`android-v*` tags with `android/RELEASE_NOTES.md` as their notes.
 
 ## macOS app
 
