@@ -56,11 +56,9 @@ fun VibeRoot() {
             BackgroundLayer()
             if (E.inPip) PipScreen()
             else {
-                val homeA by animateFloatAsState(if (E.home) 0f else 1f, tween(450), label = "home")
-                if (homeA > 0f) Box(Modifier.fillMaxSize().alpha(homeA)) { PlayerScreen() }
-                AnimatedVisibility(E.home, enter = fadeIn(tween(450)), exit = fadeOut(tween(350))) { HomeScreen() }
+                PlayerScreen()
                 NoticeCards(Modifier.align(Alignment.TopCenter).statusBarsPadding().padding(top = 8.dp, start = 12.dp, end = 12.dp))
-                Toasts(Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = if (E.home) 24.dp else 190.dp, start = 16.dp, end = 16.dp))
+                Toasts(Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = if (E.screen == "player" || E.src == "none") 150.dp else 190.dp, start = 16.dp, end = 16.dp))
                 if (S.b("fps")) Text(E.fpsText, Modifier.align(Alignment.TopEnd).statusBarsPadding().padding(top = 60.dp, end = 12.dp), fontFamily = FontFamily.Monospace, fontSize = 12.sp, color = Color.White.copy(alpha = .7f))
                 Sheets()
                 AnimatedVisibility(E.settingsPage != null, enter = slideInHorizontally { it / 3 } + fadeIn(), exit = slideOutHorizontally { it / 3 } + fadeOut()) { SettingsScreen() }

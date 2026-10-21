@@ -393,7 +393,7 @@ object Lyr {
 
     /* ---- every frame ---- */
     fun tick(t: Double) {
-        view.frame(t, lyrT(), S.view != "viz" && L.isNotEmpty())
+        view.frame(t, lyrT(), E.lyricsVisible() && L.isNotEmpty())
     }
 
     /** A line was tapped: jump there. */

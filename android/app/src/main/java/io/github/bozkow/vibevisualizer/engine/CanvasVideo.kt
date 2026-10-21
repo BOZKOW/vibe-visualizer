@@ -19,7 +19,6 @@ import io.github.bozkow.vibevisualizer.core.Server
 import io.github.bozkow.vibevisualizer.core.Vibe
 import io.github.bozkow.vibevisualizer.core.now
 import io.github.bozkow.vibevisualizer.lyrics.SongMeta
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.lang.ref.WeakReference
 import java.net.URLEncoder
@@ -50,9 +49,15 @@ object CanvasVideo {
         player = this
     }
 
-    fun bindView(tv: TextureView?) {
-        view = tv?.let { WeakReference(it) }
-        player?.let { if (tv != null) it.setVideoTextureView(tv) else it.clearVideoSurface() }
+    fun bindView(tv: TextureView) {
+        view = WeakReference(tv)
+        player?.setVideoTextureView(tv)
+    }
+
+    /** A view going away: only lets go if it's the one the video plays in (another cover may have taken over). */
+    fun unbind(tv: TextureView) {
+        if (view?.get() !== tv) return
+        view = null; player?.clearVideoTextureView(tv)
     }
 
     val hasVideo get() = url != null && ready
@@ -132,5 +137,4 @@ object CanvasVideo {
     fun reveal(t: Double) = if (!hasVideo) 0f else ((t - revealAt) / 800).coerceIn(0.0, 1.0).toFloat()
 
     fun release() { player?.release(); player = null }
-    @Suppress("unused") private suspend fun waitCover() = delay(0)
 }

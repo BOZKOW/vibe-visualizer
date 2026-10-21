@@ -93,28 +93,6 @@ fun AppLogo(size: Dp, modifier: Modifier = Modifier) {
     }
 }
 
-/** A chip of the top bar: an icon or a status dot, a label that fades when it changes. */
-@Composable
-fun VChip(label: String, onClick: () -> Unit, modifier: Modifier = Modifier, icon: ImageVector? = null, dot: Color? = null, on: Boolean = false, glowDot: Boolean = false, desc: String? = null) {
-    val src = remember { MutableInteractionSource() }
-    val pressed by src.collectIsPressedAsState()
-    val sc by animateFloatAsState(if (pressed) .94f else 1f, label = "chip")
-    val shape = RoundedCornerShape(50)
-    val bg = if (on) Color.White else Color.Transparent
-    val fg = if (on) Color(0xFF111116) else Color.White
-    Row(
-        modifier.scale(sc).defaultMinSize(minHeight = 36.dp).then(if (on) Modifier.clip(shape).background(bg, shape) else Modifier.glass(shape))
-            .clickable(src, null, role = Role.Button, onClickLabel = desc) { E.haptic(); onClick() }.padding(horizontal = 12.dp, vertical = 6.dp),
-        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(7.dp),
-    ) {
-        if (dot != null) Box(Modifier.size(8.dp).drawBehind { if (glowDot) drawCircle(dot.copy(alpha = .35f), radius = size.minDimension); drawCircle(dot) })
-        if (icon != null) Icon(icon, null, Modifier.size(17.dp), tint = fg)
-        if (label.isNotEmpty()) AnimatedContent(label, transitionSpec = { fadeIn() togetherWith fadeOut() }, label = "chiplabel") { t ->
-            Text(t, color = fg, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-        }
-    }
-}
-
 @Composable
 fun SectionLabel(t: String, modifier: Modifier = Modifier) {
     Text(t.uppercase(), modifier.padding(top = 16.dp, bottom = 4.dp), fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp, color = Color.White.copy(alpha = .45f))

@@ -82,7 +82,6 @@ class MainActivity : ComponentActivity() {
         }
         lifecycleScope.launch { snapshotFlow { S.b("aLock") }.collect { setShowWhenLocked(it) } }
         lifecycleScope.launch { snapshotFlow { S.str("fpscap") to S.low }.collect { (c, low) -> refreshRate(if (low) 60f else c.toFloatOrNull() ?: 0f) } }
-        lifecycleScope.launch { snapshotFlow { E.fullscreen }.collect { fs -> immersive(fs) } }
     }
 
     /** The first start of the app's process: the engine's first steps. */
@@ -97,7 +96,7 @@ class MainActivity : ComponentActivity() {
         when {
             Spotify.connected -> E.setSource("spotify")
             !Vibe.cfg.setupDone -> { E.wizard = true }
-            else -> E.home = true
+            else -> {}
         }
         if (!Vibe.cfg.setupDone && Vibe.cfg.server.isNotEmpty()) io.github.bozkow.vibevisualizer.engine.Sync.importFromServer()
     }
@@ -112,8 +111,8 @@ class MainActivity : ComponentActivity() {
             i.action == Intent.ACTION_VIEW && data != null -> E.openFiles(listOf(data))
             i.action == Intent.ACTION_SEND -> (if (Build.VERSION.SDK_INT >= 33) i.getParcelableExtra(Intent.EXTRA_STREAM, Uri::class.java) else @Suppress("DEPRECATION") i.getParcelableExtra(Intent.EXTRA_STREAM))?.let { E.openFiles(listOf(it)) }
             i.action == Intent.ACTION_SEND_MULTIPLE -> (if (Build.VERSION.SDK_INT >= 33) i.getParcelableArrayListExtra(Intent.EXTRA_STREAM, Uri::class.java) else @Suppress("DEPRECATION") i.getParcelableArrayListExtra(Intent.EXTRA_STREAM))?.let { E.openFiles(it) }
-            i.action == "$packageName.LYRICS" || i.action == "io.github.bozkow.vibevisualizer.LYRICS" -> { S.set("view", "lyrics"); E.leaveHome() }
-            i.action == "io.github.bozkow.vibevisualizer.VISUALIZER" -> { S.set("view", "viz"); E.leaveHome() }
+            i.action == "io.github.bozkow.vibevisualizer.LYRICS" -> E.show("lyrics")
+            i.action == "io.github.bozkow.vibevisualizer.VISUALIZER" -> E.show("viz")
             i.action == "io.github.bozkow.vibevisualizer.OPEN_FILE" -> window.decorView.post { FilePicker.pickAudio() }
             i.action == "io.github.bozkow.vibevisualizer.SETTINGS" -> E.openSettings()
         }
@@ -149,18 +148,11 @@ class MainActivity : ComponentActivity() {
     /* ---- display ---- */
     private fun refreshRate(hz: Float) { window.attributes = window.attributes.apply { preferredRefreshRate = hz } }
 
-    private fun immersive(on: Boolean) {
-        val c = WindowCompat.getInsetsController(window, window.decorView)
-        if (on) { c.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE; c.hide(WindowInsetsCompat.Type.systemBars()) }
-        else c.show(WindowInsetsCompat.Type.systemBars())
-    }
-
     /* ---- the web app's keyboard shortcuts, for a keyboard (tablets, DeX, Chromebooks) ---- */
     override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
         if (event.isCtrlPressed || event.isAltPressed || event.isMetaPressed || currentFocus is android.widget.EditText) return super.onKeyDown(keyCode, event)
         val handled = when (keyCode) {
             KeyEvent.KEYCODE_SPACE -> { E.toggle(); true }
-            KeyEvent.KEYCODE_F -> { E.fullscreen = !E.fullscreen; true }
             KeyEvent.KEYCODE_N -> { E.next(); true }
             KeyEvent.KEYCODE_P -> { E.prev(); true }
             KeyEvent.KEYCODE_S -> { if (E.src == "spotify") Spotify.toggleShuffle(); E.src == "spotify" }
@@ -170,14 +162,14 @@ class MainActivity : ComponentActivity() {
             KeyEvent.KEYCODE_R -> { toggleRom(); true }
             KeyEvent.KEYCODE_RIGHT_BRACKET -> { Lyr.nudge(100); true }
             KeyEvent.KEYCODE_LEFT_BRACKET -> { Lyr.nudge(-100); true }
-            KeyEvent.KEYCODE_1 -> { S.set("view", "viz"); true }
-            KeyEvent.KEYCODE_2 -> { S.set("view", "lyrics"); true }
-            KeyEvent.KEYCODE_3 -> { S.set("view", "both"); true }
+            KeyEvent.KEYCODE_1 -> { E.show("viz"); true }
+            KeyEvent.KEYCODE_2 -> { E.show("lyrics"); true }
+            KeyEvent.KEYCODE_3 -> { E.show("player"); true }
             KeyEvent.KEYCODE_DPAD_UP -> { E.nudgeVol(5); true }
             KeyEvent.KEYCODE_DPAD_DOWN -> { E.nudgeVol(-5); true }
             KeyEvent.KEYCODE_DPAD_RIGHT -> { if (E.src == "file") { Local.seek((Local.positionMs() + 5000).toLong()); true } else false }
             KeyEvent.KEYCODE_DPAD_LEFT -> { if (E.src == "file") { Local.seek((Local.positionMs() - 5000).toLong().coerceAtLeast(0)); true } else false }
-            KeyEvent.KEYCODE_ESCAPE -> { Lyr.view.freeEnd(); E.settingsPage = null; E.sheet = null; E.leaveHome(); true }
+            KeyEvent.KEYCODE_ESCAPE -> { Lyr.view.freeEnd(); E.settingsPage = null; E.sheet = null; true }
             else -> false
         }
         if (handled) E.poke()

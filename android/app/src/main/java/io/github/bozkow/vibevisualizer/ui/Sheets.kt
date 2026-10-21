@@ -19,7 +19,15 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Cast
 import androidx.compose.material.icons.rounded.Computer
+import androidx.compose.material.icons.rounded.GraphicEq
+import androidx.compose.material.icons.rounded.LibraryMusic
+import androidx.compose.material.icons.rounded.NetworkCheck
+import androidx.compose.material.icons.rounded.Settings
+import androidx.compose.material.icons.rounded.SwapHoriz
+import androidx.compose.material.icons.rounded.Timer
+import androidx.compose.material.icons.rounded.Translate
 import androidx.compose.material.icons.rounded.Mic
 import androidx.compose.material.icons.rounded.PhoneAndroid
 import androidx.compose.material.icons.rounded.Speaker
@@ -29,6 +37,8 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -62,6 +72,7 @@ import io.github.bozkow.vibevisualizer.core.Server
 import io.github.bozkow.vibevisualizer.core.ago
 import io.github.bozkow.vibevisualizer.engine.Desync
 import io.github.bozkow.vibevisualizer.engine.E
+import io.github.bozkow.vibevisualizer.engine.FilePicker
 import io.github.bozkow.vibevisualizer.engine.Lyr
 import io.github.bozkow.vibevisualizer.engine.Ping
 import io.github.bozkow.vibevisualizer.spotify.SpDevice
@@ -78,6 +89,7 @@ fun Sheets() {
     ModalBottomSheet(onDismissRequest = close, sheetState = state, containerColor = MaterialTheme.colorScheme.surfaceContainer, contentColor = Color.White) {
         Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 22.dp).padding(bottom = 18.dp).navigationBarsPadding()) {
             when (s) {
+                "more" -> MoreSheet()
                 "audio" -> AudioSheet()
                 "net" -> NetSheet()
                 "devices" -> DevicesSheet(close)
@@ -94,6 +106,47 @@ private fun SheetTitle(t: String, note: String = "") {
         Spacer(Modifier.weight(1f))
         if (note.isNotEmpty()) Text(note, fontSize = 12.sp, color = Color.White.copy(alpha = .5f))
     }
+}
+
+/* ---- the ⋮ menu: everything that isn't on the player itself ---- */
+@Composable
+private fun MoreRow(icon: ImageVector, title: String, sub: String? = null, checked: Boolean? = null, onClick: () -> Unit) {
+    ListItem(
+        headlineContent = { Text(title, fontWeight = FontWeight.SemiBold) },
+        supportingContent = sub?.let { { Text(it, color = Color.White.copy(alpha = .6f)) } },
+        leadingContent = { Icon(icon, null, tint = Color.White.copy(alpha = .85f)) },
+        trailingContent = checked?.let { c -> { Switch(c, { E.haptic(); onClick() }) } },
+        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+        modifier = Modifier.clip(RoundedCornerShape(16.dp)).clickable { E.haptic(); onClick() },
+    )
+}
+
+@Composable
+private fun MoreSheet() {
+    val go = { s: String? -> E.sheet = s }
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 6.dp)) {
+        Column(Modifier.weight(1f)) {
+            Text(E.title.ifEmpty { "Vibe Visualizer" }, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            if (E.artist.isNotEmpty()) Text(E.artist, fontSize = 14.sp, color = Color.White.copy(alpha = .6f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
+    }
+    if (Lyr.lines > 0 || Lyr.msg != null) {
+        SectionLabel("Lyrics")
+        if (Lyr.needTr) MoreRow(VIcons.translate, "Translate lyrics", "Into " + (io.github.bozkow.vibevisualizer.core.LANGS.find { it.first == S.trTo }?.second ?: S.trTo), S.tr) { toggleTr() }
+        if (Lyr.needRom) MoreRow(Icons.Rounded.Translate, "Romanization", "Latin letters for Japanese, Korean, Chinese, Cyrillic, Greek", S.romMode != "off") { toggleRom() }
+        MoreRow(VIcons.bars, "Bars under the lyrics", null, S.view == "both") { S.set("view", if (S.view == "both") "lyrics" else "both") }
+        if (Lyr.needSync) MoreRow(Icons.Rounded.Timer, "Lyrics timing", "Earlier, later, resync") { go("timing") }
+        if (Lyr.lines > 0) MoreRow(Icons.Rounded.SwapHoriz, "Wrong lyrics? Try another source") { go(null); Lyr.other() }
+    }
+    SectionLabel("Playback")
+    MoreRow(Icons.Rounded.LibraryMusic, "Play songs from your phone") { go(null); FilePicker.pickAudio() }
+    if (E.src != "spotify") MoreRow(VIcons.spotify, if (Spotify.connected) "Use Spotify" else "Connect Spotify") { go(null); if (Spotify.connected) E.setSource("spotify") else E.spLogin() }
+    else MoreRow(Icons.Rounded.Cast, "Choose where Spotify plays", Spotify.device?.name?.let { "Playing on $it" }) { go("devices") }
+    MoreRow(Icons.Rounded.GraphicEq, "What the bars hear", Audio.label) { go("audio") }
+    SectionLabel("App")
+    MoreRow(VIcons.bolt, "Low performance mode", "Turns off blur, glow and the moving background", S.low) { S.set("low", !S.low) }
+    if (Server.set) MoreRow(Icons.Rounded.NetworkCheck, "Connection", "Your server · " + Ping.label) { Ping.open = true; Ping.kick(); go("net") }
+    MoreRow(Icons.Rounded.Settings, "Settings") { go(null); E.openSettings() }
 }
 
 /* ---- what the bars hear ---- */

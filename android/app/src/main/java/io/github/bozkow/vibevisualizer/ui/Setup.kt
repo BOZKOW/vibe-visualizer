@@ -106,14 +106,17 @@ fun SetupWizard() {
                     }
                 }
             }
-            Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-                if (i > 0) TextButton(onClick = { i-- }) { Text("Back") }
-                Spacer(Modifier.weight(1f))
-                if (cur == "finish" && useFile) FilledTonalButton(onClick = { done(); FilePicker.pickAudio() }) { Text("Choose audio files") }
-                if (cur == "finish" && useSp && !Spotify.connected) { Spacer(Modifier.width(8.dp)); FilledTonalButton(onClick = { done(); E.spLogin() }) { Text("Connect Spotify") } }
-                Spacer(Modifier.width(8.dp))
-                Button(onClick = { if (i >= steps.size - 1) { done(); if (Spotify.connected) E.setSource("spotify") } else i++ }, enabled = !(cur == "welcome" && !useFile && !useSp)) {
-                    Text(if (i >= steps.size - 1) "Start using Vibe Visualizer" else "Next")
+            Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp)) {
+                if (cur == "finish" && (useFile || (useSp && !Spotify.connected))) Row(Modifier.fillMaxWidth().padding(bottom = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (useFile) FilledTonalButton(onClick = { done(); FilePicker.pickAudio() }, Modifier.weight(1f)) { Text("Play songs", maxLines = 1) }
+                    if (useSp && !Spotify.connected) FilledTonalButton(onClick = { done(); E.spLogin() }, Modifier.weight(1f)) { Text("Connect Spotify", maxLines = 1) }
+                }
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    if (i > 0) TextButton(onClick = { i-- }) { Text("Back") }
+                    Spacer(Modifier.weight(1f))
+                    Button(onClick = { if (i >= steps.size - 1) { done(); if (Spotify.connected) E.setSource("spotify") } else i++ }, enabled = !(cur == "welcome" && !useFile && !useSp)) {
+                        Text(if (i >= steps.size - 1) "Start" else "Next")
+                    }
                 }
             }
         }
@@ -232,8 +235,8 @@ private fun LyricsStep() {
     Step(1, "Spicy Lyrics: the best ones, word by word, with background vocals and duets. Needs your key in the server’s config folder (spicy_key).", ok = h?.optBoolean("spicy_key") == true)
     Step(2, "Spotify’s own lyrics and Canvas videos (optional, unofficial): the server’s sp_dc cookie.", ok = h?.optBoolean("logged_in") == true)
     Step(3, "LRCLIB and NetEase Cloud Music: no setup. AMLL TTML DB too. You can also add your own .lrc or .ttml files.", ok = true)
-    Step(4, "Translation and romanization: the あa and translate chips (they appear when a song needs them). Pick the language in Settings → Translation.", ok = true)
-    Step(5, "Timing: the lyrics follow Spotify closely (exactly, with the Spotify app on this phone). The timer chip moves them earlier or later.", ok = true)
+    Step(4, "Translation and romanization: the あa and translate buttons at the top of the lyrics (they appear when a song needs them). Pick the language in Settings → Translation.", ok = true)
+    Step(5, "Timing: the lyrics follow Spotify closely (exactly, with the Spotify app on this phone). ⋮ → Lyrics timing moves them earlier or later.", ok = true)
 }
 
 @Composable
@@ -256,8 +259,10 @@ private fun SoundStep() {
 private fun FinishStep() {
     H("You’re all set")
     P("Last couple of preferences.")
-    Text("Default view", fontWeight = FontWeight.Bold, color = Color.White, modifier = Modifier.padding(top = 8.dp))
-    Box(Modifier.padding(vertical = 8.dp)) { ViewSwitch() }
+    Row(Modifier.fillMaxWidth().padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f)) { Text("Bars under the lyrics", fontWeight = FontWeight.Bold, color = Color.White); Text("The visualizer as a strip below the lyrics, on the Lyrics screen.", fontSize = 13.sp, color = Color.White.copy(alpha = .65f)) }
+        Switch(S.view == "both", { S.set("view", if (it) "both" else "lyrics") })
+    }
     Text("Lyrics credits", fontWeight = FontWeight.Bold, color = Color.White, modifier = Modifier.padding(top = 8.dp))
     Row(Modifier.padding(vertical = 6.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         listOf("corner" to "Bottom-left corner", "lyrics" to "Under the lyrics").forEach { (k, l) ->
@@ -269,7 +274,7 @@ private fun FinishStep() {
         Switch(S.low, { S.set("low", it) })
     }
     Text("Good to know", fontWeight = FontWeight.Bold, color = Color.White, modifier = Modifier.padding(top = 16.dp))
-    Hint("Tap a lyric line to jump there · swipe the lyrics to look around · tap anywhere to bring the controls back · the logo opens the home screen · with a keyboard, the web app’s shortcuts work too (Space, N, P, T, R, [ ], 1 2 3).")
+    Hint("Lyrics and Visualizer are buttons under the player · tap a lyric line to jump there · swipe the lyrics to look around · tap the screen to bring the controls back · ⋮ has translation, timing and the rest.")
 }
 
 @Suppress("unused") private val keepCfg = Config

@@ -1,15 +1,11 @@
-The new Vibe Visualizer for Android: a native app (Kotlin, Jetpack Compose, Material 3 Expressive) instead of the old web page in a WebView. Android 12 or newer. It uses your Vibe Visualizer server over Tailscale for Spicy Lyrics, Spotify's own lyrics, Canvas and NetEase, and does everything else on the phone.
+Vibe Visualizer for Android 0.0.2 (beta): the player is laid out like a music app now. Android 12 or newer; it installs over 0.0.1.
 
-This is the first test build (0.0.1). Uninstall the old app first; settings it kept on your server come along when you enter your server's address in the setup guide.
+### What's new
 
-### What's in it
-
-- The web app's player: cover and title, Visualizer / Lyrics / Both views, word-synced lyrics with the Spicy Lyrics animation (springs, letter waves on held words, glow, distance blur, the three dots), background vocals, duets, Focus mode and the other experiments
-- All six lyrics sources in your order (your files, Spicy Lyrics, AMLL, Spotify, LRCLIB, NetEase), the 7-day lyrics cache, translation and romanization (Japanese, Chinese, Korean, Cyrillic and Greek romanized on the phone)
-- Spotify: PKCE login through your server's page, now playing with the same adaptive polling and back-off, play/pause/skip/seek, shuffle, repeat, Liked Songs, the device picker, Spotify volume, Next up, Canvas videos with the blurred-Canvas background
-- The live background made from the cover (a liquid warp on Android 13+), still backgrounds, cover colors, the bar visualizer with all its settings, desync detection, the ping meter, problems shown where the lyrics go
-- Your own songs: open them from the app, a file manager or Share; they keep playing in the background with media controls on the lock screen and Bluetooth; the bars follow the real sound
-- Phone sound: the bars follow everything the phone plays, the Spotify app included (microphone permission; nothing is recorded)
-- With notification access, the Spotify app on the phone gives exact lyrics timing, instant song changes and play/pause/skip/seek without Premium
-- Android extras: picture-in-picture lyrics, keep the screen on while music plays, edge-to-edge, Material You neutrals with the cover's accent, haptics, app shortcuts, keyboard shortcuts, app updates from inside the app
-- Every setting of the web app, with search; settings backups paste between the app and the web app
+- Now Playing, as in Apple Music: a big cover (the Canvas plays inside it), the title with ♡, a wavy seek bar, big controls, the volume, and Lyrics · Devices · Visualizer at the bottom
+- Lyrics and Visualizer are full-screen views: a small cover on top, compact controls that slide away while music plays (a tap brings them back), back returns to Now Playing
+- The ⋮ menu holds everything else: translate, romanize, bars under the lyrics, lyrics timing, another lyrics source, playing your songs, Spotify, devices, what the bars hear, Low performance mode, the connection, settings
+- Nothing playing yet: a start screen with Play songs from your phone and Connect Spotify
+- Long titles scroll instead of being cut off; the layout fits narrow phones, and a phone on its side shows the cover next to the lyrics with one row of controls; tablets show Now Playing next to the lyrics
+- "Hide the cover while a Canvas plays" lets the Canvas fill the whole screen
+- No more computer leftovers: the chip row, the fullscreen button and the keyboard hints are gone; the setup guide's buttons fit a phone

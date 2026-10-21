@@ -41,7 +41,7 @@ import kotlin.math.min
 object E {
     /* ---- what plays ---- */
     var src by mutableStateOf("none")            // none | file | spotify
-        private set
+        internal set
     var title by mutableStateOf("")
     var artist by mutableStateOf("")
     var status by mutableStateOf("")               // where the cover came from, "Spotify", "Searching for cover…"
@@ -50,16 +50,16 @@ object E {
         private set
     var curArtistId = ""
     var playingState by mutableStateOf(false)
-        private set
+        internal set
 
     /* ---- the screen ---- */
     var visible = false                            // the activity is on screen (or in picture-in-picture)
         private set
     var inPip by mutableStateOf(false)
-    var home by mutableStateOf(true)
+    var screen by mutableStateOf("player")         // the music app's screens: player (Now Playing) | lyrics | viz
+    var wide by mutableStateOf(false)               // side by side (landscape, tablets): the lyrics are always on screen
     var uiHidden by mutableStateOf(false)
     var wakeTap = false                            // this touch only brought the controls back
-    var fullscreen by mutableStateOf(false)        // immersive: no status or navigation bar
     var settingsPage by mutableStateOf<String?>(null)
     var wizard by mutableStateOf(false)
     var sheet by mutableStateOf<String?>(null)    // audio | net | devices
@@ -133,7 +133,8 @@ object E {
 
     /* ---- the clock ---- */
     fun playing(): Boolean = when (src) { "file" -> Local.playing(); "spotify" -> Spotify.spPlaying(); else -> false }
-    fun curTime(): Double = when (src) {
+    internal var clockOverride: Double? = null      // screenshot tests: a fixed point in the song
+    fun curTime(): Double = clockOverride ?: when (src) {
         "spotify" -> min(Spotify.curMs(), Spotify.durationMs()) / 1000
         "file" -> Local.positionMs() / 1000
         else -> 0.0
@@ -151,7 +152,7 @@ object E {
             if (src == "spotify") return
             Local.pause(); src = "spotify"; Spotify.start()
         } else { Spotify.stop(); src = s }
-        leaveHome(true); updPlay(); poke()
+        updPlay(); poke()
     }
 
     fun netKick() = Ping.kick()
@@ -195,7 +196,7 @@ object E {
             r.lyrics.takeIf { it.isNotEmpty() }?.let { Files.addLyrics(it, r.audio.isEmpty() && it.size == 1) }
             r.images.firstOrNull()?.let { u -> val tok = ++coverTok; if (!setCover(u.toString(), "Custom cover", tok)) toast("That image could not be read.") }
             r.videos.firstOrNull()?.let { CanvasVideo.setLocal(it); toast("Canvas video loaded.", "ok", 2500) }
-            if (r.audio.isNotEmpty()) { Spotify.stop(); src = "file"; Local.open(r.audio); leaveHome(true); poke() }
+            if (r.audio.isNotEmpty()) { Spotify.stop(); src = "file"; Local.open(r.audio); poke() }
         }
     }
 
@@ -313,13 +314,14 @@ object E {
     fun poke() {
         if (uiHidden) uiHidden = false
         hideJob?.cancel()
-        if (playing() && S.str("uiHide") != "never" && settingsPage == null && sheet == null && !wizard)
-            hideJob = Vibe.scope.launch { delay(2800); if (sheet == null && settingsPage == null) uiHidden = true }
+        // only the full-screen lyrics and visualizer hide their controls (as a music app does); Now Playing keeps them
+        if (playing() && S.str("uiHide") != "never" && screen != "player" && !wide && settingsPage == null && sheet == null && !wizard)
+            hideJob = Vibe.scope.launch { delay(2800); if (sheet == null && settingsPage == null && screen != "player") uiHidden = true }
     }
 
-    /* ================= home screen ================= */
-    fun goHome() { settingsPage = null; home = true }
-    fun leaveHome(force: Boolean = false) { if (force || src != "none") home = false }
+    fun show(s: String) { if (screen != s) { screen = s; haptic() }; poke() }
+    fun lyricsVisible() = inPip || wide || screen == "lyrics"
+    fun goHome() { settingsPage = null; screen = "player" }
 
     fun openSettings(page: String? = null) { settingsPage = page ?: SettingsUi.last; poke() }
 

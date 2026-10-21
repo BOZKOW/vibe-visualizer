@@ -78,6 +78,8 @@ object Local {
     }
 
     fun playing() = player?.isPlaying == true
+    /** "Song 2 of 5" while a queue plays, nothing for one song. */
+    fun position(): String { val p = player ?: return ""; val n = p.mediaItemCount; return if (n > 1) "Song ${p.currentMediaItemIndex + 1} of $n" else "" }
     fun loaded() = (player?.mediaItemCount ?: 0) > 0
     fun positionMs(): Double = player?.currentPosition?.toDouble() ?: 0.0
     fun durationMs(): Double = player?.duration?.takeIf { it > 0 }?.toDouble() ?: 0.0

@@ -121,7 +121,7 @@ private fun pages(): List<Page> = listOf(
     Page("look", "Appearance", Icons.Rounded.Palette, listOf(
         Item.Head("Design"),
         Item.Ch("design", "Design", listOf("glass" to "Glass", "classic" to "Classic (the original look)"), "Glass: frosted glass everywhere. Classic: the original, simpler look."),
-        Item.Ch("uiHide", "Top bar and controls", listOf("idle" to "Hide when you don’t touch the screen", "never" to "Always visible"), "While music plays, the top bar and the controls fade away after a few seconds; a tap brings them back."),
+        Item.Ch("uiHide", "Controls on the Lyrics and Visualizer screens", listOf("idle" to "Hide while music plays", "never" to "Always visible"), "While music plays, the controls under the lyrics and the visualizer slide away after a few seconds; a tap brings them back."),
         Item.Head("Colors"),
         Item.Ch("theme", "Theme", listOf("cover" to "Cover colors", "aurora" to "Aurora", "sunset" to "Sunset", "neon" to "Neon", "ice" to "Ice", "mono" to "Mono", "custom" to "Custom")),
         Item.Custom("Custom colors") { CustomColors() },
@@ -146,7 +146,7 @@ private fun pages(): List<Page> = listOf(
     Page("lyrics", "Lyrics", VIcons.lyrics, listOf(
         Item.Head("Lyrics"),
         Item.Custom("Sources, in priority order Spicy Lyrics LRCLIB NetEase AMLL Spotify your lyrics files") { Sources() },
-        Item.Sl("loff", "Timing offset (ms)", -3000, 3000, 50, "Lyrics behind the music? Raise it. While a song plays, the timer chip moves them too.", fmt = { (if (it > 0) "+" else "") + it + " ms" }),
+        Item.Sl("loff", "Timing offset (ms)", -3000, 3000, 50, "Lyrics behind the music? Raise it. While a song plays, ⋮ → Lyrics timing moves them too.", fmt = { (if (it > 0) "+" else "") + it + " ms" }),
         Item.Ch("lDesync", "Desync detection", listOf("ask" to "Ask before fixing", "auto" to "Fix automatically", "off" to "Off"), "Listens to the music and checks that the singing lines up with the lyrics. Needs real sound for the bars (phone sound, Vibe Bridge, the microphone or your own file). A fix only applies to the song playing."),
         Item.Custom("desync status") { if (Desync.stat.isNotEmpty()) Hint(Desync.stat) },
         Item.Sl("lsize", "Text size", 70, 150), Item.Sw("lblur", "Blur inactive lines"),
