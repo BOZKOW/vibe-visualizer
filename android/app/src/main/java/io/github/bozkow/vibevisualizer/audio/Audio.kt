@@ -176,11 +176,7 @@ object Audio {
 
     private fun updLabel() {
         val br = bridge.live() || (bridge.on && now() - bridge.at < 1500)
-        if (br != bridgeOn) {
-            if (br) E.toast("Vibe Bridge connected through your server: the bars follow the computer’s sound.", "ok", 3500)
-            else E.toast("Vibe Bridge stopped. The bars go back to the other sources.", "warn", 3500)
-            bridgeOn = br
-        }
+        if (br != bridgeOn) bridgeOn = br
         val (t, tip) = when {
             filePlaying() -> "This file" to "Bars follow: the file that’s playing."
             micLive() -> "Microphone" to "Bars follow: the microphone (the sound in the room)."

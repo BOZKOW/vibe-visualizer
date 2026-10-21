@@ -99,7 +99,7 @@ object Spotify {
     fun redirectUri(): String = Server.base?.let { "$it/" } ?: "vibevisualizer://callback"
 
     fun login(act: Activity) {
-        if (cfg.spotId.isBlank()) { E.toast("Add your Spotify Client ID first (Settings → Spotify).", "warn"); E.openSettings("spotify"); return }
+        if (cfg.spotId.isBlank()) { E.toast("Add your Spotify Client ID first", "warn"); E.openSettings("spotify"); return }
         val v = b64u(rnd(48)); val st = "a." + b64u(rnd(12))
         val ch = b64u(MessageDigest.getInstance("SHA-256").digest(v.toByteArray()))
         prefs.edit().putString("v", v).putString("s", st).putString("r", redirectUri()).putLong("at", wall()).apply()
@@ -111,7 +111,7 @@ object Spotify {
             CustomTabsIntent.Builder().setShowTitle(true)
                 .setDefaultColorSchemeParams(CustomTabColorSchemeParams.Builder().setToolbarColor(0xFF07070C.toInt()).build())
                 .setColorScheme(CustomTabsIntent.COLOR_SCHEME_DARK).build().launchUrl(act, u)
-        }.onFailure { E.toast("Couldn’t open a browser for the Spotify login.", "err") }
+        }.onFailure { E.toast("Couldn’t open a browser for the Spotify login") }
     }
 
     /** The browser came back with vibevisualizer://callback?code=…&state=… */
@@ -119,12 +119,12 @@ object Spotify {
         val code = data.getQueryParameter("code"); val err = data.getQueryParameter("error")
         val st = prefs.getString("s", null); val v = prefs.getString("v", "") ?: ""; val r = prefs.getString("r", redirectUri()) ?: redirectUri()
         prefs.edit().remove("v").remove("s").remove("at").apply()
-        if (err != null) { E.toast("Spotify login was cancelled or refused ($err).", "warn"); return false }
+        if (err != null) { E.toast("Spotify login was cancelled", "warn"); return false }
         if (code == null) return false
-        if (data.getQueryParameter("state") != st) { E.toast("Spotify login failed: security check mismatch. Please try again."); return false }
+        if (data.getQueryParameter("state") != st) { E.toast("Spotify login didn’t match, try again", "warn"); return false }
         return try {
             token(mapOf("grant_type" to "authorization_code", "code" to code, "redirect_uri" to r, "code_verifier" to v))
-            E.toast("Spotify connected.", "ok", 3000); true
+            true
         } catch (e: Exception) { E.toast(e.message ?: "Spotify login failed"); false }
     }
 
@@ -133,9 +133,7 @@ object Spotify {
         val at = prefs.getLong("at", 0)
         if (connected || at == 0L || wall() - at < 2500 || wall() - at > 15 * 60000) return
         prefs.edit().remove("at").apply()
-        E.notify(E.Note(key = "loginback", kind = "warn", title = "Spotify isn’t connected yet",
-            msg = "If Spotify only showed “Logged in as …”, the login worked but didn’t come back. Try again: now that you’re logged in, Spotify asks you to agree, then the “Open Vibe Visualizer” button brings it here.",
-            actions = listOf(E.Act("Not now"), E.Act("Try again", pri = true) { E.spLogin() })))
+        E.snack(E.Snack("Spotify didn’t finish connecting", "warn", E.Act("Try again") { E.spLogin() }, long = true))
     }
 
     private suspend fun token(extra: Map<String, String>) {
@@ -237,7 +235,7 @@ object Spotify {
                 apply(d, t0 + (t1 - t0) / 2)   // Spotify read the position somewhere during the request: count it from the midpoint
                 spRateN = 0; backoff = 0; errMsg = ""
             } catch (e: SpotifyError) {
-                if (!e.rate) { errMsg = e.message ?: ""; retry = true; if (wall() - spErrAt > 20000) { spErrAt = wall(); E.toast(e.message ?: "") } }
+                if (!e.rate) { errMsg = e.message ?: ""; retry = true }   // shown as a problem, not a message
             } catch (e: kotlinx.coroutines.CancellationException) { throw e }
             catch (e: Exception) { errMsg = e.message ?: "error"; retry = true }
             if (retry) sched(fixed = 3000) else sched()   // after an error, try again in 3 s so it clears quickly
@@ -370,7 +368,7 @@ object Spotify {
     suspend fun ctl(method: String, path: String, body: JSONObject? = null): Boolean {
         if (connected && cfg.spScope.isNotEmpty() && !cfg.spScope.contains("user-modify-playback-state")) { E.askScope(); return false }
         return try { api(path, method, body); Vibe.scope.launch { delay(450); poll() }; true }
-        catch (e: SpotifyError) { if (e.scope) E.askScope() else E.toast(if (e.rate) "Spotify is busy for a moment. Try again in a few seconds." else e.message ?: "", "warn", 5000); false }
+        catch (e: SpotifyError) { if (e.scope) E.askScope() else E.toast(if (e.rate) "Spotify is busy, try again in a moment" else (e.message ?: "").removeSuffix("."), "warn"); false }
     }
 
     fun toggle() {
@@ -439,8 +437,8 @@ object Spotify {
         if (!hasScope("user-library-modify")) { E.askScope("To save songs to your Liked Songs"); return }
         val v = liked != true; liked = v; version++
         Vibe.scope.launch {
-            try { lib(m, if (v) "PUT" else "DELETE"); if (m == meta) E.toast(if (v) "Saved to Liked Songs." else "Removed from Liked Songs.", "ok", 2000) }
-            catch (e: SpotifyError) { if (m == meta) { liked = !v; version++ }; if (e.scope) E.askScope("To save songs to your Liked Songs") else E.toast(e.message ?: "", "warn", 4000) }
+            try { lib(m, if (v) "PUT" else "DELETE") }
+            catch (e: SpotifyError) { if (m == meta) { liked = !v; version++ }; if (e.scope) E.askScope("To save songs to your Liked Songs") else E.toast((e.message ?: "").removeSuffix("."), "warn") }
         }
     }
 

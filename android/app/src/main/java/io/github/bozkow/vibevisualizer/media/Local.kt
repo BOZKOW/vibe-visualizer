@@ -39,7 +39,7 @@ object Local {
             curUri = u.toString()
             E.onFileItem(u, names[u.toString()] ?: Files.name(u))
         }
-        override fun onPlayerError(error: PlaybackException) { E.toast("This file could not be played (${error.errorCodeName}). The format may not be supported.") }
+        override fun onPlayerError(error: PlaybackException) { E.toast("This song can’t be played (its format may not be supported)", "warn") }
     }
 
     fun attach(p: ExoPlayer) {

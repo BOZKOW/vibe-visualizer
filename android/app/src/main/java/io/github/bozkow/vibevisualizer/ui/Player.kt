@@ -134,7 +134,7 @@ fun PlayerScreen() {
         val wide = maxWidth >= 600.dp || (maxWidth > maxHeight && maxHeight < 520.dp)
         if (E.wide != wide) E.wide = wide
         BackHandler(enabled = !wide && E.screen != "player" && E.settingsPage == null && !E.wizard) { E.show("player") }
-        if (CanvasVideo.cvmode && S.b("cvNoArt")) FullCanvas()
+        if (CanvasVideo.active && S.b("cvNoArt")) FullCanvas()
         val pad = Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.statusBars.union(WindowInsets.navigationBars).union(WindowInsets.displayCutout).only(WindowInsetsSides.Vertical + WindowInsetsSides.Horizontal))
         when {
             E.src == "none" -> Box(pad) { EmptyState() }
@@ -287,8 +287,7 @@ private fun EmptyState() {
         FilledTonalButton(onClick = { E.haptic(); if (Spotify.connected) E.setSource("spotify") else E.spLogin() }, Modifier.fillMaxWidth().widthIn(max = 360.dp).height(52.dp)) {
             Icon(VIcons.spotify, null, Modifier.size(20.dp)); HSpace(8.dp); Text(if (Spotify.connected) "Use Spotify" else "Connect Spotify", fontSize = 15.sp)
         }
-        val probs = E.problems(true)
-        if (probs.isNotEmpty()) { Spacer(Modifier.height(18.dp)); Problems(probs.take(2), false) }
+        E.problems(true).firstOrNull()?.let { p -> Spacer(Modifier.height(24.dp)); ProblemState(p, Modifier.widthIn(max = 360.dp), compact = true) }
         Spacer(Modifier.weight(1f))
         Row(verticalAlignment = Alignment.CenterVertically) {
             TextButton(onClick = { E.wizard = true }) { Text("Setup guide") }
@@ -305,18 +304,14 @@ private fun EmptyState() {
 private fun Header(modifier: Modifier = Modifier) {
     E.sec.intValue
     val sp = E.src == "spotify"
-    val (top, sub) = when {
-        sp && wall() < Spotify.backoff -> "SPOTIFY" to ("Spotify asked to wait · " + clockLeft((Spotify.backoff - wall()) / 1000.0))
-        sp && Spotify.errMsg.isNotEmpty() -> "SPOTIFY" to "Not answering right now"
-        sp -> "PLAYING FROM SPOTIFY" to (Spotify.device?.name?.let { "on $it" } ?: if (Spotify.meta == null) "Nothing playing" else "")
-        E.src == "file" -> "PLAYING ON THIS PHONE" to Local.position()
-        else -> "VIBE VISUALIZER" to ""
-    }
+    val status = E.statusLine()
+    val top = when (E.src) { "spotify" -> "PLAYING FROM SPOTIFY"; "file" -> "PLAYING ON THIS PHONE"; else -> "VIBE VISUALIZER" }
+    val sub = status ?: when (E.src) { "spotify" -> Spotify.device?.name?.let { "on $it" } ?: if (Spotify.meta == null) "Nothing playing" else ""; "file" -> Local.position(); else -> "" }
     Row(modifier.fillMaxWidth().height(56.dp), verticalAlignment = Alignment.CenterVertically) {
         Box(Modifier.size(48.dp), contentAlignment = Alignment.Center) { if (E.screen != "player" && !E.wide && E.src != "none") ScreenBack() }
         Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
             Text(top, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.2.sp, color = dim, maxLines = 1)
-            if (sub.isNotEmpty()) Text(sub, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            if (sub.isNotEmpty()) Text(sub, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = if (status != null) Color(0xFFFFD27A) else Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
         MoreButton()
     }
@@ -330,7 +325,9 @@ private fun MiniHeader() {
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f).clickable { E.show("player") }) {
             Text(E.title, style = TextStyle(shadow = textShadow), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            if (E.artist.isNotEmpty()) Text(E.artist, fontSize = 14.sp, color = dim, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            val st = E.statusLine()
+            if (st != null) Text(st, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFFFFD27A), maxLines = 1, overflow = TextOverflow.Ellipsis)
+            else if (E.artist.isNotEmpty()) Text(E.artist, fontSize = 14.sp, color = dim, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
         if (Lyr.needTr) SmallToggle(VIcons.translate, "Translate lyrics", S.tr) { toggleTr() }
         if (Lyr.needRom) SmallToggle(null, "Romanize lyrics", S.romMode != "off", text = "あa") { toggleRom() }
@@ -494,7 +491,8 @@ fun CoverOrCanvas(modifier: Modifier, corner: Dp, small: Boolean = false) {
     val shape = RoundedCornerShape(corner)
     Box(modifier.then(if (small) Modifier else Modifier.shadow(24.dp, shape, ambientColor = Color.Black, spotColor = Color.Black)).clip(shape).background(Color.White.copy(alpha = .08f))) {
         Cover(Modifier.fillMaxSize())
-        if (a > 0f || CanvasVideo.hasVideo) AndroidView({ ctx -> TextureView(ctx).also { CanvasVideo.bindView(it) } }, Modifier.fillMaxSize().alpha(a),
+        // the video needs its view from the start: its first frame (which reveals it) can only be drawn into one
+        if (CanvasVideo.active && !S.b("cvNoArt")) AndroidView({ ctx -> TextureView(ctx).also { CanvasVideo.bindView(it) } }, Modifier.fillMaxSize().alpha(a),
             update = { tv -> tv.post { coverFit(tv) } }, onRelease = { CanvasVideo.unbind(it) })
     }
 }
@@ -565,11 +563,12 @@ fun NextUpCard(modifier: Modifier = Modifier) {
 private var lastRom = "replace"
 fun toggleTr() {
     val n = io.github.bozkow.vibevisualizer.core.LANGS.find { it.first == S.trTo }?.second ?: S.trTo
-    val on = !S.tr; S.set("tr", on); E.toast(if (on) "Translation on · into $n" else "Translation off", "ok", 1800)
+    @Suppress("UNUSED_VARIABLE") val unused = n
+    S.set("tr", !S.tr)
 }
 fun toggleRom() {
     if (S.romMode != "off") lastRom = S.romMode
-    val on = S.romMode == "off"; S.set("romMode", if (on) lastRom else "off"); E.toast(if (on) "Romanization on" else "Romanization off", "ok", 1800)
+    val on = S.romMode == "off"; S.set("romMode", if (on) lastRom else "off")
 }
 
 @Suppress("unused") private val keep = listOf(Server, ColumnScope::class)

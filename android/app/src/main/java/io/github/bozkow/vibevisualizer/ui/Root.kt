@@ -57,10 +57,10 @@ fun VibeRoot() {
             if (E.inPip) PipScreen()
             else {
                 PlayerScreen()
-                NoticeCards(Modifier.align(Alignment.TopCenter).statusBarsPadding().padding(top = 8.dp, start = 12.dp, end = 12.dp))
-                Toasts(Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = if (E.screen == "player" || E.src == "none") 150.dp else 190.dp, start = 16.dp, end = 16.dp))
+                Snacks(Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = 8.dp))
                 if (S.b("fps")) Text(E.fpsText, Modifier.align(Alignment.TopEnd).statusBarsPadding().padding(top = 60.dp, end = 12.dp), fontFamily = FontFamily.Monospace, fontSize = 12.sp, color = Color.White.copy(alpha = .7f))
                 Sheets()
+                AskDialog()
                 AnimatedVisibility(E.settingsPage != null, enter = slideInHorizontally { it / 3 } + fadeIn(), exit = slideOutHorizontally { it / 3 } + fadeOut()) { SettingsScreen() }
                 AnimatedVisibility(E.wizard, enter = fadeIn() + slideInVertically { it / 8 }, exit = fadeOut() + slideOutVertically { it / 8 }) { SetupWizard() }
             }

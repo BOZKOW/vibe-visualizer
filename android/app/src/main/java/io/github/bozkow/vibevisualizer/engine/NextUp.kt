@@ -58,17 +58,12 @@ object Perf {
     fun suggest(why: String, v: Double) {
         if (asked || S.low || !S.b("perfAsk") || now() < snooze) return
         asked = true
-        val fx = "Low performance mode turns off the heavy effects (blur, glow, the moving background)"
-        E.notify(E.Note(key = "perf", kind = "warn",
-            title = when (why) { "battery" -> "Battery is low"; "saver" -> "Battery saver is on"; else -> "Vibe Visualizer is running slowly" },
-            msg = when (why) {
-                "battery" -> "Your battery is at ${Math.round(v * 100)}% and not charging. $fx, so it uses much less power."
-                "saver" -> "Your phone is saving battery. $fx, so it uses much less power."
-                else -> "It’s only managing about ${Math.round(v)} frames a second. $fx, so everything runs smoothly again."
-            },
-            actions = listOf(
-                E.Act("Turn on Low performance mode", pri = true) { S.set("low", true); E.toast("Low performance mode is on. The ⚡ chip turns it off again.", "ok", 4000) },
-                E.Act("Not now") { snooze = now() + 20 * 60000; asked = false },   // asks again in 20 minutes at the earliest
-                E.Act("Don’t ask again") { S.set("perfAsk", false) })))
+        val m = when (why) {
+            "battery" -> "Battery at ${Math.round(v * 100)}% · Low performance mode uses less"
+            "saver" -> "Battery saver is on · Low performance mode uses less"
+            else -> "Running slowly (${Math.round(v)} fps) · Low performance mode helps"
+        }
+        // swiping it away asks again in 20 minutes at the earliest; Settings → Performance turns the question off
+        E.snack(E.Snack(m, "warn", E.Act("Turn on") { S.set("low", true) }, long = true, onDismiss = { snooze = now() + 20 * 60000; asked = false }))
     }
 }

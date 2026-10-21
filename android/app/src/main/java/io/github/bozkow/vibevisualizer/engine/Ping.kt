@@ -68,7 +68,7 @@ object Reports {
         report("error", msg, where, stack)
         if (wall() - seen < 8000) return   // at most one card every few seconds
         seen = wall()
-        E.toast(msg.take(200) + if (Server.set) " (saved on your server, see Settings → Help & about)" else "")
+        E.snack(E.Snack("Something went wrong: " + msg.take(120), "err"))
     }
 
     suspend fun load(): List<Pair<String, String>> {

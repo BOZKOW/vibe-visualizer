@@ -213,7 +213,7 @@ private fun SpotifyStep() {
     Step(2, "Make sure this Redirect URI is in the app’s settings (Settings → Edit → Redirect URIs). " + if (Server.set) "It’s your server’s address, the same the web app uses: Spotify comes back to your server’s page, which hands the login to this app." else "") {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(redirect, Modifier.weight(1f).clip(RoundedCornerShape(10.dp)).background(Color.White.copy(alpha = .08f)).padding(10.dp), fontSize = 13.sp, color = Color.White)
-            IconButton(onClick = { Lyr.copy(redirect); E.toast("Redirect URI copied.", "ok", 2000) }) { Icon(Icons.Rounded.ContentCopy, "Copy") }
+            IconButton(onClick = { Lyr.copy(redirect); E.copied("Redirect URI") }) { Icon(Icons.Rounded.ContentCopy, "Copy") }
         }
     }
     Step(3, "Paste the Client ID (Settings → Basic Information). No client secret is needed (PKCE).", ok = id.length >= 32) {

@@ -73,62 +73,62 @@ object E {
     private var actRef: WeakReference<Activity>? = null
     val activity: Activity? get() = actRef?.get()
 
-    /* ---- notices: cards (notify), short messages (toast), and problems shown where the lyrics go ---- */
+    /* ---- notices, the Android way: a snackbar at the bottom (one at a time, one action at most), a dialog only for a
+       question you asked for, and problems as the empty state where the lyrics go (never on top of anything) ---- */
     class Act(val label: String, val pri: Boolean = false, val fn: (() -> Unit)? = null)
-    class Note(val key: String? = null, val kind: String = "", val title: String, val sub: String? = null, val msg: String? = null,
-               val list: List<String> = emptyList(), val actions: List<Act> = listOf(Act("OK")), val ms: Long = 0) { val id = ++noteSeq }
-    class Toast(val msg: String, val kind: String, val ms: Long) { val id = ++noteSeq }
-    class Prob(val pr: Int, val k: String, val t: String, val s: String, val ok: Boolean = false)
+    class Snack(val msg: String, val kind: String = "ok", val action: Act? = null, val long: Boolean = false, val onDismiss: (() -> Unit)? = null) { val id = ++noteSeq }
+    class Ask(val title: String, val msg: String, val actions: List<Act>)
+    /** id: offline | server | spotify | wait (its icon); act: the one thing to do about it */
+    class Prob(val pr: Int, val k: String, val id: String, val t: String, val s: String, val act: Act? = null)
     private var noteSeq = 0L
-    val notes = mutableStateListOf<Note>()
-    val toasts = mutableStateListOf<Toast>()
-    var appProb by mutableStateOf<Prob?>(null)
-    private var appProbAt = 0L
+    val snacks = mutableStateListOf<Snack>()       // the first one is on screen, the others wait their turn
+    var ask by mutableStateOf<Ask?>(null)
 
-    fun notify(n: Note) {
-        if (n.key != null) notes.removeAll { it.key == n.key }
-        notes.add(0, n); while (notes.size > 3) notes.removeAt(notes.size - 1)
-        if (n.ms > 0) Vibe.scope.launch { delay(n.ms); notes.remove(n) }
+    fun snack(n: Snack) {
+        if (snacks.any { it.msg == n.msg }) return
+        snacks.add(n); while (snacks.size > 3) snacks.removeAt(1)
     }
 
-    /** Errors and warnings aren't notifications: they show where the lyrics go (an error replaces them, a warning is
-     *  a small line above). Everything else is a short message at the bottom. */
-    fun toast(msg: String, kind: String = "err", ms: Long = 6500) {
+    /** A short message at the bottom. Errors are saved in the error log on your server too. */
+    fun toast(msg: String, kind: String = "err", @Suppress("UNUSED_PARAMETER") ms: Long = 0) {
         if (msg.isEmpty()) return
         if (kind == "err") Reports.report("notice", msg)
-        if (kind == "err" || kind == "warn") {
-            appProb = Prob(if (kind == "err") 60 else 30, if (kind == "err") "err" else "wait", if (kind == "err") "Something went wrong" else "Heads up", msg, ok = true)
-            appProbAt = wall(); return
-        }
-        if (toasts.any { it.msg == msg }) return
-        val t = Toast(msg, kind, ms); toasts.add(t); while (toasts.size > 4) toasts.removeAt(0)
-        Vibe.scope.launch { delay(ms); toasts.remove(t) }
-        haptic()
+        snack(Snack(msg, kind))
     }
 
-    /** Everything that's wrong right now, most important first: what stops the most comes first, errors before waits. */
+    /** "Copied": Android 13 and newer show their own confirmation. */
+    fun copied(what: String) { if (android.os.Build.VERSION.SDK_INT < 33) toast("$what copied", "ok") }
+
+    /** Everything that's wrong right now, most important first, in a few words each. */
     fun problems(homeScreen: Boolean): List<Prob> {
         sec.intValue   // re-read every second (countdowns)
         val out = ArrayList<Prob>()
         val sp = Spotify.connected && (homeScreen || src == "spotify")
-        if (!Net.online.value) out.add(Prob(100, "err", "You’re offline", "This phone has no internet connection. Lyrics, Spotify and Canvas come back by themselves when it’s back."))
+        if (!Net.online.value) out.add(Prob(100, "err", "offline", "No internet", "Lyrics and Spotify come back when you’re online."))
         else {
-            if (Server.set && Ping.serverDown) {
-                val why = when {
-                    Net.privateDns.value -> "Android’s Private DNS is on, and it hides your server’s Tailscale name. Turn it off (Settings → Connections → More connection settings → Private DNS → Off), or set Tailscale’s DNS there."
-                    !Net.vpn.value -> "Tailscale isn’t connected on this phone. Open the Tailscale app and connect, then it comes back by itself."
-                    else -> "Lyrics, Canvas and Spotify’s lyrics come from it. Check that the server is on and Tailscale is connected."
-                }
-                out.add(Prob(90, "err", "Your server can’t be reached", why))
-            }
-            if (src == "spotify" && !Spotify.connected) out.add(Prob(80, "err", "Spotify isn’t connected", "The Spotify login ended. Tap Connect Spotify to log in again."))
-            else if (sp && Spotify.errMsg.isNotEmpty()) out.add(Prob(70, "err", "Spotify isn’t answering", Spotify.errMsg))
-            if (sp && wall() < Spotify.backoff) out.add(Prob(40, "wait", "Spotify is making Vibe Visualizer wait",
-                "It asked Spotify too often, so Spotify paused it. It carries on by itself in " + clockLeft((Spotify.backoff - wall()) / 1000.0) +
-                    (if (homeScreen || out.any { it.k == "err" }) "." else "; the lyrics keep running meanwhile.")))
+            if (Server.set && Ping.serverDown) out.add(when {
+                Net.privateDns.value -> Prob(90, "err", "server", "Can’t reach your server", "Private DNS is on, and it hides Tailscale names.",
+                    Act("Turn it off") { runCatching { activity?.startActivity(Intent(Settings.ACTION_WIRELESS_SETTINGS)) } })
+                !Net.vpn.value -> Prob(90, "err", "server", "Can’t reach your server", "Tailscale isn’t connected.", Act("Open Tailscale") { openTailscale() })
+                else -> Prob(90, "err", "server", "Can’t reach your server", "Check that it’s on.", Act("Try again") { Ping.kick() })
+            })
+            if (src == "spotify" && !Spotify.connected) out.add(Prob(80, "err", "spotify", "Spotify isn’t connected", "Log in again to follow what you play.", Act("Connect") { spLogin() }))
+            else if (sp && Spotify.errMsg.isNotEmpty()) out.add(Prob(70, "err", "spotify", "Spotify isn’t answering", Spotify.errMsg.substringBefore(". ").take(90), Act("Try again") { Spotify.poll() }))
+            if (sp && wall() < Spotify.backoff) out.add(Prob(40, "wait", "wait", "Spotify paused requests", "Back in " + clockLeft((Spotify.backoff - wall()) / 1000.0) + (if (homeScreen) "" else " · the lyrics keep running")))
         }
-        appProb?.let { p -> if (wall() - appProbAt < 10000 && out.none { it.s == p.s }) out.add(p) }   // one-off errors and warnings: 10 s or until OK
         return out.sortedByDescending { it.pr }
+    }
+
+    /** The most important problem, in a few words, for the header. */
+    fun statusLine(): String? {
+        val p = problems(false).firstOrNull() ?: return null
+        return if (p.id == "wait") "Spotify paused · " + p.s.substringBefore(" ·").lowercase() else p.t
+    }
+
+    private fun openTailscale() {
+        val a = activity ?: return
+        val i = a.packageManager.getLaunchIntentForPackage("com.tailscale.ipn")
+        runCatching { a.startActivity(i ?: Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=com.tailscale.ipn"))) }
     }
 
     /* ---- the clock ---- */
@@ -157,11 +157,10 @@ object E {
 
     fun netKick() = Ping.kick()
 
-    fun spLogin() { activity?.let { Spotify.login(it) } ?: toast("Open the app to log in to Spotify.", "warn") }
+    fun spLogin() { activity?.let { Spotify.login(it) } ?: toast("Open the app to log in to Spotify", "warn") }
 
     fun askScope(what: String = "To control playback") {
-        notify(Note(key = "scope", kind = "warn", title = "$what, Spotify needs one more permission", msg = "Reconnect Spotify now?",
-            actions = listOf(Act("Not now"), Act("Reconnect", pri = true) { spLogin() })))
+        ask = Ask("Reconnect Spotify?", "$what, Spotify needs one more permission. You’ll log in again in the browser.", listOf(Act("Not now"), Act("Reconnect", pri = true) { spLogin() }))
     }
 
     fun spIdle() { title = "Nothing playing"; artist = "Play something in Spotify"; status = ""; Lyr.clear(""); CanvasVideo.clear(false); updPlay() }
@@ -194,8 +193,8 @@ object E {
         Vibe.scope.launch {
             val r = Files.sort(uris)
             r.lyrics.takeIf { it.isNotEmpty() }?.let { Files.addLyrics(it, r.audio.isEmpty() && it.size == 1) }
-            r.images.firstOrNull()?.let { u -> val tok = ++coverTok; if (!setCover(u.toString(), "Custom cover", tok)) toast("That image could not be read.") }
-            r.videos.firstOrNull()?.let { CanvasVideo.setLocal(it); toast("Canvas video loaded.", "ok", 2500) }
+            r.images.firstOrNull()?.let { u -> val tok = ++coverTok; if (!setCover(u.toString(), "Custom cover", tok)) toast("That image couldn’t be read", "warn") }
+            r.videos.firstOrNull()?.let { CanvasVideo.setLocal(it) }
             if (r.audio.isNotEmpty()) { Spotify.stop(); src = "file"; Local.open(r.audio); poke() }
         }
     }

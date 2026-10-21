@@ -161,7 +161,7 @@ private fun AudioSheet() {
             .background(if (on) MaterialTheme.colorScheme.primaryContainer else Color.White.copy(alpha = .05f))
             .clickable {
                 E.haptic()
-                if (k != "off" && !Audio.permitted()) Perms.mic { ok -> if (ok) S.set("aCap", k) else E.toast("Without microphone access the bars can’t hear the phone. Android → Settings → Apps → Vibe Visualizer → Permissions.", "warn") }
+                if (k != "off" && !Audio.permitted()) Perms.mic { ok -> if (ok) S.set("aCap", k) else E.toast("Without microphone access the bars can’t hear the phone", "warn") }
                 else S.set("aCap", k)
             }.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
             Icon(icon, null, Modifier.size(26.dp), tint = Color.White)
@@ -261,7 +261,7 @@ private fun DevicesSheet(close: () -> Unit) {
                 .clickable(enabled = !d.restricted) {
                     if (d.active) { close(); return@clickable }
                     switching = d.id
-                    scope.launch { if (Spotify.transfer(d)) { E.toast("Playing on ${d.name}.", "ok", 2500); close() } else switching = null }
+                    scope.launch { if (Spotify.transfer(d)) close() else switching = null }
                 }.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
                 Icon(icon, null, Modifier.size(22.dp), tint = col)
                 Spacer(Modifier.width(14.dp))

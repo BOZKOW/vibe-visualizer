@@ -30,7 +30,8 @@ object CanvasVideo {
     private var player: ExoPlayer? = null
     private var url: String? = null
     private var ready = false
-    var cvmode by mutableStateOf(false); private set     // the Canvas layout
+    var active by mutableStateOf(false); private set     // a Canvas is loading or playing: its video needs a view to play in
+    var cvmode by mutableStateOf(false); private set     // the Canvas layout (once its first frame is shown)
     var cvlive by mutableStateOf(false); private set     // the blurred Canvas behind everything
     var blurred: Bitmap? = null; private set
     var blurVer by mutableIntStateOf(0); private set
@@ -40,7 +41,7 @@ object CanvasVideo {
 
     private val listener = object : Player.Listener {
         override fun onRenderedFirstFrame() { ready = true; revealAt = now(); applyMode(); syncPlay() }
-        override fun onPlayerError(error: PlaybackException) { if (url != null) { clear(false); E.toast("The canvas video could not be loaded (blocked or unsupported).", "warn") } }
+        override fun onPlayerError(error: PlaybackException) { if (url != null) { android.util.Log.w("VV-canvas", "can't play: ${error.errorCodeName}"); clear(false) } }
     }
 
     private fun ensure(): ExoPlayer = player ?: ExoPlayer.Builder(Vibe.app).build().apply {
@@ -63,7 +64,7 @@ object CanvasVideo {
     val hasVideo get() = url != null && ready
 
     fun clear(keepLayout: Boolean) {
-        url = null; ready = false
+        url = null; ready = false; active = false
         player?.let { it.stop(); it.clearMediaItems() }
         blurred = null; cvlive = false
         if (!keepLayout) cvmode = false
@@ -71,7 +72,7 @@ object CanvasVideo {
 
     private fun set(u: String) {
         clear(true)
-        url = u
+        url = u; active = true
         ensure().apply { setMediaItem(MediaItem.fromUri(u)); prepare() }
     }
 
@@ -104,7 +105,7 @@ object CanvasVideo {
             }
             if (tok != E.coverTok || v.isNullOrEmpty()) return
             set(v)
-        } catch (e: Exception) { E.toast("Canvas lookup failed: ${e.message}", "warn") }
+        } catch (e: Exception) { android.util.Log.w("VV-canvas", "lookup: ${e.message}") }   // no Canvas, quietly
     }
 
     fun applyMode() {

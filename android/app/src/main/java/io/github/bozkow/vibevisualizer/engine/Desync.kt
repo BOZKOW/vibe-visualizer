@@ -24,12 +24,12 @@ object Desync {
     private val T = ArrayList<Double>(); private val Fl = ArrayList<Float>(); private val V = ArrayList<Float>()
     private var lastT: Double? = null; private var off = 0
     private val est = ArrayList<Double>()
-    private var fixes = 0; private var asked = false; private var ign = false; private var next = 0.0; private var lastFix = 0.0
+    private var fixes = 0; private var dismissed = 0; private var asked = false; private var ign = false; private var next = 0.0; private var lastFix = 0.0
     var stat by mutableStateOf(""); private set
 
     private fun st(m: String) { if (m != stat) stat = m }
     fun reset(all: Boolean = false) { T.clear(); Fl.clear(); V.clear(); lastT = null; est.clear(); if (all) { lastFix = 0.0; fixes = 0; asked = false } }
-    fun song() { reset(); lastFix = 0.0; fixes = 0; asked = false; ign = false; Lyr.lAdj = 0.0 }
+    fun song() { reset(); lastFix = 0.0; fixes = 0; dismissed = 0; asked = false; ign = false; Lyr.lAdj = 0.0 }
 
     fun tick(t: Double) {
         if (S.str("lDesync") == "off") { st(""); return }
@@ -107,12 +107,10 @@ object Desync {
         val txt = "about " + String.format("%.1f", abs(e)) + " s " + (if (e > 0) "ahead of" else "behind") + " the singing"
         val fix = { Lyr.lAdj -= e; lastFix = e; fixes++; reset(); Lyr.view.restAll(); st("Fixed: moved " + (if (e > 0) "back " else "ahead ") + String.format("%.1f", abs(e)) + " s.") }
         if (fixes >= 4) return   // something odd with this song: stop adjusting
-        if (S.str("lDesync") == "auto" || fixes > 0) { fix(); E.toast("Lyrics were $txt. Fixed for this song.", "ok", 3500); return }   // once you've said yes, later fixes for the song just happen
+        if (S.str("lDesync") == "auto" || fixes > 0) { fix(); E.toast("Lyrics moved " + String.format("%.1f", abs(e)) + " s to match the singing", "ok"); return }   // once you've said yes, later fixes for the song just happen
         if (asked) return
         asked = true; st("Lyrics look $txt.")
-        E.notify(E.Note(key = "desync", kind = "warn", title = "Lyrics look out of sync", msg = "From the music, they seem $txt.",
-            actions = listOf(E.Act("Fix it", pri = true) { fix(); E.toast("Lyrics re-timed for this song.", "ok", 2500) },
-                E.Act("Ignore for this song") { ign = true },
-                E.Act("Not now") { asked = false; next = now() + 60000 })))
+        E.snack(E.Snack("Lyrics look " + String.format("%.1f", abs(e)) + " s " + (if (e > 0) "ahead" else "behind"), "warn", E.Act("Fix") { fix() }, long = true,
+            onDismiss = { dismissed++; if (dismissed >= 2) ign = true else { asked = false; next = now() + 60000 } }))
     }
 }

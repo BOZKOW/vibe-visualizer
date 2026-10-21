@@ -35,6 +35,13 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowDownward
+import androidx.compose.material.icons.rounded.CloudOff
+import androidx.compose.material.icons.rounded.Dns
+import androidx.compose.material.icons.rounded.HourglassTop
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
@@ -90,9 +97,8 @@ fun LyricsPane(modifier: Modifier = Modifier, areaHeightPx: Float = 0f, compact:
     val conf = LocalConfiguration.current
     remember(gc) { view.releaser = { gc.releaseGraphicsLayer(it) }; 0 }
     val n = Lyr.lines
-    val probs = E.problems(false)
-    val big = probs.isNotEmpty() && S.view != "viz" && (probs[0].k == "err" || n == 0)
-    val lyrA by animateFloatAsState(if (big) 0f else 1f, tween(400), label = "lyrA")
+    // problems never sit on the lyrics: with lyrics on screen they're a line in the header; without, the empty state
+    val prob = if (n == 0) E.problems(false).firstOrNull() else null
     BoxWithConstraints(modifier) {
         val wDp = maxWidth.value
         // the lyrics' size: big and bold on a phone, as the web app sizes them on a computer (times Text size)
@@ -102,7 +108,6 @@ fun LyricsPane(modifier: Modifier = Modifier, areaHeightPx: Float = 0f, compact:
             Modifier.fillMaxSize()
                 .onSizeChanged { sz -> view.size(sz.width.toFloat(), sz.height.toFloat(), if (areaHeightPx > 0) areaHeightPx else sz.height.toFloat(),
                     conf.screenWidthDp * dens.density, conf.screenHeightDp * dens.density, dens.density, fontPx, padStart * dens.density, padEnd * dens.density) }
-                .alpha(lyrA)
                 .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
                 .pointerInput(Unit) {
                     awaitEachGesture {
@@ -146,8 +151,8 @@ fun LyricsPane(modifier: Modifier = Modifier, areaHeightPx: Float = 0f, compact:
         }
         // where the lyrics go: messages and problems
         val m = Lyr.msg
-        if (n == 0 && m != null && !big && S.view != "viz") LyricsMessage(m, Modifier.fillMaxSize().padding(start = padStart.dp, end = padEnd.dp))
-        if (probs.isNotEmpty() && S.view != "viz") Problems(probs, big, Modifier.align(if (big) Alignment.CenterStart else Alignment.TopStart).padding(start = padStart.dp, end = padEnd.dp, top = 8.dp))
+        if (prob != null) ProblemState(prob, Modifier.align(Alignment.CenterStart).padding(start = padStart.dp, end = padEnd.dp))
+        else if (n == 0 && m != null) LyricsMessage(m, Modifier.fillMaxSize().padding(start = padStart.dp, end = padEnd.dp), compact)
         AnimatedVisibility(view.lyFree, Modifier.align(Alignment.BottomCenter).padding(bottom = 12.dp), enter = fadeIn() + slideInVertically { it }, exit = fadeOut() + slideOutVertically { it }) {
             FilledTonalButton(onClick = { view.freeEnd() }, shape = pillShape) {
                 Icon(Icons.Rounded.ArrowDownward, null, Modifier.size(18.dp)); HSpace(6.dp); Text("Back to the lyrics being sung")
@@ -158,49 +163,43 @@ fun LyricsPane(modifier: Modifier = Modifier, areaHeightPx: Float = 0f, compact:
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-private fun LyricsMessage(m: Lyr.Msg, modifier: Modifier) {
+private fun LyricsMessage(m: Lyr.Msg, modifier: Modifier, compact: Boolean) {
     Column(modifier, verticalArrangement = if (m.kind == "load" && S.b("xSkeleton")) Arrangement.Top else Arrangement.Center) {
         if (m.kind == "load" && S.b("xSkeleton")) {   // loading skeleton (Spicy Lyrics 6.4.0): faint placeholder lines and a small label
             val tr = rememberInfiniteTransition(label = "skel")
             val x by tr.animateFloat(0f, 1f, infiniteRepeatable(tween(1600), RepeatMode.Restart), label = "skx")
-            Box(Modifier.height(48.dp))
-            Text("LOADING LYRICS", fontSize = 12.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp, color = Color.White.copy(alpha = .4f), modifier = Modifier.padding(bottom = 10.dp))
+            Box(Modifier.height(if (compact) 8.dp else 40.dp))
+            Text("Loading lyrics", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color.White.copy(alpha = .5f), modifier = Modifier.padding(bottom = 8.dp))
             listOf(.78f, .62f, .88f, .54f, .7f).forEachIndexed { k, w ->
-                Box(Modifier.fillMaxWidth(w).padding(vertical = 7.dp).height(22.dp).clip(RoundedCornerShape(10.dp))
-                    .background(Brush.horizontalGradient(listOf(Color.White.copy(alpha = .08f), Color.White.copy(alpha = .16f), Color.White.copy(alpha = .08f)), startX = (x * 2 - 1 - k * .12f) * 900f, endX = (x * 2 - k * .12f) * 900f)))
+                Box(Modifier.fillMaxWidth(w).padding(vertical = 7.dp).height(if (compact) 12.dp else 22.dp).clip(RoundedCornerShape(10.dp))
+                    .background(Brush.horizontalGradient(listOf(Color.White.copy(alpha = .07f), Color.White.copy(alpha = .14f), Color.White.copy(alpha = .07f)), startX = (x * 2 - 1 - k * .12f) * 900f, endX = (x * 2 - k * .12f) * 900f)))
             }
-        } else {
-            if (m.kind == "load") LoadingIndicator(Modifier.size(56.dp).padding(bottom = 8.dp), color = Color.White.copy(alpha = .7f))
-            val breathe = if (m.kind == "load") rememberInfiniteTransition(label = "br").animateFloat(1f, .45f, infiniteRepeatable(tween(900), RepeatMode.Reverse), label = "bra").value else 1f
-            Text(m.msg, fontSize = 30.sp, lineHeight = 34.sp, fontWeight = FontWeight.ExtraBold, color = Color.White.copy(alpha = .6f * breathe), letterSpacing = (-.5).sp)
-            if (m.sub.isNotEmpty()) Text(m.sub, Modifier.padding(top = 10.dp).widthIn(max = 520.dp), fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = Color.White.copy(alpha = .45f))
-            if (m.actions.isNotEmpty()) Row(Modifier.padding(top = 14.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                m.actions.forEach { a -> if (a.pri) Button(onClick = { a.fn?.invoke() }) { Text(a.label) } else FilledTonalButton(onClick = { a.fn?.invoke() }) { Text(a.label) } }
+        } else if (m.kind == "load") {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                LoadingIndicator(Modifier.size(36.dp), color = Color.White.copy(alpha = .7f))
+                Spacer(Modifier.width(12.dp))
+                Text(m.msg, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = Color.White.copy(alpha = .7f))
             }
-        }
+        } else EmptyLines(VIcons.lyrics, m.msg, m.sub, m.actions.firstOrNull { it.pri } ?: m.actions.firstOrNull(), m.actions.drop(1).firstOrNull()?.takeIf { m.actions.size > 1 }, compact)
     }
 }
 
-/** Problems, where the lyrics go: big when there are no lyrics (or an error stops them), a small note above them otherwise. */
+/** The empty state where the lyrics go: an icon, a few words, and the one thing to do about it (as Android apps do). */
 @Composable
-fun Problems(list: List<E.Prob>, big: Boolean, modifier: Modifier = Modifier) {
-    val shown = list.take(if (big) 4 else 2)
-    Column(modifier.widthIn(max = 640.dp), verticalArrangement = Arrangement.spacedBy(if (big) 14.dp else 6.dp)) {
-        shown.forEachIndexed { i, p ->
-            val err = p.k == "err"
-            Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = if (!big) Modifier.glass(RoundedCornerShape(16.dp)).padding(10.dp) else Modifier) {
-                Box(Modifier.size(if (big && i == 0) 30.dp else 22.dp).background(if (err) Color(0xFFFF6B6B) else Color(0xFFFFB84D), CircleShape), contentAlignment = Alignment.Center) {
-                    Text("!", fontWeight = FontWeight.ExtraBold, color = Color(0xFF1A1A1A), fontSize = if (big && i == 0) 17.sp else 13.sp)
-                }
-                Column {
-                    Text(p.t, fontSize = if (big && i == 0) 28.sp else if (big) 16.sp else 13.sp, lineHeight = if (big && i == 0) 32.sp else 18.sp, fontWeight = if (big && i == 0) FontWeight.ExtraBold else FontWeight.Bold, color = Color.White)
-                    Text(p.s, Modifier.padding(top = if (big && i == 0) 8.dp else 2.dp), fontSize = if (big && i == 0) 15.sp else 12.5.sp, lineHeight = 19.sp, color = Color.White.copy(alpha = .8f))
-                    if (p.ok) FilledTonalButton(onClick = { E.appProb = null }, Modifier.padding(top = 8.dp), contentPadding = ButtonDefaults.SmallContentPadding) { Text("OK") }
-                }
-            }
-        }
-        if (list.size > shown.size) Text("+ ${list.size - shown.size} more", fontSize = 12.sp, color = Color.White.copy(alpha = .5f))
+fun ProblemState(p: E.Prob, modifier: Modifier = Modifier, compact: Boolean = false) {
+    val icon = when (p.id) { "offline" -> Icons.Rounded.CloudOff; "server" -> Icons.Rounded.Dns; "wait" -> Icons.Rounded.HourglassTop; else -> VIcons.spotify }
+    Column(modifier) { EmptyLines(icon, p.t, p.s, p.act, null, compact, tint = if (p.k == "err") Color(0xFFFFB4AB) else Color(0xFFFFD27A)) }
+}
+
+@Composable
+private fun EmptyLines(icon: ImageVector, title: String, sub: String, act: E.Act?, act2: E.Act?, compact: Boolean, tint: Color = Color.White.copy(alpha = .6f)) {
+    Icon(icon, null, Modifier.size(if (compact) 24.dp else 34.dp), tint = tint)
+    Spacer(Modifier.height(10.dp))
+    Text(title, fontSize = if (compact) 16.sp else 22.sp, fontWeight = FontWeight.Bold, color = Color.White)
+    if (sub.isNotEmpty()) Text(sub, Modifier.padding(top = 4.dp).widthIn(max = 460.dp), fontSize = if (compact) 13.sp else 15.sp, color = Color.White.copy(alpha = .65f))
+    if (act != null || act2 != null) Row(Modifier.padding(top = 14.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        act?.let { a -> FilledTonalButton(onClick = { E.haptic(); a.fn?.invoke() }) { Text(a.label) } }
+        act2?.let { a -> TextButton(onClick = { E.haptic(); a.fn?.invoke() }) { Text(a.label) } }
     }
 }
 

@@ -54,13 +54,6 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    testOptions {
-        unitTests {
-            isIncludeAndroidResources = true
-            all { it.systemProperty("roborazzi.test.record", "true"); it.maxHeapSize = "1536m" }
-        }
-    }
-
     packaging {
         resources {
             excludes += setOf("META-INF/{AL2.0,LGPL2.1}", "META-INF/*.kotlin_module", "META-INF/*.md", "META-INF/*.txt", "DebugProbesKt.bin")
@@ -96,12 +89,6 @@ dependencies {
 
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.json:json:20250517")
-    // screenshots of the screens at phone sizes, rendered on the computer (no emulator): ./gradlew testDebugUnitTest --tests '*Screens*'
-    testImplementation("org.robolectric:robolectric:4.17")
-    testImplementation("io.github.takahirom.roborazzi:roborazzi:1.76.0")
-    testImplementation("io.github.takahirom.roborazzi:roborazzi-compose:1.76.0")
-    testImplementation("androidx.compose.ui:ui-test-junit4")
-    debugImplementation("androidx.compose.ui:ui-test-manifest")
 }
 
 kotlin {

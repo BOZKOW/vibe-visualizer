@@ -74,9 +74,8 @@ object Updates {
                 latest = if (newer && apk.isNotEmpty()) rel else null
                 appStat = "Version ${BuildConfig.VERSION_NAME}" + if (newer) " · new version $v${if (rel.note.beta) " beta" else ""} is out" else " · the newest"
                 if (newer && apk.isNotEmpty() && (manual || prefs.getString("skip", "") != rel.tag) && E.settingsPage != "help")
-                    E.notify(E.Note(key = "appupd", kind = "ok", title = "New app version $v" + if (rel.note.beta) " beta" else "", sub = "You have ${BuildConfig.VERSION_NAME}", list = rel.note.points.take(5),
-                        actions = listOf(E.Act("Later") { prefs.edit().putString("skip", rel.tag).apply() }, E.Act("Update now", pri = true) { install(rel) })))
-            } catch (e: Exception) { appStat = "Couldn’t check for updates: " + e.message; if (manual) E.toast("Couldn’t check for updates: " + e.message) }
+                    E.snack(E.Snack("Version $v is available", "ok", E.Act("Update") { install(rel) }, long = true, onDismiss = { prefs.edit().putString("skip", rel.tag).apply() }))
+            } catch (e: Exception) { appStat = "Couldn’t check for updates: " + e.message; if (manual) E.toast("Couldn’t check for updates", "warn") }
         }
     }
 
@@ -88,10 +87,10 @@ object Updates {
     fun install(rel: AppRel) {
         if (downloading) return
         if (!canInstall()) {
-            E.notify(E.Note(key = "inst", kind = "warn", title = "Allow app updates", msg = "Android asks once that Vibe Visualizer may install its own updates. Turn on “Allow from this source”, then come back and press Update now again.",
-                actions = listOf(E.Act("Not now"), E.Act("Open settings", pri = true) {
+            E.ask = E.Ask("Allow app updates", "Android needs your OK once: turn on “Allow from this source” for Vibe Visualizer, then press Update again.",
+                listOf(E.Act("Not now"), E.Act("Open settings", pri = true) {
                     E.activity?.startActivity(Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:" + Vibe.app.packageName)))
-                })))
+                }))
             return
         }
         downloading = true; progress = 0f
@@ -114,7 +113,7 @@ object Updates {
                 val uri = FileProvider.getUriForFile(Vibe.app, Vibe.app.packageName + ".files", f)
                 (E.activity ?: Vibe.app).startActivity(Intent(Intent.ACTION_VIEW).setDataAndType(uri, "application/vnd.android.package-archive")
                     .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK))
-            } catch (e: Exception) { E.toast("Update failed: " + e.message + ". Try again in Settings → Help & about.") }
+            } catch (e: Exception) { E.toast("The update didn’t download: " + e.message) }
             finally { downloading = false }
         }
     }
@@ -128,9 +127,8 @@ object Updates {
             kotlinx.coroutines.delay(1500)
             runCatching {
                 val r = Net.fetch("https://api.github.com/repos/$REPO/releases/tags/android-v$mine")
-                val n = r.json()?.let(::note) ?: return@launch
-                E.notify(E.Note(key = "new", kind = "ok", title = "Updated: what’s new", sub = "Version ${BuildConfig.VERSION_NAME}", list = n.points.take(10),
-                    actions = listOf(E.Act("All release notes") { E.openSettings("help") }, E.Act("Nice", pri = true))))
+                r.json()?.let(::note) ?: return@launch
+                E.snack(E.Snack("Updated to ${BuildConfig.VERSION_NAME}", "ok", E.Act("What’s new") { E.openSettings("help") }, long = true))
             }
         }
     }

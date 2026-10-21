@@ -231,7 +231,7 @@ object Lyr {
         val log = ArrayList<Look>()
         fun note(p: String, st: String, ms: Long? = null) { log.add(Look(p, st, ms)); if (tok == E.coverTok) { lookupLog.clear(); lookupLog.addAll(log) } }
         lookupLog.clear(); lookupSong = (if (m.artist.isNotEmpty()) m.artist + " – " else "") + m.title
-        if (order.isEmpty()) { if (skipS.isNotEmpty()) return otherDone(m, tok); clear("All lyrics sources are off", "Turn one on in Settings → Lyrics.", "none"); return }
+        if (order.isEmpty()) { if (skipS.isNotEmpty()) return otherDone(m, tok); clear("All lyrics sources are off", "", "none", listOf(E.Act("Settings", pri = true) { E.openSettings("lyrics") })); return }
         val key = listOf(m.id, m.artist, m.title, Math.round(m.duration).toString(), provList().filter { it.on }.joinToString(",") { it.k }).joinToString("|").lowercase()
         cur = Cur(m, key, skip)
         if (!fresh) {
@@ -240,7 +240,7 @@ object Lyr {
             val saved = LyricsCache.get(key); if (tok != E.coverTok) return
             when (saved) {
                 is LyricsCache.Got.Hit -> { lcache[key] = saved.r; note(saved.r.prov ?: "?", "saved on this device"); apply(saved.r); return }
-                is LyricsCache.Got.Miss -> { note("—", "saved: no lyrics"); clear("No lyrics for this song", "None of your lyrics sources had it recently. Settings → Lyrics cache → Clear stored lyrics looks again.", "none"); return }
+                is LyricsCache.Got.Miss -> { note("—", "saved: no lyrics"); clear("No lyrics for this song", "None of your sources had it lately.", "none", listOf(E.Act("Look again") { clearSong() })); return }
                 else -> {}
             }
         }
@@ -264,23 +264,23 @@ object Lyr {
         if (tok != E.coverTok) return
         if (skipS.isNotEmpty()) return otherDone(m, tok)
         if (errs.isEmpty()) LyricsCache.put(key, null)   // remember "none" for a day; failures aren't remembered
-        if (errs.isNotEmpty()) clear("Couldn’t load lyrics", errs.joinToString(" · "), "none", listOf(
+        if (errs.isNotEmpty()) clear("Couldn’t load lyrics", errs.first(), "none", listOf(
             E.Act("Try again", pri = true) { lcache.remove(key); Vibe.scope.launch { LyricsCache.del(key) }; load(m, E.coverTok) },
-            E.Act("Copy details") { copy(m.artist + " – " + m.title + "\n" + errs.joinToString("\n")); E.toast("Details copied.", "ok", 2000) }))
-        else clear("No lyrics for this song", "It may be instrumental, or none of your lyrics sources has it. You can add a .lrc or .ttml file in Settings → Lyrics.", "none")
+            E.Act("Copy details") { copy(m.artist + " – " + m.title + "\n" + errs.joinToString("\n")); E.copied("Details") }))
+        else clear("No lyrics for this song", "It may be instrumental. You can add your own .lrc or .ttml file.", "none", listOf(E.Act("Add a file") { FilePicker.lyrics?.invoke(true) }))
     }
 
     /** "Wrong lyrics?": the next source in your order for this song (not saved); after the last one, back to the first. */
     fun other() {
         val c = cur
-        if (c == null || (L.isEmpty() && c.skip.isEmpty())) { E.toast("No song with lyrics is playing.", "warn", 2500); return }
+        if (c == null || (L.isEmpty() && c.skip.isEmpty())) { E.toast("No lyrics to replace", "warn"); return }
         val used = if (L.isNotEmpty() && credit != null) (c.skip + listOfNotNull(prov())).filter { it.isNotEmpty() } else c.skip
-        E.toast("Trying the next lyrics source…", "ok", 1800)
+        E.toast("Trying another source…", "ok")
         load(c.m, E.coverTok, used, true)
     }
 
     private fun prov(): String? = when (val s = credit?.source) { "spicy_lyrics" -> "spicy"; "file" -> "local"; else -> s }
-    private fun otherDone(m: SongMeta, tok: Int) { E.toast("No other source has lyrics for this song: back to the first one.", "warn", 4000); if (tok == E.coverTok) load(m, tok) }
+    private fun otherDone(m: SongMeta, tok: Int) { E.toast("No other source has this song", "warn"); if (tok == E.coverTok) load(m, tok) }
 
     /* ================= on screen ================= */
 
@@ -301,7 +301,6 @@ object Lyr {
     private fun apply(r: LyricsResult) {
         loadT?.cancel(); view.freeEnd(); songOffLoad()
         lPace = checkPace(r, E.curDur())
-        if (lPace != 1.0) E.toast("Lyrics timing adjusted to this version of the song (" + (if (lPace > 1) "+" else "") + String.format("%.1f", (lPace - 1) * 100) + "% pace).", "ok", 4000)
         Desync.song()
         credit = r.credit ?: if (r.label.isNotEmpty()) Credit(null) else null
         L = (if (r.sync) interludes(r.lines) else r.lines.filter { !it.dots }).map { it.copy() }
@@ -374,7 +373,7 @@ object Lyr {
             if (!needG) { render(null, true); return@launch }
             val key = S.trTo + "|" + ls.joinToString("\n") { it.text }
             val res = trCache[key] ?: try { Google.all(ls.map { it.text }, S.trTo).also { trCache[key] = it } }
-                catch (e: Exception) { if (tok == trTok) E.toast("Translation / romanization failed: " + e.message, "warn"); render(null, true); return@launch }
+                catch (e: Exception) { if (tok == trTok) E.toast("Translation isn’t available right now", "warn"); render(null, true); return@launch }
             if (tok != trTok) return@launch
             val skip = skipLangs()
             ls.forEachIndexed { i, l ->
@@ -420,7 +419,6 @@ object Lyr {
     fun nudge(ms: Int) {   // ] earlier, [ later
         val v = (S.loff + ms).coerceIn(-3000, 3000)
         S.set("loff", v)
-        E.toast("Lyrics timing " + (if (v > 0) "+" else "") + v + " ms" + (if (v > 0) " (earlier)" else if (v < 0) " (later)" else ""), "ok", 1800)
     }
 
     private var resyncing = false
@@ -434,9 +432,9 @@ object Lyr {
                 val moved = if (E.src == "spotify") Spotify.resync() else null
                 val undo = lAdj != 0.0; lAdj = 0.0; Desync.reset(true)
                 view.restAll()
-                E.toast((if (moved == null) "Lyrics re-synced" else if (abs(moved) < 40) "Lyrics are in sync with Spotify" else "Lyrics re-synced: moved " + (if (moved > 0) "ahead " else "back ") + String.format("%.2f", abs(moved) / 1000) + " s") +
-                    (if (undo) " (the automatic desync fix was undone)" else "") + ".", "ok", 2600)
-            } catch (e: Exception) { E.toast("Couldn’t resync: " + e.message, "warn", 4000) }
+                E.toast(if (moved == null || abs(moved) < 40) "In sync" else "Moved " + String.format("%.2f", abs(moved) / 1000) + " s " + if (moved > 0) "ahead" else "back", "ok")
+                @Suppress("UNUSED_VARIABLE") val u = undo
+            } catch (e: Exception) { E.toast("Couldn’t resync right now", "warn") }
             finally { resyncing = false }
         }
     }
@@ -445,13 +443,13 @@ object Lyr {
     fun refreshCounts() { Vibe.scope.launch { savedCount = LyricsCache.prune(); filesCount = MyLyrics.count() } }
 
     fun clearSong() {
-        val c = cur ?: run { E.toast("No song with lyrics is playing.", "warn", 2500); return }
+        val c = cur ?: run { E.toast("No song is playing", "warn"); return }
         lcache.remove(c.key); trCache.clear()
-        Vibe.scope.launch { LyricsCache.del(c.key); refreshCounts(); E.toast("This song’s cache cleared. Fetching its lyrics again…", "ok", 2500); load(c.m, E.coverTok) }
+        Vibe.scope.launch { LyricsCache.del(c.key); refreshCounts(); E.toast("Cleared · fetching again", "ok"); load(c.m, E.coverTok) }
     }
-    fun resetSong() { val c = cur ?: run { E.toast("No song with lyrics is playing.", "warn", 2500); return }; lcache.remove(c.key); E.toast("Lyrics reset.", "ok", 1800); load(c.m, E.coverTok) }
-    fun clearStored() { Vibe.scope.launch { LyricsCache.clear(); lcache.clear(); trCache.clear(); refreshCounts(); E.toast("Stored lyrics cleared. They’re fetched again as songs play.", "ok", 3000) } }
-    fun clearFiles() { Vibe.scope.launch { MyLyrics.clear(); refreshCounts(); E.toast("Your lyrics files were removed.", "ok", 2500) } }
+    fun resetSong() { val c = cur ?: run { E.toast("No song is playing", "warn"); return }; lcache.remove(c.key); load(c.m, E.coverTok) }
+    fun clearStored() { Vibe.scope.launch { LyricsCache.clear(); lcache.clear(); trCache.clear(); refreshCounts(); E.toast("Stored lyrics cleared", "ok") } }
+    fun clearFiles() { Vibe.scope.launch { MyLyrics.clear(); refreshCounts(); E.toast("Your lyrics files were removed", "ok") } }
     fun reloadCurrent() { cur?.let { load(it.m, E.coverTok) } }
 
     fun testSpicy(out: (String) -> Unit) {

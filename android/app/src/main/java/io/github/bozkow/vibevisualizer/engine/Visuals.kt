@@ -222,7 +222,7 @@ object Visuals {
                 sprites[i] = sp
             }
             bakeVer++
-        }.onFailure { E.toast("Background could not be processed (${it.message}). Using a plain background.", "warn") }
+        }.onFailure { android.util.Log.w("VV", "background: $it") }
     }
 
     fun fadeProgress(t: Double): Float = if (bakedPrev == null || fadeAt == 0.0) 1f else min(1.0, (t - fadeAt) / 900).toFloat().also { if (it >= 1f) { bakedPrev = null; spritesPrev = arrayOfNulls(3) } }

@@ -203,7 +203,7 @@ private fun pages(): List<Page> = listOf(
         Item.Ch("fpscap", "Limit frame rate", listOf("0" to "Off (as fast as the screen)", "30" to "30 fps", "60" to "60 fps", "90" to "90 fps", "120" to "120 fps"), "Caps how often the animations redraw, to save battery."),
         Item.Ch("anim", "Animations", listOf("system" to "Follow the system setting", "on" to "Always on", "off" to "Off"), "“Follow the system setting” turns the animations off when Android’s Remove animations is on (Settings → Accessibility)."),
         Item.Sw("fps", "Show FPS"),
-        Item.Custom("Reset all settings") { Buttons("Reset all settings" to { Vibe.settings.resetAll(); E.toast("Settings reset to defaults.", "ok", 2500) }) },
+        Item.Custom("Reset all settings") { Buttons("Reset all settings" to { Vibe.settings.resetAll(); E.toast("Settings reset", "ok") }) },
     )),
     Page("android", "Phone", Icons.Rounded.PhoneAndroid, listOf(
         Item.Head("Phone"),
@@ -236,8 +236,8 @@ private fun pages(): List<Page> = listOf(
         Item.Custom("Error log show errors clear") { ErrorLog() },
         Item.Sub("Back up settings"),
         Item.Custom("Copy my settings paste settings") { Backup() },
-        Item.Custom("Open setup guide forget this device") { Buttons("Open setup guide" to { E.settingsPage = null; E.wizard = true }, "Forget this device" to { E.notify(E.Note(key = "forget", kind = "warn", title = "Forget this device?", msg = "Deletes everything Vibe Visualizer saved for this phone: settings, the Spotify login, saved lyrics and your lyrics files, here and on your server.",
-            actions = listOf(E.Act("Cancel"), E.Act("Forget", pri = true) { Sync.forget { E.settingsPage = null; E.wizard = true } }))) }) },
+        Item.Custom("Open setup guide forget this device") { Buttons("Open setup guide" to { E.settingsPage = null; E.wizard = true }, "Forget this device" to { E.ask = E.Ask("Forget this device?", "Deletes everything Vibe Visualizer saved for this phone: settings, the Spotify login, saved lyrics and your lyrics files, here and on your server.",
+            listOf(E.Act("Cancel"), E.Act("Forget", pri = true) { Sync.forget { E.settingsPage = null; E.wizard = true } })) }) },
         Item.Custom("About license AGPL Spicy Lyrics unofficial source code") { About() },
     )),
 )
@@ -491,7 +491,7 @@ private fun LookupLog() {
             }
         }
         Spacer(Modifier.height(8.dp))
-        Buttons("Try another source for this song" to { Lyr.other() }, "Copy debug info" to { Lyr.copy(Lyr.debugInfo()); E.toast("Debug info copied.", "ok", 2000) })
+        Buttons("Try another source for this song" to { Lyr.other() }, "Copy debug info" to { Lyr.copy(Lyr.debugInfo()); E.copied("Debug info") })
     }
 }
 
@@ -521,11 +521,11 @@ private fun SpotifySection() {
         Text("Redirect URI to register", fontSize = 13.sp, color = Color.White.copy(alpha = .7f))
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(Spotify.redirectUri(), Modifier.weight(1f), fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
-            TextButton(onClick = { Lyr.copy(Spotify.redirectUri()); E.toast("Redirect URI copied.", "ok", 2000) }) { Text("Copy URI") }
+            TextButton(onClick = { Lyr.copy(Spotify.redirectUri()); E.copied("Redirect URI") }) { Text("Copy URI") }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             if (!Spotify.connected) Button(onClick = { E.spLogin() }) { Text("Connect") }
-            else FilledTonalButton(onClick = { Spotify.disconnect(); if (E.src == "spotify") { E.setSource("none"); E.title = ""; E.artist = ""; Lyr.clear(""); E.goHome() }; E.toast("Spotify disconnected.", "ok", 2500) }) { Text("Disconnect") }
+            else FilledTonalButton(onClick = { Spotify.disconnect(); if (E.src == "spotify") { E.setSource("none"); E.title = ""; E.artist = ""; Lyr.clear(""); E.goHome() } }) { Text("Disconnect") }
         }
         Text(if (!Spotify.connected) (if (id.isNotEmpty()) "Client ID saved. Press Connect." else "Not connected.") else if (E.src == "spotify") (if (Spotify.meta != null) "Connected · " + (if (Spotify.isPlaying) "playing" else "paused") else "Connected · nothing playing") else "Connected. Tap the Spotify chip to use it.",
             Modifier.padding(top = 8.dp), fontSize = 13.5.sp, color = Color.White)
@@ -630,12 +630,12 @@ private fun ErrorLog() {
 private fun Backup() {
     Column {
         Hint("Copy your settings (not your logins) to paste them on another device, or into the web app.")
-        Buttons("Copy my settings" to { Lyr.copy(Sync.backupText()); E.toast("Settings copied. Paste them on the other device under Help & about.", "ok", 3500) },
+        Buttons("Copy my settings" to { Lyr.copy(Sync.backupText()); E.copied("Settings") },
             "Paste settings" to {
                 val cm = Vibe.app.getSystemService(android.content.ClipboardManager::class.java)
                 val t = cm?.primaryClip?.takeIf { it.itemCount > 0 }?.getItemAt(0)?.coerceToText(Vibe.app)?.toString() ?: ""
                 val n = Sync.restore(t)
-                if (n < 0) E.toast("That isn’t a copy of Vibe Visualizer’s settings.", "warn") else E.toast("$n settings restored.", "ok", 2500)
+                if (n < 0) E.toast("That isn’t a copy of Vibe Visualizer’s settings", "warn") else E.toast("$n settings restored", "ok")
             })
     }
 }

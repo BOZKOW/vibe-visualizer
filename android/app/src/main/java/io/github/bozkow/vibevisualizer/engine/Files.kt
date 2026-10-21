@@ -73,10 +73,10 @@ object Files {
             if (forSong && uris.size == 1) Lyr.applyFile(r, n)
         }
         if (forSong && uris.size == 1) {
-            if (ok == 1) E.toast(if (song != null) "Lyrics file saved for “${song.title}”: it’s used every time this song plays." else "Lyrics file added to your lyrics files.", "ok", 4000)
-            else E.toast("Could not read the lyrics file: no lyrics found in it")
+            if (ok == 1) E.toast(if (song != null) "Lyrics saved for “${song.title}”" else "Lyrics file added", "ok")
+            else E.toast("No lyrics found in that file", "warn")
         } else {
-            E.toast("$ok" + (if (ok == 1) " lyrics file" else " lyrics files") + " added" + (if (bad > 0) " ($bad couldn’t be read)" else "") + ". They’re used whenever their song plays.", "ok", 4500)
+            E.toast("$ok" + (if (ok == 1) " lyrics file" else " lyrics files") + " added" + if (bad > 0) " · $bad couldn’t be read" else "", "ok")
             Lyr.reloadCurrent()
         }
         Lyr.refreshCounts()
