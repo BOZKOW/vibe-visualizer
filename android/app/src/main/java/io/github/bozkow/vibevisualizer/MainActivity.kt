@@ -125,7 +125,7 @@ class MainActivity : ComponentActivity() {
         if (!isInPictureInPictureMode) { E.onVisible(false); CanvasVideo.onBackground() }
         Vibe.settings.flush()
     }
-    override fun onResume() { super.onResume(); SpotifyApp.refresh(this); Background.resume() }
+    override fun onResume() { super.onResume(); SpotifyApp.refresh(this); Background.resume(); Updates.showConfirm() }
 
     /* ---- picture-in-picture ---- */
     private fun pipParams(auto: Boolean) {

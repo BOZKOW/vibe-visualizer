@@ -8,7 +8,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.core.content.FileProvider
+import android.app.PendingIntent
+import android.content.pm.PackageInstaller
+import android.content.pm.PackageManager
+import android.os.Build
 import io.github.bozkow.vibevisualizer.BuildConfig
 import io.github.bozkow.vibevisualizer.core.Net
 import io.github.bozkow.vibevisualizer.core.S
@@ -21,7 +24,6 @@ import kotlinx.coroutines.withContext
 import okhttp3.Request
 import org.json.JSONArray
 import org.json.JSONObject
-import java.io.File
 
 /** Updates: this app's new versions from the GitHub Releases page (installed through Android's installer, which asks
  *  you first), and the web app on your server (Settings → Help & about), as in the web app. */
@@ -86,36 +88,56 @@ object Updates {
     /** Downloads the new APK and hands it to Android's installer (it installs over this version, keeping your data). */
     fun install(rel: AppRel) {
         if (downloading) return
-        if (!canInstall()) {
-            E.ask = E.Ask("Allow app updates", "Android needs your OK once: turn on “Allow from this source” for Vibe Visualizer, then press Update again.",
-                listOf(E.Act("Not now"), E.Act("Open settings", pri = true) {
-                    E.activity?.startActivity(Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:" + Vibe.app.packageName)))
-                }))
-            return
-        }
-        downloading = true; progress = 0f
+        downloading = true; progress = 0f; stage = "Downloading the update…"
         prefs.edit().putString("whatsnew", rel.tag).apply()
         Vibe.scope.launch {
+            var sid = -1
+            val pi = Vibe.app.packageManager.packageInstaller
             try {
-                val f = withContext(Dispatchers.IO) {
-                    val dir = File(Vibe.app.cacheDir, "updates").apply { mkdirs() }; dir.listFiles()?.forEach { it.delete() }
-                    val out = File(dir, "vibe-visualizer-${rel.version}.apk")
-                    Net.http.newCall(Request.Builder().url(rel.apk).build()).execute().use { r ->
-                        if (!r.isSuccessful) throw Exception("HTTP ${r.code}")
-                        val body = r.body; val total = body.contentLength().toFloat()
-                        body.byteStream().use { inp -> out.outputStream().use { o ->
-                            val buf = ByteArray(64 * 1024); var n: Int; var got = 0L
-                            while (inp.read(buf).also { n = it } > 0) { o.write(buf, 0, n); got += n; if (total > 0) progress = got / total }
-                        } }
+                withContext(Dispatchers.IO) {
+                    // straight into Android's installer: no file to clean up, and once this app has installed itself, later
+                    // updates need no tap at all (Android 12+, "user action not required")
+                    val params = PackageInstaller.SessionParams(PackageInstaller.SessionParams.MODE_FULL_INSTALL).apply {
+                        setAppPackageName(Vibe.app.packageName)
+                        setRequireUserAction(PackageInstaller.SessionParams.USER_ACTION_NOT_REQUIRED)
+                        setInstallReason(PackageManager.INSTALL_REASON_USER)
+                        if (Build.VERSION.SDK_INT >= 34) setPackageSource(PackageInstaller.PACKAGE_SOURCE_DOWNLOADED_FILE)
                     }
-                    out
+                    sid = pi.createSession(params)
+                    pi.openSession(sid).use { s ->
+                        Net.http.newCall(Request.Builder().url(rel.apk).build()).execute().use { r ->
+                            if (!r.isSuccessful) throw Exception("HTTP ${r.code}")
+                            val body = r.body; val total = body.contentLength()
+                            s.openWrite("vibe-visualizer.apk", 0, total).use { o ->
+                                body.byteStream().use { inp ->
+                                    val buf = ByteArray(64 * 1024); var n: Int; var got = 0L
+                                    while (inp.read(buf).also { n = it } > 0) { o.write(buf, 0, n); got += n; if (total > 0) progress = got.toFloat() / total }
+                                }
+                                s.fsync(o)
+                            }
+                        }
+                        val back = Intent(Vibe.app, InstallReceiver::class.java)
+                        val pending = PendingIntent.getBroadcast(Vibe.app, sid, back, PendingIntent.FLAG_MUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
+                        s.commit(pending.intentSender)
+                    }
                 }
-                val uri = FileProvider.getUriForFile(Vibe.app, Vibe.app.packageName + ".files", f)
-                (E.activity ?: Vibe.app).startActivity(Intent(Intent.ACTION_VIEW).setDataAndType(uri, "application/vnd.android.package-archive")
-                    .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK))
-            } catch (e: Exception) { E.toast("The update didn’t download: " + e.message) }
-            finally { downloading = false }
+                stage = "Installing…"
+            } catch (e: Exception) {
+                if (sid >= 0) runCatching { pi.abandonSession(sid) }
+                stage = ""; E.toast("The update didn’t download (${e.message})")
+            } finally { downloading = false }
         }
+    }
+
+    var stage by mutableStateOf(""); internal set
+    /** Android's "Update this app?" screen, waiting for the app to be on screen to show it. */
+    var confirm: Intent? = null
+
+    fun showConfirm() {
+        val i = confirm ?: return
+        val a = E.activity ?: return
+        confirm = null
+        runCatching { a.startActivity(i) }
     }
 
     /** Right after an update: what changed. */

@@ -107,6 +107,9 @@
             </intent-filter>
         </service>
 
+        <!-- app updates: Android's installer reports back here -->
+        <receiver android:name=".engine.InstallReceiver" android:exported="false" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.files"

@@ -310,6 +310,7 @@ object E {
 
     /* ================= controls hide while music plays ================= */
     private var hideJob: Job? = null
+    private var bakeJob: Job? = null
     fun poke() {
         if (uiHidden) uiHidden = false
         hideJob?.cancel()
@@ -319,7 +320,7 @@ object E {
     }
 
     fun show(s: String) { if (screen != s) { screen = s; haptic() }; poke() }
-    fun lyricsVisible() = inPip || wide || screen == "lyrics"
+    fun lyricsVisible() = inPip || ((wide || screen == "lyrics") && settingsPage == null && !wizard)
     fun goHome() { settingsPage = null; screen = "player" }
 
     fun openSettings(page: String? = null) { settingsPage = page ?: SettingsUi.last; poke() }
@@ -396,7 +397,7 @@ object E {
         when (k) {
             "theme", "c1", "c2" -> Visuals.palDirty = true
             "bars" -> { Audio.setupBands(); Visuals.palDirty = true }
-            "bgblur", "bri", "sat" -> { Visuals.bake(false); Background.applyStill() }
+            "bgblur", "bri", "sat" -> { bakeJob?.cancel(); bakeJob = Vibe.scope.launch { delay(150); Visuals.bake(false); Background.applyStill() } }   // once the slider rests
             "bgStyle" -> Background.applyStill()
             "low" -> { Audio.setupBands(); Visuals.palDirty = true; CanvasVideo.applyMode() }
             "uiHide" -> poke()

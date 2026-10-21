@@ -12,6 +12,12 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.displayCutout
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -193,7 +199,8 @@ private fun pages(): List<Page> = listOf(
         Item.Sw("aSession", "Exact timing and controls from the Spotify app", "When the Spotify app on this phone plays, the lyrics follow its player exactly, song changes show at once, fewer requests go to Spotify, and play, pause, skip and seek work without Premium."),
         Item.Custom("notification access") { SessionStatus() },
         Item.Head("Canvas"),
-        Item.Sw("canvasOn", "Canvas split layout"), Item.Sw("cvNoArt", "Hide the cover while a Canvas plays"),
+        Item.Sw("canvasOn", "Canvas", "Spotify’s short looping video plays as the background behind the player (found by your server)."),
+        Item.Sw("cvNoArt", "Hide the cover while a Canvas plays", "Only the Canvas, no cover in front of it."),
         Item.Custom("Choose canvas video Canvas endpoint") { CanvasSection() },
     )),
     Page("perf", "Performance", VIcons.bolt, listOf(
@@ -255,7 +262,7 @@ fun SettingsScreen() {
         val wide = maxWidth >= 720.dp
         BackHandler { if (q.isNotEmpty()) q = "" else if (!wide && page != null && E.settingsPage == null) page = null else if (!wide && page != null) { page = null } else E.settingsPage = null }
         Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surfaceContainerLowest) {
-            Row(Modifier.fillMaxSize().statusBarsPadding()) {
+            Row(Modifier.fillMaxSize().statusBarsPadding().windowInsetsPadding(WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal))) {
                 if (wide || page == null || q.isNotEmpty()) {
                     Column(Modifier.then(if (wide) Modifier.width(300.dp) else Modifier.fillMaxWidth()).fillMaxHeight()) {
                         Row(Modifier.fillMaxWidth().padding(start = 8.dp, end = 8.dp, top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -267,7 +274,7 @@ fun SettingsScreen() {
                             trailingIcon = { if (q.isNotEmpty()) IconButton(onClick = { q = "" }) { Icon(Icons.Rounded.Close, "Clear") } },
                             colors = TextFieldDefaults.colors(focusedIndicatorColor = Color.Transparent, unfocusedIndicatorColor = Color.Transparent))
                         if (q.isNotEmpty() && !wide) SearchResults(all, q, Modifier.weight(1f))
-                        else LazyColumn(Modifier.weight(1f), contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 24.dp)) {
+                        else LazyColumn(Modifier.weight(1f).navigationBarsPadding(), contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 24.dp)) {
                             items(all, key = { it.id }) { p ->
                                 val on = page == p.id && wide
                                 Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 2.dp).clip(RoundedCornerShape(50)).background(if (on) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent)
@@ -284,7 +291,8 @@ fun SettingsScreen() {
                     if (wide && q.isNotEmpty()) SearchResults(all, q, Modifier.weight(1f))
                     else {
                         val p = all.find { it.id == (page ?: "look") } ?: all[0]
-                        AnimatedContent(p, Modifier.weight(1f), transitionSpec = { (slideInHorizontally { it / 6 } + fadeIn()) togetherWith fadeOut() }, label = "page") { pg ->
+                        // Android's shared-axis move: the old page is gone before the new one comes in, nothing overlaps
+                        AnimatedContent(p, Modifier.weight(1f), transitionSpec = { (slideInHorizontally(tween(260)) { it / 12 } + fadeIn(tween(200, delayMillis = 90))) togetherWith fadeOut(tween(90)) }, label = "page") { pg ->
                             Column(Modifier.fillMaxSize()) {
                                 Row(Modifier.fillMaxWidth().padding(start = 8.dp, end = 16.dp, top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
                                     if (!wide) IconButton(onClick = { page = null }) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back") } else Spacer(Modifier.width(16.dp))
@@ -577,11 +585,12 @@ private fun AppUpdates() {
     Column {
         Text(Updates.appStat, fontSize = 13.5.sp, color = Color.White)
         if (Updates.downloading) LinearProgressIndicator({ Updates.progress }, Modifier.fillMaxWidth().padding(vertical = 8.dp))
+        if (Updates.stage.isNotEmpty()) Text(Updates.stage + if (Updates.downloading) " " + (Updates.progress * 100).toInt() + "%" else "", fontSize = 13.sp, color = MaterialTheme.colorScheme.primary)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 6.dp)) {
             FilledTonalButton(onClick = { Updates.checkApp(true) }) { Text("Check for updates") }
             Updates.latest?.let { r -> Button(onClick = { Updates.install(r) }, enabled = !Updates.downloading) { Text("Update now") } }
         }
-        Hint("Updates come from the GitHub Releases page and install over this version through Android’s installer (it asks first). Your settings and saved lyrics stay.")
+        Hint("Update now downloads the new version from GitHub and installs it over this one; your settings and saved lyrics stay. The first time, Android asks you to allow it; after that, updates install by themselves.")
         if (Updates.notes.isNotEmpty()) {
             SectionLabel("Release notes")
             Updates.notes.forEachIndexed { i, n -> NoteView(n, i < 2) }

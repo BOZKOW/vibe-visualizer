@@ -5,7 +5,7 @@ import android.content.SharedPreferences
 import android.os.Handler
 import android.os.Looper
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import org.json.JSONObject
@@ -55,17 +55,17 @@ object Defaults {
 
 class Settings(ctx: Context) {
     private val sp: SharedPreferences = ctx.getSharedPreferences("settings", Context.MODE_PRIVATE)
-    private val v = mutableStateMapOf<String, Any>()
+    // one state per setting: a screen that reads a setting is only redrawn when that one changes
+    private val v = HashMap<String, MutableState<Any>>().also { m -> Defaults.S.forEach { (k, d) -> m[k] = mutableStateOf(d) } }
     private val main = Handler(Looper.getMainLooper())
     private val saveRun = Runnable { sp.edit().putString("S", toJson().toString()).apply() }
     var onChange: ((String) -> Unit)? = null
 
     init {
-        Defaults.S.forEach { (k, d) -> v[k] = d }
         sp.getString("S", null)?.let { runCatching { fromJson(JSONObject(it), emptySet(), notify = false) } }
     }
 
-    operator fun get(k: String): Any = v[k] ?: Defaults.S.getValue(k)
+    operator fun get(k: String): Any = v[k]?.value ?: Defaults.S.getValue(k)
     fun b(k: String): Boolean = get(k) as Boolean
     fun i(k: String): Int = (get(k) as Number).toInt()
     fun s(k: String): String = get(k) as String
@@ -74,8 +74,9 @@ class Settings(ctx: Context) {
     fun set(k: String, value: Any) {
         val d = Defaults.S[k] ?: return
         val x: Any = when (d) { is Int -> (value as Number).toInt(); else -> value }
-        if (v[k] == x) return
-        v[k] = x
+        val st = v[k] ?: return
+        if (st.value == x) return
+        st.value = x
         persist()
         onChange?.invoke(k)
     }
@@ -100,10 +101,10 @@ class Settings(ctx: Context) {
                 is String -> x as? String
                 else -> null
             }
-            if (ok != null) { if (notify) set(k, ok) else v[k] = ok; n++ }
+            if (ok != null) { if (notify) set(k, ok) else v[k]?.value = ok; n++ }
         }
         // the old "Use system font" checkbox
-        if (o.optBoolean("sysFont", false) && !o.has("lfont")) { if (notify) set("lfont", "system") else v["lfont"] = "system" }
+        if (o.optBoolean("sysFont", false) && !o.has("lfont")) { if (notify) set("lfont", "system") else v["lfont"]?.value = "system" }
         return n
     }
 }

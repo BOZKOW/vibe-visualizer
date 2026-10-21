@@ -1,6 +1,8 @@
 package io.github.bozkow.vibevisualizer.ui
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.runtime.remember
+import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -53,16 +55,19 @@ fun VibeRoot() {
                 E.poke()
             }
         }) {
-            BackgroundLayer()
-            if (E.inPip) PipScreen()
+            // while Settings or the setup guide cover the screen, the player isn't drawn at all (it would cost every frame)
+            val setT = remember { MutableTransitionState(false) }; setT.targetState = E.settingsPage != null
+            val wizT = remember { MutableTransitionState(false) }; wizT.targetState = E.wizard
+            val covered = (setT.currentState && setT.isIdle) || (wizT.currentState && wizT.isIdle)
+            if (E.inPip) { BackgroundLayer(); PipScreen() }
             else {
-                PlayerScreen()
+                if (!covered) { BackgroundLayer(); PlayerScreen() }
                 Snacks(Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = 8.dp))
                 if (S.b("fps")) Text(E.fpsText, Modifier.align(Alignment.TopEnd).statusBarsPadding().padding(top = 60.dp, end = 12.dp), fontFamily = FontFamily.Monospace, fontSize = 12.sp, color = Color.White.copy(alpha = .7f))
                 Sheets()
                 AskDialog()
-                AnimatedVisibility(E.settingsPage != null, enter = slideInHorizontally { it / 3 } + fadeIn(), exit = slideOutHorizontally { it / 3 } + fadeOut()) { SettingsScreen() }
-                AnimatedVisibility(E.wizard, enter = fadeIn() + slideInVertically { it / 8 }, exit = fadeOut() + slideOutVertically { it / 8 }) { SetupWizard() }
+                AnimatedVisibility(setT, enter = slideInHorizontally(tween(320)) { it }, exit = slideOutHorizontally(tween(260)) { it }) { SettingsScreen() }
+                AnimatedVisibility(wizT, enter = slideInVertically(tween(320)) { it }, exit = slideOutVertically(tween(260)) { it }) { SetupWizard() }
             }
         }
     }

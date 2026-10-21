@@ -38,6 +38,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
@@ -53,6 +54,8 @@ import androidx.compose.material.icons.automirrored.rounded.VolumeDown
 import androidx.compose.material.icons.automirrored.rounded.VolumeOff
 import androidx.compose.material.icons.automirrored.rounded.VolumeUp
 import androidx.compose.material.icons.rounded.Cast
+import androidx.compose.material.icons.rounded.Favorite
+import androidx.compose.material.icons.rounded.FavoriteBorder
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material.icons.rounded.GraphicEq
 import androidx.compose.material.icons.rounded.MoreVert
@@ -119,6 +122,7 @@ import io.github.bozkow.vibevisualizer.engine.FilePicker
 import io.github.bozkow.vibevisualizer.engine.Images
 import io.github.bozkow.vibevisualizer.engine.Lyr
 import io.github.bozkow.vibevisualizer.engine.NextUp
+import io.github.bozkow.vibevisualizer.engine.Updates
 import io.github.bozkow.vibevisualizer.engine.Visuals
 import io.github.bozkow.vibevisualizer.media.Local
 import io.github.bozkow.vibevisualizer.spotify.Spotify
@@ -134,7 +138,7 @@ fun PlayerScreen() {
         val wide = maxWidth >= 600.dp || (maxWidth > maxHeight && maxHeight < 520.dp)
         if (E.wide != wide) E.wide = wide
         BackHandler(enabled = !wide && E.screen != "player" && E.settingsPage == null && !E.wizard) { E.show("player") }
-        if (CanvasVideo.active && S.b("cvNoArt")) FullCanvas()
+        if (CanvasVideo.active) CanvasBackdrop(wide)
         val pad = Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.statusBars.union(WindowInsets.navigationBars).union(WindowInsets.displayCutout).only(WindowInsetsSides.Vertical + WindowInsetsSides.Horizontal))
         when {
             E.src == "none" -> Box(pad) { EmptyState() }
@@ -152,7 +156,7 @@ private fun NowPlaying() {
     Column(Modifier.fillMaxSize().padding(horizontal = 24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
         Header()
         Box(Modifier.weight(1f).fillMaxWidth().padding(vertical = 12.dp), contentAlignment = Alignment.Center) {
-            if (!(CanvasVideo.cvmode && S.b("cvNoArt"))) CoverOrCanvas(Modifier.aspectRatio(1f, matchHeightConstraintsFirst = true), corner = 22.dp)
+            if (!(CanvasVideo.cvmode && S.b("cvNoArt"))) CoverArt(Modifier.aspectRatio(1f, matchHeightConstraintsFirst = true), corner = 22.dp)
         }
         TitleRow(big = true)
         Spacer(Modifier.height(10.dp))
@@ -191,7 +195,7 @@ private fun VizScreen() {
         Spacer(Modifier.height(8.dp))
         Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
             Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
-                if (!(CanvasVideo.cvmode && S.b("cvNoArt"))) Box(Modifier.fillMaxWidth(.5f).aspectRatio(1f)) { CoverOrCanvas(Modifier.fillMaxSize(), corner = 18.dp) }
+                if (!(CanvasVideo.cvmode && S.b("cvNoArt"))) Box(Modifier.fillMaxWidth(.5f).aspectRatio(1f)) { CoverArt(Modifier.fillMaxSize(), corner = 18.dp) }
                 Spacer(Modifier.height(16.dp))
                 Column(Modifier.padding(horizontal = 24.dp)) { TitleRow(big = false, center = true) }
             }
@@ -216,7 +220,7 @@ private fun Tablet() {
         Column(Modifier.fillMaxHeight().weight(.42f).widthIn(max = 480.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Header()
             Box(Modifier.weight(1f).fillMaxWidth().padding(vertical = 12.dp), contentAlignment = Alignment.Center) {
-                if (!(CanvasVideo.cvmode && S.b("cvNoArt"))) CoverOrCanvas(Modifier.aspectRatio(1f, matchHeightConstraintsFirst = true), corner = 22.dp)
+                if (!(CanvasVideo.cvmode && S.b("cvNoArt"))) CoverArt(Modifier.aspectRatio(1f, matchHeightConstraintsFirst = true), corner = 22.dp)
             }
             TitleRow(big = true)
             SeekRow()
@@ -236,7 +240,7 @@ private fun LandscapePhone() {
         Row(Modifier.weight(1f).fillMaxWidth()) {
             Column(Modifier.fillMaxHeight().weight(.34f), horizontalAlignment = Alignment.CenterHorizontally) {
                 Box(Modifier.weight(1f).fillMaxWidth().padding(top = 10.dp, bottom = 8.dp), contentAlignment = Alignment.Center) {
-                    if (!(CanvasVideo.cvmode && S.b("cvNoArt"))) CoverOrCanvas(Modifier.aspectRatio(1f, matchHeightConstraintsFirst = true), corner = 16.dp)
+                    if (!(CanvasVideo.cvmode && S.b("cvNoArt"))) CoverArt(Modifier.aspectRatio(1f, matchHeightConstraintsFirst = true), corner = 16.dp)
                 }
                 TitleRow(big = false, center = true)
             }
@@ -304,7 +308,7 @@ private fun EmptyState() {
 private fun Header(modifier: Modifier = Modifier) {
     E.sec.intValue
     val sp = E.src == "spotify"
-    val status = E.statusLine()
+    val status = if (Updates.downloading) "Downloading the update · " + (Updates.progress * 100).toInt() + "%" else E.statusLine()
     val top = when (E.src) { "spotify" -> "PLAYING FROM SPOTIFY"; "file" -> "PLAYING ON THIS PHONE"; else -> "VIBE VISUALIZER" }
     val sub = status ?: when (E.src) { "spotify" -> Spotify.device?.name?.let { "on $it" } ?: if (Spotify.meta == null) "Nothing playing" else ""; "file" -> Local.position(); else -> "" }
     Row(modifier.fillMaxWidth().height(56.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -321,7 +325,7 @@ private fun Header(modifier: Modifier = Modifier) {
 @Composable
 private fun MiniHeader() {
     Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 8.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-        Box(Modifier.size(52.dp).clip(RoundedCornerShape(10.dp)).clickable { E.show("player") }) { CoverOrCanvas(Modifier.fillMaxSize(), corner = 10.dp, small = true) }
+        Box(Modifier.size(52.dp).clip(RoundedCornerShape(10.dp)).clickable { E.show("player") }) { CoverArt(Modifier.fillMaxSize(), corner = 10.dp, small = true) }
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f).clickable { E.show("player") }) {
             Text(E.title, style = TextStyle(shadow = textShadow), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -375,9 +379,13 @@ private fun TitleRow(big: Boolean, center: Boolean = false) {
 private fun LikeButton() {
     Spotify.version
     val liked = Spotify.liked == true
-    val sc by animateFloatAsState(if (liked) 1f else .9f, spring(.4f, Spring.StiffnessMedium), label = "like")
-    IconButton(onClick = { E.haptic(); Spotify.toggleLike() }, enabled = Spotify.meta?.ep == false, modifier = Modifier.semantics { contentDescription = if (liked) "Remove from Liked Songs" else "Save to Liked Songs" }) {
-        Icon(if (liked) VIcons.heartOn else VIcons.heart, null, Modifier.size(26.dp).graphicsLayer { scaleX = sc; scaleY = sc }, tint = if (liked) Color(0xFF1ED760) else Color.White)
+    val pop = remember { Animatable(1f) }
+    LaunchedEffect(liked) { if (liked && !S.low && !E.reduceMotion()) { pop.snapTo(.6f); pop.animateTo(1f, spring(.35f, Spring.StiffnessMedium)) } }
+    // the icon's edge lines up with the title's right edge (the touch area reaches past it)
+    IconButton(onClick = { E.haptic(); Spotify.toggleLike() }, enabled = Spotify.meta?.ep == false,
+        modifier = Modifier.offset(x = 12.dp).semantics { contentDescription = if (liked) "Remove from Liked Songs" else "Save to Liked Songs" }) {
+        Icon(if (liked) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder, null, Modifier.size(28.dp).graphicsLayer { scaleX = pop.value; scaleY = pop.value },
+            tint = if (liked) Color(0xFF1ED760) else Color.White)
     }
 }
 
@@ -483,17 +491,12 @@ private fun LyricsCredits() {
 
 /* ================= cover and Canvas ================= */
 
-/** The cover, or the Canvas video in its place while one plays (Apple Music's motion art). */
+/** The cover, in its frame (the Canvas plays behind the player, not in here). */
 @Composable
-fun CoverOrCanvas(modifier: Modifier, corner: Dp, small: Boolean = false) {
-    val cv = CanvasVideo.cvmode && !S.b("cvNoArt")
-    val a by animateFloatAsState(if (cv) 1f else 0f, tween(800), label = "cv")
+fun CoverArt(modifier: Modifier, corner: Dp, small: Boolean = false) {
     val shape = RoundedCornerShape(corner)
     Box(modifier.then(if (small) Modifier else Modifier.shadow(24.dp, shape, ambientColor = Color.Black, spotColor = Color.Black)).clip(shape).background(Color.White.copy(alpha = .08f))) {
         Cover(Modifier.fillMaxSize())
-        // the video needs its view from the start: its first frame (which reveals it) can only be drawn into one
-        if (CanvasVideo.active && !S.b("cvNoArt")) AndroidView({ ctx -> TextureView(ctx).also { CanvasVideo.bindView(it) } }, Modifier.fillMaxSize().alpha(a),
-            update = { tv -> tv.post { coverFit(tv) } }, onRelease = { CanvasVideo.unbind(it) })
     }
 }
 
@@ -522,15 +525,21 @@ fun Cover(modifier: Modifier = Modifier) {
     }
 }
 
-/** "Hide the cover while a Canvas plays": the Canvas fills the screen behind everything, fading out at the bottom. */
+/** The Canvas is the background: the video fills the screen behind the player and fades into the blurred Canvas toward
+ *  the bottom, so the controls stay readable. Behind the lyrics it's dimmed right down, so the words stay sharp. On a
+ *  wide screen it fills the left side and fades out to the right, as in the web app. The view is there from the start:
+ *  the video's first frame (which reveals it) can only be drawn into one. */
 @Composable
-private fun FullCanvas() {
-    val a by animateFloatAsState(if (CanvasVideo.cvmode) 1f else 0f, tween(800), label = "fullcv")
-    Box(Modifier.fillMaxSize().alpha(a).graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }.drawWithContent {
-        drawContent()
-        drawRect(Brush.verticalGradient(0f to Color.Black, .55f to Color.Black.copy(alpha = .9f), .8f to Color.Black.copy(alpha = .35f), 1f to Color.Transparent), blendMode = BlendMode.DstIn)
-        drawRect(Brush.verticalGradient(0f to Color.Black.copy(alpha = .35f), .25f to Color.Transparent, .6f to Color.Transparent, 1f to Color.Black.copy(alpha = .5f)))
-    }) {
+private fun CanvasBackdrop(wide: Boolean) {
+    val behindLyrics = !wide && E.screen == "lyrics"
+    val a by animateFloatAsState(if (!CanvasVideo.cvmode) 0f else if (behindLyrics) .25f else 1f, tween(800), label = "canvas")
+    Box((if (wide) Modifier.fillMaxHeight().fillMaxWidth(.56f) else Modifier.fillMaxSize()).alpha(maxOf(a, .01f))
+        .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }.drawWithContent {
+            drawContent()
+            val fade = arrayOf(0f to Color.Black, .45f to Color.Black, .58f to Color.Black.copy(alpha = .85f), .74f to Color.Black.copy(alpha = .5f), .88f to Color.Black.copy(alpha = .18f), 1f to Color.Transparent)
+            drawRect(if (wide) Brush.horizontalGradient(*fade) else Brush.verticalGradient(*fade), blendMode = BlendMode.DstIn)
+            drawRect(Brush.verticalGradient(0f to Color.Black.copy(alpha = .4f), .2f to Color.Transparent, .55f to Color.Transparent, 1f to Color.Black.copy(alpha = .45f)))
+        }) {
         AndroidView({ ctx -> TextureView(ctx).also { CanvasVideo.bindView(it) } }, Modifier.fillMaxSize(), update = { tv -> tv.post { coverFit(tv) } }, onRelease = { CanvasVideo.unbind(it) })
     }
 }
