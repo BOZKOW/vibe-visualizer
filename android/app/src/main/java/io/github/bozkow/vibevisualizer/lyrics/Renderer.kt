@@ -286,11 +286,12 @@ class LyricsRenderer {
                     }
                     rowW.add(x)
                     r.rowsW = rowW.toFloatArray()
-                    // right-aligned (the other singer) and right-to-left lines
+                    // right-aligned (the other singer) and right-to-left lines. A duet's lines wrap 14% short of the
+                    // other side, as Spicy Lyrics pads them, but the other singer's still end at the right edge
                     for (pc in ps) {
                         val rw = r.rowsW[(pc.y / lh).roundToInt()]
                         if (d.rtl) pc.x = rw - pc.x - pc.adv + (pc.adv - pc.w)
-                        if (d.opp) pc.x += maxW - rw
+                        if (d.opp) pc.x += avail - rw
                     }
                     r.h = (row + 1) * lh
                 } else {
@@ -829,7 +830,7 @@ class LyricsRenderer {
                             else -> .58f
                         } * subA)
                     }
-                    c.save(); c.translate(0f, ry); sl.draw(c); c.restore()
+                    c.save(); c.translate(if (d.opp) W - padL - padR - sl.width else 0f, ry); sl.draw(c); c.restore()   // the other singer: at the right edge
                 }
             }
             c.restore()
