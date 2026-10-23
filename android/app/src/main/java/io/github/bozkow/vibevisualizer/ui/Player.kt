@@ -48,6 +48,8 @@ import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.navigationBarsIgnoringVisibility
+import androidx.compose.foundation.layout.statusBarsIgnoringVisibility
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.VolumeDown
@@ -146,7 +148,7 @@ fun PlayerScreen() {
         if (E.wide != wide) E.wide = wide
         BackHandler(enabled = !wide && E.screen != "player" && E.settingsPage == null && !E.wizard) { E.show("player") }
         if (CanvasVideo.active) CanvasBackdrop(wide)
-        val pad = Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.statusBars.union(WindowInsets.navigationBars).union(WindowInsets.displayCutout).only(WindowInsetsSides.Vertical + WindowInsetsSides.Horizontal))
+        val pad = Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.statusBarsIgnoringVisibility.union(WindowInsets.navigationBarsIgnoringVisibility).union(WindowInsets.displayCutout).only(WindowInsetsSides.Vertical + WindowInsetsSides.Horizontal))
         when {
             E.src == "none" -> Box(pad) { EmptyState() }
             wide -> Box(pad) { WideLayout() }

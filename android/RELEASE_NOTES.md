@@ -1,6 +1,5 @@
-Vibe Visualizer for Android 0.1.8 (beta). Android 12 or newer; it installs over 0.1.7 (Settings → Help & about → Update now).
+Vibe Visualizer for Android 0.1.9 (beta). Android 12 or newer; it installs over 0.1.8 (Settings → Help & about → Update now).
 
-### Changes
+### Fixes
 
-- Your settings stay: Test and save (Settings → Help & about → Your server) replaced all of this phone's settings with the ones kept on your server; now it only tests and saves the address. Only a new install takes the server's settings, in the setup guide. Settings are also written to storage at once before an update installs and when you leave the app, so nothing changed in the last moment is lost
-- Glass: lists and menus fade out softly at their edges where they scroll under a header or the search field, instead of being cut off in a hard line: Settings, quick settings, the sheets, the choice menus and the setup guide
+- Hiding the status bar or the navigation bar (Settings → Phone) no longer stretches the layout into their space, and a swipe that brings them back for a moment no longer makes it jump: the player, Settings, quick settings, the sheets and the setup guide keep the same size either way

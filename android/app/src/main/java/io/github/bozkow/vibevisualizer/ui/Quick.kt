@@ -90,7 +90,7 @@ fun QuickPanel(vis: MutableTransitionState<Boolean>) {
     }
     AnimatedVisibility(vis, enter = slideInVertically(tween(300)) { -it / 4 } + fadeIn(tween(220)) + scaleIn(tween(300), initialScale = .96f),
         exit = slideOutVertically(tween(200)) { -it / 5 } + fadeOut(tween(160)) + scaleOut(tween(200), targetScale = .97f)) {
-        Box(Modifier.fillMaxSize().statusBarsPadding().padding(12.dp), contentAlignment = Alignment.TopCenter) {
+        Box(Modifier.fillMaxSize().statusBarsSpace().padding(12.dp), contentAlignment = Alignment.TopCenter) {
             val shape = RoundedCornerShape(30.dp)
             Box(Modifier.widthIn(max = 560.dp).fillMaxWidth().heightIn(max = 760.dp).shadow(28.dp, shape).clip(shape)
                 .then(if (S.glass) Modifier.glass(shape, strong = true) else Modifier.background(MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = .96f)))

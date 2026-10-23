@@ -33,6 +33,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.statusBarsIgnoringVisibility
+import androidx.compose.foundation.layout.navigationBarsIgnoringVisibility
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.draw.drawWithContent
@@ -76,6 +80,11 @@ fun Modifier.fadeEdges(top: Dp = 28.dp, bottom: Dp = 0.dp): Modifier = this
         drawRect(Brush.verticalGradient(0f to Color.Transparent, t to Color.Black, (1 - b) to Color.Black, 1f to if (b > 0f) Color.Transparent else Color.Black),
             blendMode = androidx.compose.ui.graphics.BlendMode.DstIn)
     }
+
+/** Room for the status bar / the navigation bar, the same whether it shows or is hidden (Settings → Phone): hiding the
+ *  bars, or a swipe bringing them back for a moment, doesn't stretch or jump the layout. */
+@Composable fun Modifier.statusBarsSpace(): Modifier = windowInsetsPadding(WindowInsets.statusBarsIgnoringVisibility)
+@Composable fun Modifier.navBarsSpace(): Modifier = windowInsetsPadding(WindowInsets.navigationBarsIgnoringVisibility)
 
 /** An icon from an SVG path (24×24 unless said otherwise). */
 fun svgIcon(d: String, size: Float = 24f): ImageVector = ImageVector.Builder(defaultWidth = 24.dp, defaultHeight = 24.dp, viewportWidth = size, viewportHeight = size)

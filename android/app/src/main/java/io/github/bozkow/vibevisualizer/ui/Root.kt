@@ -67,8 +67,8 @@ fun VibeRoot() {
             if (E.inPip) { BackgroundLayer(); PipCanvas(); PipScreen() }
             else {
                 if (!covered) Box(Modifier.fillMaxSize().then(if (qBlur > .1f) Modifier.blur(qBlur.dp) else Modifier)) { BackgroundLayer(); PlayerScreen() }
-                Snacks(Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = 8.dp))
-                if (S.b("fps")) Text(E.fpsText, Modifier.align(Alignment.TopEnd).statusBarsPadding().padding(top = 60.dp, end = 12.dp), fontFamily = FontFamily.Monospace, fontSize = 12.sp, color = Color.White.copy(alpha = .7f))
+                Snacks(Modifier.align(Alignment.BottomCenter).navBarsSpace().padding(bottom = 8.dp))
+                if (S.b("fps")) Text(E.fpsText, Modifier.align(Alignment.TopEnd).statusBarsSpace().padding(top = 60.dp, end = 12.dp), fontFamily = FontFamily.Monospace, fontSize = 12.sp, color = Color.White.copy(alpha = .7f))
                 Sheets()
                 QuickPanel(qT)
                 AskDialog()

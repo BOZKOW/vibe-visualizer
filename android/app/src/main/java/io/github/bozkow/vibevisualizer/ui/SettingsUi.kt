@@ -14,6 +14,7 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.statusBarsIgnoringVisibility
 import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.only
@@ -281,7 +282,7 @@ fun SettingsScreen() {
         BackHandler { if (q.isNotEmpty()) q = "" else if (!wide && page != null && E.settingsPage == null) page = null else if (!wide && page != null) { page = null } else E.settingsPage = null }
         if (S.glass) GlassBackdrop()   // Glass: the blurred cover shows through
         Surface(Modifier.fillMaxSize(), color = if (S.glass) Color.Transparent else MaterialTheme.colorScheme.surfaceContainerLowest) {
-            Row(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.statusBars.union(WindowInsets.displayCutout).only(WindowInsetsSides.Top)).windowInsetsPadding(WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal))) {
+            Row(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.statusBarsIgnoringVisibility.union(WindowInsets.displayCutout).only(WindowInsetsSides.Top)).windowInsetsPadding(WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal))) {
                 if (wide || page == null || q.isNotEmpty()) {
                     Column(Modifier.then(if (wide) Modifier.width(300.dp) else Modifier.fillMaxWidth()).fillMaxHeight()) {
                         Row(Modifier.fillMaxWidth().padding(start = 8.dp, end = 8.dp, top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -294,10 +295,10 @@ fun SettingsScreen() {
                             colors = if (S.glass) TextFieldDefaults.colors(focusedIndicatorColor = Color.Transparent, unfocusedIndicatorColor = Color.Transparent, focusedContainerColor = Color.Transparent, unfocusedContainerColor = Color.Transparent)
                                 else TextFieldDefaults.colors(focusedIndicatorColor = Color.Transparent, unfocusedIndicatorColor = Color.Transparent))
                         if (q.isNotEmpty() && !wide) SearchResults(all, q, Modifier.weight(1f))
-                        else if (S.glass) LazyColumn(Modifier.weight(1f).fadeEdges(24.dp, 24.dp).navigationBarsPadding(), contentPadding = androidx.compose.foundation.layout.PaddingValues(start = 14.dp, end = 14.dp, bottom = 24.dp)) {
+                        else if (S.glass) LazyColumn(Modifier.weight(1f).fadeEdges(24.dp, 24.dp).navBarsSpace(), contentPadding = androidx.compose.foundation.layout.PaddingValues(start = 14.dp, end = 14.dp, bottom = 24.dp)) {
                             glassPages(all, page, wide) { q = ""; page = it }
                         }
-                        else LazyColumn(Modifier.weight(1f).navigationBarsPadding(), contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 24.dp)) {
+                        else LazyColumn(Modifier.weight(1f).navBarsSpace(), contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 24.dp)) {
                             items(all, key = { it.id }) { p ->
                                 val on = wide && (page ?: SettingsUi.last) == p.id
                                 Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 2.dp).clip(RoundedCornerShape(50)).background(if (on) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent)
@@ -336,7 +337,7 @@ private fun SearchResults(all: List<Page>, q: String, modifier: Modifier) {
     val ql = q.trim().lowercase()
     val hits = all.mapNotNull { p -> val its = p.items.filter { it !is Item.Head && it !is Item.Sub && it.search.lowercase().contains(ql) }; if (its.isEmpty()) null else p to its }
     if (hits.isEmpty()) { Text("No setting matches that.", Modifier.padding(24.dp), color = Color.White.copy(alpha = .6f)); return }
-    LazyColumn(modifier.then(if (S.glass) Modifier.fadeEdges(24.dp, 24.dp) else Modifier).navigationBarsPadding(), contentPadding = androidx.compose.foundation.layout.PaddingValues(start = 20.dp, end = 20.dp, bottom = 40.dp)) {
+    LazyColumn(modifier.then(if (S.glass) Modifier.fadeEdges(24.dp, 24.dp) else Modifier).navBarsSpace(), contentPadding = androidx.compose.foundation.layout.PaddingValues(start = 20.dp, end = 20.dp, bottom = 40.dp)) {
         hits.forEach { (p, its) ->
             item(key = "h" + p.id) { SectionLabel(p.name) }
             items(its.size, key = { p.id + it }) { i -> ItemView(its[i]) }
@@ -347,7 +348,7 @@ private fun SearchResults(all: List<Page>, q: String, modifier: Modifier) {
 @Composable
 private fun ItemsList(items: List<Item>, modifier: Modifier) {
     val st = rememberLazyListState()
-    LazyColumn(modifier.then(if (S.glass) Modifier.fadeEdges(24.dp, 24.dp) else Modifier).navigationBarsPadding(), state = st, contentPadding = androidx.compose.foundation.layout.PaddingValues(start = if (S.glass) 14.dp else 20.dp, end = if (S.glass) 14.dp else 20.dp, bottom = 48.dp)) {
+    LazyColumn(modifier.then(if (S.glass) Modifier.fadeEdges(24.dp, 24.dp) else Modifier).navBarsSpace(), state = st, contentPadding = androidx.compose.foundation.layout.PaddingValues(start = if (S.glass) 14.dp else 20.dp, end = if (S.glass) 14.dp else 20.dp, bottom = 48.dp)) {
         if (S.glass) glassItems(items)
         else items(items.size) { i -> Box(Modifier.widthIn(max = 760.dp)) { ItemView(items[i]) } }
     }
