@@ -336,6 +336,7 @@ body.idle{cursor:none}
 #play{width:52px;height:52px;background:#fff;color:#111}#play svg{width:24px;height:24px}#play:hover{background:#eee}
 #seekwrap{flex:1 1 200px;display:flex;align-items:center;gap:14px;min-width:0;margin:0 10px}
 #time{font-variant-numeric:tabular-nums;color:var(--dim);font-size:13px;white-space:nowrap}
+#tcur,#tdur{display:none}   /* the times under the timeline (the Stage design) */
 #volwrap{display:flex;align-items:center;gap:8px}
 /* more Spotify controls: only while Spotify is the source */
 body:not([data-src=spotify]) .spx{display:none!important}
@@ -813,6 +814,83 @@ body.low #bar input[type=range]::-webkit-slider-thumb{transition:none}
 body.low #scrubtip{backdrop-filter:none;-webkit-backdrop-filter:none;background:rgba(22,22,38,.9)}body.low #lmsg .skr{animation:none}
 .drow,#pnav .pn,#pnavpill,.prow,select,#psearch,.tin,.f input[type=text],.f input[type=url],.f input[type=password]{border-radius:var(--r-sm)}
 </style>
+<style id="stageui">
+/* ===== Design: Stage (Settings → Appearance → Design), after Spicy Lyrics' Canvas Stage, drawn the way the Android app
+   is: the song's side on the left (the cover, or the Canvas filling that side and feathering into the background),
+   the title, the timeline with the times under it and the controls docked at its foot, round outlined buttons along
+   the top, the lyrics on the right. Glass's panels and settings stay. Every rule needs body.stage, so Glass and Classic
+   never see this sheet, and narrow or short windows keep the regular layout. ===== */
+@media (min-width:761px) and (min-height:521px){
+body.stage{--sw:clamp(300px,30vw,540px);--sfeather:calc(var(--sw)*.45);--dockw:max(var(--sw),420px);--volw:clamp(64px,5vw,100px)}
+/* the song's side and the lyrics; the lyrics run to the foot of the page when the dock fits beside them */
+body.stage #stage,body.stage.cvmode #stage{grid-template-columns:var(--sw) minmax(0,1fr);gap:clamp(40px,6vw,120px);padding:96px var(--pad) 70px}
+body.stage #left{justify-content:flex-end;padding-bottom:70px}
+body.stage #info{gap:22px}
+body.stage #artw,body.stage.cvmode #artw{width:min(100%,calc(100vh - 400px));min-width:min(100%,140px);margin:0;border-radius:22px;box-shadow:0 18px 50px rgba(0,0,0,.45);transition:opacity .9s cubic-bezier(.23,1,.32,1),scale .9s cubic-bezier(.23,1,.32,1),box-shadow .12s linear}
+body.stage #txt{text-align:left}
+body.stage #ttl{font-size:clamp(22px,1.7vw,32px);font-weight:700;letter-spacing:-.02em;line-height:1.15;text-shadow:0 2px 14px rgba(0,0,0,.45)}
+body.stage #sub{font-size:clamp(14px,1.05vw,18px);font-weight:500;margin-top:6px;color:rgba(255,255,255,.68);text-shadow:0 2px 14px rgba(0,0,0,.45)}
+/* a Canvas fills the song's side, 75% over the blurred copy behind it, feathering out in eased steps (a straight ramp
+   leaves a line), darker at the foot so the controls read; the cover makes way for it */
+body.stage #cvpane{width:calc(var(--pad) + var(--sw) + var(--sfeather));opacity:0;
+  -webkit-mask-image:linear-gradient(to left,transparent,rgba(0,0,0,.10) calc(var(--sfeather)*.18),rgba(0,0,0,.36) calc(var(--sfeather)*.38),rgba(0,0,0,.85) calc(var(--sfeather)*.72),#000 var(--sfeather));mask-image:linear-gradient(to left,transparent,rgba(0,0,0,.10) calc(var(--sfeather)*.18),rgba(0,0,0,.36) calc(var(--sfeather)*.38),rgba(0,0,0,.85) calc(var(--sfeather)*.72),#000 var(--sfeather))}
+body.stage.cvmode #cvpane{opacity:.75}
+body.stage #cvpane::after{background:linear-gradient(to top,rgba(0,0,0,.6),rgba(0,0,0,.6) 30%,transparent 58%),linear-gradient(to bottom,rgba(0,0,0,.35),transparent 18%)}
+body.stage.cvmode #artw{opacity:0;scale:1.04;pointer-events:none}
+/* the top: round outlined buttons in a row from the left, as in the Android app */
+body.stage #top{display:flex;justify-content:flex-start;flex-wrap:wrap;gap:10px;padding:26px var(--pad) 22px;background:none}
+body.stage #top .brand{width:44px;height:44px;margin:0;padding:0;justify-content:center;border-radius:50%;border:1px solid rgba(255,255,255,.32)}
+body.stage #top .brand span{display:none}
+body.stage #top .grp{display:flex;flex-wrap:wrap;gap:10px}
+body.stage #top .ib,body.stage #top .chip,body.stage #seg{background:transparent;border:1px solid rgba(255,255,255,.32);box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none}
+body.stage #top .ib:not(.gone){width:44px;height:44px}
+body.stage #top .chip{min-height:44px}
+body.stage #top .ib:hover,body.stage #top .chip:hover,body.stage .brand:hover{background:rgba(255,255,255,.12)}
+body.stage #top .ib.on,body.stage #top #trbtn.on,body.stage #top #rombtn.on,body.stage #top #lowbtn.on{background:rgba(255,255,255,.16)!important;border-color:rgba(255,255,255,.55);color:#fff;box-shadow:none}
+body.stage #cappanel,body.stage #netpanel{right:auto;left:var(--pad);top:84px;transform-origin:top left}
+/* the dock: under the song, the timeline with the times under it, then like · playback · where it plays and volume */
+body.stage #dock{left:var(--pad);right:auto;width:var(--dockw);bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:none;animation:stagedock .7s .1s var(--e-out) backwards}
+body.stage.uihide #dock{transform:translateY(12px)}
+@keyframes stagedock{from{opacity:0;transform:translateY(16px)}}
+body.stage #bar{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto auto auto auto minmax(0,1fr) auto auto auto;align-items:center;column-gap:4px;row-gap:8px;
+  padding:0;border:0;border-radius:0;background:none;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none}
+body.stage #seekwrap{grid-row:1;grid-column:1/-1;display:grid;grid-template-columns:1fr auto;row-gap:2px;margin:0}
+body.stage #seek{grid-column:1/-1;width:100%}
+body.stage #time{display:none}
+body.stage #tcur,body.stage #tdur{display:block;font-size:13px;font-weight:500;color:rgba(255,255,255,.68);font-variant-numeric:tabular-nums}
+body.stage #tdur{justify-self:end}
+body.stage #spx,body.stage:not(.novol) #volwrap:not([hidden]){display:contents}
+body.stage #like{grid-row:2;grid-column:1}
+body.stage #shuf{grid-row:2;grid-column:3}body.stage #prev{grid-row:2;grid-column:4}body.stage #play{grid-row:2;grid-column:5}
+body.stage #next{grid-row:2;grid-column:6}body.stage #rep{grid-row:2;grid-column:7}
+body.stage #devbtn{grid-row:2;grid-column:9}
+body.stage #spmute,body.stage #mute{grid-row:2;grid-column:10}
+body.stage #spvol,body.stage #volume{grid-row:2;grid-column:11;width:var(--volw)}
+body.stage #spvolval,body.stage #volval{display:none}
+body.stage #bar .ib{width:42px;height:42px;background:transparent;border:0;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none}
+body.stage #bar .ib svg{width:22px;height:22px}body.stage #bar #prev svg,body.stage #bar #next svg{width:28px;height:28px}body.stage #bar #shuf svg,body.stage #bar #rep svg{width:24px;height:24px}
+body.stage #bar .ib:hover{background:rgba(255,255,255,.1)}
+body.stage #bar .ib.on{background:transparent;color:var(--acc)}
+body.stage #bar #play{width:58px;height:58px;background:transparent;color:#fff}
+body.stage #bar #play svg{width:48px;height:48px}
+body.stage #bar #play:hover{background:rgba(255,255,255,.1)}
+/* a plain white timeline and volume, thick and rounded */
+body.stage #bar input[type=range]{height:22px}
+body.stage #bar input[type=range]::-webkit-slider-runnable-track{height:6px;border-radius:99px;box-shadow:none;background:linear-gradient(90deg,#fff var(--p,0%),rgba(255,255,255,.22) var(--p,0%))}
+body.stage #bar input[type=range]::-moz-range-track{height:6px;border-radius:99px;box-shadow:none;background:rgba(255,255,255,.22)}
+body.stage #bar input[type=range]::-moz-range-progress{height:6px;border-radius:99px;background:#fff}
+body.stage #bar input[type=range]::-webkit-slider-thumb{width:14px;height:14px;margin-top:-4px;border:0;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.35);opacity:0;transition:opacity .2s}
+body.stage #bar input[type=range]::-moz-range-thumb{width:14px;height:14px;border:0;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.35);opacity:0}
+body.stage #bar input[type=range]:hover::-webkit-slider-thumb,body.stage #bar input[type=range]:active::-webkit-slider-thumb,body.stage #bar input[type=range]:focus-visible::-webkit-slider-thumb{opacity:1;transform:none}
+body.stage #bar input[type=range]:hover::-moz-range-thumb,body.stage #bar input[type=range]:active::-moz-range-thumb{opacity:1}
+body.stage #devpanel{right:auto;left:var(--pad);transform-origin:bottom left}
+/* the lyrics credits in the corner sit under the lyrics, bottom right, on one line where they fit */
+body.stage:not(.credly) #lcredit{left:auto!important;right:var(--pad);bottom:calc(22px + env(safe-area-inset-bottom,0px))!important;max-width:min(44vw,640px)!important;
+  flex-direction:row;flex-wrap:wrap;justify-content:flex-end;column-gap:.7em;row-gap:0;text-align:right}
+}
+/* a window too narrow for the dock beside the lyrics: the lyrics end above it */
+@media (min-width:761px) and (max-width:1199px) and (min-height:521px){body.stage #stage,body.stage.cvmode #stage{padding-bottom:150px}body.stage #left{padding-bottom:0}}
+</style>
 </head>
 <body data-view="both" data-src="none">
 <div id="bg"><div id="bgimg"></div><canvas class="bl" width="128" height="128"></canvas><canvas class="bl" width="128" height="128"></canvas><canvas class="bl" width="128" height="128"></canvas><canvas id="bgl"></canvas><canvas id="kw"></canvas></div>
@@ -895,7 +973,7 @@ body.low #scrubtip{backdrop-filter:none;-webkit-backdrop-filter:none;background:
     <button class="ib" id="play" aria-label="Play or pause"><svg viewBox="0 0 24 24" id="pi"><path d="M8 5v14l11-7z"/></svg></button>
     <button class="ib" id="next" aria-label="Next" title="Next (N)" disabled><svg viewBox="0 0 24 24"><path d="M16 5h2v14h-2zM5 5l9.5 7L5 19z"/></svg></button>
     <button class="ib spx" id="rep" aria-label="Repeat: off" title="Repeat"><svg viewBox="0 0 24 24" id="repi"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></svg></button>
-    <div id="seekwrap"><input type="range" id="seek" min="0" max="1000" value="0" aria-label="Seek"><span id="time">0:00 / 0:00</span></div>
+    <div id="seekwrap"><input type="range" id="seek" min="0" max="1000" value="0" aria-label="Seek"><span id="time">0:00 / 0:00</span><span id="tcur">0:00</span><span id="tdur">0:00</span></div>
     <div id="spx" class="spx">
       <button class="ib" id="like" aria-label="Save to Liked Songs" aria-pressed="false" title="Save to Liked Songs (L)"><svg viewBox="0 0 24 24" id="likei"></svg></button>
       <button class="ib" id="devbtn" aria-label="Spotify devices" aria-haspopup="dialog" title="Choose where Spotify plays"><svg viewBox="0 0 24 24"><path d="M4 6h18V4H4a2 2 0 00-2 2v11H0v3h14v-3H4V6zm19 2h-6a1 1 0 00-1 1v10a1 1 0 001 1h6a1 1 0 001-1V9a1 1 0 00-1-1zm-1 9h-4v-7h4v7z"/></svg></button>
@@ -914,7 +992,7 @@ body.low #scrubtip{backdrop-filter:none;-webkit-backdrop-filter:none;background:
   <button class="ib" id="pclose" aria-label="Close settings"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" fill="none"/></svg></button>
 
   <h4>Design</h4>
-  <div class="f" data-k="design"><span class="lb">Design</span><select id="design"><option value="glass">Glass</option><option value="classic">Classic (the original look)</option></select><small class="hint">Glass: frosted glass everywhere, with controls that swell and squish like Liquid Glass. Classic: the original, simpler look.</small></div>
+  <div class="f" data-k="design"><span class="lb">Design</span><select id="design"><option value="glass">Glass</option><option value="stage">Stage</option><option value="classic">Classic (the original look)</option></select><small class="hint">Glass: frosted glass everywhere, with controls that swell and squish like Liquid Glass. Stage: the song on the left (its Canvas filling that side when it has one) with the controls under it, and the lyrics on the right, after Spicy Lyrics’ Canvas Stage, drawn like the Android app. Classic: the original, simpler look.</small></div>
   <div class="f" data-k="uiHide"><span class="lb">Top bar and controls</span><select id="uiHide"><option value="idle">Hide when the mouse is still</option><option value="never">Always visible</option></select><small class="hint">While music plays, the top bar and the bottom bar fade away after a few seconds without movement, and come back when you move the mouse.</small></div>
   <h4>Colors</h4>
   <div class="f" data-k="theme"><span class="lb">Theme</span><select id="theme"><option value="cover">Cover colors</option><option value="aurora">Aurora</option><option value="sunset">Sunset</option><option value="neon">Neon</option><option value="ice">Ice</option><option value="mono">Mono</option><option value="custom">Custom</option></select></div>
@@ -1339,7 +1417,7 @@ function animAsk(){   // once per browser: say why there are no animations, and 
   notify({key:'anim',kind:'warn',title:'Animations are off',msg:'Your computer asks apps to reduce motion (on Windows: Settings → Accessibility → Visual effects → Animation effects), so Vibe Visualizer’s animations are off.',
     actions:[{label:'Keep them off'},{label:'Turn animations on',pri:true,fn:()=>{S.anim='on';applyAnim();save();syncInputs();refreshReset()}}]});
 }
-function applyDesign(){const c=S.design==='classic';$('glassui').disabled=c;body.classList.toggle('classic',c)}   // Classic: the glass sheet is switched off
+function applyDesign(){const c=S.design==='classic';$('glassui').disabled=c;body.classList.toggle('classic',c);body.classList.toggle('stage',S.design==='stage');placeCredit()}   // Classic: the glass sheet is switched off; Stage builds on it
 function applyLB(){body.classList.toggle('lb',!!S.lblur&&!S.low)}
 // liquid tabs: a highlight stretches over both places like a drop of liquid, then lets go of the old one
 function liquidMove(p,box,axis){
@@ -3596,6 +3674,7 @@ scrubTip($('spvol'),f=>$('spvol').disabled?null:Math.round(f*100)+'%');
 function uiTick(now){
   if(now-lastUi<240)return;lastUi=now;nextUpTick();
   const d=curDur(),t=curTime();$('time').textContent=fmt(t)+' / '+fmt(d);
+  if(body.classList.contains('stage')){$('tcur').textContent=fmt(t);$('tdur').textContent=fmt(d)}
   if(!seeking){const sk=$('seek');sk.value=d?t/d*1000:0;fill(sk)}
 }
 function fsToggle(){try{document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen()}catch(e){toast('Fullscreen is not available here.','warn')}}
