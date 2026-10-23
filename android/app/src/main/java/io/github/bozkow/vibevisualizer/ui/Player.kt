@@ -168,9 +168,7 @@ private fun NowPlaying() {
         if (S.view == "both") BarsView(Modifier.fillMaxWidth().height(48.dp).padding(bottom = 6.dp))
         TitleRow(big = true)
         Spacer(Modifier.height(10.dp))
-        SeekRow()
-        Transport(big = true)
-        if (S.b("volshow")) VolumeRow()
+        Column(Modifier.fillMaxWidth().glassCard()) { SeekRow(); Transport(big = true); if (S.b("volshow")) VolumeRow() }
         BottomBar()
     }
 }
@@ -197,7 +195,7 @@ private fun LyricsScreen() {
         if (S.view == "both") BarsView(Modifier.fillMaxWidth().height(if (hidden) 96.dp else 64.dp).padding(horizontal = 12.dp))
         LyricsCredits()
         AnimatedVisibility(!hidden, enter = expandVertically(expandFrom = Alignment.Top) + fadeIn(), exit = shrinkVertically(shrinkTowards = Alignment.Top) + fadeOut()) {
-            Column(Modifier.padding(horizontal = 24.dp)) { SeekRow(); Transport(big = false); BottomBar() }
+            Column(Modifier.padding(horizontal = 24.dp)) { Column(Modifier.fillMaxWidth().glassCard()) { SeekRow(); Transport(big = false) }; BottomBar() }
         }
     }
 }
@@ -218,7 +216,7 @@ private fun VizScreen() {
             BarsView(Modifier.fillMaxWidth().fillMaxHeight(.44f).align(Alignment.BottomCenter).padding(horizontal = 10.dp))
         }
         AnimatedVisibility(!hidden, enter = expandVertically(expandFrom = Alignment.Top) + fadeIn(), exit = shrinkVertically(shrinkTowards = Alignment.Top) + fadeOut()) {
-            Column(Modifier.padding(horizontal = 24.dp)) { SeekRow(); Transport(big = false); BottomBar() }
+            Column(Modifier.padding(horizontal = 24.dp)) { Column(Modifier.fillMaxWidth().glassCard()) { SeekRow(); Transport(big = false) }; BottomBar() }
         }
     }
 }
@@ -242,9 +240,7 @@ private fun Tablet() {
             if (solo && S.view == "both") BarsView(Modifier.fillMaxWidth().height(56.dp).padding(bottom = 6.dp))
             TitleRow(big = true)
             if (solo) NoLyricsNote()
-            SeekRow()
-            Transport(big = true)
-            if (S.b("volshow")) VolumeRow()
+            Column(Modifier.fillMaxWidth().glassCard()) { SeekRow(); Transport(big = true); if (S.b("volshow")) VolumeRow() }
             BottomBar()
         }
         if (!solo) {
@@ -281,12 +277,12 @@ private fun LandscapePhone() {
             RightPane(Modifier.fillMaxHeight().weight(.66f))
         }
         AnimatedVisibility(!E.uiHidden || E.screen == "player") {
-            Column {
+            Column(Modifier.fillMaxWidth().glassCard()) {
                 SeekRow()
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Box(Modifier.weight(1f)) { Transport(big = false) }
                     Spacer(Modifier.width(16.dp))
-                    Box(Modifier.widthIn(max = 220.dp)) { BottomBar() }
+                    Box(Modifier.widthIn(max = 220.dp)) { BottomBar(pill = false) }   // already on the glass panel
                     MoreButton()
                 }
             }
@@ -443,18 +439,24 @@ private fun Transport(big: Boolean) {
     }
 }
 
+/** Glass: the seek bar and the buttons on a frosted panel. */
+private fun Modifier.glassCard(): Modifier = if (S.glass) this.glass(RoundedCornerShape(28.dp)).padding(horizontal = 14.dp, vertical = 4.dp) else this
+
 /** Lyrics · where it plays · Visualizer: the music app's bottom row. */
 @Composable
-private fun BottomBar() {
+private fun BottomBar(pill: Boolean = true) {
     val sp = E.src == "spotify"
-    // Glass: the bar floats as a frosted pill of its own
-    Row(Modifier.fillMaxWidth().padding(vertical = 4.dp).then(if (S.glass) Modifier.padding(horizontal = 28.dp).glass(RoundedCornerShape(50)) else Modifier),
-        horizontalArrangement = Arrangement.SpaceAround, verticalAlignment = Alignment.CenterVertically) {
+    val icons: @Composable () -> Unit = {
         BarIcon(VIcons.lyrics, "Lyrics", E.screen == "lyrics" && !E.wide || E.wide && E.screen != "viz") { E.show(if (E.screen == "lyrics" && !E.wide) "player" else "lyrics") }
         if (sp) BarIcon(Icons.Rounded.Cast, Spotify.device?.let { "Playing on ${it.name}" } ?: "Choose where Spotify plays", false) { E.sheet = "devices" }
         else BarIcon(Icons.Rounded.GraphicEq, "What the bars hear", false) { E.sheet = "audio" }
         BarIcon(VIcons.bars, "Visualizer", E.screen == "viz") { E.show(if (E.screen == "viz") (if (E.wide) "lyrics" else "player") else "viz") }
     }
+    // Glass: a frosted pill just as wide as its icons, in the middle (stretched across, it was cut off where space is short)
+    if (S.glass && pill) Box(Modifier.fillMaxWidth().padding(vertical = 4.dp), contentAlignment = Alignment.Center) {
+        Row(Modifier.glass(RoundedCornerShape(50)).padding(horizontal = 8.dp), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) { icons() }
+    }
+    else Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), horizontalArrangement = Arrangement.SpaceAround, verticalAlignment = Alignment.CenterVertically) { icons() }
 }
 
 @Composable

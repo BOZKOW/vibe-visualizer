@@ -54,12 +54,13 @@ import androidx.compose.ui.unit.sp
 import io.github.bozkow.vibevisualizer.core.S
 import io.github.bozkow.vibevisualizer.engine.E
 
-/** A frosted surface: Glass (translucent, a rim of light) or Classic (the original, flatter look). */
+/** Frosted glass (the Glass design): a dark tint that keeps white text readable, a frost that's lighter at the top,
+ *  and a shiny edge, bright along the top, as light catches glass. strong: for panels over busy content. */
 fun Modifier.glass(shape: Shape, strong: Boolean = false): Modifier {
     return this.clip(shape)
-        .background(Color(0xFF0C0C12).copy(alpha = if (strong) .62f else .42f), shape)
-        .background(Brush.verticalGradient(listOf(Color.White.copy(alpha = .09f), Color.White.copy(alpha = .03f))), shape)
-        .border(1.dp, Color.White.copy(alpha = .14f), shape)
+        .background(Color(0xFF101018).copy(alpha = if (strong) .58f else .34f), shape)
+        .background(Brush.verticalGradient(listOf(Color.White.copy(alpha = .17f), Color.White.copy(alpha = .06f), Color.White.copy(alpha = .09f))), shape)
+        .border(1.dp, Brush.verticalGradient(listOf(Color.White.copy(alpha = .5f), Color.White.copy(alpha = .1f), Color.White.copy(alpha = .24f))), shape)
 }
 
 /** An icon from an SVG path (24×24 unless said otherwise). */

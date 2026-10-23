@@ -57,6 +57,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge(statusBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT), navigationBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT))
         super.onCreate(savedInstanceState)
+        androidx.core.content.ContextCompat.registerReceiver(this, pipReceiver, android.content.IntentFilter(PIP_ACTION), androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED)
         window.isNavigationBarContrastEnforced = false
         E.attach(this)
         FilePicker.audio = {
@@ -145,8 +146,24 @@ class MainActivity : ComponentActivity() {
     /* ---- picture-in-picture ---- */
     private fun pipParams(auto: Boolean) {
         runCatching {
-            setPictureInPictureParams(PictureInPictureParams.Builder().setAspectRatio(Rational(16, 9)).setAutoEnterEnabled(auto).setSeamlessResizeEnabled(true).build())
+            setPictureInPictureParams(PictureInPictureParams.Builder().setAspectRatio(Rational(16, 9)).setAutoEnterEnabled(auto).setSeamlessResizeEnabled(true)
+                .setActions(pipActions()).build())
         }
+    }
+
+    // the controls on the picture-in-picture window (taps there don't reach the app's own buttons): previous,
+    // play / pause (it follows the music), next
+    private val pipReceiver = object : android.content.BroadcastReceiver() {
+        override fun onReceive(c: android.content.Context, i: Intent) { when (i.getStringExtra("a")) { "prev" -> E.prev(); "toggle" -> E.toggle(); "next" -> E.next() } }
+    }
+
+    private fun pipActions(): List<android.app.RemoteAction> {
+        fun act(a: String, icon: Int, title: String, req: Int) = android.app.RemoteAction(android.graphics.drawable.Icon.createWithResource(this, icon), title, title,
+            android.app.PendingIntent.getBroadcast(this, req, Intent(PIP_ACTION).setPackage(packageName).putExtra("a", a), android.app.PendingIntent.FLAG_IMMUTABLE or android.app.PendingIntent.FLAG_UPDATE_CURRENT))
+        val playing = E.playingState
+        return listOf(act("prev", R.drawable.pip_prev, "Previous", 1),
+            act("toggle", if (playing) R.drawable.pip_pause else R.drawable.pip_play, if (playing) "Pause" else "Play", 2),
+            act("next", R.drawable.pip_next, "Next", 3))
     }
 
     override fun onUserLeaveHint() {
@@ -191,5 +208,7 @@ class MainActivity : ComponentActivity() {
         return handled || super.onKeyDown(keyCode, event)
     }
 
-    override fun onDestroy() { super.onDestroy(); if (isFinishing) CanvasVideo.release() }
+    override fun onDestroy() { runCatching { unregisterReceiver(pipReceiver) }; super.onDestroy(); if (isFinishing) CanvasVideo.release() }
+
+    companion object { private const val PIP_ACTION = "io.github.bozkow.vibevisualizer.PIP" }
 }

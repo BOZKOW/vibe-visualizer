@@ -94,6 +94,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
@@ -287,10 +288,11 @@ fun SettingsScreen() {
                             IconButton(onClick = { E.settingsPage = null }) { Icon(Icons.Rounded.Close, "Close settings") }
                             Text("Settings", fontSize = 24.sp, fontWeight = FontWeight.ExtraBold)
                         }
-                        TextField(q, { q = it }, Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp).clip(RoundedCornerShape(28.dp)), singleLine = true,
+                        TextField(q, { q = it }, Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp).then(if (S.glass) Modifier.glass(RoundedCornerShape(28.dp)) else Modifier.clip(RoundedCornerShape(28.dp))), singleLine = true,
                             placeholder = { Text("Search settings") }, leadingIcon = { Icon(Icons.Rounded.Search, null) },
                             trailingIcon = { if (q.isNotEmpty()) IconButton(onClick = { q = "" }) { Icon(Icons.Rounded.Close, "Clear") } },
-                            colors = TextFieldDefaults.colors(focusedIndicatorColor = Color.Transparent, unfocusedIndicatorColor = Color.Transparent))
+                            colors = if (S.glass) TextFieldDefaults.colors(focusedIndicatorColor = Color.Transparent, unfocusedIndicatorColor = Color.Transparent, focusedContainerColor = Color.Transparent, unfocusedContainerColor = Color.Transparent)
+                                else TextFieldDefaults.colors(focusedIndicatorColor = Color.Transparent, unfocusedIndicatorColor = Color.Transparent))
                         if (q.isNotEmpty() && !wide) SearchResults(all, q, Modifier.weight(1f))
                         else if (S.glass) LazyColumn(Modifier.weight(1f).navigationBarsPadding(), contentPadding = androidx.compose.foundation.layout.PaddingValues(start = 14.dp, end = 14.dp, bottom = 24.dp)) {
                             glassPages(all, page, wide) { q = ""; page = it }
@@ -693,13 +695,25 @@ private fun GlassBackdrop() {
     val bm = Visuals.baked
     Box(Modifier.fillMaxSize().background(io.github.bozkow.vibevisualizer.ui.theme.Bg)) {
         if (bm != null) { val img = remember(bm) { bm.asImageBitmap() }; Image(img, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
-        Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = .4f)))
+        Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Black.copy(alpha = .5f), Color.Black.copy(alpha = .62f)))))
     }
 }
 
 @Composable
 private fun GlassGroup(content: @Composable ColumnScope.() -> Unit) {
     Column(Modifier.fillMaxWidth().widthIn(max = 760.dp).padding(vertical = 6.dp).glass(RoundedCornerShape(24.dp)), content = content)
+}
+
+/** A heading or a note between the glass cards: white enough, with a soft shadow, to read on any cover. */
+@Composable
+private fun GlassLabel(it: Item) {
+    val sh = androidx.compose.ui.text.TextStyle(shadow = androidx.compose.ui.graphics.Shadow(Color.Black.copy(alpha = .6f), androidx.compose.ui.geometry.Offset(0f, 1f), 6f))
+    when (it) {
+        is Item.Head -> Text(it.t, Modifier.padding(start = 8.dp, top = 22.dp, bottom = 4.dp), fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.White, style = sh)
+        is Item.Sub -> Text(it.t.uppercase(), Modifier.padding(start = 8.dp, top = 16.dp, bottom = 4.dp), fontSize = 12.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp, color = Color.White.copy(alpha = .85f), style = sh)
+        is Item.Txt -> Text(it.t, Modifier.padding(horizontal = 8.dp, vertical = 4.dp), fontSize = 13.sp, lineHeight = 18.sp, color = Color.White.copy(alpha = .85f), style = sh)
+        else -> {}
+    }
 }
 
 @Composable
@@ -713,7 +727,7 @@ private fun LazyListScope.glassItems(items: List<Item>) {
         else -> { if (groups.isEmpty() || groups.last().first is Item.Txt) groups.add(null to ArrayList()); groups.last().second.add(x) }
     }
     groups.forEachIndexed { gi, (h, its) ->
-        if (h != null) item(key = "h$gi") { Box(Modifier.padding(horizontal = 6.dp)) { ItemView(h) } }
+        if (h != null) item(key = "h$gi") { GlassLabel(h) }
         if (its.isNotEmpty()) item(key = "c$gi") { GlassGroup { its.forEachIndexed { i, x -> if (i > 0) GlassDivider(); Box(Modifier.padding(horizontal = 18.dp, vertical = 2.dp)) { ItemView(x) } } } }
     }
 }
