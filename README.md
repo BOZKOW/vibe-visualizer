@@ -58,7 +58,8 @@ On Android there's a native [Android app](#android-app) (beta): `vibe-visualizer
 - Instrumental breaks show Spicy Lyrics' three dots, which swell one after another and pop away just before the
   singing starts.
 - Line-synced and untimed lyrics too: untimed lyrics scroll slowly with the song, from its start to its end.
-- Four lyrics sources (Spicy Lyrics, Spotify, LRCLIB, NetEase Cloud Music), each switchable, in the order you choose.
+- Lyrics sources: your own files, Spicy Lyrics, Better Lyrics, Spotify, LRCLIB, NetEase Cloud Music, QQ Music, Kugou and
+  the AMLL TTML DB, each switchable, in the order you choose.
 - Romanization (Japanese, Korean, Chinese, Russian and other Cyrillic, Greek) and translation into any language, with
   a list of languages to leave untranslated. Both fill in time with the singing. Toggle them with `R` and `T`.
 - Timing that stays right: the lyrics resync with Spotify every 2 seconds, a resync button in the top bar,
@@ -153,7 +154,7 @@ your devices ──Tailscale HTTPS──▶ tailscale serve ──▶ 127.0.0.1:
                                                                                    ├─ Spicy Lyrics API (secret key)
                                                                                    ├─ per-device settings and error log (prefs/)
                                                                                    ├─ Spotify lyrics and Canvas (optional)
-                                                                                   ├─ NetEase lyrics lookup
+                                                                                   ├─ NetEase, Better Lyrics, QQ Music and Kugou lyrics lookups
                                                                                    └─ updates from GitHub (web/)
 ```
 
@@ -470,6 +471,11 @@ time, and you're responsible for whether using them is acceptable to you:
   player with *your own* `sp_dc` cookie (`config/sp_dc`). This isn't an official Spotify API and is against Spotify's
   terms of use. Leave `config/sp_dc` out to keep it off.
 - **NetEase Cloud Music lyrics** use NetEase's public web endpoints (unofficial).
+- **Better Lyrics** come from the free [Better Lyrics API](https://docs.betterlyrics.org): only songs already in its
+  cache are available without an API key, so the others count as not found. **QQ Music** lyrics come through its
+  `/qq` endpoint (unofficial). Your server sends the title, artist, album and length, as the API asks, and keeps the
+  answers for 7 days.
+- **Kugou lyrics** use Kugou's public lyrics endpoints (unofficial).
 - **Cover art** for local files is looked up through the iTunes Search API and MusicBrainz / Cover Art Archive.
 
 ## Privacy

@@ -9,6 +9,8 @@ GET /health                        ->  status JSON
 GET /lyrics?id=<spotify track id>  ->  Spicy Lyrics API answer (secret key stays on this server)
 GET /spotify-lyrics?id=<track id>   ->  Spotify's own lyrics via the web player session (unofficial, needs sp_dc)
 GET /netease?title=&artist=&duration=  ->  NetEase Cloud Music lyrics (unofficial API)
+GET /blyrics, /qq, /kugou ?title=&artist=&album=&duration=  ->  Better Lyrics (its API), QQ Music (via Better Lyrics) and
+                                        Kugou (unofficial) lyrics, the last two as Spicy Lyrics-style JSON
 GET/PUT/DELETE /prefs              ->  per-device Vibe Visualizer preferences, keyed by the device's Tailscale IP
 GET  /version                      ->  installed web app version, the newest one on GitHub, release notes, recent
                                         changes and the newest macOS app release
@@ -18,7 +20,7 @@ POST /update                       ->  download the newest web app files from Gi
 *    /spweb/<path>                  ->  relay to Spotify's Web API with the app's own login, so the app can read
                                        Spotify's Retry-After (browsers can't: Spotify doesn't expose it)
 """
-import asyncio, base64, hashlib, ipaddress, json, os, re, struct, time, urllib.error, urllib.parse, urllib.request
+import asyncio, base64, hashlib, ipaddress, json, os, re, struct, time, urllib.error, urllib.parse, urllib.request, zlib
 from playwright.async_api import async_playwright
 
 SP_DC_FILE = os.environ.get("SP_DC_FILE", "/config/sp_dc")
@@ -187,7 +189,7 @@ async def spicy_lyrics(track_id):
     return status, body if body is not None else {"error": "HTTP %d" % status}
 
 
-extra_cache = {}       # in memory only: ("spotify"|"netease", key) -> (status, body, expires)
+extra_cache = {}       # in memory only: ("spotify"|"netease"|"blyrics"|"qq"|"kugou", key) -> (status, body, expires)
 
 
 def cached(kind, key):
@@ -287,6 +289,153 @@ async def netease(title, artist, duration):
     remember("netease", key, status, body)
     return status, body
 
+
+
+# ---- more lyrics sources: Better Lyrics (its API: api.betterlyrics.org), Kugou and QQ Music ----
+# Better Lyrics' API is free and cache-first: songs it already has come without a key, anything else needs a key it
+# doesn't hand out, so those count as "not found". Its docs ask for the duration and the album in every request
+# (they are part of its cache key) and for answers to be kept, which remember() does (7 days). Kugou is asked
+# directly (its word-timed KRC lyrics, unofficial); QQ Music through Better Lyrics' /qq endpoint (word-timed QRC,
+# no key needed). Kugou and QQ answers become Spicy Lyrics-style JSON, which the app already reads.
+UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0 Safari/537.36"
+BL_API = "https://api.betterlyrics.org"
+KRC_KEY = bytes([64, 71, 97, 119, 94, 50, 116, 71, 81, 54, 49, 45, 206, 210, 110, 105])
+CREDIT_LINE = re.compile(r"^[^:：]{0,40}(词|曲|唱|编曲|制作|混音|母带|和声|和音|伴奏|吉他|贝斯|鼓|弦乐|录音|监制|出品|发行|企划|策划|统筹|by|lyrics|lyricist|"
+                         r"composer|composed|producer|produced|arranger|arranged|written|mixed|mastered|recorded|vocals?)\s*[:：]", re.I)
+
+
+def http_get(url, headers=None, timeout=20):
+    req = urllib.request.Request(url, headers=dict({"User-Agent": UA}, **(headers or {})))
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        return r.read()
+
+
+def norm_title(s):
+    """A title reduced for comparing: no "(feat. …)", "[Remastered]" or " - Extended Version", only letters and digits."""
+    s = re.sub(r"\s*[\(\[（【].*?[\)\]）】]", "", s or "")
+    s = re.sub(r"\s+-\s+.*$", "", s)
+    return re.sub(r"[\W_]+", "", s.lower())
+
+
+def syllable_json(lines, title):
+    """[(line_start_ms, [(start_ms, end_ms, text), ...]), ...] -> Spicy Lyrics-style JSON (Syllable). Credit lines and
+    the "Title - Artist" heading at the start are left out; a word ends where its text ends in a space."""
+    content, nt = [], norm_title(title)
+    for ls, toks in lines:
+        text = "".join(t for _, _, t in toks).strip()
+        if not text:
+            continue
+        if len(content) < 8 and (CREDIT_LINE.match(text) or (" - " in text and nt and any(nt == norm_title(x) for x in text.split(" - ")))):
+            continue
+        syl = []
+        for s, e, t in toks:
+            if syl and t[:1].isspace():
+                syl[-1]["IsPartOfWord"] = False
+            if not t.strip():
+                continue
+            syl.append({"Text": t.strip(), "StartTime": s / 1000, "EndTime": e / 1000, "IsPartOfWord": not t[-1:].isspace()})
+        if syl:
+            syl[-1]["IsPartOfWord"] = False
+            content.append({"Type": "Vocal", "OppositeAligned": False,
+                            "Lead": {"Syllables": syl, "StartTime": syl[0]["StartTime"], "EndTime": syl[-1]["EndTime"]}})
+    return {"Type": "Syllable", "Content": content} if content else None
+
+
+def bl_get(path, title, artist, album, duration):
+    q = {"s": title, "a": artist}
+    if album:
+        q["al"] = album
+    if duration:
+        q["d"] = int(round(duration))
+    try:
+        return 200, json.loads(http_get(BL_API + path + "?" + urllib.parse.urlencode(q), {"Accept": "application/json"}) or b"null")
+    except urllib.error.HTTPError as e:
+        return e.code, None
+
+
+def bl_status(status, name):
+    if status in (401, 404):   # 401: not in its cache, and fetching it fresh needs a key
+        return 404, {"error": "no lyrics on " + name}
+    if status == 429:
+        return 429, {"error": name + " is busy, try again in a minute"}
+    return 502, {"error": name + " did not answer (HTTP %d)" % status}
+
+
+def blyrics_work(title, artist, album, duration):
+    status, j = bl_get("/getLyrics", title, artist, album, duration)
+    if status != 200:
+        return bl_status(status, "Better Lyrics")
+    ttml = (j or {}).get("ttml")
+    return (200, {"ttml": ttml}) if ttml and "<p" in ttml else (404, {"error": "no lyrics on Better Lyrics"})
+
+
+def qq_work(title, artist, album, duration):
+    status, j = bl_get("/qq/getLyrics", title, artist, album, duration)
+    if status != 200:
+        return bl_status(status, "QQ Music")
+    m = re.search(r'LyricContent="(.*?)"\s*/?>', (j or {}).get("lyrics") or "", re.S)
+    if not m:
+        return 404, {"error": "no lyrics on QQ Music"}
+    import html as _h
+    lines = []
+    for l in _h.unescape(m.group(1)).splitlines():
+        lm = re.match(r"^\[(\d+),(\d+)\](.*)$", l.strip())
+        if lm:   # "[start,length]word(start,length)word(start,length)", times in ms from the song's start
+            toks = [(int(a), int(a) + int(b), t) for t, a, b in re.findall(r"(.*?)\((\d+),(\d+)\)", lm.group(3))]
+            if toks:
+                lines.append((int(lm.group(1)), toks))
+    body = syllable_json(lines, title)
+    return (200, {"lyrics": body}) if body else (404, {"error": "no lyrics on QQ Music"})
+
+
+def kugou_work(title, artist, duration):
+    q = urllib.parse.urlencode({"ver": 1, "man": "yes", "client": "pc", "keyword": (artist + " - " + title) if artist else title,
+                                "duration": int(duration * 1000), "hash": ""})
+    cands = (json.loads(http_get("https://lyrics.kugou.com/search?" + q) or b"null") or {}).get("candidates") or []
+    nt = norm_title(title)
+
+    def same(c):   # the same song and, when known, the same length (within 4 s): a live or extended cut has other timing
+        t = norm_title(c.get("song"))
+        return bool(nt and t and (nt in t or t in nt)) and (not duration or abs(int(c.get("duration") or 0) / 1000 - duration) <= 4)
+    best = next((c for c in cands if same(c)), None)
+    if not best:
+        return 404, {"error": "no lyrics on Kugou"}
+    q = urllib.parse.urlencode({"ver": 1, "client": "pc", "id": best["id"], "accesskey": best["accesskey"], "fmt": "krc", "charset": "utf8"})
+    content = (json.loads(http_get("https://lyrics.kugou.com/download?" + q) or b"null") or {}).get("content")
+    if not content:
+        return 404, {"error": "no lyrics on Kugou"}
+    raw = base64.b64decode(content)[4:]   # "krc1", then the text XOR-ed with a fixed key and zlib-packed
+    krc = zlib.decompress(bytes(b ^ KRC_KEY[i % 16] for i, b in enumerate(raw))).decode("utf-8", "replace")
+    lines = []
+    for l in krc.splitlines():
+        lm = re.match(r"^\[(\d+),(\d+)\](.*)$", l.strip())
+        if lm:   # "[start,length]<offset,length,0>word…", word offsets from the line's start
+            ls = int(lm.group(1))
+            toks = [(ls + int(o), ls + int(o) + int(d), t) for o, d, t in re.findall(r"<(\d+),(\d+),-?\d+>([^<]*)", lm.group(3))]
+            if toks:
+                lines.append((ls, toks))
+    body = syllable_json(lines, title)
+    return (200, {"lyrics": body}) if body else (404, {"error": "no lyrics on Kugou"})
+
+
+async def more_lyrics(kind, title, artist, album, duration):
+    key = (title.lower(), artist.lower(), (album or "").lower(), int(duration) // 3)
+    c = cached(kind, key)
+    if c:
+        return c
+    t0 = time.time()
+    try:
+        if kind == "blyrics":
+            status, body = await asyncio.to_thread(blyrics_work, title, artist, album, duration)
+        elif kind == "qq":
+            status, body = await asyncio.to_thread(qq_work, title, artist, album, duration)
+        else:
+            status, body = await asyncio.to_thread(kugou_work, title, artist, duration)
+    except (urllib.error.URLError, TimeoutError, ValueError, zlib.error) as e:
+        status, body = 502, {"error": "did not answer (%s)" % e}
+    timing[kind] = {"ms": int((time.time() - t0) * 1000), "status": status, "at": time.time()}
+    remember(kind, key, status, body)
+    return status, body
 
 def gh_get(url, raw=False):
     req = urllib.request.Request(url, headers={"User-Agent": "VibeVisualizer-updater", "Accept": "application/vnd.github+json"})
@@ -720,9 +869,17 @@ async def handle(reader, writer):
                 status, out = 400, {"error": "id must be a 22-character Spotify track id"}
             else:
                 status, out = await spicy_lyrics(tid)
-        elif route.endswith("/spotify-lyrics") or route.endswith("/netease"):
+        elif route.endswith(("/spotify-lyrics", "/netease", "/blyrics", "/qq", "/kugou")):
             if not client_ip(headers):
                 status, out = 403, {"error": "only for Vibe Visualizer on your tailnet"}
+            elif route.endswith(("/blyrics", "/qq", "/kugou")):
+                title = params.get("title", "").strip()[:200]
+                try:
+                    dur = float(params.get("duration") or 0)
+                except ValueError:
+                    dur = 0
+                status, out = (await more_lyrics(route.rsplit("/", 1)[1], title, params.get("artist", "").strip()[:200],
+                                                 params.get("album", "").strip()[:200], dur)) if title else (400, {"error": "title is required"})
             elif route.endswith("/netease"):
                 title = params.get("title", "").strip()[:200]
                 if not title:

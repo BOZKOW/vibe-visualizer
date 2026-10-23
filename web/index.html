@@ -1231,7 +1231,7 @@ function toast(msg,type,ms){
 /* ================= settings (one store) ================= */
 const LANGS=[['en','English'],['cs','Czech'],['sk','Slovak'],['de','German'],['es','Spanish'],['fr','French'],['it','Italian'],['pt','Portuguese'],['pl','Polish'],['nl','Dutch'],['sv','Swedish'],['da','Danish'],['no','Norwegian'],['fi','Finnish'],['hu','Hungarian'],['ro','Romanian'],['el','Greek'],['tr','Turkish'],['uk','Ukrainian'],['ru','Russian'],['ar','Arabic'],['he','Hebrew'],['hi','Hindi'],['th','Thai'],['vi','Vietnamese'],['id','Indonesian'],['tl','Filipino'],['ja','Japanese'],['ko','Korean'],['zh-CN','Chinese (Simplified)'],['zh-TW','Chinese (Traditional)']];
 const navLang=(()=>{const l=(navigator.language||'en').toLowerCase(),m=LANGS.find(x=>x[0].toLowerCase()===l)||LANGS.find(x=>x[0].split('-')[0]===l.split('-')[0]);return m?m[0]:'en'})();
-const DEF={bridge:true,xFocus:false,bgStyle:'dynamic',lfont:'vv',lsimple:false,lminimal:false,lhover:true,lduet:true,lcredLast:false,lsmooth:true,learly:false,learlyMs:250,lseekFade:true,lnotice:true,volshow:true,fpscap:'0',credPos:'corner',cvNoArt:false,capDev:'',romMode:'replace',tr:false,trTo:navLang,trSkip:'',theme:'cover',c1:'#ff5a5f',c2:'#4f8cff',auto:true,boost:100,resp:25,blur:0,bars:72,gap:28,glow:false,round:true,scale:'1',fps:false,bgblur:60,bri:70,sat:170,bgspeed:100,online:true,volume:100,view:'both',lprov:'spicy:1,spotify:1,lrclib:1,netease:1',loff:0,lsize:100,lblur:true,canvasOn:true,low:false,perfAsk:true,anim:'system',lDesync:'ask',design:'glass',uiHide:'idle',xRefCred:true,xScrub:true,xSkeleton:true,xKeep:true,xBgPop:false,xRefSimple:false,ljoin:false,lbgBr:false};
+const DEF={bridge:true,xFocus:false,bgStyle:'dynamic',lfont:'vv',lsimple:false,lminimal:false,lhover:true,lduet:true,lcredLast:false,lsmooth:true,learly:false,learlyMs:250,lseekFade:true,lnotice:true,volshow:true,fpscap:'0',credPos:'corner',cvNoArt:false,capDev:'',romMode:'replace',tr:false,trTo:navLang,trSkip:'',theme:'cover',c1:'#ff5a5f',c2:'#4f8cff',auto:true,boost:100,resp:25,blur:0,bars:72,gap:28,glow:false,round:true,scale:'1',fps:false,bgblur:60,bri:70,sat:170,bgspeed:100,online:true,volume:100,view:'both',lprov:'spicy:1,blyrics:1,spotify:1,lrclib:1,netease:1,qq:1,kugou:1',loff:0,lsize:100,lblur:true,canvasOn:true,low:false,perfAsk:true,anim:'system',lDesync:'ask',design:'glass',uiHide:'idle',xRefCred:true,xScrub:true,xSkeleton:true,xKeep:true,xBgPop:false,xRefSimple:false,ljoin:false,lbgBr:false};
 const CFGD={spotId:'',canvasUrl:''},OLDCFG=['spicyUrl','spicyHdr','spicyPfx','spicyKey'];   // old fields that kept a key in the browser: always removed
 // Everything (settings, API keys, Spotify login, setup progress) lives in sessionStorage:
 // it survives a reload and the Spotify login redirect, and the browser deletes it when the tab is closed.
@@ -2449,7 +2449,7 @@ function renderLyrics(label,quiet){
   dirty=true;
 }
 let lCredit=null;
-const PROVIDERS={amll:'AMLL TTML DB',spicy_lyrics:'Spicy Lyrics',apple_music:'Apple Music',spotify:'Spotify',lrclib:'LRCLIB',netease:'NetEase Cloud Music'};
+const PROVIDERS={amll:'AMLL TTML DB',spicy_lyrics:'Spicy Lyrics',apple_music:'Apple Music',spotify:'Spotify',lrclib:'LRCLIB',netease:'NetEase Cloud Music',blyrics:'Better Lyrics',qq:'QQ Music',kugou:'Kugou'};
 // credits laid out like Spicy Lyrics: "Provided by", then "Made by @maker" / "Uploaded by @uploader" with their
 // avatars. Visible the whole time lyrics are on screen (the Spicy Lyrics terms want attribution with the lyrics).
 const profileUrl=x=>x&&(x.url&&/^https:\/\//.test(x.url)?x.url:x.id?'https://spicylyrics.org/uid/'+encodeURIComponent(x.id):null);
@@ -3143,7 +3143,10 @@ const PROVS={local:{name:'Your lyrics files',desc:'TTML or LRC files you added �
   amll:{name:'AMLL TTML DB',desc:'community word-synced TTML lyrics (CC0), found by the Spotify track'},
   spotify:{name:'Spotify',desc:'Spotify’s own lyrics · needs the sp_dc cookie · unofficial'},
   lrclib:{name:'LRCLIB',desc:'free, open lyrics database'},
-  netease:{name:'NetEase Cloud Music',desc:'strong for Japanese, Chinese, Korean · unofficial'}};
+  netease:{name:'NetEase Cloud Music',desc:'strong for Japanese, Chinese, Korean · unofficial'},
+  blyrics:{name:'Better Lyrics',desc:'word-synced lyrics from the Better Lyrics API · the songs it already has'},
+  qq:{name:'QQ Music',desc:'word-synced, strong for Chinese songs · through the Better Lyrics API · unofficial'},
+  kugou:{name:'Kugou',desc:'word-synced, a big catalogue, strong for Chinese and Japanese · unofficial'}};
 function provList(){
   const out=[],seen=new Set();
   S.lprov.split(',').forEach(x=>{const[k,v]=x.split(':');if(PROVS[k]&&!seen.has(k)){seen.add(k);out.push({k,on:v!=='0'})}});
@@ -3209,6 +3212,28 @@ async function fromNetease(m){
   lines.forEach(l=>{if(l.dots)return;l.apiRom=at(rom,l.t);const tt=at(tr,l.t);if(tt){l.apiTr=tt;l.apiTrLang='zh'}});
   return{lines,sync:true,label:'NetEase',credit:{source:'netease'}};
 }
+// Better Lyrics, QQ Music and Kugou, asked by your server (it keeps their answers 7 days): Better Lyrics sends TTML,
+// QQ Music and Kugou come as Spicy Lyrics-style JSON. Better Lyrics' API wants the album and the length in every request
+async function fromServerSource(kind,m){
+  if(!PREFS)throw needServer();
+  if(!m.title)return null;
+  const q=new URLSearchParams({title:m.title,artist:(m.artist||'').split(',')[0].trim(),album:m.album||'',duration:Math.round(m.duration||0)});
+  const r=await timed(kind,()=>fetch('/api/'+kind+'?'+q));const j=await r.json().catch(()=>null);
+  if(r.status===404)return null;
+  if(!r.ok)throw new Error((j&&j.error)||('HTTP '+r.status));
+  return j;
+}
+async function fromBetterLyrics(m){
+  const j=await fromServerSource('blyrics',m);if(!j||!j.ttml)return null;
+  const t=fromText(j.ttml);if(!t.lines.length)return null;
+  return{lines:t.lines,sync:t.sync,label:'Better Lyrics',credit:{source:'blyrics',writers:t.writers||[]}};
+}
+const fromWordJson=(kind,label)=>async m=>{
+  const j=await fromServerSource(kind,m);if(!j||!j.lyrics)return null;
+  const p=parseSpicy(j.lyrics,m.duration);if(!p.lines.some(l=>!l.dots))return null;
+  return{lines:p.lines,sync:p.sync,label,credit:{source:kind}};
+};
+const fromQQ=fromWordJson('qq','QQ Music'),fromKugou=fromWordJson('kugou','Kugou');
 let lyAskAt=0,lookupLog=[];
 // one lookup: every source in your order until one has the song. opt.skip: sources not to ask (another source for
 // this song), opt.fresh: past the saved lyrics. lookupLog: what each source said (Settings → Lyrics cache)
@@ -3228,7 +3253,7 @@ async function loadLyrics(m,tok,opt){
     const saved=await lcGet(key);if(tok!==coverTok)return;
     if(saved){if(saved.r){lcache.set(key,saved.r);note(saved.r.prov||'?','saved on this device');applyLyrics(saved.r)}else{note('—','saved: no lyrics');clearLyrics('No lyrics for this song','None of your lyrics sources had it recently. Settings → Lyrics → Clear saved lyrics looks again.','none')}return}
   }
-  const FN={local:fromLocal,spicy:fromSpicy,amll:fromAmll,spotify:fromSpotifyLyrics,lrclib:fromLrclib,netease:fromNetease},errs=[];
+  const FN={local:fromLocal,spicy:fromSpicy,amll:fromAmll,spotify:fromSpotifyLyrics,lrclib:fromLrclib,netease:fromNetease,blyrics:fromBetterLyrics,qq:fromQQ,kugou:fromKugou},errs=[];
   for(const p of order){
     const t0=performance.now();
     try{
@@ -4095,7 +4120,8 @@ function netRender(){
   }else row('App server','opened as a local file, no server','–','');
   last(NET.spotify,'Spotify Web API','now playing',SP.access?'waiting for the first check':'not connected');
   last(NET.lrclib,'LRCLIB','lyrics','not used yet');
-  if(PREFS){last(NET.spotifylyr,'Spotify lyrics','via your server','not used yet');last(NET.netease,'NetEase Cloud Music','via your server','not used yet')}
+  if(PREFS){last(NET.spotifylyr,'Spotify lyrics','via your server','not used yet');last(NET.netease,'NetEase Cloud Music','via your server','not used yet');
+    last(NET.blyrics,'Better Lyrics','via your server','not used yet');last(NET.qq,'QQ Music','via your server','not used yet');last(NET.kugou,'Kugou','via your server','not used yet')}
   last(NET.google,'Google Translate','translation & romanization',S.tr||S.romMode!=='off'?'not used yet':'off');
   $('netrows').innerHTML=rows.join('');
   $('netnote').textContent=PREFS?'updates every 3 s':'';
