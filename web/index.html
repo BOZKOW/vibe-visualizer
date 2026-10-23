@@ -435,12 +435,14 @@ body.lsimple.xrefsimple:not(.low) .ll.a .lt.wt .w:not(.lg),body.lsimple.xrefsimp
   background-image:linear-gradient(to right,rgba(255,255,255,var(--gradient-alpha)) calc(50% - var(--fw)/2),rgba(255,255,255,var(--gradient-alpha-end)) calc(50% + var(--fw)/2));
   background-size:calc(200% + var(--fw)) calc(100% + .9em);background-repeat:no-repeat;background-position:calc((100% - var(--slm,-50%)) / 1.5) -.42em}
 body.lminimal #lyr:not(.st) .ll.p:not(.dp){opacity:0;pointer-events:none}
-/* Background vocal pop-out (Spicy Lyrics 6.4.50 'backgroundLinePop', AGPL-3.0): tucked under the line until it's sung,
-   then slides out while the lines below make room, and tucks back in once both are done */
+/* Background vocal pop-out (Spicy Lyrics 'backgroundLinePop', 6.4.70, AGPL-3.0): tucked under the line until it's sung,
+   then slides out while the lines below make room, and tucks back in once both are done. Only with Simple lyrics mode
+   and Refreshed simple lyrics mode on (bgPopOn), and it moves the same with reduced motion on */
 .ll .sub.bgv{transform-origin:left top}.ll.opp .sub.bgv{transform-origin:right top}
 body.xbgpop .ll .sub.bgv{max-height:6em;transition:max-height .5s var(--e-out),transform .5s var(--e-out) .1s,opacity .35s var(--e-out) .1s,margin .5s var(--e-out)}
 body.xbgpop #lyr:not(.st) .ll:not(.a) .sub.bgv{max-height:0;margin-top:0;opacity:0;transform:translateY(-.6em) scale(.8);pointer-events:none;
   transition:max-height .5s var(--e-out),transform .3s var(--e-out),opacity .12s ease-out,margin .5s var(--e-out)}
+body.rm.xbgpop .ll .sub.bgv{transition-duration:.5s,.5s,.35s,.5s!important}body.rm.xbgpop #lyr:not(.st) .ll:not(.a) .sub.bgv{transition-duration:.5s,.3s,.12s,.5s!important}
 body.lminimal.xkeep #lyr:not(.st) .ll.p.sa:not(.dp){opacity:.45;pointer-events:auto;--fb:0px}   /* Keep overlapping lines: sung after a line still going, it stays, dimmed */
 .ll{position:relative}
 @media(hover:hover){body.lhover #lyr:not(.st) .ll:not(.dots):not(.a):hover::before{content:"";position:absolute;inset:0 -.3em;border-radius:.35em;background:rgba(255,255,255,.08);pointer-events:none}}
@@ -1024,7 +1026,7 @@ body.low #scrubtip{backdrop-filter:none;-webkit-backdrop-filter:none;background:
   <div class="f chk" data-k="xScrub"><label><input type="checkbox" id="xScrub"> Scrub preview<small>Hovering or dragging the progress bar shows the time a click would jump to, and the volume bar shows the level it would set. From Spicy Lyrics 6.4.50.</small></label></div>
   <div class="f chk" data-k="xSkeleton"><label><input type="checkbox" id="xSkeleton"> Lyrics loading skeleton<small>While lyrics load, faint placeholder lines and a small “Loading lyrics” label instead of the big message. From Spicy Lyrics 6.4.0.</small></label></div>
   <div class="f chk" data-k="xKeep"><label><input type="checkbox" id="xKeep"> Keep overlapping lines<small>In Minimal lyrics mode, a line that ends while one above it is still being sung (overlapping lines, background vocals) stays on screen, dimmed, instead of disappearing early. From Spicy Lyrics 6.4.50.</small></label></div>
-  <div class="f chk" data-k="xBgPop"><label><input type="checkbox" id="xBgPop"> Background vocal pop-out<small>Background vocals stay tucked away under their line until it’s sung, then slide out from beneath it while the lines below make room, and tuck back in once both are done. From Spicy Lyrics 6.4.50.</small></label></div>
+  <div class="f chk" data-k="xBgPop"><label><input type="checkbox" id="xBgPop"> Background vocal pop-out<small>Background vocals stay tucked away under their line until it’s sung, then slide out from beneath it while the lines below make room, and tuck back in once both are done. Only in Simple lyrics mode with Refreshed simple lyrics mode on. From Spicy Lyrics 6.4.70.</small></label></div>
   <div class="f chk" data-k="xRefSimple"><label><input type="checkbox" id="xRefSimple"> Refreshed simple lyrics mode<small>In Simple lyrics mode, the sung part of a line fades in behind one soft edge that runs on from word to word, words float up as they’re sung (the next already rising before the last has settled), and the letters of a short held word swell, spread, lift and glow one after another, stronger the longer it’s held. Lines sit a little further apart. From Spicy Lyrics 6.4.50.</small></label></div>
   <div class="f chk" data-k="xFocus"><label><input type="checkbox" id="xFocus"> Focus mode<small>The line being sung is sharp in the middle and stays until it’s sung to the end. The next line flies in from the bottom 200 ms before it’s sung; if it starts while the middle line is still going, it waits right under it, sharp. Finished lines fly up and disappear, and instrumental breaks stay empty, without the dots. Lyrics without timing just scroll slowly with the song.</small></label></div>
 
@@ -1316,7 +1318,7 @@ function onSetting(k){
   else if(k==='view')applyView();
   else if(k==='credPos')applyCredPos();
   else if(k==='bridge'){if(S.bridge)bridgeConnect();else bridgeStop()}
-  else if(/^(xFocus|lsimple|lminimal|lhover|lduet|lcredLast|lsmooth|volshow|xKeep|xBgPop|xRefSimple|xScrub)$/.test(k)){applyLyrOpts();if(k==='xFocus'||k==='xBgPop'||k==='xRefSimple')setTimeout(place,60);if(k==='xRefSimple'||k==='lsimple')lEls.forEach(restLine)}
+  else if(/^(xFocus|lsimple|lminimal|lhover|lduet|lcredLast|lsmooth|volshow|xKeep|xBgPop|xRefSimple|xScrub)$/.test(k)){applyLyrOpts();if(k==='xFocus'||k==='xBgPop'||k==='xRefSimple'||k==='lsimple')setTimeout(place,60);if(k==='xRefSimple'||k==='lsimple')lEls.forEach(restLine)}
   else if(k==='ljoin'||k==='lbgBr'){if(L.length)renderLyrics(null,true)}
   else if(k==='xRefCred'){applyLyrOpts();renderCredit()}
   else if(k==='lnotice'&&!S.lnotice&&lmsg.className==='none')lyrMsg('');
@@ -1328,6 +1330,7 @@ function onSetting(k){
 function bgSpeed(){root.style.setProperty('--dur',(4000/Math.max(S.bgspeed,1))+'s');$('bg').classList.toggle('still',S.bgspeed==0||S.low)}
 const rmMq=matchMedia('(prefers-reduced-motion: reduce)');
 const rmOn=()=>S.anim==='off'||(S.anim!=='on'&&rmMq.matches);
+function bgPopOn(){return S.xBgPop&&S.lsimple&&S.xRefSimple}   // background vocal pop-out belongs to the refreshed simple layout (Spicy Lyrics 6.4.70)
 function applyAnim(){body.classList.toggle('rm',rmOn());const e=$('animstat');if(e)e.textContent=S.anim==='system'?(rmMq.matches?'Your system asks to reduce motion right now, so they’re off.':'Your system allows animations, so they’re on.'):''}
 rmMq.addEventListener&&rmMq.addEventListener('change',applyAnim);
 function animAsk(){   // once per browser: say why there are no animations, and offer to turn them on anyway
@@ -2503,7 +2506,7 @@ function refinedCredits(c){
 }
 // Settings → Lyrics credits: in the bottom-left corner, or pinned right under the lyrics. Never off.
 function applyLyrOpts(){   // Spicy Lyrics style options
-  [['xrefcred',S.xRefCred],['xscrub',S.xScrub],['xkeep',S.xKeep],['xbgpop',S.xBgPop],['xrefsimple',S.xRefSimple],['xfocus',S.xFocus],['lsimple',S.lsimple],['lminimal',S.lminimal],['lhover',S.lhover],['lduet',S.lduet],['nosmooth',!S.lsmooth],['novol',!S.volshow]].forEach(([c,on])=>body.classList.toggle(c,!!on));
+  [['xrefcred',S.xRefCred],['xscrub',S.xScrub],['xkeep',S.xKeep],['xbgpop',bgPopOn()],['xrefsimple',S.xRefSimple],['xfocus',S.xFocus],['lsimple',S.lsimple],['lminimal',S.lminimal],['lhover',S.lhover],['lduet',S.lduet],['nosmooth',!S.lsmooth],['novol',!S.volshow]].forEach(([c,on])=>body.classList.toggle(c,!!on));
   const last=L.filter(l=>!l.dots).pop();body.classList.toggle('credr',!!(S.lcredLast&&last&&last.opp));
 }
 function applyCredPos(){
@@ -2734,7 +2737,7 @@ async function decorate(fresh){   // fresh: lyrics just drawn, nothing on them t
   renderLyrics(null,true);
 }
 function setActive(i){
-  li=i;if(S.xBgPop)placeUntil=performance.now()+650;   // background vocals sliding in or out change the line's height: follow it
+  li=i;if(bgPopOn())placeUntil=performance.now()+650;   // background vocals sliding in or out change the line's height: follow it
   for(let j=0;j<lEls.length;j++){
     const d=Math.abs(j-i),sa=j<i&&lAct.size&&j>Math.min(...lAct)?' sa':'',c=lEls[j].dataset.b+sa+(lfi!==-2?(j===lfi&&!lfo?' fv':'')+(lfnSet.has(j)?' fn'+(lfsSet.has(j)?' fs':''):'')+(j<lfi||(j===lfi&&lfo)?' fu':''):'')+(lAct.has(j)?' a':j===i?(lOut?' p dp':' a'):j<i?' p':'')+(lAct.has(j)?'':d===1?' d1':d===2?' d2':d===3?' d3':d===4?' d4':d===5?' d5':d>5?' dx':'');
     if(lEls[j].className!==c)lEls[j].className=c;
