@@ -142,7 +142,7 @@ private fun pages(): List<Page> = listOf(
     Page("look", "Appearance", Icons.Rounded.Palette, listOf(
         Item.Head("Design"),
         Item.Ch("aDesign", "Design", listOf("android" to "Android", "glass" to "Glass"), "Android: Material You, with the colors of the cover. Glass: frosted glass over your cover: Settings, the panels and the sheets let the blurred cover show through."),
-        Item.Ch("uiHide", "Controls on the Lyrics and Visualizer screens", listOf("idle" to "Hide while music plays", "never" to "Always visible"), "While music plays, the controls under the lyrics and the visualizer slide away after a few seconds; a tap brings them back."),
+        Item.Ch("uiHide", "Controls while music plays", listOf("idle" to "Hide after a few seconds", "never" to "Always visible"), "While music plays untouched, the controls slide away after a few seconds on every screen (the song and the seek bar stay on Now Playing); a tap brings them back."),
         Item.Head("Colors"),
         Item.Ch("theme", "Theme", listOf("cover" to "Cover colors", "aurora" to "Aurora", "sunset" to "Sunset", "neon" to "Neon", "ice" to "Ice", "mono" to "Mono", "custom" to "Custom")),
         Item.Custom("Custom colors") { CustomColors() },

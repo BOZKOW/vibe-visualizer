@@ -166,8 +166,11 @@ fun PlayerScreen() {
 /* ================= Now Playing ================= */
 @Composable
 private fun NowPlaying() {
+    val hidden = E.uiHidden
     Column(Modifier.fillMaxSize().padding(horizontal = 24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        Header()
+        // while music plays untouched, the controls slide away (as in Spicy Lyrics Mobile): the cover, the song and the
+        // seek bar stay; a tap brings the rest back
+        AnimatedVisibility(!hidden, enter = expandVertically(expandFrom = Alignment.Top) + fadeIn(), exit = shrinkVertically(shrinkTowards = Alignment.Top) + fadeOut()) { Header() }
         Box(Modifier.weight(1f).fillMaxWidth().padding(vertical = 12.dp), contentAlignment = Alignment.Center) {
             if (!(CanvasVideo.cvmode && S.b("cvNoArt"))) CoverArt(Modifier.aspectRatio(1f, matchHeightConstraintsFirst = true).canvasShrink(), corner = 22.dp)
         }
@@ -175,9 +178,10 @@ private fun NowPlaying() {
         TitleRow(big = true)
         Spacer(Modifier.height(10.dp))
         SeekRow()
-        Transport(big = true)
-        if (S.b("volshow")) VolumeRow()
-        BottomBar()
+        AnimatedVisibility(!hidden, enter = expandVertically(expandFrom = Alignment.Top) + fadeIn(), exit = shrinkVertically(shrinkTowards = Alignment.Top) + fadeOut()) {
+            Column { Transport(big = true); if (S.b("volshow")) VolumeRow(); BottomBar() }
+        }
+        if (hidden) Spacer(Modifier.height(16.dp))
     }
 }
 
@@ -286,7 +290,7 @@ private fun LandscapePhone() {
             Spacer(Modifier.width(20.dp))
             RightPane(Modifier.fillMaxHeight().weight(.66f))
         }
-        AnimatedVisibility(!E.uiHidden || E.screen == "player") {
+        AnimatedVisibility(!E.uiHidden) {
             Column {
                 SeekRow()
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -468,8 +472,10 @@ private fun BottomBar(big: Boolean = true) {
 /** A round outlined button (filled softly while it's the screen you're on). */
 @Composable
 private fun BarIcon(icon: ImageVector, desc: String, on: Boolean, d: Dp = 54.dp, onClick: () -> Unit) {
-    Box(Modifier.size(d).clip(CircleShape).background(if (on) Color.White.copy(alpha = .16f) else Color.Transparent)
-        .border(1.dp, Color.White.copy(alpha = if (on) .55f else .32f), CircleShape).clickable { E.haptic(); onClick() }
+    val src = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+    val k by animateFloatAsState(if (on) 1f else 0f, tween(260), label = "baron")   // the highlight fades between screens
+    Box(Modifier.size(d).pressScale(src).clip(CircleShape).background(Color.White.copy(alpha = .16f * k))
+        .border(1.dp, Color.White.copy(alpha = .32f + .23f * k), CircleShape).clickable(src, androidx.compose.material3.ripple()) { E.haptic(); onClick() }
         .semantics { contentDescription = desc }, contentAlignment = Alignment.Center) {
         Icon(icon, null, Modifier.size(d * .42f), tint = Color.White)
     }
@@ -477,8 +483,10 @@ private fun BarIcon(icon: ImageVector, desc: String, on: Boolean, d: Dp = 54.dp,
 
 @Composable
 private fun CtlIcon(icon: ImageVector, desc: String, size: Dp = 24.dp, enabled: Boolean = true, on: Boolean = false, onClick: () -> Unit) {
-    IconButton(onClick = { E.haptic(); onClick() }, enabled = enabled, modifier = Modifier.size(maxOf(48.dp, size + 12.dp)).semantics { contentDescription = desc },
-        colors = IconButtonDefaults.iconButtonColors(containerColor = Color.Transparent, contentColor = if (on) MaterialThemeAccent() else Color.White, disabledContentColor = Color.White.copy(alpha = .3f))) {
+    val src = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+    val tint by androidx.compose.animation.animateColorAsState(if (on) MaterialThemeAccent() else Color.White, tween(220), label = "ctlon")   // shuffle / repeat light up softly
+    IconButton(onClick = { E.haptic(); onClick() }, enabled = enabled, interactionSource = src, modifier = Modifier.size(maxOf(48.dp, size + 12.dp)).pressScale(src, .86f).semantics { contentDescription = desc },
+        colors = IconButtonDefaults.iconButtonColors(containerColor = Color.Transparent, contentColor = tint, disabledContentColor = Color.White.copy(alpha = .3f))) {
         Icon(icon, null, Modifier.size(size))
     }
 }
@@ -491,8 +499,12 @@ private fun PlayButton(size: Dp) {
     val playing = E.playingState
     val pop = remember { Animatable(1f) }
     LaunchedEffect(playing) { if (!S.low && !E.reduceMotion()) { pop.snapTo(.86f); pop.animateTo(1f, spring(.45f, Spring.StiffnessMedium)) } }
-    Box(Modifier.size(size).clip(CircleShape).clickable { E.haptic(); E.toggle() }.semantics { contentDescription = if (playing) "Pause" else "Play" }, contentAlignment = Alignment.Center) {
-        Icon(if (playing) Icons.Rounded.Pause else Icons.Rounded.PlayArrow, null, Modifier.size(size).graphicsLayer { scaleX = pop.value; scaleY = pop.value }, tint = Color.White)
+    val src = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+    Box(Modifier.size(size).pressScale(src, .88f).clip(CircleShape).clickable(src, androidx.compose.material3.ripple()) { E.haptic(); E.toggle() }.semantics { contentDescription = if (playing) "Pause" else "Play" }, contentAlignment = Alignment.Center) {
+        // play and pause swap with a quick scale and fade
+        AnimatedContent(playing, transitionSpec = { (fadeIn(tween(160)) + scaleIn(tween(220), initialScale = .7f)) togetherWith (fadeOut(tween(120)) + scaleOut(tween(160), targetScale = .7f)) }, label = "playicon") { p ->
+            Icon(if (p) Icons.Rounded.Pause else Icons.Rounded.PlayArrow, null, Modifier.size(size).graphicsLayer { scaleX = pop.value; scaleY = pop.value }, tint = Color.White)
+        }
     }
 }
 
@@ -500,7 +512,8 @@ private fun PlayButton(size: Dp) {
 @Composable
 private fun SeekRow() {
     var drag by remember { mutableStateOf<Float?>(null) }
-    val frac = drag ?: E.seekFrac
+    val glide by animateFloatAsState(E.seekFrac, tween(260, easing = androidx.compose.animation.core.LinearEasing), label = "seek")
+    val frac = drag ?: if (kotlin.math.abs(E.seekFrac - glide) > .02f) E.seekFrac else glide   // a jump (seek, new song) isn't glided
     val dur = E.curDur()
     Column(Modifier.fillMaxWidth()) {
         ThickSeek(frac, onDrag = { f -> drag = f; E.seeking = true; E.poke() }, onDone = { f -> drag = null; E.seeking = false; E.seekFraction(f) }, enabled = E.src != "none" && dur > 0)

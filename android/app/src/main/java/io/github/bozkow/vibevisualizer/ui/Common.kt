@@ -29,6 +29,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -85,6 +86,16 @@ fun Modifier.fadeEdges(top: Dp = 28.dp, bottom: Dp = 0.dp): Modifier = this
  *  bars, or a swipe bringing them back for a moment, doesn't stretch or jump the layout. */
 @Composable fun Modifier.statusBarsSpace(): Modifier = windowInsetsPadding(WindowInsets.statusBarsIgnoringVisibility)
 @Composable fun Modifier.navBarsSpace(): Modifier = windowInsetsPadding(WindowInsets.navigationBarsIgnoringVisibility)
+
+/** A press you can feel: the thing shrinks a little while it's held and springs back (no motion with reduced motion). */
+@Composable
+fun Modifier.pressScale(src: androidx.compose.foundation.interaction.InteractionSource, to: Float = .9f): Modifier {
+    val pressed by src.collectIsPressedAsState()
+    val calm = S.low || io.github.bozkow.vibevisualizer.engine.E.reduceMotion()
+    val k by androidx.compose.animation.core.animateFloatAsState(if (pressed && !calm) to else 1f,
+        androidx.compose.animation.core.spring(.5f, androidx.compose.animation.core.Spring.StiffnessMediumLow), label = "press")
+    return this.graphicsLayer { scaleX = k; scaleY = k }
+}
 
 /** An icon from an SVG path (24×24 unless said otherwise). */
 fun svgIcon(d: String, size: Float = 24f): ImageVector = ImageVector.Builder(defaultWidth = 24.dp, defaultHeight = 24.dp, viewportWidth = size, viewportHeight = size)

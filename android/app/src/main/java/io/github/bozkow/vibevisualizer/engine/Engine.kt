@@ -337,7 +337,6 @@ object E {
     }
 
     /* ================= controls hide while music plays ================= */
-    private var hideJob: Job? = null
     private var bakeJob: Job? = null
     private var activeAt = 0L   // the last touch or play / pause: the frame loop slows down a while after
     /** Paused and untouched for a few seconds: nothing on screen moves much, 30 frames a second are enough. */
@@ -346,10 +345,17 @@ object E {
     fun poke() {
         activeAt = wall()
         if (uiHidden) uiHidden = false
-        hideJob?.cancel()
-        // only the full-screen lyrics and visualizer hide their controls (as a music app does); Now Playing keeps them
-        if (playing() && S.str("uiHide") != "never" && screen != "player" && !wide && settingsPage == null && sheet == null && !wizard)
-            hideJob = Vibe.scope.launch { delay(2800); if (sheet == null && settingsPage == null && screen != "player") uiHidden = true }
+    }
+
+    /** The controls may hide: music plays, nothing's open over the player, nobody's dragging the seek bar. */
+    private fun canHide() = playingState && S.str("uiHide") != "never" && settingsPage == null && sheet == null && !wizard && !seeking
+
+    /** Checked a few times a second (it used to be decided only at a touch, so when the music started later, they never
+     *  hid): three seconds untouched while music plays and they go; paused or with something open, they're back. */
+    private fun hideTick() {
+        val can = canHide()
+        if (!uiHidden && can && wall() - activeAt > 3000) uiHidden = true
+        else if (uiHidden && !can) uiHidden = false
     }
 
     fun show(s: String) { if (screen != s) { screen = s; haptic() }; poke() }
@@ -400,6 +406,7 @@ object E {
         if (tt != timeText) timeText = tt
         if (!seeking) seekFrac = if (d > 0) (c / d).toFloat().coerceIn(0f, 1f) else 0f
         if (src == "file") Local.tickSession()
+        hideTick()
     }
 
     /* ================= the activity ================= */
