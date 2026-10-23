@@ -1,6 +1,5 @@
-Vibe Visualizer for Android 0.1.13 (beta). Android 12 or newer; it installs over 0.1.12 (Settings → Help & about → Update now).
+Vibe Visualizer for Android 0.1.14 (beta). Android 12 or newer; it installs over 0.1.13 (Settings → Help & about → Update now).
 
-### What's new
+### Changes
 
-- Translation services (Settings → Translation → Translation service), as in Spicy Lyrics Mobile: Google Translate (free, as before), DeepL (your API key), LibreTranslate (your own server, or a key), AI through any OpenAI-compatible service (OpenAI, OpenRouter, Groq, Mistral, your own…) with its address, key and model, and AI through Gemini (your key from Google AI Studio). The keys stay on this phone, never in backups. The AI ones translate line by line with the whole song for meaning. Romanization is still done on the phone first, and Google fills in what it can't
-- A song name or artist too long for its row fades softly at the edges while it scrolls, instead of being cut off
+- A song without lyrics: the Lyrics screen now looks like Now Playing, with the big cover, the bars, the song and the seek bar, and the controls that slide away while the music plays, plus a short note under the song ("No lyrics for this song", and its button). The arrow at the top goes back to Now Playing

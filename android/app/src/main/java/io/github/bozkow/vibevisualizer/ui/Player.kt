@@ -165,7 +165,7 @@ fun PlayerScreen() {
 
 /* ================= Now Playing ================= */
 @Composable
-private fun NowPlaying() {
+private fun NowPlaying(noLyricsNote: Boolean = false) {
     val hidden = E.uiHidden
     Column(Modifier.fillMaxSize().padding(horizontal = 24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
         // while music plays untouched, the controls slide away (as in Spicy Lyrics Mobile): the cover, the song and the
@@ -176,6 +176,7 @@ private fun NowPlaying() {
         }
         if (S.view == "both") BarsView(Modifier.fillMaxWidth().height(48.dp).padding(bottom = 6.dp))
         TitleRow(big = true)
+        if (noLyricsNote) NoLyricsNote(Modifier.fillMaxWidth())
         Spacer(Modifier.height(10.dp))
         SeekRow()
         AnimatedVisibility(!hidden, enter = expandVertically(expandFrom = Alignment.Top) + fadeIn(), exit = shrinkVertically(shrinkTowards = Alignment.Top) + fadeOut()) {
@@ -188,21 +189,19 @@ private fun NowPlaying() {
 /* ================= Lyrics ================= */
 @Composable
 private fun LyricsScreen() {
+    // a song without lyrics: the Lyrics screen looks like Now Playing (big cover, the song, the seek bar, controls that
+    // slide away), with a short note under the song; the arrow at the top goes back to Now Playing
+    Crossfade(noLyrics(), label = "nolyrics") { big -> if (big) NowPlaying(noLyricsNote = true) else LyricsWithLyrics() }
+}
+
+@Composable
+private fun LyricsWithLyrics() {
     val hidden = E.uiHidden
-    val big = noLyrics()
     Column(Modifier.fillMaxSize()) {
-        MiniHeader(showCover = !big)
+        MiniHeader()
         var areaH by remember { mutableFloatStateOf(0f) }
         Box(Modifier.weight(1f).fillMaxWidth().onSizeChanged { areaH = it.height.toFloat() }) {
-            Crossfade(big, label = "nolyrics") { b ->
-                if (b) Column(Modifier.fillMaxSize().padding(horizontal = 24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Box(Modifier.weight(1f).fillMaxWidth().padding(vertical = 12.dp), contentAlignment = Alignment.Center) {
-                        if (!(CanvasVideo.cvmode && S.b("cvNoArt"))) CoverArt(Modifier.aspectRatio(1f, matchHeightConstraintsFirst = true).canvasShrink(), corner = 22.dp)
-                    }
-                    NoLyricsNote()
-                }
-                else LyricsPane(Modifier.fillMaxSize(), areaHeightPx = areaH, padStart = 24f, padEnd = 24f)
-            }
+            LyricsPane(Modifier.fillMaxSize(), areaHeightPx = areaH, padStart = 24f, padEnd = 24f)
         }
         if (S.view == "both") BarsView(Modifier.fillMaxWidth().height(if (hidden) 96.dp else 64.dp).padding(horizontal = 12.dp))
         LyricsCredits()
