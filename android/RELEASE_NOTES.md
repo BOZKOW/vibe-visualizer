@@ -1,4 +1,4 @@
-Vibe Visualizer for Android 0.2.0 (beta). Android 12 or newer; it installs over 0.1.10 (Settings → Help & about → Update now).
+Vibe Visualizer for Android 0.1.11 (beta). Android 12 or newer; it installs over 0.1.10 (Settings → Help & about → Update now).
 
 ### A new Now Playing
 
