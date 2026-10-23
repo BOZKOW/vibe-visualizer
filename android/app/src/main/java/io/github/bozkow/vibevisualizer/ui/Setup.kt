@@ -92,7 +92,7 @@ fun SetupWizard() {
                 TextButton(onClick = done) { Text("Skip setup") }
             }
             AnimatedContent(cur, Modifier.weight(1f), transitionSpec = { (slideInHorizontally { it / 4 } + fadeIn()) togetherWith (slideOutHorizontally { -it / 4 } + fadeOut()) }, label = "wz") { st ->
-                Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                Column(Modifier.fillMaxSize().then(if (S.glass) Modifier.fadeEdges(24.dp, 24.dp) else Modifier).verticalScroll(rememberScrollState()).padding(horizontal = 24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                     Column(Modifier.widthIn(max = 640.dp).fillMaxWidth()) {
                         when (st) {
                             "welcome" -> Welcome(useFile, useSp, { useFile = it }, { useSp = it })
@@ -151,7 +151,7 @@ private fun Welcome(f: Boolean, s: Boolean, setF: (Boolean) -> Unit, setS: (Bool
 }
 
 @Composable
-fun ServerField(onDone: () -> Unit = {}) {
+fun ServerField(onDone: () -> Unit = {}, importPrefs: Boolean = false) {
     var t by remember { mutableStateOf(Vibe.cfg.server.removePrefix("https://").removePrefix("http://")) }
     var stat by remember { mutableStateOf("") }
     var h by remember { mutableStateOf<JSONObject?>(null) }
@@ -165,7 +165,9 @@ fun ServerField(onDone: () -> Unit = {}) {
             try {
                 val r = Net.fetch("$b/api/health", noCache = true)
                 h = r.json(); stat = if (r.ok && h != null) "✓ Your server answers." else "Your server answered, but not like Vibe Visualizer (HTTP ${r.code})."
-                if (r.ok) { Sync.importFromServer { Lyr.refreshCounts() }; Ping.kick(); onDone() }
+                // the setup guide on a new phone takes the settings kept on your server; afterwards Test and save only tests
+                // and saves the address (it used to replace all of this phone's settings with the server's)
+                if (r.ok) { if (importPrefs) Sync.importFromServer { Lyr.refreshCounts() } else Lyr.refreshCounts(); Ping.kick(); onDone() }
             } catch (e: Exception) {
                 stat = "Couldn’t reach it: " + (e.message ?: "") + when { Net.privateDns.value -> ". Private DNS is on: it hides Tailscale names (Settings → Connections → More connection settings → Private DNS → Off)."; !Net.vpn.value -> ". Is Tailscale connected on this phone?"; else -> "." }
             }
@@ -196,7 +198,7 @@ fun Tag(t: String, ok: Boolean) {
 private fun ServerStep() {
     H("Your Vibe Visualizer server")
     P("Spicy Lyrics, Spotify’s own lyrics and Canvas videos, and NetEase lyrics come from your server, over Tailscale. Keep Tailscale connected on this phone. Your keys stay on the server; the app never sees them.")
-    ServerField()
+    ServerField(importPrefs = Vibe.settings.fresh)
     Spacer(Modifier.height(10.dp))
     Hint("Without a server, LRCLIB, AMLL and your own lyrics files still work, and so does everything else. Settings you kept on the server for this phone (from the old app) come along when it’s found.")
 }

@@ -92,10 +92,10 @@ fun QuickPanel(vis: MutableTransitionState<Boolean>) {
         exit = slideOutVertically(tween(200)) { -it / 5 } + fadeOut(tween(160)) + scaleOut(tween(200), targetScale = .97f)) {
         Box(Modifier.fillMaxSize().statusBarsPadding().padding(12.dp), contentAlignment = Alignment.TopCenter) {
             val shape = RoundedCornerShape(30.dp)
-            Column(Modifier.widthIn(max = 560.dp).fillMaxWidth().heightIn(max = 760.dp).shadow(28.dp, shape).clip(shape)
+            Box(Modifier.widthIn(max = 560.dp).fillMaxWidth().heightIn(max = 760.dp).shadow(28.dp, shape).clip(shape)
                 .then(if (S.glass) Modifier.glass(shape, strong = true) else Modifier.background(MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = .96f)))
-                .clickable(remember { MutableInteractionSource() }, null) {}   // taps inside don't close it
-                .verticalScroll(rememberScrollState()).padding(16.dp)) {
+                .clickable(remember { MutableInteractionSource() }, null) {}) {   // taps inside don't close it
+            Column(Modifier.then(if (S.glass) Modifier.fadeEdges(18.dp, 18.dp) else Modifier).verticalScroll(rememberScrollState()).padding(16.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f).padding(start = 4.dp)) {   // the song, and what this is
                         Text(E.title.ifEmpty { "Quick settings" }, fontSize = 19.sp, fontWeight = FontWeight.Bold, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -149,6 +149,7 @@ fun QuickPanel(vis: MutableTransitionState<Boolean>) {
                 QuickRow(Icons.Rounded.GraphicEq, "What the bars hear", Audio.label) { E.sheet = "audio" }
                 if (Server.set) QuickRow(Icons.Rounded.NetworkCheck, "Connection", "Your server · " + Ping.label) { Ping.open = true; Ping.kick(); E.sheet = "net" }
                 QuickRow(Icons.Rounded.Settings, "All settings", null) { close(); E.openSettings() }
+            }
             }
         }
     }

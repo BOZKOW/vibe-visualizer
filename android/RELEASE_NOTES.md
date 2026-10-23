@@ -1,7 +1,6 @@
-Vibe Visualizer for Android 0.1.7 (beta). Android 12 or newer; it installs over 0.1.6 (Settings → Help & about → Update now).
+Vibe Visualizer for Android 0.1.8 (beta). Android 12 or newer; it installs over 0.1.7 (Settings → Help & about → Update now).
 
 ### Changes
 
-- Glass stays out of the player: Now Playing, Lyrics, the Visualizer and the wide layouts look the same in both designs again (no frosted panel behind the controls, no glass bar). Glass is in Settings, quick settings and the sheets
-
-From 0.1.6: controls on the picture-in-picture window, and the Glass fixes.
+- Your settings stay: Test and save (Settings → Help & about → Your server) replaced all of this phone's settings with the ones kept on your server; now it only tests and saves the address. Only a new install takes the server's settings, in the setup guide. Settings are also written to storage at once before an update installs and when you leave the app, so nothing changed in the last moment is lost
+- Glass: lists and menus fade out softly at their edges where they scroll under a header or the search field, instead of being cut off in a hard line: Settings, quick settings, the sheets, the choice menus and the setup guide

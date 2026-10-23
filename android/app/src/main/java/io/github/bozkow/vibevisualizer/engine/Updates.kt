@@ -89,7 +89,8 @@ object Updates {
     fun install(rel: AppRel) {
         if (downloading) return
         downloading = true; progress = 0f; stage = "Downloading the update…"
-        prefs.edit().putString("whatsnew", rel.tag).apply()
+        Vibe.settings.flush()   // the installer ends the app: every setting is on disk first
+        prefs.edit().putString("whatsnew", rel.tag).commit()
         Vibe.scope.launch {
             var sid = -1
             val pi = Vibe.app.packageManager.packageInstaller

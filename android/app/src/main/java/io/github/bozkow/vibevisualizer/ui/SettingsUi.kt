@@ -294,7 +294,7 @@ fun SettingsScreen() {
                             colors = if (S.glass) TextFieldDefaults.colors(focusedIndicatorColor = Color.Transparent, unfocusedIndicatorColor = Color.Transparent, focusedContainerColor = Color.Transparent, unfocusedContainerColor = Color.Transparent)
                                 else TextFieldDefaults.colors(focusedIndicatorColor = Color.Transparent, unfocusedIndicatorColor = Color.Transparent))
                         if (q.isNotEmpty() && !wide) SearchResults(all, q, Modifier.weight(1f))
-                        else if (S.glass) LazyColumn(Modifier.weight(1f).navigationBarsPadding(), contentPadding = androidx.compose.foundation.layout.PaddingValues(start = 14.dp, end = 14.dp, bottom = 24.dp)) {
+                        else if (S.glass) LazyColumn(Modifier.weight(1f).fadeEdges(24.dp, 24.dp).navigationBarsPadding(), contentPadding = androidx.compose.foundation.layout.PaddingValues(start = 14.dp, end = 14.dp, bottom = 24.dp)) {
                             glassPages(all, page, wide) { q = ""; page = it }
                         }
                         else LazyColumn(Modifier.weight(1f).navigationBarsPadding(), contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 24.dp)) {
@@ -336,7 +336,7 @@ private fun SearchResults(all: List<Page>, q: String, modifier: Modifier) {
     val ql = q.trim().lowercase()
     val hits = all.mapNotNull { p -> val its = p.items.filter { it !is Item.Head && it !is Item.Sub && it.search.lowercase().contains(ql) }; if (its.isEmpty()) null else p to its }
     if (hits.isEmpty()) { Text("No setting matches that.", Modifier.padding(24.dp), color = Color.White.copy(alpha = .6f)); return }
-    LazyColumn(modifier.navigationBarsPadding(), contentPadding = androidx.compose.foundation.layout.PaddingValues(start = 20.dp, end = 20.dp, bottom = 40.dp)) {
+    LazyColumn(modifier.then(if (S.glass) Modifier.fadeEdges(24.dp, 24.dp) else Modifier).navigationBarsPadding(), contentPadding = androidx.compose.foundation.layout.PaddingValues(start = 20.dp, end = 20.dp, bottom = 40.dp)) {
         hits.forEach { (p, its) ->
             item(key = "h" + p.id) { SectionLabel(p.name) }
             items(its.size, key = { p.id + it }) { i -> ItemView(its[i]) }
@@ -347,7 +347,7 @@ private fun SearchResults(all: List<Page>, q: String, modifier: Modifier) {
 @Composable
 private fun ItemsList(items: List<Item>, modifier: Modifier) {
     val st = rememberLazyListState()
-    LazyColumn(modifier.navigationBarsPadding(), state = st, contentPadding = androidx.compose.foundation.layout.PaddingValues(start = if (S.glass) 14.dp else 20.dp, end = if (S.glass) 14.dp else 20.dp, bottom = 48.dp)) {
+    LazyColumn(modifier.then(if (S.glass) Modifier.fadeEdges(24.dp, 24.dp) else Modifier).navigationBarsPadding(), state = st, contentPadding = androidx.compose.foundation.layout.PaddingValues(start = if (S.glass) 14.dp else 20.dp, end = if (S.glass) 14.dp else 20.dp, bottom = 48.dp)) {
         if (S.glass) glassItems(items)
         else items(items.size) { i -> Box(Modifier.widthIn(max = 760.dp)) { ItemView(items[i]) } }
     }
@@ -399,7 +399,7 @@ fun ItemView(it: Item) {
                         ResetBtn(it.k)
                         Icon(Icons.Rounded.KeyboardArrowDown, null, tint = Color.White.copy(alpha = .6f))
                     }
-                    DropdownMenu(open, { open = false }, shape = RoundedCornerShape(18.dp)) {
+                    DropdownMenu(open, { open = false }, glassMenu(), shape = RoundedCornerShape(18.dp), containerColor = glassMenuColor()) {
                         it.opts.forEach { (v, l) -> DropdownMenuItem(text = { Text(l, fontWeight = if (v == S.str(it.k)) FontWeight.Bold else FontWeight.Normal) }, onClick = { open = false; E.haptic(); S.set(it.k, v) }) }
                     }
                 }
@@ -446,7 +446,7 @@ private fun AudioChoice() {
             }
             Icon(Icons.Rounded.KeyboardArrowDown, null)
         }
-        DropdownMenu(open, { open = false }) {
+        DropdownMenu(open, { open = false }, glassMenu(), containerColor = glassMenuColor()) {
             opts.forEach { (k, l) -> DropdownMenuItem(text = { Text(l) }, onClick = { open = false
                 if (k != "off" && !Audio.permitted()) Perms.mic { ok -> if (ok) S.set("aCap", k) } else S.set("aCap", k) }) }
         }
@@ -685,6 +685,11 @@ private fun About() {
     }
     @Suppress("unused") val keep = listOf(Defaults, Net)
 }
+
+/** Glass: a choice menu fades at its edges as it scrolls, over a see-through dark glass. */
+private fun glassMenu(): Modifier = if (S.glass) Modifier.fadeEdges(10.dp, 10.dp) else Modifier
+@Composable
+private fun glassMenuColor(): Color = if (S.glass) Color(0xFF14141C).copy(alpha = .92f) else MaterialTheme.colorScheme.surfaceContainer
 
 /* ================= Glass (Settings → Appearance → Design) =================
    Frosted glass over your cover: Settings shows the blurred cover behind it, and its rows sit in glass cards. */

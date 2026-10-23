@@ -100,7 +100,8 @@ class MainActivity : ComponentActivity() {
             !Vibe.cfg.setupDone -> { E.wizard = true }
             else -> {}
         }
-        if (!Vibe.cfg.setupDone && Vibe.cfg.server.isNotEmpty()) io.github.bozkow.vibevisualizer.engine.Sync.importFromServer()
+        // a new install with a server already set: your settings kept on the server come along (never over settings this phone has)
+        if (!Vibe.cfg.setupDone && Vibe.cfg.server.isNotEmpty() && Vibe.settings.fresh) io.github.bozkow.vibevisualizer.engine.Sync.importFromServer()
     }
 
     override fun onNewIntent(intent: Intent) { super.onNewIntent(intent); handle(intent) }

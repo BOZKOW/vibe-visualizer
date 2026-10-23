@@ -34,6 +34,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.CornerRadius
@@ -62,6 +64,18 @@ fun Modifier.glass(shape: Shape, strong: Boolean = false): Modifier {
         .background(Brush.verticalGradient(listOf(Color.White.copy(alpha = .17f), Color.White.copy(alpha = .06f), Color.White.copy(alpha = .09f))), shape)
         .border(1.dp, Brush.verticalGradient(listOf(Color.White.copy(alpha = .5f), Color.White.copy(alpha = .1f), Color.White.copy(alpha = .24f))), shape)
 }
+
+/** Glass: a scrolling list fades out at its edges instead of being cut off in a hard line where it scrolls under
+ *  a header or a search field. top / bottom: how far the fade reaches. */
+fun Modifier.fadeEdges(top: Dp = 28.dp, bottom: Dp = 0.dp): Modifier = this
+    .graphicsLayer { compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen }
+    .drawWithContent {
+        drawContent()
+        val h = size.height; if (h <= 0f) return@drawWithContent
+        val t = (top.toPx() / h).coerceIn(0f, .45f); val b = (bottom.toPx() / h).coerceIn(0f, .45f)
+        drawRect(Brush.verticalGradient(0f to Color.Transparent, t to Color.Black, (1 - b) to Color.Black, 1f to if (b > 0f) Color.Transparent else Color.Black),
+            blendMode = androidx.compose.ui.graphics.BlendMode.DstIn)
+    }
 
 /** An icon from an SVG path (24×24 unless said otherwise). */
 fun svgIcon(d: String, size: Float = 24f): ImageVector = ImageVector.Builder(defaultWidth = 24.dp, defaultHeight = 24.dp, viewportWidth = size, viewportHeight = size)

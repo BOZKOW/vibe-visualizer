@@ -91,7 +91,7 @@ fun Sheets() {
     val state = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val close = { E.sheet = null; Ping.open = false; E.poke() }
     ModalBottomSheet(onDismissRequest = close, sheetState = state, containerColor = if (S.glass) Color(0xFF0E0E14).copy(alpha = .72f) else MaterialTheme.colorScheme.surfaceContainer, contentColor = Color.White) {
-        Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 22.dp).padding(bottom = 18.dp).navigationBarsPadding()) {
+        Column(Modifier.fillMaxWidth().then(if (S.glass) Modifier.fadeEdges(16.dp, 16.dp) else Modifier).verticalScroll(rememberScrollState()).padding(horizontal = 22.dp).padding(bottom = 18.dp).navigationBarsPadding()) {
             when (s) {
                 "audio" -> AudioSheet()
                 "net" -> NetSheet()

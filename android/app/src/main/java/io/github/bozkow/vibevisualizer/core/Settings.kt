@@ -62,6 +62,8 @@ class Settings(ctx: Context) {
     private val v = HashMap<String, MutableState<Any>>().also { m -> Defaults.S.forEach { (k, d) -> m[k] = mutableStateOf(d) } }
     private val main = Handler(Looper.getMainLooper())
     private val saveRun = Runnable { sp.edit().putString("S", toJson().toString()).apply() }
+    /** No settings were saved yet when the app started: a new install (only then may your server's settings come in). */
+    val fresh = !sp.contains("S")
     var onChange: ((String) -> Unit)? = null
 
     init {
@@ -99,7 +101,9 @@ class Settings(ctx: Context) {
     fun resetAll() { Defaults.S.keys.forEach { k -> if (k != "volume") reset(k) } }
 
     private fun persist() { main.removeCallbacks(saveRun); main.postDelayed(saveRun, 300) }
-    fun flush() { main.removeCallbacks(saveRun); saveRun.run() }
+    /** Writes the settings now and waits for it (leaving the app, before an update replaces it): nothing changed in the
+     *  last moments is lost when the process ends. */
+    fun flush() { main.removeCallbacks(saveRun); sp.edit().putString("S", toJson().toString()).commit() }
 
     fun toJson(): JSONObject = JSONObject().also { o -> Defaults.S.keys.forEach { k -> o.put(k, get(k)) } }
 
