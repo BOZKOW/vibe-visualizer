@@ -444,6 +444,7 @@ object E {
             "lsize", "xFocus", "xBgPop", "lduet", "view", "credPos", "xRefCred", "lcredLast", "lminimal", "xKeep" -> Lyr.relayout()
         }
         if (k == "romMode") Lyr.decorate()
+        if (k == "lsimple" || k == "xRefSimple") Lyr.relayout()   // Background Vocal Pop-Out depends on them: the rows change height
         barsTick.longValue++
     }
 

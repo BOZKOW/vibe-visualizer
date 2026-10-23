@@ -45,7 +45,8 @@ object S {
     val xRefSimple get() = s.b("xRefSimple")
     val lminimal get() = s.b("lminimal")
     val xKeep get() = s.b("xKeep")
-    val xBgPop get() = s.b("xBgPop")
+    // Background Vocal Pop-Out belongs to Refreshed Simple Lyrics (Spicy Lyrics 6.4.70): anywhere else every background line stays open
+    val xBgPop get() = s.b("xBgPop") && s.b("lsimple") && s.b("xRefSimple")
     val lduet get() = s.b("lduet")
     val lblur get() = s.b("lblur")
     val lsmooth get() = s.b("lsmooth")
