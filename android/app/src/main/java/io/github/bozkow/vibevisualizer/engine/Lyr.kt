@@ -562,7 +562,7 @@ object Lyr {
         "app: Android ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
         "device: Android ${Build.VERSION.RELEASE} · ${Build.MANUFACTURER} ${Build.MODEL}",
         "server: " + (if (Server.set) "set" else "not set") + " · " + Ping.label,
-        "source: " + E.src + (if (E.src != "none") " · " + (if (E.playing()) "playing" else "paused") else "") + " · view: " + S.view + " · design: " + S.design + (if (S.low) " · low performance" else ""),
+        "source: " + E.src + (if (E.src != "none") " · " + (if (E.playing()) "playing" else "paused") else "") + " · view: " + S.view + " · design: " + S.str("aDesign") + (if (S.low) " · low performance" else ""),
         "song: " + (cur?.m?.let { it.artist + " – " + it.title + (Spotify.spId?.let { id -> " ($id)" } ?: "") } ?: "—"),
         "lyrics: " + (if (L.isNotEmpty()) (if (lsync) "synced" else "not synced") + " from " + (PROVS[prov() ?: ""]?.name ?: "?") else "none") + " · offset ${S.loff} ms · this song ${songOffMs} ms · ${Outputs.route.label} ${Outputs.offMs} ms" + (if (Outputs.here(E.src)) "" else " (not playing here)"),
         "cover: " + E.coverNote.ifEmpty { "—" },

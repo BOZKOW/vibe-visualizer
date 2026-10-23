@@ -124,7 +124,7 @@ fun QuickPanel(vis: MutableTransitionState<Boolean>) {
                     }
                 }
                 Spacer(Modifier.height(6.dp))
-                // thick sliders, as One UI 9's brightness and volume
+                // thick sliders, like a phone's brightness and volume
                 ThickSlider(Icons.Rounded.TextFields, "Lyrics size", S.i("lsize"), 70, 150) { S.set("lsize", it) }
                 Spacer(Modifier.height(8.dp))
                 ThickSlider(Icons.Rounded.BrightnessMedium, "Background brightness", S.bri, 20, 140) { S.set("bri", it) }
@@ -155,7 +155,7 @@ fun QuickPanel(vis: MutableTransitionState<Boolean>) {
     }
 }
 
-/** A One UI quick-panel tile: lit (the accent) when on. */
+/** A quick-settings tile: lit (the accent) when on. */
 @Composable
 private fun Tile(modifier: Modifier, icon: ImageVector, label: String, on: Boolean, onClick: () -> Unit) {
     Row(modifier.height(64.dp).clip(RoundedCornerShape(22.dp)).background(if (on) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = .08f))
@@ -182,7 +182,7 @@ private fun QuickRow(icon: ImageVector, title: String, sub: String?, onClick: ()
     }
 }
 
-/** A thick slider, as One UI 9's brightness and volume: a pill that fills from the left, its icon and name inside. */
+/** A thick slider, like a phone's brightness and volume: a pill that fills from the left, its icon and name inside. */
 @Composable
 fun ThickSlider(icon: ImageVector, label: String, value: Int, min: Int, max: Int, set: (Int) -> Unit) {
     val frac = ((value - min).toFloat() / (max - min)).coerceIn(0f, 1f)

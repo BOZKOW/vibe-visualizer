@@ -200,7 +200,8 @@ object E {
         Vibe.scope.launch {
             val r = Files.sort(uris)
             r.lyrics.takeIf { it.isNotEmpty() }?.let { Files.addLyrics(it, r.audio.isEmpty() && it.size == 1) }
-            r.images.firstOrNull()?.let { u -> val tok = ++coverTok; if (!setCover(u.toString(), "Custom cover", tok)) toast("That image couldn’t be read", "warn") }
+            // the song's own token: a new one would also cancel its lyrics while they're still being found
+            r.images.firstOrNull()?.let { u -> if (!setCover(u.toString(), "Custom cover", coverTok)) toast("That image couldn’t be read", "warn") }
             r.videos.firstOrNull()?.let { CanvasVideo.setLocal(it) }
             if (r.audio.isNotEmpty()) { Spotify.stop(); src = "file"; Local.open(r.audio); poke() }
         }
@@ -428,7 +429,11 @@ object E {
             "bgStyle" -> Background.applyStill()
             "low" -> { Audio.setupBands(); Visuals.palDirty = true; CanvasVideo.applyMode() }
             "uiHide" -> poke()
-            "canvasOn", "cvNoArt" -> CanvasVideo.applyMode()
+            "canvasOn", "cvNoArt" -> {
+                CanvasVideo.applyMode()
+                // turned on during a song: look for its Canvas now, not from the next song
+                if (k == "canvasOn" && S.canvasOn && src == "spotify" && !CanvasVideo.active) Spotify.meta?.let { CanvasVideo.lookup(it, coverTok) }
+            }
             "bridge", "aCap" -> Audio.applyCapture()
             "aSession" -> SpotifyApp.refresh(Vibe.app)
             "volume" -> Local.applyVolume()

@@ -60,7 +60,7 @@ fun VibeRoot() {
             val setT = remember { MutableTransitionState(false) }; setT.targetState = E.settingsPage != null
             val wizT = remember { MutableTransitionState(false) }; wizT.targetState = E.wizard
             val covered = (setT.currentState && setT.isIdle) || (wizT.currentState && wizT.isIdle)
-            // quick settings float over the player, which blurs behind them (as One UI 9's quick panel)
+            // quick settings float over the player, which blurs behind them
             val qT = remember { MutableTransitionState(false) }; qT.targetState = E.sheet == "quick"
             // Glass: the player blurs behind the sheets too
             val qBlur by animateFloatAsState(if ((qT.targetState || (S.glass && E.sheet != null)) && !S.low) 22f else 0f, tween(260), label = "qblur")

@@ -23,6 +23,7 @@ import io.github.bozkow.vibevisualizer.core.wall
 import io.github.bozkow.vibevisualizer.engine.E
 import io.github.bozkow.vibevisualizer.lyrics.SongMeta
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.json.JSONArray
@@ -71,6 +72,7 @@ object Spotify {
     var errMsg by mutableStateOf("")
         private set
     private var spErrAt = 0L
+    private var errN = 0   // failed requests in a row: the retries space out (3, 6, 12, 24, 30 s)
     private var pollJob: Job? = null
     private var refreshing: kotlinx.coroutines.Deferred<Unit>? = null
 
@@ -233,12 +235,13 @@ object Spotify {
                 if (E.src != "spotify") return@launch
                 val t1 = now(); spRtt = t1 - t0
                 apply(d, t0 + (t1 - t0) / 2)   // Spotify read the position somewhere during the request: count it from the midpoint
-                spRateN = 0; backoff = 0; errMsg = ""
+                spRateN = 0; backoff = 0; errMsg = ""; errN = 0
             } catch (e: SpotifyError) {
                 if (!e.rate) { errMsg = e.message ?: ""; retry = true }   // shown as a problem, not a message
             } catch (e: kotlinx.coroutines.CancellationException) { throw e }
             catch (e: Exception) { errMsg = e.message ?: "error"; retry = true }
-            if (retry) sched(fixed = 3000) else sched()   // after an error, try again in 3 s so it clears quickly
+            // after an error, try again soon so it clears quickly, then less and less often (offline, access refused…)
+            if (retry) { sched(fixed = min(30000L, 3000L shl min(errN, 4))); errN++ } else sched()
         }
     }
 
@@ -456,14 +459,20 @@ object Spotify {
     }
 
     /** Local files and other songs: the Spotify track id, found through your Spotify connection. */
+    // one search per song: the lyrics sources ask for it at the same time
+    private val ids = HashMap<String, kotlinx.coroutines.Deferred<String?>>()
     suspend fun idFor(m: SongMeta): String? {
         if (m.id.isNotEmpty()) return m.id
         if (!connected || m.title.isEmpty()) return null
-        return runCatching {
+        val key = (m.artist + "|" + m.title).lowercase()
+        val d = ids.getOrPut(key) { Vibe.scope.async { runCatching {
             val q = "track:" + m.title + if (m.artist.isNotEmpty()) " artist:" + m.artist.split(',')[0] else ""
             val d = api("/search?type=track&limit=1&q=" + URLEncoder.encode(q, "UTF-8")) as? JSONObject
             d?.optJSONObject("tracks")?.optJSONArray("items")?.optJSONObject(0)?.optString("id")?.ifEmpty { null }
-        }.getOrNull()
+        }.getOrNull() } }
+        val id = d.await()
+        if (id == null) ids.remove(key)   // not found or failed: asked again next time
+        return id
     }
 
     private var artistFor = ""; private var artistImg = ""
