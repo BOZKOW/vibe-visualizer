@@ -24,6 +24,10 @@ import io.github.bozkow.vibevisualizer.lyrics.LyricsCache
 import io.github.bozkow.vibevisualizer.lyrics.LyricsRenderer
 import io.github.bozkow.vibevisualizer.lyrics.LyricsResult
 import io.github.bozkow.vibevisualizer.lyrics.Match
+import io.github.bozkow.vibevisualizer.lyrics.CatalogueTitles
+import io.github.bozkow.vibevisualizer.lyrics.KrcCodec
+import io.github.bozkow.vibevisualizer.lyrics.KuwoLyrics
+import io.github.bozkow.vibevisualizer.lyrics.QrcCodec
 import io.github.bozkow.vibevisualizer.lyrics.MyLyrics
 import io.github.bozkow.vibevisualizer.lyrics.Parsed
 import io.github.bozkow.vibevisualizer.lyrics.Romanizer
@@ -110,16 +114,22 @@ object Lyr {
         "lrclib" to Prov("LRCLIB", "free, open lyrics database"),
         "netease" to Prov("NetEase Cloud Music", "strong for Japanese, Chinese, Korean · unofficial"),
         "lrcmux" to Prov("LRCMux", "word-synced lyrics gathered from other catalogues (KuGou, LRCLIB, …)"),
+        "lrcred" to Prov("lrc.red", "Apple Music’s lyrics, often word-synced, found by the song’s recording code · unofficial"),
+        "kugou" to Prov("KuGou", "word-synced, strong for Chinese songs · sends the title and artist to servers in China · unofficial"),
+        "qq" to Prov("QQ Music", "word-synced, strong for Chinese songs · sends the title and artist to servers in China · unofficial"),
+        "kuwo" to Prov("Kuwo", "word-synced, strong for Chinese songs · sends the title and artist to servers in China · unofficial"),
     )
-    val PROVIDERS = mapOf("amll" to "AMLL TTML DB", "spicy_lyrics" to "Spicy Lyrics", "apple_music" to "Apple Music", "spotify" to "Spotify", "lrclib" to "LRCLIB", "netease" to "NetEase Cloud Music", "unison" to "Unison", "lrcmux" to "LRCMux")
+    // off until you turn them on (Settings → Lyrics → Sources), as in Spicy Lyrics Mobile: they're catalogues in China
+    private val OFF_BY_DEFAULT = setOf("kugou", "qq", "kuwo")
+    val PROVIDERS = mapOf("amll" to "AMLL TTML DB", "spicy_lyrics" to "Spicy Lyrics", "apple_music" to "Apple Music", "spotify" to "Spotify", "lrclib" to "LRCLIB", "netease" to "NetEase Cloud Music", "unison" to "Unison", "lrcmux" to "LRCMux", "lrcred" to "lrc.red", "kugou" to "KuGou", "qq" to "QQ Music", "kuwo" to "Kuwo")
     // the sources that can have word-synced lyrics: once line-synced ones are showing, only these are still asked
-    private val WORDY = setOf("local", "spicy", "amll", "unison", "lrcmux")
+    private val WORDY = setOf("local", "spicy", "amll", "unison", "lrcmux", "lrcred", "kugou", "qq", "kuwo")
 
     data class PItem(val k: String, val on: Boolean)
     fun provList(): List<PItem> {
         val out = ArrayList<PItem>(); val seen = HashSet<String>()
         S.str("lprov").split(',').forEach { x -> val kv = x.split(':'); val k = kv[0]; if (PROVS.containsKey(k) && seen.add(k)) out.add(PItem(k, kv.getOrNull(1) != "0")) }
-        PROVS.keys.forEach { k -> if (k !in seen) { if (k == "local") out.add(0, PItem(k, true)) else out.add(PItem(k, true)) } }   // your own files come first
+        PROVS.keys.forEach { k -> if (k !in seen) { if (k == "local") out.add(0, PItem(k, true)) else out.add(PItem(k, k !in OFF_BY_DEFAULT)) } }   // your own files come first
         return out
     }
     fun setProv(list: List<PItem>) { S.set("lprov", list.joinToString(",") { it.k + ":" + (if (it.on) 1 else 0) }); lcache.clear() }
@@ -232,6 +242,107 @@ object Lyr {
         return get("https://unison.boidu.dev/lyrics/" + enc(id))?.json()?.optJSONObject("data")?.let(SourceParse::unison)
     }
 
+    /* ---- more catalogues (as Spicy Lyrics Mobile asks them; their formats in lyrics/Catalogues.kt) ---- */
+
+    private fun enc(s: String) = URLEncoder.encode(s, "UTF-8")
+    /** A catalogue's search hit is this song: title, artist and length. */
+    private fun hitIs(title: String, artist: String, secs: Int, m: SongMeta) = CatalogueTitles.sameTitle(title, m.title) &&
+        CatalogueTitles.sameArtist(artist, m.artist, title, m.title, secs, Math.round(m.duration).toInt()) && CatalogueTitles.sameLength(secs, Math.round(m.duration).toInt())
+
+    // lrc.red (lrc.red): Apple Music's lyrics by the recording's ISRC; Spotify says it, a search finds it otherwise
+    private suspend fun fromLrcRed(m: SongMeta): LyricsResult? {
+        if (m.title.isEmpty()) return null
+        suspend fun song(isrc: String): LyricsResult? {
+            val r = Net.fetch("https://lrc.red/s/" + enc(isrc) + ".song.json", "lrcred")
+            if (r.code == 404) return null
+            if (!r.ok) throw Exception("HTTP ${r.code}")
+            return SourceParse.lrcred(r.json() ?: return null)
+        }
+        if (m.isrc.isNotEmpty()) return song(m.isrc)
+        val r = Net.fetch("https://lrc.red/search.json?q=" + enc(m.title + " " + firstArtist(m.artist)), "lrcred")
+        if (!r.ok) throw Exception("HTTP ${r.code}")
+        val hits = r.json()?.optJSONArray("hits") ?: return null
+        val isrcs = (0 until hits.length()).mapNotNull { hits.optJSONObject(it) }
+            .filter { hitIs(it.optString("title"), it.optString("artist"), Math.round(it.optDouble("duration", 0.0)).toInt(), m) }.map { it.optString("isrc") }.filter { it.isNotEmpty() }
+        for (isrc in isrcs.take(3)) song(isrc)?.let { return it }
+        return null
+    }
+
+    // KuGou: a search, the song's lyrics candidates, then its word-synced KRC (or its LRC)
+    private suspend fun fromKugou(m: SongMeta): LyricsResult? {
+        if (m.title.isEmpty()) return null
+        val kw = enc(firstArtist(m.artist) + " " + m.title)
+        val s = Net.fetch("https://mobileservice.kugou.com/api/v3/search/song?format=json&keyword=$kw&page=1&pagesize=8", "kugou")
+        if (!s.ok) throw Exception("HTTP ${s.code}")
+        val songs = s.json()?.optJSONObject("data")?.optJSONArray("info") ?: return null
+        for (i in 0 until songs.length()) {
+            val o = songs.optJSONObject(i) ?: continue
+            val secs = o.optInt("duration")
+            if (!hitIs(o.optString("songname"), o.optString("singername"), secs, m)) continue
+            val hash = o.optString("hash"); if (hash.isEmpty()) continue
+            val c = Net.fetch("https://krcs.kugou.com/search?ver=1&man=yes&client=mobi&keyword=$kw&duration=${secs * 1000}&hash=" + enc(hash), "kugou").json()
+                ?.optJSONArray("candidates")?.optJSONObject(0) ?: continue
+            val id = c.optString("id"); val key = c.optString("accesskey"); if (id.isEmpty() || key.isEmpty()) continue
+            for (fmt in listOf("krc", "lrc")) {
+                val content = Net.fetch("https://lyrics.kugou.com/download?ver=1&client=pc&id=" + enc(id) + "&accesskey=" + enc(key) + "&fmt=$fmt&charset=utf8", "kugou").json()?.optString("content") ?: continue
+                if (content.isEmpty()) continue
+                val r = if (fmt == "krc") KrcCodec.decode(content)?.let { SourceParse.catalogue(KrcCodec.lines(it), true, "KuGou", "kugou", m.title, m.artist) }
+                    else runCatching { String(java.util.Base64.getDecoder().decode(content), Charsets.UTF_8) }.getOrNull()?.let { SourceParse.catalogue(parseLRC(it), true, "KuGou", "kugou", m.title, m.artist) }
+                if (r != null) return r
+            }
+        }
+        return null
+    }
+
+    // QQ Music: a search, then the song's word-synced QRC (encrypted) or its LRC
+    private suspend fun fromQq(m: SongMeta): LyricsResult? {
+        if (m.title.isEmpty()) return null
+        val ref = mapOf("Referer" to "https://y.qq.com/")
+        val q = org.json.JSONObject().put("req_1", org.json.JSONObject().put("module", "music.search.SearchCgiService").put("method", "DoSearchForQQMusicDesktop")
+            .put("param", org.json.JSONObject().put("num_per_page", 8).put("page_num", 1).put("query", firstArtist(m.artist) + " " + m.title).put("search_type", 0)))
+        val s = Net.fetch("https://u.y.qq.com/cgi-bin/musicu.fcg", "qq", "POST", ref, q.toString().toByteArray(), "application/json")
+        if (!s.ok) throw Exception("HTTP ${s.code}")
+        val root = s.json() ?: throw Exception("not JSON")
+        val req = root.optJSONObject("req_1")
+        if (root.optInt("code") != 0 || req == null || req.optInt("code") != 0) throw Exception("the search is busy, try again later")   // QQ throttles an address for a while
+        val list = req.optJSONObject("data")?.optJSONObject("body")?.optJSONObject("song")?.optJSONArray("list") ?: return null
+        for (i in 0 until list.length()) {
+            val o = list.optJSONObject(i) ?: continue
+            val singers = o.optJSONArray("singer")?.let { a -> (0 until a.length()).joinToString(" ") { a.optJSONObject(it)?.optString("name") ?: "" } } ?: ""
+            if (!hitIs(o.optString("name"), singers, o.optInt("interval"), m)) continue
+            val mid = o.optString("mid"); if (mid.isEmpty()) continue
+            val pl = org.json.JSONObject().put("comm", org.json.JSONObject().put("ct", "19").put("cv", "1873").put("uin", "0"))
+                .put("req", org.json.JSONObject().put("module", "music.musichallSong.PlayLyricInfo").put("method", "GetPlayLyricInfo")
+                    .put("param", org.json.JSONObject().put("songMID", mid).put("qrc", 1).put("qrc_t", 0).put("trans", 1).put("roma", 1).put("crypt", 1)))
+            val v = Net.fetch("https://u.y.qq.com/cgi-bin/musicu.fcg", "qq", "POST", ref, pl.toString().toByteArray(), "application/json").json()?.optJSONObject("req")?.optJSONObject("data")?.optString("lyric") ?: ""
+            val qrc = when { v.trim().startsWith("[") -> v; v.length > 64 && v.all { it.isWhitespace() || it in "0123456789abcdefABCDEF" } -> QrcCodec.decrypt(v); else -> null }
+            qrc?.let(QrcCodec::toTtml)?.let { fromText(it) }?.let { t -> SourceParse.catalogue(t.lines, true, "QQ Music", "qq", m.title, m.artist)?.let { return it } }
+            val lrc = Net.fetch("https://c.y.qq.com/lyric/fcgi-bin/fcg_query_lyric_new.fcg?songmid=" + enc(mid) + "&format=json&nobase64=1", "qq", headers = ref).json()?.optString("lyric") ?: ""
+            if (lrc.isNotBlank()) SourceParse.catalogue(parseLRC(lrc), true, "QQ Music", "qq", m.title, m.artist)?.let { return it }
+        }
+        return null
+    }
+
+    // Kuwo: a search, then the song's lyrics with word timing where it has it
+    private suspend fun fromKuwo(m: SongMeta): LyricsResult? {
+        if (m.title.isEmpty()) return null
+        val ref = mapOf("Referer" to "https://www.kuwo.cn/")
+        // without the last ones the search leaves out licensed originals and returns only covers and remixes
+        val s = Net.fetch("https://search.kuwo.cn/r.s?all=" + enc(firstArtist(m.artist) + " " + m.title) + "&ft=music&client=kt&cluster=0&pn=0&rn=8&rformat=json&encoding=utf8" +
+            "&vipver=1&strategy=2012&mobi=1&issubtitle=1&show_copyright_off=1", "kuwo", headers = ref)
+        if (!s.ok) throw Exception("HTTP ${s.code}")
+        var fallback: LyricsResult? = null
+        val songs = KuwoLyrics.search(s.text).filter { hitIs(it.title, it.artist, it.seconds, m) && (!KuwoLyrics.CUT.containsMatchIn(it.title) || KuwoLyrics.CUT.containsMatchIn(m.title)) }
+        for (song in songs.take(KuwoLyrics.TRIES)) {
+            val r = Net.fetch("https://newlyric.kuwo.cn/newlyric.lrc?" + KuwoLyrics.query(song.rid), "kuwo", headers = ref)
+            if (!r.ok) continue
+            val text = KuwoLyrics.body(r.body) ?: continue
+            KuwoLyrics.krc(text)?.let { SourceParse.catalogue(KrcCodec.lines(it), true, "Kuwo", "kuwo", m.title, m.artist) }?.let { return it }   // the first word-timed one
+            if (fallback == null) fallback = SourceParse.catalogue(parseLRC(KuwoLyrics.lrc(text)), true, "Kuwo", "kuwo", m.title, m.artist)
+        }
+        return fallback
+    }
+
     // LRCMux (api.lrcmux.dev): word-synced lyrics it gathers from other catalogues, matched by title and length
     private suspend fun fromLrcmux(m: SongMeta): LyricsResult? {
         if (m.title.isEmpty() || m.duration <= 0) return null
@@ -342,7 +453,8 @@ object Lyr {
 
     private suspend fun fetchFrom(p: String, m: SongMeta): LyricsResult? = when (p) {
         "local" -> fromLocal(m); "spicy" -> fromSpicy(m); "amll" -> fromAmll(m); "spotify" -> fromSpotifyLyrics(m)
-        "lrclib" -> fromLrclib(m); "unison" -> fromUnison(m); "lrcmux" -> fromLrcmux(m); else -> fromNetease(m)
+        "lrclib" -> fromLrclib(m); "unison" -> fromUnison(m); "lrcmux" -> fromLrcmux(m)
+        "lrcred" -> fromLrcRed(m); "kugou" -> fromKugou(m); "qq" -> fromQq(m); "kuwo" -> fromKuwo(m); else -> fromNetease(m)
     }
 
     /** How well timed: 2 word-synced, 1 line-synced, 0 not synced. */

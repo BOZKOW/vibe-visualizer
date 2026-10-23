@@ -15,6 +15,7 @@ data class SongMeta(
     val id: String = "", val uri: String = "", val title: String = "", val artist: String = "", val album: String = "",
     val duration: Double = 0.0, val cover: String = "", val artistId: String = "", val ep: Boolean = false, val file: String = "",
     val coverSmall: String = "",   // Spotify's smaller size of the same cover, tried when the big one won't load
+    val isrc: String = "",         // the recording's code (from Spotify): lrc.red finds Apple Music's lyrics by it
 )
 
 fun norm(s: String?): String = (s ?: "").lowercase()

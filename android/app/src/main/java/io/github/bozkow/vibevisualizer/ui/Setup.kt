@@ -259,7 +259,7 @@ private fun SoundStep() {
     Step(2, "Exact timing and controls from the Spotify app on this phone (no Premium needed for play, pause, skip and seek): allow notification access. No notification is read; it only lets the app see the Spotify app’s player.", ok = acc) {
         if (!acc) FilledTonalButton(onClick = { Perms.notificationAccess() }, Modifier.padding(top = 6.dp)) { Text("Open notification access") }
     }
-    Step(3, "Music on your computer: run Vibe Bridge there with your server’s address, and the bars here follow it too.", ok = Audio.bridgeOn)
+    Step(3, "Music on another device: run Vibe Bridge there with your server’s address, and the bars here follow it too.", ok = Audio.bridgeOn)
     LaunchedEffect(Unit) { SpotifyApp.refresh(Vibe.app) }
 }
 

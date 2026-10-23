@@ -189,7 +189,7 @@ object Audio {
             E.src == "spotify" && Spotify.spPlaying() -> "Ambient" to when {
                 playsHere() && phone.running -> "Bars follow: a gentle ambient motion until Phone sound hears the Spotify app on this phone."
                 playsHere() || !phone.running -> "Bars follow: a gentle ambient motion (Spotify’s audio can’t be read). Allow “Phone sound” for real bars from the Spotify app on this phone."
-                else -> "Bars follow: a gentle ambient motion. The music plays on another device; for real bars from a computer, start Vibe Bridge there."
+                else -> "Bars follow: a gentle ambient motion. The music plays on another device; Vibe Bridge there gives real bars."
             }
             phone.running -> "Phone sound" to "Waiting for sound: the bars follow everything this phone plays."
             else -> "No audio" to "Nothing for the bars to follow. Tap to choose what the bars hear."

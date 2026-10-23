@@ -139,11 +139,14 @@ fun LyricsPane(modifier: Modifier = Modifier, areaHeightPx: Float = 0f, compact:
                 }
             }
             // Refined credits (Spicy Lyrics 6.4.50): right under the last line
-            if (n > 0 && S.credPos == "lyrics" && S.b("xRefCred") && !S.xFocus) {
+            if (n > 0 && S.credPos == "lyrics" && S.b("xRefCred")) {
                 val c = Lyr.credit
                 if (c != null) {
                     val a by animateFloatAsState(if (view.allsung || view.isStatic) 1f else .55f, tween(600), label = "lcr")
-                    Box(Modifier.fillMaxWidth().offset { IntOffset(0, view.creditsY.roundToInt()) }.padding(start = padStart.dp, end = padEnd.dp).alpha(a)) {
+                    // Focus mode shows only the line being sung, in the middle: the credits sit at the foot of the lyrics
+                    // (they went to the corner before, whatever was picked)
+                    Box(Modifier.fillMaxWidth().then(if (S.xFocus) Modifier.align(Alignment.BottomStart) else Modifier.offset { IntOffset(0, view.creditsY.roundToInt()) })
+                        .padding(start = padStart.dp, end = padEnd.dp).alpha(a)) {
                         RefinedCredits(c, view.lineCount() > 0 && Lyr.L.lastOrNull { !it.dots }?.opp == true && S.b("lcredLast"))
                     }
                 }

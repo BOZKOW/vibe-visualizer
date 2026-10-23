@@ -87,7 +87,7 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun Sheets() {
-    val s = E.sheet?.takeIf { it != "quick" } ?: return   // quick settings float on their own (Quick.kt)
+    val s = E.sheet ?: return
     val state = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val close = { E.sheet = null; Ping.open = false; E.poke() }
     ModalBottomSheet(onDismissRequest = close, sheetState = state, containerColor = if (S.glass) Color(0xFF0E0E14).copy(alpha = .72f) else MaterialTheme.colorScheme.surfaceContainer, contentColor = Color.White) {
@@ -156,7 +156,7 @@ private fun AudioSheet() {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f)) {
             Text("Vibe Bridge", fontWeight = FontWeight.Bold, color = Color.White, fontSize = 15.sp)
-            Text("Real bars from the computer that plays the music, through your server.", fontSize = 12.5.sp, color = Color.White.copy(alpha = .65f))
+            Text("Real bars from the device that plays the music, through your server.", fontSize = 12.5.sp, color = Color.White.copy(alpha = .65f))
         }
         Switch(S.b("bridge"), { S.set("bridge", it) })
     }
@@ -165,7 +165,7 @@ private fun AudioSheet() {
         !S.b("bridge") -> "Off."
         !Server.set -> "Needs your server (Settings → Help & about → Server)."
         Audio.bridgeOn -> "Connected through your server" + (if (b.device.isNotEmpty()) " · listening to ${b.device}" else "") + "."
-        else -> "Not connected. On the computer that plays the music, start Vibe Bridge with:  vibe-bridge --server ${Server.base?.removePrefix("https://")}  (see the README)."
+        else -> "Not connected. On the device that plays the music, start Vibe Bridge with:  vibe-bridge --server ${Server.base?.removePrefix("https://")}  (see the README)."
     })
     Spacer(Modifier.height(8.dp))
     Text(Audio.labelTip, fontSize = 13.sp, color = Color.White.copy(alpha = .8f))
@@ -228,7 +228,7 @@ private fun DevicesSheet(close: () -> Unit) {
     when {
         err != null -> Hint(err!!)
         list == null -> Box(Modifier.fillMaxWidth().padding(20.dp), contentAlignment = Alignment.Center) { LoadingIndicator() }
-        list!!.isEmpty() -> Hint("No devices found. Open Spotify on a phone, computer or speaker.")
+        list!!.isEmpty() -> Hint("No devices found. Open Spotify on one of your devices.")
         else -> list!!.forEach { d ->
             val icon = when (d.type) { "Computer" -> Icons.Rounded.Computer; "Smartphone" -> Icons.Rounded.PhoneAndroid; "TV" -> Icons.Rounded.Tv; else -> Icons.Rounded.Speaker }
             val col = if (d.active) Color(0xFF1ED760) else Color.White

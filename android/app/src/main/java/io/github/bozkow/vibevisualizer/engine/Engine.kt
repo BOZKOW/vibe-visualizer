@@ -306,7 +306,7 @@ object E {
 
     /* ================= transport ================= */
 
-    private fun updPlay() { val p = playing(); if (p != playingState) playingState = p }
+    private fun updPlay() { val p = playing(); if (p != playingState) { playingState = p; activeAt = wall() } }
 
     fun toggle() {
         haptic()
@@ -339,7 +339,12 @@ object E {
     /* ================= controls hide while music plays ================= */
     private var hideJob: Job? = null
     private var bakeJob: Job? = null
+    private var activeAt = 0L   // the last touch or play / pause: the frame loop slows down a while after
+    /** Paused and untouched for a few seconds: nothing on screen moves much, 30 frames a second are enough. */
+    fun idle() = !playingState && wall() - activeAt > 3000 && sheet == null
+
     fun poke() {
+        activeAt = wall()
         if (uiHidden) uiHidden = false
         hideJob?.cancel()
         // only the full-screen lyrics and visualizer hide their controls (as a music app does); Now Playing keeps them

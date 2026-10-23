@@ -1,14 +1,27 @@
-Vibe Visualizer for Android 0.1.10 (beta). Android 12 or newer; it installs over 0.1.9 (Settings → Help & about → Update now).
+Vibe Visualizer for Android 0.2.0 (beta). Android 12 or newer; it installs over 0.1.10 (Settings → Help & about → Update now).
 
-### From Spicy Lyrics 6.4.70
+### A new Now Playing
 
-- Background vocal pop-out (Settings → Experiments) only applies with Simple lyrics and Refreshed simple lyrics on, as in Spicy Lyrics now; anywhere else every background vocal line stays open. It animates the same with reduced motion on. (The Canvas already keeps playing with reduced motion on in this app.)
+Laid out like Spicy Lyrics Mobile's player, with your cover, Canvas, bars and lyrics as before: the song on the left, a thick rounded seek bar with the times under it, big previous / play-pause / next with shuffle and repeat at the ends, and a row of round buttons for Lyrics, where it plays (or what the bars hear), the Visualizer, resync and Settings. The full-screen lyrics and visualizer have the same controls, smaller.
 
-### Fixes from a look through the whole app
+### More lyrics sources (from Spicy Lyrics Mobile)
 
-- Picking a cover image while a song's lyrics were still being found cancelled them; now they still come
-- When Spotify keeps failing (offline, or access refused), the app asks it less and less often (3, 6, 12, 24, then 30 s) instead of every 3 seconds, so it doesn't run into Spotify's limits or use battery
-- Your own songs: the lyrics sources that look the song up on Spotify share one search instead of sending three at once
-- Turning Canvas on during a song shows that song's Canvas, not only from the next song
+- lrc.red: Apple Music's lyrics, often word-synced, found by the song's recording code (Spotify gives it). On by default, at the end of your list
+- KuGou, QQ Music and Kuwo: word-synced catalogues, strong for Chinese songs. Off until you turn them on in Settings → Lyrics → Sources, because they send the title and artist to servers in China
+- Credit lines some catalogues put at the top ("Lyrics by: …") are left out
 
-Checked: all the unit tests pass, including real answers from every lyrics source going through the app's own parsers.
+### Settings
+
+- Quick settings are gone: ⋮ opens Settings, and what was only in quick settings is in Settings now (Bars in every view in Visualizer, a Lyrics timing button in Lyrics, Your music in Phone, a connection check in Help & about)
+- A cleaner look: lighter type (it was very heavy with Android's bold text on), the settings in rounded cards with icons on soft tiles, white text at the top in Glass (it was black), solid menus with a fine edge (the see-through ones let the text behind show through), and soft fades at the top and the bottom of the lists in both designs
+
+### Fixes
+
+- With Focus mode on, "Under the lyrics" credits went to the bottom-left corner; now they stay at the foot of the lyrics
+- Word-synced lyrics: a line of a single word ("Oh", "Yeah") fills like the other lines instead of all at once
+- Nothing says "computer" any more where it means the device the music plays on
+
+### Lighter
+
+- The seek bar no longer redraws the screen every frame (the wave ran all the time)
+- Paused and untouched, the app redraws about half as often

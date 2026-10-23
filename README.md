@@ -397,7 +397,8 @@ already does. Changes to the helper itself still need `git pull && docker compos
 **Vibe Visualizer for Android** (Android 12 or newer, beta) is a native app (Kotlin, Jetpack Compose, Material 3
 Expressive), not the web page in a browser. It has the web app's player, lyrics, visualizer, settings and Spotify
 features, and uses your server (over Tailscale) only for what needs it: Spicy Lyrics, Spotify's own lyrics and Canvas,
-and NetEase. Without a server, LRCLIB, AMLL, Unison, LRCMux and your own lyrics files still work.
+and NetEase. Without a server, LRCLIB, AMLL, Unison, LRCMux, lrc.red, KuGou, QQ Music, Kuwo and your own lyrics files
+still work (the three Chinese catalogues are off until you turn them on).
 
 1. Download `vibe-visualizer-android.apk` from the newest *Vibe Visualizer for Android* release on the
    [Releases page](../../releases) on the phone and open it (allow installing from your browser when Android asks).
@@ -421,8 +422,6 @@ What it adds on a phone:
   a keyboard (DeX, tablets).
 - Two designs (*Settings → Appearance → Design*): Android (Material You, with the cover's colors) or Glass (frosted
   glass over the blurred cover in Settings, the panels and the sheets).
-- Quick settings behind the ⋮ button: tiles, sliders and shortcuts for what you change while listening, with the full
-  Settings behind the gear.
 - Updates from inside the app (*Settings → Help & about*), installed through Android's installer.
 
 The app keeps its own settings on the phone; *Settings → Help & about → Back up settings* copies them to paste into the

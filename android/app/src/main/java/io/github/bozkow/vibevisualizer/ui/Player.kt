@@ -66,6 +66,10 @@ import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Repeat
 import androidx.compose.material.icons.rounded.RepeatOne
 import androidx.compose.material.icons.rounded.Shuffle
+import androidx.compose.foundation.border
+import androidx.compose.material.icons.rounded.Settings
+import androidx.compose.material.icons.rounded.FastForward
+import androidx.compose.material.icons.rounded.FastRewind
 import androidx.compose.material.icons.rounded.SkipNext
 import androidx.compose.material.icons.rounded.SkipPrevious
 import androidx.compose.material3.Button
@@ -199,7 +203,7 @@ private fun LyricsScreen() {
         if (S.view == "both") BarsView(Modifier.fillMaxWidth().height(if (hidden) 96.dp else 64.dp).padding(horizontal = 12.dp))
         LyricsCredits()
         AnimatedVisibility(!hidden, enter = expandVertically(expandFrom = Alignment.Top) + fadeIn(), exit = shrinkVertically(shrinkTowards = Alignment.Top) + fadeOut()) {
-            Column(Modifier.padding(horizontal = 24.dp)) { SeekRow(); Transport(big = false); BottomBar() }
+            Column(Modifier.padding(horizontal = 24.dp)) { SeekRow(); Transport(big = false); BottomBar(big = false) }
         }
     }
 }
@@ -220,7 +224,7 @@ private fun VizScreen() {
             BarsView(Modifier.fillMaxWidth().fillMaxHeight(.44f).align(Alignment.BottomCenter).padding(horizontal = 10.dp))
         }
         AnimatedVisibility(!hidden, enter = expandVertically(expandFrom = Alignment.Top) + fadeIn(), exit = shrinkVertically(shrinkTowards = Alignment.Top) + fadeOut()) {
-            Column(Modifier.padding(horizontal = 24.dp)) { SeekRow(); Transport(big = false); BottomBar() }
+            Column(Modifier.padding(horizontal = 24.dp)) { SeekRow(); Transport(big = false); BottomBar(big = false) }
         }
     }
 }
@@ -288,8 +292,7 @@ private fun LandscapePhone() {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Box(Modifier.weight(1f)) { Transport(big = false) }
                     Spacer(Modifier.width(16.dp))
-                    Box(Modifier.widthIn(max = 220.dp)) { BottomBar() }
-                    MoreButton()
+                    Box(Modifier.widthIn(max = 300.dp)) { BottomBar(big = false) }
                 }
             }
         }
@@ -352,7 +355,8 @@ private fun Header(modifier: Modifier = Modifier) {
             Text(top, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.2.sp, color = dim, maxLines = 1)
             if (sub.isNotEmpty()) Text(sub, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = if (status != null) Color(0xFFFFD27A) else Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
-        MoreButton()
+        // the round Settings button is right below while something plays; before that, this is the way in
+        if (E.src == "none") MoreButton() else Box(Modifier.size(48.dp))
     }
 }
 
@@ -393,7 +397,7 @@ private fun SmallToggle(icon: ImageVector?, desc: String, on: Boolean, text: Str
 
 @Composable
 private fun MoreButton() {
-    IconButton(onClick = { E.haptic(); E.sheet = "quick" }, Modifier.semantics { contentDescription = "Quick settings" }) { Icon(Icons.Rounded.MoreVert, null, tint = Color.White) }
+    IconButton(onClick = { E.haptic(); E.openSettings() }, Modifier.semantics { contentDescription = "Settings" }) { Icon(Icons.Rounded.MoreVert, null, tint = Color.White) }
 }
 
 @Composable
@@ -404,9 +408,9 @@ private fun TitleRow(big: Boolean, center: Boolean = false) {
     Row(Modifier.fillMaxWidth().graphicsLayer { alpha = a.value; translationY = (1 - a.value) * 10f * density }, verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f), horizontalAlignment = if (center) Alignment.CenterHorizontally else Alignment.Start) {
             Text(E.title, Modifier.basicMarquee(iterations = 3, initialDelayMillis = 2500), style = TextStyle(shadow = textShadow),
-                fontSize = if (big) 24.sp else 19.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-.3).sp, color = Color.White, maxLines = 1)
+                fontSize = if (big) 27.sp else 19.sp, fontWeight = FontWeight.Bold, letterSpacing = (-.3).sp, color = Color.White, maxLines = 1)
             if (E.artist.isNotEmpty()) Text(E.artist, Modifier.basicMarquee(iterations = 3, initialDelayMillis = 2500), style = TextStyle(shadow = textShadow),
-                fontSize = if (big) 18.sp else 15.sp, fontWeight = FontWeight.Medium, color = dim, maxLines = 1)
+                fontSize = if (big) 19.sp else 15.sp, fontWeight = FontWeight.Medium, color = dim, maxLines = 1)
         }
         if (E.src == "spotify" && !center) LikeButton()
     }
@@ -431,38 +435,43 @@ private fun LikeButton() {
 private fun Transport(big: Boolean) {
     Spotify.version
     val sp = E.src == "spotify"
-    Row(Modifier.fillMaxWidth().padding(vertical = if (big) 8.dp else 2.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-        if (sp) CtlIcon(Icons.Rounded.Shuffle, "Shuffle", enabled = Spotify.spState != null && "toggling_shuffle" !in Spotify.disallows, on = Spotify.shuffle) { Spotify.toggleShuffle() }
+    val main = if (big) 56.dp else 42.dp
+    Row(Modifier.fillMaxWidth().padding(vertical = if (big) 6.dp else 0.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+        if (sp) CtlIcon(Icons.Rounded.Shuffle, "Shuffle", size = 24.dp, enabled = Spotify.spState != null && "toggling_shuffle" !in Spotify.disallows, on = Spotify.shuffle) { Spotify.toggleShuffle() }
         else CtlIcon(if (Local.muted) Icons.AutoMirrored.Rounded.VolumeOff else Icons.AutoMirrored.Rounded.VolumeUp, if (Local.muted) "Unmute" else "Mute", enabled = E.src == "file") { Local.muted = !Local.muted }
-        CtlIcon(Icons.Rounded.SkipPrevious, "Previous", size = if (big) 40.dp else 32.dp, enabled = E.src != "none") { E.prev() }
-        PlayButton(if (big) 76.dp else 60.dp)
-        CtlIcon(Icons.Rounded.SkipNext, "Next", size = if (big) 40.dp else 32.dp, enabled = E.canNext()) { E.next() }
+        CtlIcon(Icons.Rounded.FastRewind, "Previous", size = main, enabled = E.src != "none") { E.prev() }
+        PlayButton(if (big) 76.dp else 58.dp)
+        CtlIcon(Icons.Rounded.FastForward, "Next", size = main, enabled = E.canNext()) { E.next() }
         if (sp) {
             val r = Spotify.repeat
             CtlIcon(if (r == "track") Icons.Rounded.RepeatOne else Icons.Rounded.Repeat, "Repeat: " + when (r) { "context" -> "all"; "track" -> "this song"; else -> "off" },
-                enabled = Spotify.spState != null, on = r != "off") { Spotify.cycleRepeat() }
+                size = 24.dp, enabled = Spotify.spState != null, on = r != "off") { Spotify.cycleRepeat() }
         } else Box(Modifier.size(48.dp))
     }
 }
 
 /** Lyrics · where it plays · Visualizer: the music app's bottom row. */
 @Composable
-private fun BottomBar() {
+private fun BottomBar(big: Boolean = true) {
     val sp = E.src == "spotify"
-    // the same in both designs: Glass stays out of the player (Settings, quick settings and the sheets have it)
-    Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), horizontalArrangement = Arrangement.SpaceAround, verticalAlignment = Alignment.CenterVertically) {
-        BarIcon(VIcons.lyrics, "Lyrics", E.screen == "lyrics" && !E.wide || E.wide && E.screen != "viz") { E.show(if (E.screen == "lyrics" && !E.wide) "player" else "lyrics") }
-        if (sp) BarIcon(Icons.Rounded.Cast, Spotify.device?.let { "Playing on ${it.name}" } ?: "Choose where Spotify plays", false) { E.sheet = "devices" }
-        else BarIcon(Icons.Rounded.GraphicEq, "What the bars hear", false) { E.sheet = "audio" }
-        BarIcon(VIcons.bars, "Visualizer", E.screen == "viz") { E.show(if (E.screen == "viz") (if (E.wide) "lyrics" else "player") else "viz") }
+    val d = if (big) 54.dp else 44.dp
+    Row(Modifier.fillMaxWidth().padding(top = if (big) 6.dp else 2.dp, bottom = 4.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+        BarIcon(VIcons.lyrics, "Lyrics", E.screen == "lyrics" && !E.wide || E.wide && E.screen != "viz", d) { E.show(if (E.screen == "lyrics" && !E.wide) "player" else "lyrics") }
+        if (sp) BarIcon(Icons.Rounded.Cast, Spotify.device?.let { "Playing on ${it.name}" } ?: "Choose where Spotify plays", false, d) { E.sheet = "devices" }
+        else BarIcon(Icons.Rounded.GraphicEq, "What the bars hear", false, d) { E.sheet = "audio" }
+        BarIcon(VIcons.bars, "Visualizer", E.screen == "viz", d) { E.show(if (E.screen == "viz") (if (E.wide) "lyrics" else "player") else "viz") }
+        BarIcon(VIcons.resync, "Resync the lyrics", false, d) { Lyr.resync() }
+        BarIcon(Icons.Rounded.Settings, "Settings", false, d) { E.openSettings() }
     }
 }
 
+/** A round outlined button (filled softly while it's the screen you're on). */
 @Composable
-private fun BarIcon(icon: ImageVector, desc: String, on: Boolean, onClick: () -> Unit) {
-    IconButton(onClick = { E.haptic(); onClick() }, Modifier.size(52.dp).semantics { contentDescription = desc },
-        colors = IconButtonDefaults.iconButtonColors(containerColor = if (on) Color.White.copy(alpha = .18f) else Color.Transparent, contentColor = if (on) Color.White else dim)) {
-        Icon(icon, null, Modifier.size(24.dp))
+private fun BarIcon(icon: ImageVector, desc: String, on: Boolean, d: Dp = 54.dp, onClick: () -> Unit) {
+    Box(Modifier.size(d).clip(CircleShape).background(if (on) Color.White.copy(alpha = .16f) else Color.Transparent)
+        .border(1.dp, Color.White.copy(alpha = if (on) .55f else .32f), CircleShape).clickable { E.haptic(); onClick() }
+        .semantics { contentDescription = desc }, contentAlignment = Alignment.Center) {
+        Icon(icon, null, Modifier.size(d * .42f), tint = Color.White)
     }
 }
 
@@ -480,10 +489,10 @@ private fun CtlIcon(icon: ImageVector, desc: String, size: Dp = 24.dp, enabled: 
 @Composable
 private fun PlayButton(size: Dp) {
     val playing = E.playingState
-    val m by animateFloatAsState(if (playing) 1f else 0f, spring(.55f, Spring.StiffnessLow), label = "morph")
-    val shape = remember(m) { morphShape(m) }
-    Box(Modifier.size(size).clip(shape).background(Color.White).clickable { E.toggle() }.semantics { contentDescription = if (playing) "Pause" else "Play" }, contentAlignment = Alignment.Center) {
-        Icon(if (playing) Icons.Rounded.Pause else Icons.Rounded.PlayArrow, null, Modifier.size(size * .48f), tint = Color(0xFF111116))
+    val pop = remember { Animatable(1f) }
+    LaunchedEffect(playing) { if (!S.low && !E.reduceMotion()) { pop.snapTo(.86f); pop.animateTo(1f, spring(.45f, Spring.StiffnessMedium)) } }
+    Box(Modifier.size(size).clip(CircleShape).clickable { E.haptic(); E.toggle() }.semantics { contentDescription = if (playing) "Pause" else "Play" }, contentAlignment = Alignment.Center) {
+        Icon(if (playing) Icons.Rounded.Pause else Icons.Rounded.PlayArrow, null, Modifier.size(size).graphicsLayer { scaleX = pop.value; scaleY = pop.value }, tint = Color.White)
     }
 }
 
@@ -494,11 +503,11 @@ private fun SeekRow() {
     val frac = drag ?: E.seekFrac
     val dur = E.curDur()
     Column(Modifier.fillMaxWidth()) {
-        WavySeek(frac, E.playingState && !S.low && !E.reduceMotion(), onDrag = { f -> drag = f; E.seeking = true; E.poke() }, onDone = { f -> drag = null; E.seeking = false; E.seekFraction(f) }, enabled = E.src != "none" && dur > 0)
+        ThickSeek(frac, onDrag = { f -> drag = f; E.seeking = true; E.poke() }, onDone = { f -> drag = null; E.seeking = false; E.seekFraction(f) }, enabled = E.src != "none" && dur > 0)
         Row(Modifier.fillMaxWidth()) {
-            Text(fmtTime(if (drag != null) frac * dur else E.curTime()), fontSize = 12.sp, color = if (drag != null && S.b("xScrub")) Color.White else dim, fontWeight = FontWeight.SemiBold)
+            Text(fmtTime(if (drag != null) frac * dur else E.curTime()), fontSize = 14.sp, color = if (drag != null && S.b("xScrub")) Color.White else dim, fontWeight = FontWeight.Medium)
             Spacer(Modifier.weight(1f))
-            Text(if (drag != null && S.b("xScrub")) "-" + fmtTime(dur - frac * dur) else fmtTime(dur), fontSize = 12.sp, color = dim, fontWeight = FontWeight.SemiBold)
+            Text(if (drag != null && S.b("xScrub")) "-" + fmtTime(dur - frac * dur) else fmtTime(dur), fontSize = 14.sp, color = dim, fontWeight = FontWeight.Medium)
         }
     }
 }
@@ -521,7 +530,7 @@ private fun VolumeRow() {
 @Composable
 private fun LyricsCredits() {
     val c = Lyr.credit
-    val show = c != null && Lyr.lines > 0 && (S.credPos == "corner" || !S.b("xRefCred") || S.xFocus)
+    val show = c != null && Lyr.lines > 0 && (S.credPos == "corner" || !S.b("xRefCred"))
     AnimatedVisibility(show, enter = fadeIn(tween(600)), exit = fadeOut()) {
         if (c != null) CornerCredits(c, Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 6.dp), alignEnd = S.credPos == "lyrics" && S.b("lcredLast") && Lyr.L.lastOrNull { !it.dots }?.opp == true)
     }

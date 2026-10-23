@@ -72,6 +72,11 @@ fun parseTTML(x: String): Parsed {
         if (ws.isNotEmpty() && ws.none { it.sp || it.text.lastOrNull()?.isWhitespace() == true }) ws.forEach { it.sp = true }
         return ws
     }
+    // a word-synced file (its timing="Word", or lines with several timed words): a line of one word ("Oh") is
+    // word-synced too, not a line with no words
+    val root = d.documentElement
+    val timing = (0 until root.attributes.length).map { root.attributes.item(it) }.firstOrNull { it.nodeName.endsWith("timing") }?.nodeValue?.lowercase()
+    val wordDoc = timing == "word" || allByLocal(d, "p").any { p -> p.childElements().count { it.hasAttribute("begin") && !isBg(it) && !isSide(it) } > 1 }
     for (p in allByLocal(d, "p")) {
         val b = p.attr("begin") ?: continue
         val ag = agentOf(p); if (main.isEmpty() && ag.isNotEmpty()) main = ag
@@ -92,7 +97,7 @@ fun parseTTML(x: String): Parsed {
         }
         val trS = side("x-translation"); val roS = side("x-roman")
         val opp = ag.isNotEmpty() && ag != main && (people.isEmpty() || ag in people)
-        out.add(Line(ttSec(b), p.attr("end")?.let { ttSec(it) }, text, if (words.size > 1) words else null, bg.ifEmpty { null }, opp,
+        out.add(Line(ttSec(b), p.attr("end")?.let { ttSec(it) }, text, if (words.size > 1 || (words.size == 1 && wordDoc)) words else null, bg.ifEmpty { null }, opp,
             apiTr = trS?.first?.ifEmpty { null }, apiTrLang = trS?.first?.takeIf { it.isNotEmpty() }?.let { trS.second.ifEmpty { "zh" } },
             apiRom = roS?.first?.ifEmpty { null }))
     }

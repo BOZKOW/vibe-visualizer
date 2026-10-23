@@ -111,6 +111,47 @@ class LiveSourcesTest {
         if (dat != null) assertTrue("っ: ${dat.lineRom}", dat.lineRom!!.contains("tta"))
     }
 
+    // the catalogues from Spicy Lyrics Mobile
+    @Test fun kugouKrc() {
+        val text = KrcCodec.decode(file("kugou_krc.txt").readText().trim())
+        assertNotNull("KuGou: the KRC decodes", text)
+        val r = SourceParse.catalogue(KrcCodec.lines(text!!), true, "KuGou", "kugou", "Blinding Lights", "The Weeknd")
+        assertNotNull(r); r!!
+        checkTimed(r.lines, "KuGou")
+        assertTrue("KuGou: word-synced", r.lines.filter { !it.dots }.all { it.words != null })
+        assertTrue("KuGou: no credit lines", r.lines.none { it.text.contains("Lyrics by", true) || it.text.contains("Produced by", true) })
+        r.lines.filter { it.words != null }.forEach { l -> assertEquals(l.text, l.words!!.joinToString("") { it.text + if (it.sp) " " else "" }.trim()) }
+    }
+
+    @Test fun qqQrc() {
+        val qrc = QrcCodec.decrypt(file("qq_lyric.txt").readText().trim())
+        assertNotNull("QQ Music: the QRC decrypts", qrc)
+        val ttml = QrcCodec.toTtml(qrc!!); assertNotNull("QQ Music: as TTML", ttml)
+        val r = SourceParse.catalogue(fromText(ttml!!).lines, true, "QQ Music", "qq", "Blinding Lights", "The Weeknd")
+        assertNotNull(r); r!!
+        checkTimed(r.lines, "QQ Music")
+        val plain = r.lines.filter { !it.dots && it.words == null }
+        assertTrue("QQ Music: word-synced (not: " + plain.take(3).joinToString(" | ") { it.text } + ")", plain.isEmpty())
+    }
+
+    @Test fun kuwo() {
+        val songs = KuwoLyrics.search(file("kuwo_search.json").readText())
+        assertTrue("Kuwo: search hits", songs.isNotEmpty() && songs[0].rid.startsWith("MUSIC_"))
+        val text = KuwoLyrics.body(file("kuwo_lyric.bin").readBytes()); assertNotNull("Kuwo: the lyrics inflate", text)
+        val krc = KuwoLyrics.krc(text!!)
+        val lines = if (krc != null) KrcCodec.lines(krc) else parseLRC(KuwoLyrics.lrc(text))
+        val r = SourceParse.catalogue(lines, true, "Kuwo", "kuwo", "Blinding Lights", "The Weeknd")
+        assertNotNull(r); checkTimed(r!!.lines, "Kuwo")
+    }
+
+    @Test fun lrcred() {
+        val r = SourceParse.lrcred(json("lrcred_song.json"))
+        assertNotNull(r); r!!
+        assertTrue(r.sync); checkTimed(r.lines, "lrc.red")
+        assertTrue("lrc.red: word-synced", r.lines.filter { !it.dots }.all { it.words != null })
+        assertEquals("Apple Music", r.credit?.via)
+    }
+
     @Test fun spotify() {
         val r = SourceParse.spotify(json("spotlyr.json"))
         assertNotNull(r); r!!

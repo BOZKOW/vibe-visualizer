@@ -56,6 +56,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.rounded.Help
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
@@ -156,8 +157,9 @@ private fun pages(): List<Page> = listOf(
     Page("viz", "Visualizer", VIcons.bars, listOf(
         Item.Head("Visualizer"),
         Item.Custom("Audio for the bars phone sound microphone") { AudioChoice() },
-        Item.Sw("bridge", "Vibe Bridge", "Bars from the computer that plays the music, through your server: it hears everything that computer plays, the Spotify app included."),
-        Item.Custom("bridge status") { Hint(if (!S.b("bridge")) "Off." else if (Audio.bridgeOn) "Connected through your server" + (Audio.bridge.device.takeIf { it.isNotEmpty() }?.let { " · listening to $it" } ?: "") + "." else "Not connected. Start Vibe Bridge with --server ${Server.base?.removePrefix("https://") ?: "<your server>"} on the computer that plays the music.") },
+        Item.Custom("Bars in every view under the cover and the lyrics") { SwitchRow("Bars in every view", "Under the cover and the lyrics too, not only on the Visualizer screen.", S.view == "both") { S.set("view", if (it) "both" else "lyrics") } },
+        Item.Sw("bridge", "Vibe Bridge", "Bars from the device that plays the music, through your server: it hears everything that device plays, the Spotify app included."),
+        Item.Custom("bridge status") { Hint(if (!S.b("bridge")) "Off." else if (Audio.bridgeOn) "Connected through your server" + (Audio.bridge.device.takeIf { it.isNotEmpty() }?.let { " · listening to $it" } ?: "") + "." else "Not connected. Start Vibe Bridge with --server ${Server.base?.removePrefix("https://") ?: "<your server>"} on the device that plays the music.") },
         Item.Sw("auto", "Auto sensitivity"),
         Item.Sl("boost", "Sensitivity / boost", 30, 300), Item.Sl("resp", "Smoothness (low = snappier)", 0, 100), Item.Sl("blur", "Motion blur", 0, 90),
         Item.Sl("bars", "Bar count", 24, 128, fmt = { "$it" }), Item.Sl("gap", "Bar gap", 0, 70),
@@ -166,7 +168,8 @@ private fun pages(): List<Page> = listOf(
     Page("lyrics", "Lyrics", VIcons.lyrics, listOf(
         Item.Head("Lyrics"),
         Item.Custom("Sources, in priority order Spicy Lyrics LRCLIB NetEase AMLL Spotify your lyrics files") { Sources() },
-        Item.Sl("loff", "Timing offset (ms)", -3000, 3000, 50, "Lyrics behind the music? Raise it. While a song plays, ⋮ → Lyrics timing moves them too.", fmt = { (if (it > 0) "+" else "") + it + " ms" }),
+        Item.Custom("Lyrics timing earlier later this song this output resync") { Buttons("Lyrics timing…" to { E.settingsPage = null; E.sheet = "timing" }) },
+        Item.Sl("loff", "Timing offset (ms)", -3000, 3000, 50, "Lyrics behind the music? Raise it. Lyrics timing (above) also has this song’s and this output’s own.", fmt = { (if (it > 0) "+" else "") + it + " ms" }),
         Item.Ch("lDesync", "Desync detection", listOf("ask" to "Ask before fixing", "auto" to "Fix automatically", "off" to "Off"), "Listens to the music and checks that the singing lines up with the lyrics. Needs real sound for the bars (phone sound, Vibe Bridge, the microphone or your own file). A fix only applies to the song playing."),
         Item.Custom("desync status") { if (Desync.stat.isNotEmpty()) Hint(Desync.stat) },
         Item.Sl("lsize", "Text size", 70, 150), Item.Sw("lblur", "Blur inactive lines"),
@@ -231,6 +234,9 @@ private fun pages(): List<Page> = listOf(
     )),
     Page("android", "Phone", Icons.Rounded.PhoneAndroid, listOf(
         Item.Head("Phone"),
+        Item.Sub("Your music"),
+        Item.Custom("Play songs from your phone use Spotify connect choose where Spotify plays devices") { YourMusic() },
+        Item.Sub("This phone"),
         Item.Sw("aKeepOn", "Keep the screen on while music plays"),
         Item.Sw("aPip", "Picture-in-picture", "Leaving the app while music plays keeps the lyrics in a small window over your other apps."),
         Item.Sw("aHideStatus", "Hide the status bar", "The bar with the time and notifications at the top. Swipe down from the top to see it for a moment."),
@@ -254,6 +260,7 @@ private fun pages(): List<Page> = listOf(
         Item.Head("Help"),
         Item.Sub("Your server"),
         Item.Custom("Your server address Tailscale") { ServerField() },
+        Item.Custom("Connection check your server ping") { if (Server.set) Buttons("Check the connection" to { E.settingsPage = null; Ping.open = true; Ping.kick(); E.sheet = "net" }) },
         Item.Sub("App updates"),
         Item.Custom("Updates check for updates update now release notes") { AppUpdates() },
         Item.Sub("Your server’s web app"),
@@ -281,33 +288,23 @@ fun SettingsScreen() {
         val wide = maxWidth >= 720.dp
         BackHandler { if (q.isNotEmpty()) q = "" else if (!wide && page != null && E.settingsPage == null) page = null else if (!wide && page != null) { page = null } else E.settingsPage = null }
         if (S.glass) GlassBackdrop()   // Glass: the blurred cover shows through
-        Surface(Modifier.fillMaxSize(), color = if (S.glass) Color.Transparent else MaterialTheme.colorScheme.surfaceContainerLowest) {
+        // contentColor: on Glass's see-through surface the text and icons defaulted to black
+        Surface(Modifier.fillMaxSize(), color = if (S.glass) Color.Transparent else MaterialTheme.colorScheme.surfaceContainerLowest, contentColor = Color.White) {
             Row(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.statusBarsIgnoringVisibility.union(WindowInsets.displayCutout).only(WindowInsetsSides.Top)).windowInsetsPadding(WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal))) {
                 if (wide || page == null || q.isNotEmpty()) {
                     Column(Modifier.then(if (wide) Modifier.width(300.dp) else Modifier.fillMaxWidth()).fillMaxHeight()) {
-                        Row(Modifier.fillMaxWidth().padding(start = 8.dp, end = 8.dp, top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-                            IconButton(onClick = { E.settingsPage = null }) { Icon(Icons.Rounded.Close, "Close settings") }
-                            Text("Settings", fontSize = 24.sp, fontWeight = FontWeight.ExtraBold)
+                        Row(Modifier.fillMaxWidth().padding(start = 8.dp, end = 8.dp, top = 10.dp, bottom = 2.dp), verticalAlignment = Alignment.CenterVertically) {
+                            IconButton(onClick = { E.settingsPage = null }) { Icon(Icons.Rounded.Close, "Close settings", tint = Color.White) }
+                            Text("Settings", fontSize = 28.sp, fontWeight = FontWeight.SemiBold, color = Color.White, letterSpacing = (-.3).sp)
                         }
                         TextField(q, { q = it }, Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp).then(if (S.glass) Modifier.glass(RoundedCornerShape(28.dp)) else Modifier.clip(RoundedCornerShape(28.dp))), singleLine = true,
-                            placeholder = { Text("Search settings") }, leadingIcon = { Icon(Icons.Rounded.Search, null) },
+                            placeholder = { Text("Search settings", color = Color.White.copy(alpha = .55f)) }, leadingIcon = { Icon(Icons.Rounded.Search, null, tint = Color.White.copy(alpha = .7f)) },
                             trailingIcon = { if (q.isNotEmpty()) IconButton(onClick = { q = "" }) { Icon(Icons.Rounded.Close, "Clear") } },
                             colors = if (S.glass) TextFieldDefaults.colors(focusedIndicatorColor = Color.Transparent, unfocusedIndicatorColor = Color.Transparent, focusedContainerColor = Color.Transparent, unfocusedContainerColor = Color.Transparent)
                                 else TextFieldDefaults.colors(focusedIndicatorColor = Color.Transparent, unfocusedIndicatorColor = Color.Transparent))
                         if (q.isNotEmpty() && !wide) SearchResults(all, q, Modifier.weight(1f))
-                        else if (S.glass) LazyColumn(Modifier.weight(1f).fadeEdges(24.dp, 24.dp).navBarsSpace(), contentPadding = androidx.compose.foundation.layout.PaddingValues(start = 14.dp, end = 14.dp, bottom = 24.dp)) {
-                            glassPages(all, page, wide) { q = ""; page = it }
-                        }
-                        else LazyColumn(Modifier.weight(1f).navBarsSpace(), contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 24.dp)) {
-                            items(all, key = { it.id }) { p ->
-                                val on = wide && (page ?: SettingsUi.last) == p.id
-                                Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 2.dp).clip(RoundedCornerShape(50)).background(if (on) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent)
-                                    .clickable { E.haptic(); q = ""; page = p.id }.padding(horizontal = 16.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(p.icon, null, Modifier.size(22.dp), tint = if (on) MaterialTheme.colorScheme.onSecondaryContainer else Color.White.copy(alpha = .85f))
-                                    Spacer(Modifier.width(16.dp))
-                                    Text(p.name, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
-                                }
-                            }
+                        else LazyColumn(Modifier.weight(1f).navBarsSpace().fadeEdges(20.dp, 28.dp), contentPadding = androidx.compose.foundation.layout.PaddingValues(start = 14.dp, end = 14.dp, top = 8.dp, bottom = 28.dp)) {
+                            cardPages(all, page, wide) { q = ""; page = it }
                         }
                     }
                 }
@@ -319,8 +316,8 @@ fun SettingsScreen() {
                         AnimatedContent(p, Modifier.weight(1f), transitionSpec = { (slideInHorizontally(tween(260)) { it / 12 } + fadeIn(tween(200, delayMillis = 90))) togetherWith fadeOut(tween(90)) }, label = "page") { pg ->
                             Column(Modifier.fillMaxSize()) {
                                 Row(Modifier.fillMaxWidth().padding(start = 8.dp, end = 16.dp, top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-                                    if (!wide) IconButton(onClick = { page = null }) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back") } else Spacer(Modifier.width(16.dp))
-                                    Text(pg.name, fontSize = 24.sp, fontWeight = FontWeight.ExtraBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                    if (!wide) IconButton(onClick = { page = null }) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back", tint = Color.White) } else Spacer(Modifier.width(16.dp))
+                                    Text(pg.name, fontSize = 28.sp, fontWeight = FontWeight.SemiBold, color = Color.White, letterSpacing = (-.3).sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                 }
                                 ItemsList(pg.items.filterIndexed { i, it -> !(i == 0 && it is Item.Head && pg.items.count { x -> x is Item.Head } == 1) }, Modifier.weight(1f))
                             }
@@ -337,10 +334,10 @@ private fun SearchResults(all: List<Page>, q: String, modifier: Modifier) {
     val ql = q.trim().lowercase()
     val hits = all.mapNotNull { p -> val its = p.items.filter { it !is Item.Head && it !is Item.Sub && it.search.lowercase().contains(ql) }; if (its.isEmpty()) null else p to its }
     if (hits.isEmpty()) { Text("No setting matches that.", Modifier.padding(24.dp), color = Color.White.copy(alpha = .6f)); return }
-    LazyColumn(modifier.then(if (S.glass) Modifier.fadeEdges(24.dp, 24.dp) else Modifier).navBarsSpace(), contentPadding = androidx.compose.foundation.layout.PaddingValues(start = 20.dp, end = 20.dp, bottom = 40.dp)) {
+    LazyColumn(modifier.navBarsSpace().fadeEdges(20.dp, 28.dp), contentPadding = androidx.compose.foundation.layout.PaddingValues(start = 14.dp, end = 14.dp, top = 8.dp, bottom = 40.dp)) {
         hits.forEach { (p, its) ->
-            item(key = "h" + p.id) { SectionLabel(p.name) }
-            items(its.size, key = { p.id + it }) { i -> ItemView(its[i]) }
+            item(key = "h" + p.id) { CardLabel(Item.Sub(p.name)) }
+            item(key = "c" + p.id) { CardGroup { its.forEachIndexed { i, x -> if (i > 0) CardDivider(); Box(Modifier.padding(horizontal = 18.dp, vertical = 2.dp)) { ItemView(x) } } } }
         }
     }
 }
@@ -348,9 +345,8 @@ private fun SearchResults(all: List<Page>, q: String, modifier: Modifier) {
 @Composable
 private fun ItemsList(items: List<Item>, modifier: Modifier) {
     val st = rememberLazyListState()
-    LazyColumn(modifier.then(if (S.glass) Modifier.fadeEdges(24.dp, 24.dp) else Modifier).navBarsSpace(), state = st, contentPadding = androidx.compose.foundation.layout.PaddingValues(start = if (S.glass) 14.dp else 20.dp, end = if (S.glass) 14.dp else 20.dp, bottom = 48.dp)) {
-        if (S.glass) glassItems(items)
-        else items(items.size) { i -> Box(Modifier.widthIn(max = 760.dp)) { ItemView(items[i]) } }
+    LazyColumn(modifier.navBarsSpace().fadeEdges(20.dp, 28.dp), state = st, contentPadding = androidx.compose.foundation.layout.PaddingValues(start = 14.dp, end = 14.dp, top = 8.dp, bottom = 48.dp)) {
+        cardItems(items)
     }
 }
 
@@ -370,8 +366,8 @@ fun ItemView(it: Item) {
         is Item.Custom -> Column(Modifier.fillMaxWidth().padding(vertical = 4.dp)) { it.c() }
         is Item.Sw -> Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).clickable { E.haptic(); S.set(it.k, !S.b(it.k)) }.padding(vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                Text(it.t, fontSize = 15.5.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
-                if (it.d.isNotEmpty()) Text(it.d, fontSize = 13.sp, lineHeight = 18.sp, color = Color.White.copy(alpha = .6f), modifier = Modifier.padding(top = 2.dp))
+                Text(it.t, fontSize = 16.sp, fontWeight = FontWeight.Medium, color = Color.White)
+                if (it.d.isNotEmpty()) Text(it.d, fontSize = 13.5.sp, lineHeight = 19.sp, color = Color.White.copy(alpha = .62f), modifier = Modifier.padding(top = 2.dp))
             }
             ResetBtn(it.k)
             Spacer(Modifier.width(8.dp))
@@ -379,7 +375,7 @@ fun ItemView(it: Item) {
         }
         is Item.Sl -> Column(Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(it.t, fontSize = 15.5.sp, fontWeight = FontWeight.SemiBold, color = Color.White, modifier = Modifier.weight(1f))
+                Text(it.t, fontSize = 16.sp, fontWeight = FontWeight.Medium, color = Color.White, modifier = Modifier.weight(1f))
                 ResetBtn(it.k)
                 Text(it.fmt(S.i(it.k)), fontSize = 13.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
             }
@@ -394,13 +390,13 @@ fun ItemView(it: Item) {
                 Box {
                     Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).clickable { open = true }.padding(vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {
-                            Text(it.t, fontSize = 15.5.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
-                            Text(cur, fontSize = 13.5.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 2.dp))
+                            Text(it.t, fontSize = 16.sp, fontWeight = FontWeight.Medium, color = Color.White)
+                            Text(cur, fontSize = 13.5.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Medium, modifier = Modifier.padding(top = 2.dp))
                         }
                         ResetBtn(it.k)
                         Icon(Icons.Rounded.KeyboardArrowDown, null, tint = Color.White.copy(alpha = .6f))
                     }
-                    DropdownMenu(open, { open = false }, glassMenu(), shape = RoundedCornerShape(18.dp), containerColor = glassMenuColor()) {
+                    DropdownMenu(open, { open = false }, glassMenu(), shape = RoundedCornerShape(18.dp), containerColor = glassMenuColor(), shadowElevation = 16.dp, border = menuEdge) {
                         it.opts.forEach { (v, l) -> DropdownMenuItem(text = { Text(l, fontWeight = if (v == S.str(it.k)) FontWeight.Bold else FontWeight.Normal) }, onClick = { open = false; E.haptic(); S.set(it.k, v) }) }
                     }
                 }
@@ -411,6 +407,30 @@ fun ItemView(it: Item) {
 }
 
 /* ---- custom rows ---- */
+
+/** A switch row for a setting that isn't a plain on/off key. */
+@Composable
+private fun SwitchRow(t: String, d: String, on: Boolean, set: (Boolean) -> Unit) {
+    Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).clickable { E.haptic(); set(!on) }.padding(vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f)) {
+            Text(t, fontSize = 16.sp, fontWeight = FontWeight.Medium, color = Color.White)
+            if (d.isNotEmpty()) Text(d, fontSize = 13.5.sp, lineHeight = 19.sp, color = Color.White.copy(alpha = .62f), modifier = Modifier.padding(top = 2.dp))
+        }
+        Spacer(Modifier.width(8.dp))
+        Switch(on, { E.haptic(); set(it) })
+    }
+}
+
+/** Settings → Phone → Your music: what plays. */
+@Composable
+private fun YourMusic() {
+    val sp = E.src == "spotify"
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        FilledTonalButton(onClick = { E.haptic(); E.settingsPage = null; FilePicker.pickAudio() }) { Text("Play songs from your phone") }
+        if (!sp) FilledTonalButton(onClick = { E.haptic(); E.settingsPage = null; if (Spotify.connected) E.setSource("spotify") else E.spLogin() }) { Text(if (Spotify.connected) "Use Spotify" else "Connect Spotify") }
+        else FilledTonalButton(onClick = { E.haptic(); E.settingsPage = null; E.sheet = "devices" }) { Text("Choose where Spotify plays") }
+    }
+}
 
 @Composable
 fun Buttons(vararg b: Pair<String, () -> Unit>) {
@@ -447,7 +467,7 @@ private fun AudioChoice() {
             }
             Icon(Icons.Rounded.KeyboardArrowDown, null)
         }
-        DropdownMenu(open, { open = false }, glassMenu(), containerColor = glassMenuColor()) {
+        DropdownMenu(open, { open = false }, glassMenu(), shape = RoundedCornerShape(18.dp), containerColor = glassMenuColor(), shadowElevation = 16.dp, border = menuEdge) {
             opts.forEach { (k, l) -> DropdownMenuItem(text = { Text(l) }, onClick = { open = false
                 if (k != "off" && !Audio.permitted()) Perms.mic { ok -> if (ok) S.set("aCap", k) } else S.set("aCap", k) }) }
         }
@@ -565,7 +585,7 @@ private fun SpotifySection() {
         Text(if (!Spotify.connected) (if (id.isNotEmpty()) "Client ID saved. Press Connect." else "Not connected.") else if (E.src == "spotify") (if (Spotify.meta != null) "Connected · " + (if (Spotify.isPlaying) "playing" else "paused") else "Connected · nothing playing") else "Connected. Tap the Spotify chip to use it.",
             Modifier.padding(top = 8.dp), fontSize = 13.5.sp, color = Color.White)
         Hint("Setup: in the Spotify dashboard, add the Redirect URI above to your app (with a server set, it’s your server’s address, the one the web app already uses), paste the Client ID and press Connect. In development mode, add your own account under the app’s User Management.")
-        Hint("Bars for the Spotify app on this phone come from “Phone sound” (Visualizer settings). For music playing on a computer, run Vibe Bridge there.")
+        Hint("Bars for the Spotify app on this phone come from “Phone sound” (Visualizer settings). For music playing on another device, run Vibe Bridge there.")
     }
 }
 
@@ -687,10 +707,12 @@ private fun About() {
     @Suppress("unused") val keep = listOf(Defaults, Net)
 }
 
-/** Glass: a choice menu fades at its edges as it scrolls, over a see-through dark glass. */
-private fun glassMenu(): Modifier = if (S.glass) Modifier.fadeEdges(10.dp, 10.dp) else Modifier
+/** A choice menu: a solid dark panel with a fine light edge (a see-through one let the text behind show through it),
+ *  fading at its edges as it scrolls. */
+private fun glassMenu(): Modifier = Modifier.fadeEdges(10.dp, 10.dp)
 @Composable
-private fun glassMenuColor(): Color = if (S.glass) Color(0xFF14141C).copy(alpha = .92f) else MaterialTheme.colorScheme.surfaceContainer
+private fun glassMenuColor(): Color = Color(0xFF1D1D26)
+private val menuEdge = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = .12f))
 
 /* ================= Glass (Settings → Appearance → Design) =================
    Frosted glass over your cover: Settings shows the blurred cover behind it, and its rows sit in glass cards. */
@@ -705,52 +727,57 @@ private fun GlassBackdrop() {
     }
 }
 
+/** A card of settings: frosted glass in Glass, a solid card in Android. */
 @Composable
-private fun GlassGroup(content: @Composable ColumnScope.() -> Unit) {
-    Column(Modifier.fillMaxWidth().widthIn(max = 760.dp).padding(vertical = 6.dp).glass(RoundedCornerShape(24.dp)), content = content)
+private fun CardGroup(content: @Composable ColumnScope.() -> Unit) {
+    Column(Modifier.fillMaxWidth().widthIn(max = 760.dp).padding(vertical = 6.dp)
+        .then(if (S.glass) Modifier.glass(RoundedCornerShape(24.dp)) else Modifier.clip(RoundedCornerShape(24.dp)).background(MaterialTheme.colorScheme.surfaceContainer)), content = content)
 }
 
-/** A heading or a note between the glass cards: white enough, with a soft shadow, to read on any cover. */
+/** A heading or a note between the cards: white enough, with a soft shadow, to read on any cover. */
 @Composable
-private fun GlassLabel(it: Item) {
-    val sh = androidx.compose.ui.text.TextStyle(shadow = androidx.compose.ui.graphics.Shadow(Color.Black.copy(alpha = .6f), androidx.compose.ui.geometry.Offset(0f, 1f), 6f))
+private fun CardLabel(it: Item) {
+    val sh = androidx.compose.ui.text.TextStyle(shadow = if (S.glass) androidx.compose.ui.graphics.Shadow(Color.Black.copy(alpha = .6f), androidx.compose.ui.geometry.Offset(0f, 1f), 6f) else null)
     when (it) {
-        is Item.Head -> Text(it.t, Modifier.padding(start = 8.dp, top = 22.dp, bottom = 4.dp), fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.White, style = sh)
-        is Item.Sub -> Text(it.t.uppercase(), Modifier.padding(start = 8.dp, top = 16.dp, bottom = 4.dp), fontSize = 12.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp, color = Color.White.copy(alpha = .85f), style = sh)
-        is Item.Txt -> Text(it.t, Modifier.padding(horizontal = 8.dp, vertical = 4.dp), fontSize = 13.sp, lineHeight = 18.sp, color = Color.White.copy(alpha = .85f), style = sh)
+        is Item.Head -> Text(it.t, Modifier.padding(start = 8.dp, top = 22.dp, bottom = 4.dp), fontSize = 18.sp, fontWeight = FontWeight.SemiBold, color = Color.White, style = sh)
+        is Item.Sub -> Text(it.t.uppercase(), Modifier.padding(start = 10.dp, top = 18.dp, bottom = 6.dp), fontSize = 12.sp, fontWeight = FontWeight.Medium, letterSpacing = 1.2.sp, color = Color.White.copy(alpha = .7f), style = sh)
+        is Item.Txt -> Text(it.t, Modifier.padding(horizontal = 10.dp, vertical = 4.dp), fontSize = 13.sp, lineHeight = 18.sp, color = Color.White.copy(alpha = .75f), style = sh)
         else -> {}
     }
 }
 
 @Composable
-private fun GlassDivider() { HorizontalDivider(Modifier.padding(horizontal = 18.dp), thickness = 1.dp, color = Color.White.copy(alpha = .08f)) }
+private fun CardDivider() { HorizontalDivider(Modifier.padding(horizontal = 18.dp), thickness = 1.dp, color = Color.White.copy(alpha = .07f)) }
 
-/** A page's items in glass cards: one for each section, under its heading. */
-private fun LazyListScope.glassItems(items: List<Item>) {
+/** A page's items in cards: one for each section, under its heading. */
+private fun LazyListScope.cardItems(items: List<Item>) {
     val groups = ArrayList<Pair<Item?, MutableList<Item>>>()
     for (x in items) when (x) {
         is Item.Head, is Item.Sub, is Item.Txt -> groups.add(x to ArrayList())
         else -> { if (groups.isEmpty() || groups.last().first is Item.Txt) groups.add(null to ArrayList()); groups.last().second.add(x) }
     }
     groups.forEachIndexed { gi, (h, its) ->
-        if (h != null) item(key = "h$gi") { GlassLabel(h) }
-        if (its.isNotEmpty()) item(key = "c$gi") { GlassGroup { its.forEachIndexed { i, x -> if (i > 0) GlassDivider(); Box(Modifier.padding(horizontal = 18.dp, vertical = 2.dp)) { ItemView(x) } } } }
+        if (h != null) item(key = "h$gi") { CardLabel(h) }
+        if (its.isNotEmpty()) item(key = "c$gi") { CardGroup { its.forEachIndexed { i, x -> if (i > 0) CardDivider(); Box(Modifier.padding(horizontal = 18.dp, vertical = 2.dp)) { ItemView(x) } } } }
     }
 }
 
-/** Settings' pages in three glass cards. */
-private fun LazyListScope.glassPages(all: List<Page>, page: String?, wide: Boolean, pick: (String) -> Unit) {
+/** Settings' pages in three cards: each with its icon on a soft tile and an arrow, as Android's own settings. */
+private fun LazyListScope.cardPages(all: List<Page>, page: String?, wide: Boolean, pick: (String) -> Unit) {
     listOf(all.take(4), all.drop(4).take(4), all.drop(8)).filter { it.isNotEmpty() }.forEachIndexed { gi, g ->
         item(key = "g$gi") {
-            GlassGroup {
+            CardGroup {
                 g.forEachIndexed { i, p ->
-                    if (i > 0) GlassDivider()
+                    if (i > 0) CardDivider()
                     val on = wide && (page ?: SettingsUi.last) == p.id
-                    Row(Modifier.fillMaxWidth().background(if (on) Color.White.copy(alpha = .1f) else Color.Transparent).clickable { E.haptic(); pick(p.id) }
-                        .padding(horizontal = 18.dp, vertical = 15.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Icon(p.icon, null, Modifier.size(22.dp), tint = Color.White.copy(alpha = .9f))
-                        Spacer(Modifier.width(16.dp))
-                        Text(p.name, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
+                    Row(Modifier.fillMaxWidth().background(if (on) Color.White.copy(alpha = .08f) else Color.Transparent).clickable { E.haptic(); pick(p.id) }
+                        .padding(horizontal = 14.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Box(Modifier.size(36.dp).clip(RoundedCornerShape(11.dp)).background(Color.White.copy(alpha = .09f)), contentAlignment = Alignment.Center) {
+                            Icon(p.icon, null, Modifier.size(20.dp), tint = Color.White.copy(alpha = .92f))
+                        }
+                        Spacer(Modifier.width(14.dp))
+                        Text(p.name, Modifier.weight(1f), fontSize = 16.sp, fontWeight = FontWeight.Medium, color = Color.White)
+                        Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, null, Modifier.size(20.dp), tint = Color.White.copy(alpha = .35f))
                     }
                 }
             }

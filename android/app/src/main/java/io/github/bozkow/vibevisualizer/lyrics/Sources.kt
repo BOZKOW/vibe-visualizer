@@ -27,6 +27,31 @@ object SourceParse {
         return null
     }
 
+    /** Credit lines some catalogues put at the top of the lyrics ("Lyrics by：…", "作词：…"), and the song's own
+     *  "Artist - Title" line: not part of what's sung. */
+    private val CREDIT = Regex("^\\s*(作词|作曲|编曲|制作人|混音|母带|和声|吉他|贝斯|鼓|弦乐|录音|监制|词|曲|lyrics|lyricist|composer|composed|producer|produced|arranger|arranged|written|writer|mixed|mastered|music|vocals?)(\\s*by)?\\s*[:：]", RegexOption.IGNORE_CASE)
+    fun withoutCredits(ls: List<Line>, title: String, artist: String): List<Line> {
+        val self = setOf(Match.key("$artist - $title"), Match.key("$title - $artist"), Match.key("${firstArtist(artist)} - $title"))
+        return ls.filter { it.dots || (!CREDIT.containsMatchIn(it.text) && Match.key(it.text) !in self) }
+    }
+
+    /** A word-synced or line-synced catalogue answer as lyrics, without its credit lines. */
+    fun catalogue(ls: List<Line>, sync: Boolean, name: String, source: String, title: String, artist: String): LyricsResult? {
+        val clean = withoutCredits(ls, title, artist)
+        if (clean.none { !it.dots }) return null
+        return LyricsResult(clean, sync, name, Credit(source))
+    }
+
+    /** lrc.red's song.json: Apple Music's TTML (with lrc.red's names put back to Apple's), or its own model's sync. */
+    fun lrcred(song: JSONObject): LyricsResult? {
+        val ttml = song.optString("source").takeIf { it.isNotBlank() && !song.isNull("source") } ?: return null
+        val apple = ttml.replace("xmlns:lrc=", "xmlns:itunes=").replace(Regex("(?<=\\s)lrc:(?=[A-Za-z]+=)"), "itunes:")
+            .replace("<sourceMetadata", "<iTunesMetadata").replace("</sourceMetadata>", "</iTunesMetadata>")
+        val t = fromText(apple); if (t.lines.none { !it.dots }) return null
+        val byModel = song.optBoolean("byModel")
+        return LyricsResult(t.lines, t.sync, "lrc.red", Credit("lrcred", via = if (byModel) "lrc.red’s AI sync" else "Apple Music", writers = t.writers))
+    }
+
     private val NETEASE_CREDITS = Regex("^(作词|作曲|编曲|制作人|混音|母带|和声|吉他|贝斯|鼓|弦乐|录音|词|曲|Lyrics|Composer|Producer|Arranger)\\s*[:：]", RegexOption.IGNORE_CASE)
 
     /** NetEase (your server's /api/netease): the lyrics, with its romanization and Chinese translation lined up. */

@@ -90,3 +90,28 @@ fun WavySeek(frac: Float, wavy: Boolean, onDrag: (Float) -> Unit, onDone: (Float
         if (enabled) drawRoundRect(Color.White, Offset(x - 2.dp.toPx(), y - 10.dp.toPx()), Size(4.dp.toPx(), 20.dp.toPx()), CornerRadius(2.dp.toPx()))
     }
 }
+
+/** The seek bar as Spicy Lyrics Mobile draws it: a thick pill with a soft outline that fills from the left, no thumb. */
+@Composable
+fun ThickSeek(frac: Float, onDrag: (Float) -> Unit, onDone: (Float) -> Unit, enabled: Boolean, thick: androidx.compose.ui.unit.Dp = 12.dp) {
+    val drag by rememberUpdatedState(onDrag); val done by rememberUpdatedState(onDone)
+    var last by remember { mutableFloatStateOf(0f) }
+    Canvas(Modifier.fillMaxWidth().height(30.dp)
+        .semantics {
+            contentDescription = "Seek"; progressBarRangeInfo = ProgressBarRangeInfo(frac, 0f..1f)
+            if (enabled) setProgress { v -> done(v.coerceIn(0f, 1f)); true }
+        }
+        .pointerInput(enabled) { if (!enabled) return@pointerInput; detectTapGestures { o -> done((o.x / size.width).coerceIn(0f, 1f)) } }
+        .pointerInput(enabled) {
+            if (!enabled) return@pointerInput
+            detectHorizontalDragGestures(onDragStart = { o -> last = (o.x / size.width).coerceIn(0f, 1f); drag(last) }, onDragEnd = { done(last) }, onDragCancel = { done(last) }) { ch, _ ->
+                last = (ch.position.x / size.width).coerceIn(0f, 1f); drag(last)
+            }
+        }) {
+        val h = thick.toPx(); val y = (size.height - h) / 2; val r = CornerRadius(h / 2); val w = size.width
+        drawRoundRect(Color.White.copy(alpha = if (enabled) .14f else .07f), Offset(0f, y), Size(w, h), r)
+        drawRoundRect(Color.White.copy(alpha = .22f), Offset(.5f, y + .5f), Size(w - 1f, h - 1f), r, style = Stroke(1.dp.toPx()))
+        val x = frac.coerceIn(0f, 1f) * w
+        if (x > 0f) drawRoundRect(Color.White, Offset(0f, y), Size(maxOf(x, h), h), r)
+    }
+}
