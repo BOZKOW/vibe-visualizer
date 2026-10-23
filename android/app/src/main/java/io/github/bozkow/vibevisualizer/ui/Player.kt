@@ -423,7 +423,10 @@ private fun Scrolling(text: String, size: androidx.compose.ui.unit.TextUnit, wei
     var boxW by remember { androidx.compose.runtime.mutableIntStateOf(0) }
     var textW by remember(text) { androidx.compose.runtime.mutableIntStateOf(0) }
     val over = boxW > 0 && textW > boxW
-    Box(Modifier.onSizeChanged { boxW = it.width }.then(if (over) Modifier.fadeSides(10.dp, 28.dp) else Modifier)) {
+    // too long: the left fade sits in the margin before the name (the box reaches 14 dp into it), so at rest the first
+    // letter is whole and only text scrolling past fades out; the right fade shows there's more. A name that fits
+    // isn't moved at all (a centred one would sit off centre)
+    Box(Modifier.onSizeChanged { boxW = it.width }.then(if (over) Modifier.offset(x = (-14).dp).fadeSides(14.dp, 28.dp).padding(start = 14.dp) else Modifier)) {
         Text(text, Modifier.basicMarquee(iterations = 3, initialDelayMillis = 2500), style = TextStyle(shadow = textShadow),
             fontSize = size, fontWeight = weight, letterSpacing = spacing, color = color, maxLines = 1, onTextLayout = { textW = it.size.width })
     }
