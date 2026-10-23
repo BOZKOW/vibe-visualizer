@@ -31,6 +31,7 @@ import io.github.bozkow.vibevisualizer.lyrics.QrcCodec
 import io.github.bozkow.vibevisualizer.lyrics.MyLyrics
 import io.github.bozkow.vibevisualizer.lyrics.Parsed
 import io.github.bozkow.vibevisualizer.lyrics.Romanizer
+import io.github.bozkow.vibevisualizer.lyrics.Translators
 import io.github.bozkow.vibevisualizer.lyrics.SongMeta
 import io.github.bozkow.vibevisualizer.lyrics.SourceParse
 import io.github.bozkow.vibevisualizer.lyrics.BackoffLadder
@@ -570,11 +571,21 @@ object Lyr {
                 }
                 if (wantTr && trOk(l) && !skip0.contains(lineLang(l.text, null))) l.tr = l.apiTr
             }
-            val needG = ls.any { (wantRom && nonLatin(it.text) && it.rom == null) || (wantTr && it.tr == null && !trOk(it)) }
-            if (!needG) { render(null, true); return@launch }
-            val key = S.trTo + "|" + ls.joinToString("\n") { it.text }
-            val res = trCache[key] ?: try { Google.all(ls.map { it.text }, S.trTo).also { trCache[key] = it } }
-                catch (e: Exception) { if (tok == trTok) E.toast("Translation isn’t available right now", "warn"); render(null, true); return@launch }
+            val needRom = ls.any { wantRom && nonLatin(it.text) && it.rom == null }
+            val needTr = ls.any { wantTr && it.tr == null && !trOk(it) }
+            if (!needRom && !needTr) { render(null, true); return@launch }
+            // Google gives the translation and the romanization in one; another service translates, and Google only fills
+            // romanization the phone couldn't do
+            val svc = S.str("aTrSvc").takeIf { needTr } ?: "google"
+            val key = svc + "|" + S.trTo + "|" + ls.joinToString("\n") { it.text }
+            val res = trCache[key] ?: try {
+                (if (svc == "google") Google.all(ls.map { it.text }, S.trTo)
+                else {
+                    val o = Translators.translate(svc, ls.map { it.text }, S.trTo)
+                    val rom = if (needRom) runCatching { Google.all(ls.map { it.text }, S.trTo).rom }.getOrDefault(emptyList()) else emptyList()
+                    Google.Res(o.tr, rom, o.lang)
+                }).also { trCache[key] = it }
+            } catch (e: Exception) { if (tok == trTok) E.toast("Translation isn’t available: " + (e.message ?: "try again later"), "warn"); render(null, true); return@launch }
             if (tok != trTok) return@launch
             val skip = skipLangs()
             ls.forEachIndexed { i, l ->

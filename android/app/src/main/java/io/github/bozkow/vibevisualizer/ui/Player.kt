@@ -411,12 +411,22 @@ private fun TitleRow(big: Boolean, center: Boolean = false) {
     LaunchedEffect(ver) { if (!S.low && !E.reduceMotion()) { a.snapTo(0f); a.animateTo(1f, tween(500, easing = FastOutSlowInEasing)) } }
     Row(Modifier.fillMaxWidth().graphicsLayer { alpha = a.value; translationY = (1 - a.value) * 10f * density }, verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f), horizontalAlignment = if (center) Alignment.CenterHorizontally else Alignment.Start) {
-            Text(E.title, Modifier.basicMarquee(iterations = 3, initialDelayMillis = 2500), style = TextStyle(shadow = textShadow),
-                fontSize = if (big) 27.sp else 19.sp, fontWeight = FontWeight.Bold, letterSpacing = (-.3).sp, color = Color.White, maxLines = 1)
-            if (E.artist.isNotEmpty()) Text(E.artist, Modifier.basicMarquee(iterations = 3, initialDelayMillis = 2500), style = TextStyle(shadow = textShadow),
-                fontSize = if (big) 19.sp else 15.sp, fontWeight = FontWeight.Medium, color = dim, maxLines = 1)
+            Scrolling(E.title, if (big) 27.sp else 19.sp, FontWeight.Bold, Color.White, (-.3).sp)
+            if (E.artist.isNotEmpty()) Scrolling(E.artist, if (big) 19.sp else 15.sp, FontWeight.Medium, dim)
         }
         if (E.src == "spotify" && !center) LikeButton()
+    }
+}
+
+/** A name that scrolls when it's too long for its row, fading at the edges then (cut off in a hard line before). */
+@Composable
+private fun Scrolling(text: String, size: androidx.compose.ui.unit.TextUnit, weight: FontWeight, color: Color, spacing: androidx.compose.ui.unit.TextUnit = 0.sp) {
+    var boxW by remember { androidx.compose.runtime.mutableIntStateOf(0) }
+    var textW by remember(text) { androidx.compose.runtime.mutableIntStateOf(0) }
+    val over = boxW > 0 && textW > boxW
+    Box(Modifier.onSizeChanged { boxW = it.width }.then(if (over) Modifier.fadeSides(10.dp, 28.dp) else Modifier)) {
+        Text(text, Modifier.basicMarquee(iterations = 3, initialDelayMillis = 2500), style = TextStyle(shadow = textShadow),
+            fontSize = size, fontWeight = weight, letterSpacing = spacing, color = color, maxLines = 1, onTextLayout = { textW = it.size.width })
     }
 }
 

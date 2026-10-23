@@ -451,7 +451,7 @@ object E {
             "volume" -> Local.applyVolume()
             "ljoin", "lbgBr", "lsimple", "xRefSimple", "romMode", "lfont" -> Lyr.restyle()
             "lprov" -> Lyr.cacheClear()
-            "tr", "trTo", "trSkip" -> Lyr.decorate()
+            "tr", "trTo", "trSkip", "aTrSvc" -> Lyr.decorate()
             "lnotice" -> Lyr.noticeChanged()
             "lsize", "xFocus", "xBgPop", "lduet", "view", "credPos", "xRefCred", "lcredLast", "lminimal", "xKeep" -> Lyr.relayout()
         }

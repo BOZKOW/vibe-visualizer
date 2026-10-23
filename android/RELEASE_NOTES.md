@@ -1,6 +1,6 @@
-Vibe Visualizer for Android 0.1.12 (beta). Android 12 or newer; it installs over 0.1.11 (Settings → Help & about → Update now).
+Vibe Visualizer for Android 0.1.13 (beta). Android 12 or newer; it installs over 0.1.12 (Settings → Help & about → Update now).
 
-### Changes
+### What's new
 
-- The controls hide on every screen now: after three seconds of music playing untouched, they slide away on Now Playing (the cover, the song and the seek bar stay, as in Spicy Lyrics Mobile), the lyrics, the visualizer and a phone on its side. A tap brings them back; pausing does too. They used to stay up whenever the music started after the screen opened. Settings → Appearance → Controls while music plays keeps them up if you prefer
-- Small animations: buttons shrink a little while pressed and spring back, play and pause swap with a quick scale and fade, shuffle and repeat light up softly, the round buttons' highlight fades between screens, and the seek bar glides instead of stepping four times a second
+- Translation services (Settings → Translation → Translation service), as in Spicy Lyrics Mobile: Google Translate (free, as before), DeepL (your API key), LibreTranslate (your own server, or a key), AI through any OpenAI-compatible service (OpenAI, OpenRouter, Groq, Mistral, your own…) with its address, key and model, and AI through Gemini (your key from Google AI Studio). The keys stay on this phone, never in backups. The AI ones translate line by line with the whole song for meaning. Romanization is still done on the phone first, and Google fills in what it can't
+- A song name or artist too long for its row fades softly at the edges while it scrolls, instead of being cut off

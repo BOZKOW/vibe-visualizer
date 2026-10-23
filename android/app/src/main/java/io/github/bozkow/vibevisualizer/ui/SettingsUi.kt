@@ -202,7 +202,9 @@ private fun pages(): List<Page> = listOf(
         Item.Sw("tr", "Translate lyrics"),
         Item.Ch("trTo", "Translate into", LANGS),
         Item.Custom("Don’t translate lines in") { SkipLangs() },
-        Item.Txt("Lines already in the language you translate into are never translated. Translation and romanization use Google Translate’s free web service (unofficial), so lyric lines are sent to Google. Japanese, Chinese, Korean, Cyrillic and Greek are romanized on the phone first."),
+        Item.Ch("aTrSvc", "Translation service", listOf("google" to "Google Translate (free)", "deepl" to "DeepL (your API key)", "libre" to "LibreTranslate", "openai" to "AI · OpenAI-compatible", "gemini" to "AI · Gemini")),
+        Item.Custom("translation service key address model DeepL LibreTranslate OpenAI OpenRouter Groq Gemini") { TrService() },
+        Item.Txt("Lines already in the language you translate into are never translated. The lyric lines go to the service you pick. Japanese, Chinese, Korean, Cyrillic and Greek are romanized on the phone first; Google fills in what it can’t do."),
     )),
     Page("cache", "Lyrics cache", Icons.Rounded.Storage, listOf(
         Item.Head("Lyrics cache"),
@@ -407,6 +409,27 @@ fun ItemView(it: Item) {
 }
 
 /* ---- custom rows ---- */
+
+/** Settings → Translation: the chosen service's address, key and model (saved on this phone as you type). */
+@Composable
+private fun TrService() {
+    @Composable fun field(name: String, label: String, hint: String, secret: Boolean = false) {
+        var v by remember(name) { mutableStateOf(Vibe.cfg.trKey(name)) }
+        androidx.compose.material3.OutlinedTextField(v, { v = it; Vibe.cfg.saveTrKey(name, it) }, Modifier.fillMaxWidth().padding(vertical = 4.dp), singleLine = true,
+            label = { Text(label) }, placeholder = { Text(hint, color = Color.White.copy(alpha = .4f)) },
+            visualTransformation = if (secret) androidx.compose.ui.text.input.PasswordVisualTransformation() else androidx.compose.ui.text.input.VisualTransformation.None)
+    }
+    Column(Modifier.fillMaxWidth()) {
+        when (S.str("aTrSvc")) {
+            "deepl" -> { field("deeplKey", "DeepL API key", "from deepl.com → API keys (a free one ends in :fx)", secret = true) }
+            "libre" -> { field("libreUrl", "Server", "https://libretranslate.com"); field("libreKey", "API key (if the server needs one)", "", secret = true) }
+            "openai" -> { field("aiUrl", "Address", "https://api.openai.com/v1 (or OpenRouter, Groq, Mistral, your own…)"); field("aiKey", "API key", "", secret = true); field("aiModel", "Model", "e.g. gpt-5-mini") }
+            "gemini" -> { field("geminiKey", "Gemini API key", "from Google AI Studio", secret = true); field("geminiModel", "Model", io.github.bozkow.vibevisualizer.lyrics.Translators.GEMINI_MODEL) }
+            else -> Hint("Google Translate’s free web service (unofficial): no key needed.")
+        }
+        if (S.str("aTrSvc") != "google") Hint("Kept on this phone only, never in backups. Translations made this way may cost you on that service.")
+    }
+}
 
 /** A switch row for a setting that isn't a plain on/off key. */
 @Composable

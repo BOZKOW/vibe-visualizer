@@ -97,6 +97,17 @@ fun Modifier.pressScale(src: androidx.compose.foundation.interaction.Interaction
     return this.graphicsLayer { scaleX = k; scaleY = k }
 }
 
+/** Fades the left and right edges (a long title scrolling through), [start] / [end] wide. */
+fun Modifier.fadeSides(start: Dp, end: Dp): Modifier = this
+    .graphicsLayer { compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen }
+    .drawWithContent {
+        drawContent()
+        val w = size.width; if (w <= 0f) return@drawWithContent
+        val a = (start.toPx() / w).coerceIn(0f, .4f); val b = (end.toPx() / w).coerceIn(0f, .4f)
+        drawRect(Brush.horizontalGradient(0f to Color.Transparent, a to Color.Black, (1 - b) to Color.Black, 1f to Color.Transparent),
+            blendMode = androidx.compose.ui.graphics.BlendMode.DstIn)
+    }
+
 /** An icon from an SVG path (24×24 unless said otherwise). */
 fun svgIcon(d: String, size: Float = 24f): ImageVector = ImageVector.Builder(defaultWidth = 24.dp, defaultHeight = 24.dp, viewportWidth = size, viewportHeight = size)
     .addPath(PathParser().parsePathString(d).toNodes(), fill = SolidColor(Color.White)).build()

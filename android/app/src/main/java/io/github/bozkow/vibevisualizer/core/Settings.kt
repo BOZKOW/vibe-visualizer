@@ -52,6 +52,7 @@ object Defaults {
         "aLock" to false,       // show over the lock screen
         "aHideStatus" to false, // hide the status bar (swipe down to see it)
         "aHideNav" to false,    // hide the navigation bar (swipe up to see it)
+        "aTrSvc" to "google",   // the translation service: google, deepl, libre, openai (any OpenAI-compatible), gemini
         "aDesign" to "android", // the design: android (Material You, the cover's colors) or glass (frosted glass over the cover)
     )
 }
@@ -131,6 +132,12 @@ class Settings(ctx: Context) {
 class Config(ctx: Context) {
     private val sp = ctx.getSharedPreferences("settings", Context.MODE_PRIVATE)
     private val sec = ctx.getSharedPreferences("secrets", Context.MODE_PRIVATE)
+    // the translation services' addresses, keys and models: kept on this phone, out of backups (and not wiped with the
+    // Spotify login, which clears "secrets")
+    private val tk = ctx.getSharedPreferences("trkeys", Context.MODE_PRIVATE)
+    var trVer by mutableStateOf(0); private set
+    fun trKey(name: String): String = tk.getString(name, "") ?: ""
+    fun saveTrKey(name: String, v: String) { tk.edit().putString(name, v.trim()).apply(); trVer++ }
 
     var server by mutableStateOf(sp.getString("server", "") ?: "")
         private set
@@ -176,7 +183,7 @@ class Config(ctx: Context) {
     }
 
     fun forgetAll() {
-        sp.edit().clear().apply(); sec.edit().clear().apply()
+        sp.edit().clear().apply(); sec.edit().clear().apply(); tk.edit().clear().apply()
         server = ""; spotId = ""; canvasUrl = "/api/canvas?id={id}"; setupDone = false; clearSpotify()
     }
 
