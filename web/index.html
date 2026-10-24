@@ -855,9 +855,23 @@ body.stage #bar input[type=range]::-webkit-slider-thumb,body.stage #bar input[ty
 body.stage #bar input[type=range]::-moz-range-thumb{border:0;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.35)}
 body.stage #ttl,body.stage.cvmode #ttl{color:#fff;text-shadow:0 2px 14px rgba(0,0,0,.45)}
 body.stage #sub,body.stage.cvmode #sub{color:rgba(255,255,255,.68);text-shadow:0 2px 14px rgba(0,0,0,.45)}
-/* the top: the same buttons, lined up from the left */
-body.stage #top{display:flex;justify-content:flex-start;flex-wrap:wrap;gap:12px}
-body.stage #top .grp{flex-wrap:wrap}
+/* the top: round outlined buttons in a row from the left, as the Android app's (44 px, the icon 18); the one that's
+   on is filled softly, the highlight fading in; pressed, they shrink to 90% and spring back. The chips and the view
+   switch are outlined pills as tall */
+body.stage #top{display:flex;justify-content:flex-start;flex-wrap:wrap;gap:10px;padding:26px var(--pad) 22px;background:none}
+body.stage #top .brand{width:44px;height:44px;margin:0;padding:0;justify-content:center;border-radius:50%;border:1px solid rgba(255,255,255,.32)}
+body.stage #top .brand span{display:none}
+body.stage #top .brand:hover{background:rgba(255,255,255,.12)}
+body.stage #top .grp{display:flex;flex-wrap:wrap;gap:10px}
+body.stage #top .ib:not(.gone){width:44px;height:44px}
+body.stage #top .chip{min-height:44px}
+body.stage #seg{height:44px}
+body.stage #segpill{background:rgba(255,255,255,.16);box-shadow:inset 0 0 0 1px rgba(255,255,255,.55)}
+body.stage #seg button.on{color:#fff}
+body.stage #top .ib,body.stage #top .chip,body.stage #top .brand{transition:background .26s,border-color .26s,box-shadow .26s,transform .5s var(--e-spring)}
+body.stage #top .lq:hover{transform:none}
+body.stage #top .lq.press,body.stage #top .brand:active{transform:scale(.9);transition:transform .12s ease-out}
+body.stage #top .lq::before,body.stage #top .lq::after{display:none}
 body.stage #cappanel,body.stage #netpanel{right:auto;left:var(--pad);top:84px;transform-origin:top left}
 /* the dock: under the song, the timeline with the times under it, then like · playback · where it plays and volume */
 body.stage #dock{left:var(--pad);right:auto;width:var(--dockw);bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:none;animation:stagedock .7s .1s var(--e-out) backwards}
@@ -912,6 +926,9 @@ body.stage #devpanel{right:auto;left:var(--pad);transform-origin:bottom left}
 body.stage:not(.credly) #lcredit{left:auto!important;right:var(--pad);bottom:calc(22px + env(safe-area-inset-bottom,0px))!important;max-width:min(44vw,640px)!important;
   flex-direction:row;flex-wrap:wrap;justify-content:flex-end;column-gap:.7em;row-gap:0;text-align:right}
 }
+/* a narrower window: the round buttons at 40 px, closer together, so they all fit on one row along the top */
+@media (min-width:761px) and (max-width:1199px) and (min-height:521px){body.stage #top{gap:8px;padding:12px 16px 22px}body.stage #top .grp{gap:8px}
+  body.stage #top .ib:not(.gone),body.stage #top .brand{width:40px;height:40px}body.stage #top .chip{min-height:40px}body.stage #seg{height:40px}}
 /* a window too narrow for the dock beside the lyrics (it's wider than the song's side up to 1400 px): the lyrics end above it */
 @media (min-width:761px) and (max-width:1399px) and (min-height:521px){body.stage #stage,body.stage.cvmode #stage{padding-bottom:250px}body.stage #left,body.stage.cvmode #left{padding-bottom:0}}
 </style>
