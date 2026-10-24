@@ -61,15 +61,10 @@ fun Snacks(modifier: Modifier = Modifier) {
 /** A question you asked for (allow installs, forget this device, reconnect Spotify): Android's dialog. */
 @Composable
 fun AskDialog() {
-    val a = E.ask ?: return
-    val pri = a.actions.firstOrNull { it.pri }
-    val other = a.actions.firstOrNull { !it.pri }
-    AlertDialog(
-        onDismissRequest = { E.ask = null },
-        title = { Text(a.title) },
-        text = { Text(a.msg) },
-        confirmButton = { pri?.let { TextButton(onClick = { E.ask = null; it.fn?.invoke() }) { Text(it.label, fontWeight = FontWeight.Bold) } } },
-        dismissButton = { other?.let { TextButton(onClick = { E.ask = null; it.fn?.invoke() }) { Text(it.label) } } },
-        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-    )
+    val a = E.ask
+    val pri = a?.actions?.firstOrNull { it.pri }
+    val other = a?.actions?.firstOrNull { !it.pri }
+    // the app's own dialog (Android's can't open out of the button that asked)
+    PopDialog(a != null, onDismiss = { E.ask = null }, title = a?.title ?: "", text = a?.msg ?: "",
+        confirm = pri?.let { it.label to { E.ask = null; it.fn?.invoke(); Unit } }, dismiss = other?.let { it.label to { E.ask = null; it.fn?.invoke(); Unit } })
 }

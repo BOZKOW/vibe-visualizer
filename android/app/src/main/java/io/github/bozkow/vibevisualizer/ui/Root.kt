@@ -7,10 +7,6 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Box
@@ -33,6 +29,7 @@ import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -50,9 +47,10 @@ fun VibeRoot() {
         // the frame loop: one clock for everything (the same one the rest of the app reads)
         // paused and untouched, it waits a little between frames (about 30 a second): less battery when the app stays open
         LaunchedEffect(Unit) { while (true) { if (E.idle()) kotlinx.coroutines.delay(25); withFrameNanos { E.frame(now()) } } }
-        Box(Modifier.fillMaxSize().pointerInput(Unit) {
+        Box(Modifier.fillMaxSize().onSizeChanged { Pop.root = it }.pointerInput(Unit) {
             awaitEachGesture {   // a touch brings the controls back; while they're hidden, the first tap only does that
-                awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+                val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+                Pop.touched(down.position)   // menus open out of where you touched
                 E.wakeTap = E.uiHidden || E.ambient
                 E.poke()
             }
@@ -66,16 +64,19 @@ fun VibeRoot() {
             if (E.inPip) { BackgroundLayer(); PipCanvas(); PipScreen() }
             else {
                 if (!covered) Box(Modifier.fillMaxSize().then(if (qBlur > .1f) Modifier.blur(qBlur.dp) else Modifier)) { BackgroundLayer(); PlayerScreen() }
-                Snacks(Modifier.align(Alignment.BottomCenter).navBarsSpace().padding(bottom = 8.dp))
                 if (S.b("fps")) Text(E.fpsText, Modifier.align(Alignment.TopEnd).statusBarsSpace().padding(top = 60.dp, end = 12.dp), fontFamily = FontFamily.Monospace, fontSize = 12.sp, color = Color.White.copy(alpha = .7f))
                 // Ambient mode: the waking touch only wakes (nothing under it is tapped or seeked)
                 if (E.ambient) Box(Modifier.fillMaxSize().pointerInput(Unit) {
                     awaitEachGesture { awaitFirstDown(requireUnconsumed = false).consume(); do { val e = awaitPointerEvent(); e.changes.forEach { it.consume() } } while (e.changes.any { it.pressed }) }
                 })
+                // Settings and the setup guide grow out of the button that opened them, and shrink back into it
+                val setFrom = rememberPopOrigin(setT.targetState)
+                AnimatedVisibility(setT, enter = popIn(setFrom), exit = popOut(setFrom)) { Box(popClip()) { SettingsScreen() } }
+                val wizFrom = rememberPopOrigin(wizT.targetState)
+                AnimatedVisibility(wizT, enter = popIn(wizFrom), exit = popOut(wizFrom)) { Box(popClip()) { SetupWizard() } }
                 Sheets()
                 AskDialog()
-                AnimatedVisibility(setT, enter = slideInHorizontally(tween(320)) { it }, exit = slideOutHorizontally(tween(260)) { it }) { SettingsScreen() }
-                AnimatedVisibility(wizT, enter = slideInVertically(tween(320)) { it }, exit = slideOutVertically(tween(260)) { it }) { SetupWizard() }
+                Snacks(Modifier.align(Alignment.BottomCenter).navBarsSpace().padding(bottom = 8.dp))
             }
         }
     }

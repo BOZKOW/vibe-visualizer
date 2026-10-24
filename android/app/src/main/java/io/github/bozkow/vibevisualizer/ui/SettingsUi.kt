@@ -8,8 +8,8 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.animation.core.tween
@@ -296,6 +296,10 @@ fun SettingsScreen() {
     var q by remember { mutableStateOf("") }
     LaunchedEffect(E.settingsPage) { E.settingsPage?.takeIf { p -> all.any { it.id == p } }?.let { page = it } }
     LaunchedEffect(page) { page?.let { SettingsUi.last = it; if (it == "cache") Lyr.refreshCounts() } }
+    val listState = rememberLazyListState()   // the list keeps its place while a page is open
+    var pageFrom by remember { mutableStateOf(androidx.compose.ui.graphics.TransformOrigin.Center) }
+    var paneBox by remember { mutableStateOf<androidx.compose.ui.geometry.Rect?>(null) }   // where pages show: they grow out of the row you tapped
+    val open = { id: String -> q = ""; pageFrom = Pop.origin(paneBox); page = id }
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val wide = maxWidth >= 720.dp
         BackHandler { if (q.isNotEmpty()) q = "" else if (!wide && page != null && E.settingsPage == null) page = null else if (!wide && page != null) { page = null } else E.settingsPage = null }
@@ -303,8 +307,8 @@ fun SettingsScreen() {
         // contentColor: on Glass's see-through surface the text and icons defaulted to black
         Surface(Modifier.fillMaxSize(), color = if (S.glass) Color.Transparent else MaterialTheme.colorScheme.surfaceContainerLowest, contentColor = Color.White) {
             Row(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.statusBarsIgnoringVisibility.union(WindowInsets.displayCutout).only(WindowInsetsSides.Top)).windowInsetsPadding(WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal))) {
-                if (wide || page == null || q.isNotEmpty()) {
-                    Column(Modifier.then(if (wide) Modifier.width(300.dp) else Modifier.fillMaxWidth()).fillMaxHeight()) {
+                @Composable fun ListPane(m: Modifier) {
+                    Column(m) {
                         Row(Modifier.fillMaxWidth().padding(start = 8.dp, end = 8.dp, top = 10.dp, bottom = 2.dp), verticalAlignment = Alignment.CenterVertically) {
                             IconButton(onClick = { E.settingsPage = null }) { Icon(Icons.Rounded.Close, "Close settings", tint = Color.White) }
                             Text("Settings", fontSize = 28.sp, fontWeight = FontWeight.SemiBold, color = Color.White, letterSpacing = (-.3).sp)
@@ -315,25 +319,41 @@ fun SettingsScreen() {
                             colors = if (S.glass) TextFieldDefaults.colors(focusedIndicatorColor = Color.Transparent, unfocusedIndicatorColor = Color.Transparent, focusedContainerColor = Color.Transparent, unfocusedContainerColor = Color.Transparent)
                                 else TextFieldDefaults.colors(focusedIndicatorColor = Color.Transparent, unfocusedIndicatorColor = Color.Transparent))
                         if (q.isNotEmpty() && !wide) SearchResults(all, q, Modifier.weight(1f))
-                        else LazyColumn(Modifier.weight(1f).navBarsSpace().fadeEdges(20.dp, 28.dp), contentPadding = androidx.compose.foundation.layout.PaddingValues(start = 14.dp, end = 14.dp, top = 8.dp, bottom = 28.dp)) {
-                            cardPages(all, page, wide) { q = ""; page = it }
+                        else LazyColumn(Modifier.weight(1f).navBarsSpace().fadeEdges(20.dp, 28.dp), state = listState, contentPadding = androidx.compose.foundation.layout.PaddingValues(start = 14.dp, end = 14.dp, top = 8.dp, bottom = 28.dp)) {
+                            cardPages(all, page, wide) { open(it) }
                         }
                     }
                 }
-                if (wide || (page != null && q.isEmpty())) {
-                    if (wide && q.isNotEmpty()) SearchResults(all, q, Modifier.weight(1f))
+                @Composable fun PagePane(pg: Page) {
+                    Column(Modifier.fillMaxSize()) {
+                        Row(Modifier.fillMaxWidth().padding(start = 8.dp, end = 16.dp, top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                            if (!wide) IconButton(onClick = { page = null }) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back", tint = Color.White) } else Spacer(Modifier.width(16.dp))
+                            Text(pg.name, fontSize = 28.sp, fontWeight = FontWeight.SemiBold, color = Color.White, letterSpacing = (-.3).sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        }
+                        ItemsList(pg.items.filterIndexed { i, it -> !(i == 0 && it is Item.Head && pg.items.count { x -> x is Item.Head } == 1) }, Modifier.weight(1f))
+                    }
+                }
+                if (wide) {
+                    ListPane(Modifier.width(300.dp).fillMaxHeight())
+                    if (q.isNotEmpty()) SearchResults(all, q, Modifier.weight(1f))
                     else {
                         val p = all.find { it.id == (page ?: SettingsUi.last) } ?: all[0]   // two panes: the last page you had open beside the list
-                        // Android's shared-axis move: the old page is gone before the new one comes in, nothing overlaps
-                        AnimatedContent(p, Modifier.weight(1f), transitionSpec = { (slideInHorizontally(tween(260)) { it / 12 } + fadeIn(tween(200, delayMillis = 90))) togetherWith fadeOut(tween(90)) }, label = "page") { pg ->
-                            Column(Modifier.fillMaxSize()) {
-                                Row(Modifier.fillMaxWidth().padding(start = 8.dp, end = 16.dp, top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-                                    if (!wide) IconButton(onClick = { page = null }) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back", tint = Color.White) } else Spacer(Modifier.width(16.dp))
-                                    Text(pg.name, fontSize = 28.sp, fontWeight = FontWeight.SemiBold, color = Color.White, letterSpacing = (-.3).sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                }
-                                ItemsList(pg.items.filterIndexed { i, it -> !(i == 0 && it is Item.Head && pg.items.count { x -> x is Item.Head } == 1) }, Modifier.weight(1f))
-                            }
+                        // the new page grows out of the row you tapped; the old one is gone first, nothing overlaps
+                        AnimatedContent(p, Modifier.weight(1f).popBounds { paneBox = it }, transitionSpec = { popIn(pageFrom, .3f) togetherWith fadeOut(tween(90)) }, label = "page") { pg ->
+                            Box(popClip(48.dp)) { PagePane(pg) }
                         }
+                    }
+                } else {
+                    // one pane: a page grows out of its row over the list, and shrinks back into it on Back
+                    val shown = if (q.isNotEmpty()) null else all.find { it.id == page }
+                    AnimatedContent(shown, Modifier.fillMaxSize().popBounds { paneBox = it }, contentKey = { it?.id }, transitionSpec = {
+                        when {
+                            initialState == null && targetState != null -> popIn(pageFrom, .1f) togetherWith (fadeOut(tween(200)) + scaleOut(tween(280), targetScale = .94f))
+                            targetState == null -> ((fadeIn(tween(220, delayMillis = 50)) + scaleIn(tween(320), initialScale = .94f)) togetherWith popOut(pageFrom, .1f)).apply { targetContentZIndex = -1f }
+                            else -> fadeIn(tween(200)) togetherWith fadeOut(tween(120))
+                        }
+                    }, label = "page") { pg ->
+                        if (pg == null) ListPane(Modifier.fillMaxSize()) else Box(popClip(96.dp)) { PagePane(pg) }
                     }
                 }
             }

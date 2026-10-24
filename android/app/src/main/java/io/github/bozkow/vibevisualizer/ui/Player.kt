@@ -157,7 +157,8 @@ fun PlayerScreen() {
         when {
             E.src == "none" -> Box(pad) { EmptyState() }
             wide -> Box(pad) { WideLayout() }
-            else -> AnimatedContent(E.screen, pad, transitionSpec = { (fadeIn(tween(320)) + scaleIn(initialScale = .97f)) togetherWith fadeOut(tween(220)) }, label = "screen") { s ->
+            // Lyrics and the Visualizer grow out of the button that opened them
+            else -> AnimatedContent(E.screen, pad, transitionSpec = { (fadeIn(tween(320)) + scaleIn(spring(.86f, 400f), initialScale = if (Pop.calm) 1f else .9f, transformOrigin = Pop.origin())) togetherWith fadeOut(tween(220)) }, label = "screen") { s ->
                 when (s) { "lyrics" -> LyricsScreen(); "viz" -> VizScreen(); else -> NowPlaying() }
             }
         }
