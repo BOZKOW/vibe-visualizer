@@ -824,9 +824,9 @@ body.low #scrubtip{backdrop-filter:none;-webkit-backdrop-filter:none;background:
 body.stage{--sw:clamp(300px,30vw,540px);--sfeather:calc(var(--sw)*.45);--dockw:max(var(--sw),470px);--volw:clamp(56px,4.5vw,100px)}
 /* the song's side and the lyrics; the lyrics run to the foot of the page when the dock fits beside them */
 body.stage #stage,body.stage.cvmode #stage{grid-template-columns:var(--sw) minmax(0,1fr);gap:clamp(40px,6vw,120px);padding:96px var(--pad) 70px}
-body.stage #left,body.stage.cvmode #left{justify-content:flex-end;padding-bottom:100px}
+body.stage #left,body.stage.cvmode #left{justify-content:flex-end;padding-bottom:180px}
 body.stage.cvmode #info{align-items:flex-start;text-align:left}body.stage.cvmode #ttl{transform-origin:left center}
-body.stage #artw,body.stage.cvmode #artw{width:min(100%,calc(100vh - 460px));min-width:min(100%,140px);margin:0;transition:opacity .9s cubic-bezier(.23,1,.32,1),scale .9s cubic-bezier(.23,1,.32,1),transform .07s ease-out,box-shadow .12s linear}
+body.stage #artw,body.stage.cvmode #artw{width:min(100%,calc(100vh - 540px));min-width:min(100%,140px);margin:0;transition:opacity .9s cubic-bezier(.23,1,.32,1),scale .9s cubic-bezier(.23,1,.32,1),transform .07s ease-out,box-shadow .12s linear}
 /* a Canvas fills the song's side, 75% over the blurred copy behind it, feathering out in eased steps (a straight
    ramp leaves a line); the cover makes way for it */
 body.stage #cvpane{width:calc(var(--pad) + var(--sw) + var(--sfeather));opacity:0;
@@ -863,7 +863,7 @@ body.stage #cappanel,body.stage #netpanel{right:auto;left:var(--pad);top:84px;tr
 body.stage #dock{left:var(--pad);right:auto;width:var(--dockw);bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:none;animation:stagedock .7s .1s var(--e-out) backwards}
 body.stage.uihide #dock{transform:translateY(12px)}
 @keyframes stagedock{from{opacity:0;transform:translateY(16px)}}
-body.stage #bar{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto auto auto auto minmax(0,1fr) auto auto auto;align-items:center;column-gap:2px;row-gap:6px;padding:0;border:0;border-radius:0;background:none;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none}
+body.stage #bar{display:grid;grid-template-columns:auto minmax(0,1fr) auto minmax(0,1fr) auto minmax(0,1fr) auto minmax(0,1fr) auto;align-items:center;column-gap:2px;row-gap:6px;padding:0;border:0;border-radius:0;background:none;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none}
 body.stage #seekwrap{grid-row:1;grid-column:1/-1;display:grid;grid-template-columns:1fr auto;row-gap:0;margin:0}
 body.stage #seek{grid-column:1/-1;width:100%}
 /* the timeline as the Android app draws it: a 12 px pill with a soft outline, filled white from the left, no thumb
@@ -879,13 +879,33 @@ body.stage #bar #seek::-moz-range-thumb{width:12px;height:12px;border:0;border-r
 body.stage #time{display:none}
 body.stage #tcur,body.stage #tdur{display:block;font-variant-numeric:tabular-nums;color:rgba(255,255,255,.68);text-shadow:0 2px 14px rgba(0,0,0,.45);font-size:14px;font-weight:500}
 body.stage #tdur{justify-self:end}
-body.stage #spx,body.stage:not(.novol) #volwrap:not([hidden]){display:contents}
-body.stage #like{grid-row:2;grid-column:1}
-body.stage #shuf{grid-row:2;grid-column:3}body.stage #prev{grid-row:2;grid-column:4}body.stage #play{grid-row:2;grid-column:5}
-body.stage #next{grid-row:2;grid-column:6}body.stage #rep{grid-row:2;grid-column:7}
-body.stage #devbtn{grid-row:2;grid-column:9}
-body.stage #spmute,body.stage #mute{grid-row:2;grid-column:10}
-body.stage #spvol,body.stage #volume{grid-row:2;grid-column:11;width:var(--volw)}
+/* the transport as in the Android app, on its own row across the dock: shuffle (24 px, the accent colour while on),
+   rewind (56), play / pause (76: a white glyph with no circle; the new one comes in with a quick scale and fade),
+   forward (56), repeat (24), with the phone's rounded glyphs; pressed, they shrink and spring back. Like, where it
+   plays and the volume are on the row under it */
+body.stage #shuf{grid-row:2;grid-column:1}body.stage #prev{grid-row:2;grid-column:3}body.stage #play{grid-row:2;grid-column:5}
+body.stage #next{grid-row:2;grid-column:7}body.stage #rep{grid-row:2;grid-column:9}
+body.stage #bar #shuf,body.stage #bar #rep{width:48px;height:48px;color:#fff}
+body.stage #bar #shuf.on,body.stage #bar #rep.on{color:var(--acc)}
+body.stage #bar #shuf svg,body.stage #bar #rep svg{width:24px;height:24px}
+body.stage #bar #prev,body.stage #bar #next{width:68px;height:68px}body.stage #bar #prev svg,body.stage #bar #next svg{width:56px;height:56px}
+body.stage #bar #play{width:76px;height:76px}body.stage #bar #play svg{width:76px;height:76px}
+body.stage #bar #shuf:hover,body.stage #bar #rep:hover,body.stage #bar #prev:hover,body.stage #bar #next:hover{background:transparent}
+body.stage #prev svg path{d:path("M11 16.07V7.93c0-.81-.91-1.28-1.58-.82l-5.77 4.07c-.56.4-.56 1.24 0 1.63l5.77 4.07c.67.47 1.58 0 1.58-.81zm1.66-3.25l5.77 4.07c.66.47 1.58-.01 1.58-.82V7.93c0-.81-.91-1.28-1.58-.82l-5.77 4.07c-.57.4-.57 1.24 0 1.64z")}
+body.stage #next svg path{d:path("M5.58 16.89l5.77-4.07c.56-.4.56-1.24 0-1.63L5.58 7.11C4.91 6.65 4 7.12 4 7.93v8.14c0 .81.91 1.28 1.58.82zM13 7.93v8.14c0 .81.91 1.28 1.58.82l5.77-4.07c.56-.4.56-1.24 0-1.63l-5.77-4.07c-.67-.47-1.58 0-1.58.81z")}
+body.stage #pi path[d^="M8 5v14"]{d:path("M8 6.82v10.36c0 .79.87 1.27 1.54.84l8.14-5.18c.62-.39.62-1.29 0-1.69L9.54 5.98C8.87 5.55 8 6.03 8 6.82z")}
+body.stage #pi path[d^="M7 5h4"]{d:path("M8 19c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2s-2 .9-2 2v10c0 1.1.9 2 2 2zm6-12v10c0 1.1.9 2 2 2s2-.9 2-2V7c0-1.1-.9-2-2-2s-2 .9-2 2z")}
+body.stage #pi.bump{animation:none}
+body.stage #pi path{transform-box:fill-box;transform-origin:center;animation:stageplay .22s var(--e-out)}   /* a new path each swap, so it runs every time */
+@keyframes stageplay{0%{opacity:0;transform:scale(.7)}70%{opacity:1}100%{opacity:1;transform:none}}
+body.stage #bar .ib{transition:transform .45s var(--e-spring),background .25s,color .22s}
+body.stage #bar .ib.lq:hover{transform:none}
+body.stage #bar .ib.lq.press{transform:scale(.86);transition:transform .12s ease-out}body.stage #bar #play.lq.press{transform:scale(.88)}
+body.stage #bar .ib.lq::before,body.stage #bar .ib.lq::after{display:none}
+body.stage #spx,body.stage:not(.novol) #volwrap:not([hidden]){grid-row:3;grid-column:1/-1;display:flex;align-items:center;gap:2px}
+body.stage #like{margin-right:auto}
+body.stage #volwrap{justify-content:flex-end}
+body.stage #spvol,body.stage #volume{width:var(--volw)}
 body.stage #spvolval,body.stage #volval{display:none}
 body.stage #devpanel{right:auto;left:var(--pad);transform-origin:bottom left}
 /* the lyrics credits in the corner sit under the lyrics, bottom right, on one line where they fit */
@@ -893,7 +913,7 @@ body.stage:not(.credly) #lcredit{left:auto!important;right:var(--pad);bottom:cal
   flex-direction:row;flex-wrap:wrap;justify-content:flex-end;column-gap:.7em;row-gap:0;text-align:right}
 }
 /* a window too narrow for the dock beside the lyrics (it's wider than the song's side up to 1400 px): the lyrics end above it */
-@media (min-width:761px) and (max-width:1399px) and (min-height:521px){body.stage #stage,body.stage.cvmode #stage{padding-bottom:170px}body.stage #left,body.stage.cvmode #left{padding-bottom:0}}
+@media (min-width:761px) and (max-width:1399px) and (min-height:521px){body.stage #stage,body.stage.cvmode #stage{padding-bottom:250px}body.stage #left,body.stage.cvmode #left{padding-bottom:0}}
 </style>
 </head>
 <body data-view="both" data-src="none">
