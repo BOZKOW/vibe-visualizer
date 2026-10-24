@@ -54,7 +54,10 @@ object SpotifyApp {
 
     private val cb = object : MediaController.Callback() {
         override fun onMetadataChanged(m: MediaMetadata?) { readMeta(m, true) }
-        override fun onPlaybackStateChanged(s: PlaybackState?) { state = s; report(s); onState?.invoke() }
+        override fun onPlaybackStateChanged(s: PlaybackState?) {
+            state = s; report(s); onState?.invoke()
+            if (!active(s)) { main.removeCallbacks(recheck); main.postDelayed(recheck, STICK_MS + 50) }   // another session may play on
+        }
         override fun onSessionDestroyed() { attach(null) }
     }
 
@@ -77,14 +80,38 @@ object SpotifyApp {
         listening = false; attach(null)
     }
 
+    /* The session followed is kept while it plays or is between states, and for 2 s after it stops: playing on a
+       Spotify Connect speaker, the phone's Spotify session drops out now and then while another one for the same
+       speaker plays on, and each switch threw the lyrics back to the start (Spicy Lyrics Mobile's SessionStickiness). */
+    private const val STICK_MS = 2000L
+    private var stoppedAt = 0L   // when the followed session stopped playing (0: it plays)
+    private val recheck = Runnable { runCatching { pick(msm?.getActiveSessions(comp)) } }
+
+    private fun active(s: PlaybackState?) = when (s?.state) {
+        PlaybackState.STATE_PLAYING, PlaybackState.STATE_BUFFERING, PlaybackState.STATE_CONNECTING, PlaybackState.STATE_FAST_FORWARDING,
+        PlaybackState.STATE_REWINDING, PlaybackState.STATE_SKIPPING_TO_NEXT, PlaybackState.STATE_SKIPPING_TO_PREVIOUS, PlaybackState.STATE_SKIPPING_TO_QUEUE_ITEM -> true
+        else -> false
+    }
+
     private fun pick(list: List<MediaController>?) {
-        val c = list?.firstOrNull { it.packageName == PKG }
-        if (c?.sessionToken != ctrl?.sessionToken) attach(c)
+        val sp = list.orEmpty().filter { it.packageName == PKG }
+        val now = SystemClock.elapsedRealtime()
+        val cur = sp.firstOrNull { it.sessionToken == ctrl?.sessionToken }
+        if (cur != null) {
+            if (active(cur.playbackState)) { stoppedAt = 0; return }
+            if (stoppedAt == 0L) stoppedAt = now
+            val left = STICK_MS - (now - stoppedAt)
+            if (left > 0) { main.removeCallbacks(recheck); main.postDelayed(recheck, left + 50); return }
+        }
+        val best = sp.firstOrNull { it.playbackState?.state == PlaybackState.STATE_PLAYING } ?: sp.firstOrNull()
+        if (cur != null && best?.playbackState?.state != PlaybackState.STATE_PLAYING) return   // paused, and nothing else plays: stay
+        stoppedAt = 0
+        if (best?.sessionToken != ctrl?.sessionToken) attach(best)
     }
 
     private fun attach(c: MediaController?) {
         ctrl?.let { runCatching { it.unregisterCallback(cb) } }
-        ctrl = c
+        ctrl = c; stoppedAt = 0; main.removeCallbacks(recheck)
         clock.reset(SystemClock.elapsedRealtime()); awaitingReport = false; resyncNext = false
         if (c == null) { connected.value = false; state = null; title = ""; artist = ""; durMs = 0; art = null; onState?.invoke(); return }
         c.registerCallback(cb, main)

@@ -62,6 +62,9 @@ object E {
     var wide by mutableStateOf(false)               // side by side (landscape, tablets): the lyrics are always on screen
     var uiHidden by mutableStateOf(false)
     var wakeTap = false                            // this touch only brought the controls back
+    var ambient by mutableStateOf(false)           // Ambient mode: untouched while music plays, the lyrics and the song on black
+        private set
+    var unlock: ((() -> Unit) -> Unit)? = null     // over the lock screen: asks to unlock, then goes on
     var settingsPage by mutableStateOf<String?>(null)
     var wizard by mutableStateOf(false)
     var sheet by mutableStateOf<String?>(null)    // audio | net | devices
@@ -347,7 +350,11 @@ object E {
     fun poke() {
         activeAt = wall()
         if (uiHidden) uiHidden = false
+        if (ambient) { ambient = false; CanvasVideo.syncPlay() }
     }
+
+    /** Ambient mode may dim the screen: on, music plays, nothing's open, the app is on screen (not in a small window). */
+    private fun canAmbient() = S.b("aAmbient") && playingState && settingsPage == null && sheet == null && !wizard && !seeking && !inPip && visible
 
     /** The controls may hide: music plays, nothing's open over the player, nobody's dragging the seek bar. */
     private fun canHide() = playingState && S.str("uiHide") != "never" && settingsPage == null && sheet == null && !wizard && !seeking
@@ -355,7 +362,10 @@ object E {
     /** Checked a few times a second (it used to be decided only at a touch, so when the music started later, they never
      *  hid): three seconds untouched while music plays and they go; paused or with something open, they're back. */
     private fun hideTick() {
-        val can = canHide()
+        val amb = canAmbient()
+        if (!ambient && amb && wall() - activeAt > (S.str("aAmbientSec").toIntOrNull() ?: 30) * 1000L) { ambient = true; CanvasVideo.syncPlay() }   // the Canvas rests
+        else if (ambient && !amb) { ambient = false; CanvasVideo.syncPlay() }
+        val can = canHide() || ambient
         if (!uiHidden && can && wall() - activeAt > 3000) uiHidden = true
         else if (uiHidden && !can) uiHidden = false
     }
@@ -365,7 +375,13 @@ object E {
     fun goHome() { settingsPage = null; screen = "player" }
 
     /** Settings, on [page], or on the list of pages to pick from ("" while it's open on the list). */
-    fun openSettings(page: String? = null) { settingsPage = page ?: ""; poke() }
+    fun openSettings(page: String? = null) = unlocked { settingsPage = page ?: ""; poke() }
+
+    /** A sheet over the player (devices, audio): over the lock screen, once you've unlocked. */
+    fun openSheet(s: String) = unlocked { sheet = s }
+
+    /** Settings and the menus aren't for whoever picks up a locked phone: over the lock screen they ask to unlock first. */
+    private fun unlocked(go: () -> Unit) { unlock?.invoke(go) ?: go() }
 
     /* ================= the frame loop ================= */
     private var last = 0.0; private var fAcc = 0.0; private var fPrev = 0.0; private var lastUi = 0.0
@@ -436,6 +452,7 @@ object E {
 
     /* ================= settings changed ================= */
     fun onSetting(k: String) {
+        if (k.startsWith("aWg") || k == "lfont") io.github.bozkow.vibevisualizer.widget.Widgets.refresh()
         when (k) {
             "theme", "c1", "c2" -> Visuals.palDirty = true
             "bars" -> { Audio.setupBands(); Visuals.palDirty = true }

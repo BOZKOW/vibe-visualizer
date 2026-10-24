@@ -53,7 +53,7 @@ fun VibeRoot() {
         Box(Modifier.fillMaxSize().pointerInput(Unit) {
             awaitEachGesture {   // a touch brings the controls back; while they're hidden, the first tap only does that
                 awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
-                E.wakeTap = E.uiHidden
+                E.wakeTap = E.uiHidden || E.ambient
                 E.poke()
             }
         }) {
@@ -68,6 +68,10 @@ fun VibeRoot() {
                 if (!covered) Box(Modifier.fillMaxSize().then(if (qBlur > .1f) Modifier.blur(qBlur.dp) else Modifier)) { BackgroundLayer(); PlayerScreen() }
                 Snacks(Modifier.align(Alignment.BottomCenter).navBarsSpace().padding(bottom = 8.dp))
                 if (S.b("fps")) Text(E.fpsText, Modifier.align(Alignment.TopEnd).statusBarsSpace().padding(top = 60.dp, end = 12.dp), fontFamily = FontFamily.Monospace, fontSize = 12.sp, color = Color.White.copy(alpha = .7f))
+                // Ambient mode: the waking touch only wakes (nothing under it is tapped or seeked)
+                if (E.ambient) Box(Modifier.fillMaxSize().pointerInput(Unit) {
+                    awaitEachGesture { awaitFirstDown(requireUnconsumed = false).consume(); do { val e = awaitPointerEvent(); e.changes.forEach { it.consume() } } while (e.changes.any { it.pressed }) }
+                })
                 Sheets()
                 AskDialog()
                 AnimatedVisibility(setT, enter = slideInHorizontally(tween(320)) { it }, exit = slideOutHorizontally(tween(260)) { it }) { SettingsScreen() }

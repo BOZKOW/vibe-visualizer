@@ -8,5 +8,6 @@ class VibeApp : Application() {
         super.onCreate()
         Vibe.init(this)
         io.github.bozkow.vibevisualizer.spotify.Spotify.connected   // sets up Spotify, which listens to the Spotify app from the start
+        io.github.bozkow.vibevisualizer.widget.Widgets.refresh()      // placed home screen widgets follow the music
     }
 }

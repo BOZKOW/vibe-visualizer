@@ -9,4 +9,10 @@
     <string name="sc_file_long">Choose an audio file to play</string>
     <string name="sc_settings">Settings</string>
     <string name="sc_settings_long">Open Settings</string>
+    <string name="widget_name">Lyrics</string>
+    <string name="widget_description">The line being sung, with the song and its controls</string>
+    <string name="widget_preview">Lyrics on your home screen</string>
+    <string name="widget_prev">Previous</string>
+    <string name="widget_toggle">Play or pause</string>
+    <string name="widget_next">Next</string>
 </resources>

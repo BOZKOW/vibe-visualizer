@@ -152,6 +152,7 @@ fun PlayerScreen() {
         if (E.wide != wide) E.wide = wide
         BackHandler(enabled = !wide && E.screen != "player" && E.settingsPage == null && !E.wizard) { E.show("player") }
         if (CanvasVideo.active) CanvasBackdrop(wide, centred = wide && soloWide())
+        AmbientBlack()
         val pad = Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.statusBarsIgnoringVisibility.union(WindowInsets.navigationBarsIgnoringVisibility).union(WindowInsets.displayCutout).only(WindowInsetsSides.Vertical + WindowInsetsSides.Horizontal))
         when {
             E.src == "none" -> Box(pad) { EmptyState() }
@@ -171,7 +172,7 @@ private fun NowPlaying(noLyricsNote: Boolean = false) {
         // while music plays untouched, the controls slide away (as in Spicy Lyrics Mobile): the cover, the song and the
         // seek bar stay; a tap brings the rest back
         AnimatedVisibility(!hidden, enter = expandVertically(expandFrom = Alignment.Top) + fadeIn(), exit = shrinkVertically(shrinkTowards = Alignment.Top) + fadeOut()) { Header() }
-        Box(Modifier.weight(1f).fillMaxWidth().padding(vertical = 12.dp), contentAlignment = Alignment.Center) {
+        Box(Modifier.weight(1f).fillMaxWidth().padding(vertical = 12.dp).ambientOut(), contentAlignment = Alignment.Center) {
             if (!(CanvasVideo.cvmode && S.b("cvNoArt"))) CoverArt(Modifier.aspectRatio(1f, matchHeightConstraintsFirst = true).canvasShrink(), corner = 22.dp)
         }
         if (S.view == "both") BarsView(Modifier.fillMaxWidth().height(48.dp).padding(bottom = 6.dp))
@@ -198,13 +199,18 @@ private fun LyricsScreen() {
 private fun LyricsWithLyrics() {
     val hidden = E.uiHidden
     Column(Modifier.fillMaxSize()) {
-        MiniHeader()
+        // Ambient mode: the lyrics take the whole page and the song docks at the bottom
+        AnimatedVisibility(!E.ambient, enter = expandVertically(expandFrom = Alignment.Top) + fadeIn(), exit = shrinkVertically(shrinkTowards = Alignment.Top) + fadeOut(tween(900))) { MiniHeader() }
+        if (E.ambient) Spacer(Modifier.height(8.dp))
         var areaH by remember { mutableFloatStateOf(0f) }
         Box(Modifier.weight(1f).fillMaxWidth().onSizeChanged { areaH = it.height.toFloat() }) {
             LyricsPane(Modifier.fillMaxSize(), areaHeightPx = areaH, padStart = 24f, padEnd = 24f)
         }
         if (S.view == "both") BarsView(Modifier.fillMaxWidth().height(if (hidden) 96.dp else 64.dp).padding(horizontal = 12.dp))
         LyricsCredits()
+        AnimatedVisibility(E.ambient, enter = expandVertically(expandFrom = Alignment.Bottom) + fadeIn(tween(900)), exit = shrinkVertically(shrinkTowards = Alignment.Bottom) + fadeOut()) {
+            Column(Modifier.padding(start = 24.dp, end = 24.dp, bottom = 12.dp)) { TitleRow(big = false); SeekRow() }
+        }
         AnimatedVisibility(!hidden, enter = expandVertically(expandFrom = Alignment.Top) + fadeIn(), exit = shrinkVertically(shrinkTowards = Alignment.Top) + fadeOut()) {
             Column(Modifier.padding(horizontal = 24.dp)) { SeekRow(); Transport(big = false); BottomBar(big = false) }
         }
@@ -220,7 +226,7 @@ private fun VizScreen() {
         Spacer(Modifier.height(8.dp))
         Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
             Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
-                if (!(CanvasVideo.cvmode && S.b("cvNoArt"))) Box(Modifier.fillMaxWidth(.5f).aspectRatio(1f)) { CoverArt(Modifier.fillMaxSize(), corner = 18.dp) }
+                if (!(CanvasVideo.cvmode && S.b("cvNoArt"))) Box(Modifier.fillMaxWidth(.5f).aspectRatio(1f).ambientOut()) { CoverArt(Modifier.fillMaxSize(), corner = 18.dp) }
                 Spacer(Modifier.height(16.dp))
                 Column(Modifier.padding(horizontal = 24.dp)) { TitleRow(big = false, center = true) }
             }
@@ -244,17 +250,19 @@ private fun Tablet() {
     val solo = soloWide()   // no lyrics: Now Playing alone, the cover big
     Row(Modifier.fillMaxSize().padding(horizontal = 24.dp), horizontalArrangement = Arrangement.Center) {
         Column(Modifier.fillMaxHeight().then(if (solo) Modifier.widthIn(max = 560.dp) else Modifier.weight(.42f).widthIn(max = 480.dp)), horizontalAlignment = Alignment.CenterHorizontally) {
-            Header()
-            Box(Modifier.weight(1f).fillMaxWidth().padding(vertical = 12.dp), contentAlignment = Alignment.Center) {
+            Header(Modifier.ambientOut())
+            Box(Modifier.weight(1f).fillMaxWidth().padding(vertical = 12.dp).ambientOut(), contentAlignment = Alignment.Center) {
                 if (!(CanvasVideo.cvmode && S.b("cvNoArt"))) CoverArt(Modifier.aspectRatio(1f, matchHeightConstraintsFirst = true).canvasShrink(), corner = 22.dp)
             }
             if (solo && S.view == "both") BarsView(Modifier.fillMaxWidth().height(56.dp).padding(bottom = 6.dp))
             TitleRow(big = true)
             if (solo) NoLyricsNote()
             SeekRow()
-            Transport(big = true)
-            if (S.b("volshow")) VolumeRow()
-            BottomBar()
+            Column(Modifier.ambientOut()) {
+                Transport(big = true)
+                if (S.b("volshow")) VolumeRow()
+                BottomBar()
+            }
         }
         if (!solo) {
             Spacer(Modifier.width(32.dp))
@@ -304,9 +312,25 @@ private fun LandscapeSplit() {
 /** The cover, shrinking away while a Canvas plays (the video is the picture then). */
 @Composable
 private fun ArtUnlessCanvas() {
-    AnimatedVisibility(!CanvasVideo.cvmode, enter = fadeIn() + scaleIn(initialScale = .92f), exit = fadeOut() + scaleOut(targetScale = .92f)) {
+    AnimatedVisibility(!CanvasVideo.cvmode, Modifier.ambientOut(), enter = fadeIn() + scaleIn(initialScale = .92f), exit = fadeOut() + scaleOut(targetScale = .92f)) {
         CoverArt(Modifier.aspectRatio(1f, matchHeightConstraintsFirst = true), corner = 16.dp)
     }
+}
+
+/* ================= Ambient mode ================= */
+
+/** Fades out (slowly) while Ambient mode dims the screen, back at once on a touch. */
+@Composable
+private fun Modifier.ambientOut(): Modifier {
+    val k by animateFloatAsState(if (E.ambient) 0f else 1f, tween(if (E.ambient) 1500 else 300), label = "ambout")
+    return graphicsLayer { alpha = k }
+}
+
+/** Ambient mode's black, over the background and the Canvas, under the lyrics and the song. */
+@Composable
+private fun AmbientBlack() {
+    val k by animateFloatAsState(if (E.ambient) 1f else 0f, tween(if (E.ambient) 1500 else 300), label = "ambblack")
+    if (k > 0f) Box(Modifier.fillMaxSize().graphicsLayer { alpha = k }.background(Color.Black))
 }
 
 /** No lyrics: the cover in the middle with the seek bar right under it, then the song big ("artist · year"); with a
@@ -509,8 +533,8 @@ private fun BottomBar(big: Boolean = true) {
     val d = if (big) 54.dp else 44.dp
     Row(Modifier.fillMaxWidth().padding(top = if (big) 6.dp else 2.dp, bottom = 4.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
         BarIcon(VIcons.lyrics, "Lyrics", E.screen == "lyrics" && !E.wide || E.wide && E.screen != "viz", d) { E.show(if (E.screen == "lyrics" && !E.wide) "player" else "lyrics") }
-        if (sp) BarIcon(Icons.Rounded.Cast, Spotify.device?.let { "Playing on ${it.name}" } ?: "Choose where Spotify plays", false, d) { E.sheet = "devices" }
-        else BarIcon(Icons.Rounded.GraphicEq, "What the bars hear", false, d) { E.sheet = "audio" }
+        if (sp) BarIcon(Icons.Rounded.Cast, Spotify.device?.let { "Playing on ${it.name}" } ?: "Choose where Spotify plays", false, d) { E.openSheet("devices") }
+        else BarIcon(Icons.Rounded.GraphicEq, "What the bars hear", false, d) { E.openSheet("audio") }
         BarIcon(VIcons.bars, "Visualizer", E.screen == "viz", d) { E.show(if (E.screen == "viz") (if (E.wide) "lyrics" else "player") else "viz") }
         BarIcon(VIcons.resync, "Resync the lyrics", false, d) { Lyr.resync() }
         BarIcon(Icons.Rounded.Settings, "Settings", false, d) { E.openSettings() }

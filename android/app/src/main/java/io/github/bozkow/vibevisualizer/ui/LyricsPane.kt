@@ -102,7 +102,7 @@ fun LyricsPane(modifier: Modifier = Modifier, areaHeightPx: Float = 0f, compact:
     BoxWithConstraints(modifier) {
         val wDp = maxWidth.value
         // the lyrics' size: big and bold on a phone, as the web app sizes them on a computer (times Text size)
-        val baseSp = when { compact -> 17f; wDp < 600 -> 30f; else -> (wDp * .033f).coerceIn(24f, 52f) }
+        val baseSp = when { compact -> 17f * S.i("aPipSize").coerceIn(60, 200) / 100f; wDp < 600 -> 30f; else -> (wDp * .033f).coerceIn(24f, 52f) }
         val fontPx = with(dens) { (baseSp * S.lsize / 100f).sp.toPx() }
         Box(
             Modifier.fillMaxSize()
@@ -252,7 +252,7 @@ fun CornerCredits(c: Credit, modifier: Modifier = Modifier, alignEnd: Boolean = 
 private fun RefinedCredits(c: Credit, right: Boolean) {
     Column(Modifier.fillMaxWidth(), horizontalAlignment = if (right) Alignment.End else Alignment.Start, verticalArrangement = Arrangement.spacedBy(4.dp)) {
         if (c.writers.isNotEmpty()) Text("Written by " + c.writers.joinToString(", "), color = Color.White.copy(alpha = .7f), fontSize = 14.sp, fontWeight = FontWeight.SemiBold, textAlign = if (right) TextAlign.End else TextAlign.Start)
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {   // room between wrapped lines, so an underline never meets the avatar below
             val st = Modifier
             when {
                 c.source == "file" -> Text("From your file: " + c.name, color = Color.White.copy(alpha = .55f), fontSize = 12.sp, modifier = st)

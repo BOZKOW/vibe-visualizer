@@ -59,6 +59,7 @@ class LyricsRenderer {
         var layout: StaticLayout? = null
         var paint: TextPaint? = null
         var y = 0f; var h = 0f
+        var fit = 1f   // smaller than its size when one word is wider than the row
         var rowsW = FloatArray(0)
         val timed get() = pieces != null || oneTs != null
     }
@@ -272,9 +273,12 @@ class LyricsRenderer {
             val maxW = avail - if (duet && S.lduet) avail * .14f else 0f
             var y = 0f; var bg = 0f
             for (r in d.rows) {
-                val fs = F * r.fs; val lh = fs * r.lh
-                r.y = y + F * r.mt
                 val ps = r.pieces
+                // a word wider than the row (a long held "Weeeeeng") makes its line smaller, instead of running off the screen
+                r.fit = 1f
+                if (ps != null) { val p0 = paint(F * r.fs, r.weight); val widest = ps.maxOfOrNull { p0.measureText(it.text.trimEnd()) } ?: 0f; if (widest > maxW) r.fit = max(.4f, maxW / widest * .98f) }
+                val fs = F * r.fs * r.fit; val lh = fs * r.lh
+                r.y = y + F * r.mt
                 if (ps != null) {
                     val p = paint(fs, r.weight)
                     var x = 0f; var row = 0; val rowW = ArrayList<Float>(); var rowStart = 0
@@ -437,7 +441,7 @@ class LyricsRenderer {
 
     private fun sungRow(d: LV, pos: Double): Float {   // how far down the line (px) the words being sung are
         var best: Float? = null; var bt = Double.NEGATIVE_INFINITY
-        for (r in d.rows) r.pieces?.forEach { pc -> if (pc.ts.t <= pos && pc.ts.t > bt) { bt = pc.ts.t; best = F * linePad() + r.y + pc.y + F * r.fs * r.lh / 2 } }
+        for (r in d.rows) r.pieces?.forEach { pc -> if (pc.ts.t <= pos && pc.ts.t > bt) { bt = pc.ts.t; best = F * linePad() + r.y + pc.y + F * r.fs * r.fit * r.lh / 2 } }
         return best ?: 0f
     }
 
@@ -743,7 +747,7 @@ class LyricsRenderer {
         val bgK = if (S.xBgPop && !st) d.bgOpen.value(t) else 1f
         var yShift = 0f
         for (r in d.rows) {
-            val fs = F * r.fs; val lh = fs * r.lh
+            val fs = F * r.fs * r.fit; val lh = fs * r.lh
             if (r.kind == 1 && bgK < 1f) {   // background vocals tucked away until the line is sung
                 if (bgK <= .01f) { yShift -= F * r.mt + r.h; continue }
             }

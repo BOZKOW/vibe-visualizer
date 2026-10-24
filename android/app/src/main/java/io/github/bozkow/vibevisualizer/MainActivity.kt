@@ -82,6 +82,16 @@ class MainActivity : ComponentActivity() {
             }
         }
         lifecycleScope.launch { snapshotFlow { S.b("aLock") }.collect { setShowWhenLocked(it) } }
+        E.unlock = { go ->
+            val km = getSystemService(android.app.KeyguardManager::class.java)
+            if (km?.isKeyguardLocked == true) km.requestDismissKeyguard(this, object : android.app.KeyguardManager.KeyguardDismissCallback() { override fun onDismissSucceeded() { go() } })
+            else go()
+        }
+        // Ambient mode: the screen no brighter than 10% (and never brighter than it was)
+        lifecycleScope.launch { snapshotFlow { E.ambient }.collect { on ->
+            val sys = runCatching { Settings.System.getInt(contentResolver, Settings.System.SCREEN_BRIGHTNESS) / 255f }.getOrDefault(1f)
+            window.attributes = window.attributes.apply { screenBrightness = if (on) minOf(sys, .1f) else WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE }
+        } }
         lifecycleScope.launch { snapshotFlow { S.b("aHideStatus") to S.b("aHideNav") }.collect { bars() } }
         lifecycleScope.launch { snapshotFlow { S.str("fpscap") to S.low }.collect { (c, low) -> refreshRate(if (low) 60f else c.toFloatOrNull() ?: 0f) } }
     }
@@ -209,7 +219,7 @@ class MainActivity : ComponentActivity() {
         return handled || super.onKeyDown(keyCode, event)
     }
 
-    override fun onDestroy() { runCatching { unregisterReceiver(pipReceiver) }; super.onDestroy(); if (isFinishing) CanvasVideo.release() }
+    override fun onDestroy() { runCatching { unregisterReceiver(pipReceiver) }; if (E.unlock != null) E.unlock = null; super.onDestroy(); if (isFinishing) CanvasVideo.release() }
 
     companion object { private const val PIP_ACTION = "io.github.bozkow.vibevisualizer.PIP" }
 }

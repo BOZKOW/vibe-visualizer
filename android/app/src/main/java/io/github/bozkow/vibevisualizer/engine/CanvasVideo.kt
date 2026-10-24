@@ -19,6 +19,7 @@ import io.github.bozkow.vibevisualizer.core.Server
 import io.github.bozkow.vibevisualizer.core.Vibe
 import io.github.bozkow.vibevisualizer.core.now
 import io.github.bozkow.vibevisualizer.lyrics.SongMeta
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.lang.ref.WeakReference
 import java.net.URLEncoder
@@ -29,6 +30,7 @@ import java.net.URLEncoder
 object CanvasVideo {
     private var player: ExoPlayer? = null
     private var url: String? = null
+    private var spicyId: String? = null   // the song whose Canvas came from Spicy Lyrics' Canvas service
     private var ready = false
     var active by mutableStateOf(false); private set     // a Canvas is loading or playing: its video needs a view to play in
     var cvmode by mutableStateOf(false); private set     // the Canvas layout (once its first frame is shown)
@@ -42,7 +44,11 @@ object CanvasVideo {
 
     private val listener = object : Player.Listener {
         override fun onRenderedFirstFrame() { ready = true; revealAt = now(); applyMode(); syncPlay() }
-        override fun onPlayerError(error: PlaybackException) { if (url != null) { android.util.Log.w("VV-canvas", "can't play: ${error.errorCodeName}"); clear(false) } }
+        override fun onPlayerError(error: PlaybackException) { if (url != null) {
+            android.util.Log.w("VV-canvas", "can't play: ${error.errorCodeName}")
+            spicyId?.let { id -> Vibe.scope.launch { SpicyCanvas.forget(id) } }   // remembered, but gone: looked up again next time
+            clear(false)
+        } }
     }
 
     private fun ensure(): ExoPlayer = player ?: ExoPlayer.Builder(Vibe.app).build().apply {
@@ -65,7 +71,7 @@ object CanvasVideo {
     val hasVideo get() = url != null && ready
 
     fun clear(keepLayout: Boolean) {
-        url = null; ready = false; active = false
+        url = null; ready = false; active = false; spicyId = null
         player?.let { it.stop(); it.clearMediaItems() }
         blurred = null; cvlive = false
         if (!keepLayout) cvmode = false
@@ -86,17 +92,36 @@ object CanvasVideo {
         }
     }
 
+    /** Your server first (when set), then Spicy Lyrics' Canvas service for Spotify songs. */
     private suspend fun look(m: SongMeta, tok: Int) {
+        if (!S.canvasOn) return
         val tpl = Vibe.cfg.canvasUrl.trim()
-        if (!S.canvasOn || tpl.isEmpty()) return
+        if (tpl.isNotEmpty() && fromServer(m, tok, tpl)) return
+        if (tok != E.coverTok || !S.b("cvSpicy") || m.id.isEmpty() || m.ep) return
+        val v = SpicyCanvas.find(m.id) ?: return
+        if (tok == E.coverTok) { set(v); spicyId = m.id }
+    }
+
+    /** Your server's Canvas for the song: true once it's set (or another song plays). A failed lookup is tried once
+     *  more after 1.5 s (as Spicy Lyrics Mobile 0.14.4 does). */
+    private suspend fun fromServer(m: SongMeta, tok: Int, tpl: String): Boolean {
+        for (attempt in 0..1) {
+            if (attempt > 0) { delay(1500); if (tok != E.coverTok) return true }
+            when (val r = askServer(m, tok, tpl)) { null -> continue; else -> return r }
+        }
+        return false
+    }
+
+    /** true: set (or another song plays), false: the server has none, null: the lookup failed. */
+    private suspend fun askServer(m: SongMeta, tok: Int, tpl: String): Boolean? {
         var u = Regex("\\{(\\w+)\\}").replace(tpl) { r ->
             URLEncoder.encode(when (r.groupValues[1]) { "id" -> m.id; "uri" -> m.uri; "title" -> m.title; "artist" -> m.artist; else -> "" }, "UTF-8")
         }
-        if (u.startsWith("/")) u = Server.url(u) ?: return
-        if (m.id.isEmpty() && tpl.contains("{id}")) return
+        if (u.startsWith("/")) u = Server.url(u) ?: return false
+        if (m.id.isEmpty() && tpl.contains("{id}")) return false
         try {
             val r = Net.fetch(u, "canvas")
-            if (r.code == 404) return
+            if (r.code == 404) return false
             if (!r.ok) throw IllegalStateException(r.json()?.optString("error")?.ifEmpty { null } ?: "HTTP ${r.code}")
             val ct = r.header("content-type") ?: ""
             val v = when {
@@ -104,9 +129,11 @@ object CanvasVideo {
                 ct.contains("json") -> r.json()?.let { j -> listOf("url", "canvasUrl", "video", "canvas").firstNotNullOfOrNull { k -> j.optString(k).ifEmpty { null } } }
                 else -> r.text.trim()
             }
-            if (tok != E.coverTok || v.isNullOrEmpty()) return
-            set(v)
-        } catch (e: Exception) { android.util.Log.w("VV-canvas", "lookup: ${e.message}") }   // no Canvas, quietly
+            if (tok != E.coverTok) return true
+            if (v.isNullOrEmpty()) return false
+            set(v); return true
+        } catch (e: kotlinx.coroutines.CancellationException) { throw e
+        } catch (e: Exception) { android.util.Log.w("VV-canvas", "lookup: ${e.message}"); return null }   // no Canvas, quietly
     }
 
     fun applyMode() {
@@ -119,7 +146,7 @@ object CanvasVideo {
     fun syncPlay() {
         val p = player ?: return
         if (url == null || !S.canvasOn) return
-        if ((E.playing() || E.src == "none") && E.visible) p.play() else p.pause()
+        if ((E.playing() || E.src == "none") && E.visible && !E.ambient) p.play() else p.pause()
     }
 
     fun onBackground() { player?.pause() }

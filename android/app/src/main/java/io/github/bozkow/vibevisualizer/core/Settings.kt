@@ -34,7 +34,7 @@ object Defaults {
     val S: Map<String, Any> = linkedMapOf(
         "bridge" to true, "xFocus" to false, "bgStyle" to "dynamic", "lfont" to "vv", "lsimple" to false, "lminimal" to false,
         "lhover" to true, "lduet" to true, "lcredLast" to false, "lsmooth" to true, "learly" to false, "learlyMs" to 250,
-        "lseekFade" to true, "lnotice" to true, "volshow" to true, "fpscap" to "60", "credPos" to "corner", "cvNoArt" to false, "cvBlur" to false, "cvBlurAmt" to 50, "cvShrink" to true,
+        "lseekFade" to true, "lnotice" to true, "volshow" to true, "fpscap" to "60", "credPos" to "corner", "cvNoArt" to false, "cvBlur" to false, "cvBlurAmt" to 50, "cvShrink" to true, "cvSpicy" to true,
         "capDev" to "", "romMode" to "replace", "tr" to false, "trTo" to navLang(), "trSkip" to "", "theme" to "cover",
         "c1" to "#ff5a5f", "c2" to "#4f8cff", "auto" to true, "boost" to 100, "resp" to 25, "blur" to 0, "bars" to 72,
         "gap" to 28, "glow" to false, "round" to true, "scale" to "1", "fps" to false, "bgblur" to 60, "bri" to 70,
@@ -50,6 +50,13 @@ object Defaults {
         "aHaptics" to true,     // a light tick on taps and toggles
         "aSession" to true,     // the Spotify app on this phone for timing and controls (needs notification access)
         "aLock" to false,       // show over the lock screen
+        "aAmbient" to false,    // ambient mode: untouched while music plays, the lyrics and the song alone on black
+        "aAmbientSec" to "30",  // how long untouched before it dims
+        "aPipSize" to 100,      // the lyrics' size in picture-in-picture (%)
+        "aWgSize" to "m",       // the home screen widget: lyrics size (s, m, l)
+        "aWgSong" to true,      //   the song under the lyrics
+        "aWgCtl" to true,       //   play / pause, previous, next
+        "aWgBg" to "cover",     //   background: cover (blurred), black, clear
         "aHideStatus" to false, // hide the status bar (swipe down to see it)
         "aHideNav" to false,    // hide the navigation bar (swipe up to see it)
         "aTrSvc" to "google",   // the translation service: google, deepl, libre, openai (any OpenAI-compatible), gemini
