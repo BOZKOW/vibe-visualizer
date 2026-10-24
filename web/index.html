@@ -1691,7 +1691,7 @@ const liveAudio=()=>!!capStream||(src==='file'&&filePlaying());
 // always reach (and other devices too). The bridge on this computer wins when both work.
 const BRIDGE_LOCAL='ws://127.0.0.1:47120',BRIDGE_RELAY=PREFS?(location.protocol==='https:'?'wss://':'ws://')+location.host+'/api/bridge/listen':null;
 const bridgeBuf=new Uint8Array(1024),bridgeGlide=new Float32Array(1024);let bridgeOn=false,bridgeAt=0,bridgeDev='',bridgeVia='';
-const bl={local:{ws:null,on:false,t:0,at:0,dev:''},relay:{ws:null,on:false,t:0,at:0,dev:''}};
+const bl={local:{ws:null,on:false,t:0,at:0,dev:''},relay:{ws:null,on:false,t:0,at:0,dev:'',mine:false}};   // relay.mine: what it relays now is this page's own push
 const bridgeLive=()=>bridgeOn&&performance.now()-bridgeAt<600;
 function bridgeState(){
   const now=performance.now(),loc=bl.local.on&&now-bl.local.at<1500,rel=bl.relay.on&&now-bl.relay.at<1500;
@@ -1707,7 +1707,10 @@ function bridgeOpen(kind){
   b.ws.binaryType='arraybuffer';
   b.ws.onopen=()=>{b.on=true};
   b.ws.onmessage=e=>{
-    if(typeof e.data==='string'){try{const m=JSON.parse(e.data);if(m.device)b.dev=m.device;if(m.type==='bye')b.at=0}catch(x){}bridgeState();return}
+    if(typeof e.data==='string'){try{const m=JSON.parse(e.data);
+      if(kind==='relay'&&(m.type==='hello'||m.type==='bye'))b.mine=m.type==='hello'&&m.id===bp.id;   // this page's own frames coming back
+      if(m.device&&!b.mine)b.dev=m.device;if(m.type==='bye')b.at=0}catch(x){}bridgeState();return}
+    if(kind==='relay'&&b.mine)return;   // its own push, back from the relay: not a bridge
     b.at=performance.now();
     if(kind==='relay'&&bl.local.on&&b.at-bl.local.at<1500)return;   // the bridge on this computer is answering: use that
     const a=new Uint8Array(e.data);bridgeBuf.set(a.length>1024?a.subarray(0,1024):a);bridgeAt=b.at;
@@ -1718,7 +1721,41 @@ function bridgeOpen(kind){
 }
 function bridgeConnect(){bridgeOpen('local');bridgeOpen('relay')}
 setInterval(()=>{if(S.bridge&&bridgeOn&&performance.now()-bridgeAt>1500)bridgeState()},1000);   // notice when frames stop
-function bridgeStop(){['local','relay'].forEach(k=>{const b=bl[k];clearTimeout(b.t);if(b.ws){const w=b.ws;b.ws=null;b.on=false;w.onclose=null;w.close()}});bridgeOn=false;updBridge()}
+function bridgeStop(){pushStop();['local','relay'].forEach(k=>{const b=bl[k];clearTimeout(b.t);if(b.ws){const w=b.ws;b.ws=null;b.on=false;w.onclose=null;w.close()}});bridgeOn=false;updBridge()}
+// The bars for your other devices: when they hear real audio here (Vibe Bridge on this computer, a shared screen, tab
+// or input device, or a file playing in this page), each frame also goes to your server's relay the way Vibe Bridge
+// sends it (a hello naming the device, then 1024-byte frames, at most 50 a second), so the phone app listening there
+// shows the same bars. Never frames that came from the relay (they'd echo), and not while something else feeds the
+// relay (two streams would mix); its own frames coming back are told apart by the id in its hello. It closes 3 s after
+// the audio stops (the server then tells the listeners "bye") and while the page is hidden (no frames are drawn then).
+const BRIDGE_PUSH=PREFS?(location.protocol==='https:'?'wss://':'ws://')+location.host+'/api/bridge/push':null;
+const bp={ws:null,id:Math.random().toString(36).slice(2,10),dev:null,sent:0,lastAt:0,heard:0,retry:0};
+function pushDev(kind){
+  if(kind==='local')return bl.local.dev||'Vibe Bridge';
+  if(capStream){const tr=capStream.getAudioTracks()[0],n=(tr&&tr.label||'').replace(/^Monitor of /i,'');return capKind==='device'?(n||'an input device'):isWin?'shared computer sound':'a shared tab or screen'}
+  return 'a file playing in Vibe Visualizer';
+}
+function pushStop(){if(bp.ws){const w=bp.ws;bp.ws=null;w.onclose=null;try{w.close()}catch(e){}}bp.dev=null}
+function bridgePush(now){
+  if(!BRIDGE_PUSH||!S.bridge){if(bp.ws)pushStop();return}
+  const kind=liveAudio()?'here':bridgeVia==='local'&&bridgeLive()?'local':'';   // the relay's own frames are never sent back
+  if(!kind){if(bp.ws&&now-bp.heard>3000)pushStop();return}
+  bp.heard=now;
+  if(bl.relay.on&&!bl.relay.mine&&now-bl.relay.at<1500){if(bp.ws)pushStop();return}   // something else feeds the relay
+  if(!bp.ws){
+    if(now<bp.retry)return;
+    try{bp.ws=new WebSocket(BRIDGE_PUSH)}catch(e){bp.retry=now+15000;return}
+    bp.ws.binaryType='arraybuffer';bp.dev=null;bp.lastAt=0;
+    bp.ws.onclose=()=>{bp.ws=null;bp.dev=null;bp.retry=performance.now()+5000};bp.ws.onerror=()=>{};
+    return;
+  }
+  const w=bp.ws;if(w.readyState!==1||w.bufferedAmount>65536)return;   // still connecting, or a slow link: skip frames
+  const dev=pushDev(kind);
+  if(dev!==bp.dev){bp.dev=dev;w.send(JSON.stringify({type:'hello',name:'Vibe Visualizer',id:bp.id,version:(updInfo&&updInfo.installed&&updInfo.installed.version)||'',rate:ac?ac.sampleRate:48000,bins:1024,device:dev}))}
+  if(kind==='local'){if(bridgeAt===bp.lastAt)return;bp.lastAt=bridgeAt;w.send(bridgeBuf)}   // each new frame from the bridge
+  else{if(now-bp.sent<19)return;bp.sent=now;w.send(data)}                                 // the analyser, 50 times a second at most
+}
+document.addEventListener('visibilitychange',()=>{if(document.hidden)pushStop()});
 function updBridge(){
   const el=$('bridgestat');
   if(el)el.textContent=!S.bridge?'Off.':bridgeOn?('Connected '+(bridgeVia==='relay'?'through your server':'on this computer')+(bridgeDev?' · listening to '+bridgeDev:'')+'.'):'Not connected. On the computer that plays the music, start Vibe Bridge'+(PREFS&&location.protocol==='https:'?' with:  vibe-bridge --server '+location.host:'')+'  (see the README).';
@@ -3887,7 +3924,7 @@ function frame(now){
   fAcc+=Math.min(now-fPrev,100);fPrev=now;
   if(fAcc<iv-.5)return;fAcc=Math.min(fAcc-iv,iv);
   const dt=Math.min(now-last,50);last=now;
-  const pl=playing();sample(dt,now);beatTick(now,dt);drawLiveBg(now,dt);kwTick(now);
+  const pl=playing();sample(dt,now);bridgePush(now);beatTick(now,dt);drawLiveBg(now,dt);kwTick(now);
   lyricsTick();desyncTick(now);uiTick(now);if(palDirty)buildPal();palTick(now);
   if(body.classList.contains('cvlive')&&now-lastCv>31&&now>coverAnimEnd&&cvv.readyState>=2&&!document.hidden){lastCv=now;cvFrame()}   // the blurred Canvas: 30 times a second, as smooth as the video; not during the cover's animation
   const active=pl||mxv>.003||!!capStream||idleK>.005;

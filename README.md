@@ -309,6 +309,10 @@ vibe-bridge --server https://<server-name>.<your-tailnet>.ts.net
 (`vibe-bridge --server off` stops that again.) *Settings → Visualizer → Vibe Bridge* shows the exact command for
 your server.
 
+The web app passes its bars on too: whenever its bars hear real audio (Vibe Bridge on the same computer, a shared
+screen, tab or input device, or a file playing in the page) and nothing else is sending through the server, it sends
+the same frames there, so the phone app shows the same bars.
+
 Download it from the [Releases page](https://github.com/BOZKOW/vibe-visualizer/releases) (look for "Vibe Bridge").
 Vibe Visualizer finds it by itself; *Settings → Visualizer → Vibe Bridge* shows whether it's connected and which
 output it's listening to, and the sound button in the top bar gets a green ring.
