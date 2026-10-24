@@ -93,10 +93,10 @@ fun WavySeek(frac: Float, wavy: Boolean, onDrag: (Float) -> Unit, onDone: (Float
 
 /** The seek bar as Spicy Lyrics Mobile draws it: a thick pill with a soft outline that fills from the left, no thumb. */
 @Composable
-fun ThickSeek(frac: Float, onDrag: (Float) -> Unit, onDone: (Float) -> Unit, enabled: Boolean, thick: androidx.compose.ui.unit.Dp = 12.dp) {
+fun ThickSeek(frac: Float, onDrag: (Float) -> Unit, onDone: (Float) -> Unit, enabled: Boolean, thick: androidx.compose.ui.unit.Dp = 12.dp, modifier: Modifier = Modifier) {
     val drag by rememberUpdatedState(onDrag); val done by rememberUpdatedState(onDone)
     var last by remember { mutableFloatStateOf(0f) }
-    Canvas(Modifier.fillMaxWidth().height(30.dp)
+    Canvas(modifier.fillMaxWidth().height(30.dp)
         .semantics {
             contentDescription = "Seek"; progressBarRangeInfo = ProgressBarRangeInfo(frac, 0f..1f)
             if (enabled) setProgress { v -> done(v.coerceIn(0f, 1f)); true }

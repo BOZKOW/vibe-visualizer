@@ -151,7 +151,7 @@ fun PlayerScreen() {
         val wide = maxWidth >= 600.dp || (maxWidth > maxHeight && maxHeight < 520.dp)
         if (E.wide != wide) E.wide = wide
         BackHandler(enabled = !wide && E.screen != "player" && E.settingsPage == null && !E.wizard) { E.show("player") }
-        if (CanvasVideo.active) CanvasBackdrop(wide)
+        if (CanvasVideo.active) CanvasBackdrop(wide, centred = wide && soloWide())
         val pad = Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.statusBarsIgnoringVisibility.union(WindowInsets.navigationBarsIgnoringVisibility).union(WindowInsets.displayCutout).only(WindowInsetsSides.Vertical + WindowInsetsSides.Horizontal))
         when {
             E.src == "none" -> Box(pad) { EmptyState() }
@@ -241,7 +241,7 @@ private fun WideLayout() {
 /** A tablet or an open foldable: Now Playing on the left, the lyrics (or the bars) on the right. */
 @Composable
 private fun Tablet() {
-    val solo = noLyrics() && E.screen != "viz"   // no lyrics: Now Playing alone, the cover big
+    val solo = soloWide()   // no lyrics: Now Playing alone, the cover big
     Row(Modifier.fillMaxSize().padding(horizontal = 24.dp), horizontalArrangement = Arrangement.Center) {
         Column(Modifier.fillMaxHeight().then(if (solo) Modifier.widthIn(max = 560.dp) else Modifier.weight(.42f).widthIn(max = 480.dp)), horizontalAlignment = Alignment.CenterHorizontally) {
             Header()
@@ -263,35 +263,69 @@ private fun Tablet() {
     }
 }
 
-/** A phone on its side: the cover and the song on the left, the lyrics (or the bars) on the right, the controls in one row. */
+/** A phone on its side, laid out as Spicy Lyrics Mobile's: with lyrics (or the bars), the cover or the Canvas on the
+ *  left with the song and the seek bar under it, the lyrics on the right; without lyrics, all in the middle. The
+ *  controls come and go as in portrait. */
 @Composable
 private fun LandscapePhone() {
-    val solo = noLyrics() && E.screen != "viz"   // no lyrics: the cover as big as the height allows, the song beside it
+    Crossfade(soloWide(), label = "landsolo") { solo -> if (solo) LandscapeSolo() else LandscapeSplit() }
+}
+
+private val showCtl = expandVertically(expandFrom = Alignment.Top) + fadeIn()
+private val hideCtl = shrinkVertically(shrinkTowards = Alignment.Top) + fadeOut()
+
+/** The cover (a Canvas takes its place: the video fills that side), the song and the seek bar on the left. */
+@Composable
+private fun LandscapeSplit() {
     Column(Modifier.fillMaxSize().padding(horizontal = 20.dp)) {
-        if (solo) Row(Modifier.weight(1f).fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.fillMaxHeight().padding(vertical = 10.dp), contentAlignment = Alignment.Center) {
-                if (!(CanvasVideo.cvmode && S.b("cvNoArt"))) CoverArt(Modifier.aspectRatio(1f, matchHeightConstraintsFirst = true).canvasShrink(), corner = 16.dp)
-            }
-            Spacer(Modifier.width(24.dp))
-            Column(Modifier.weight(1f)) {
-                TitleRow(big = true)
-                NoLyricsNote()
-                if (S.view == "both") BarsView(Modifier.fillMaxWidth().height(72.dp).padding(top = 8.dp))
-            }
-        }
-        else Row(Modifier.weight(1f).fillMaxWidth()) {
-            Column(Modifier.fillMaxHeight().weight(.34f), horizontalAlignment = Alignment.CenterHorizontally) {
-                Box(Modifier.weight(1f).fillMaxWidth().padding(top = 10.dp, bottom = 8.dp), contentAlignment = Alignment.Center) {
-                    if (!(CanvasVideo.cvmode && S.b("cvNoArt"))) CoverArt(Modifier.aspectRatio(1f, matchHeightConstraintsFirst = true), corner = 16.dp)
+        Row(Modifier.weight(1f).fillMaxWidth()) {
+            Column(Modifier.fillMaxHeight().weight(.42f).padding(top = 8.dp)) {
+                Box(Modifier.weight(1f).fillMaxWidth().padding(bottom = 10.dp), contentAlignment = Alignment.BottomStart) {
+                    ArtUnlessCanvas()
                 }
-                TitleRow(big = false, center = true)
+                TitleRow(big = true)
+                Spacer(Modifier.height(4.dp))
+                SeekRow()
             }
             Spacer(Modifier.width(20.dp))
-            RightPane(Modifier.fillMaxHeight().weight(.66f))
+            RightPane(Modifier.fillMaxHeight().weight(.58f))
         }
-        AnimatedVisibility(!E.uiHidden) {
-            Column {
-                SeekRow()
+        // the controls under each side: play / pause under the song, the round buttons under the lyrics
+        AnimatedVisibility(!E.uiHidden, enter = showCtl, exit = hideCtl) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Box(Modifier.weight(.42f)) { Transport(big = false) }
+                Spacer(Modifier.width(20.dp))
+                Box(Modifier.weight(.58f), contentAlignment = Alignment.Center) { Box(Modifier.widthIn(max = 320.dp)) { BottomBar(big = false) } }
+            }
+        }
+    }
+}
+
+/** The cover, shrinking away while a Canvas plays (the video is the picture then). */
+@Composable
+private fun ArtUnlessCanvas() {
+    AnimatedVisibility(!CanvasVideo.cvmode, enter = fadeIn() + scaleIn(initialScale = .92f), exit = fadeOut() + scaleOut(targetScale = .92f)) {
+        CoverArt(Modifier.aspectRatio(1f, matchHeightConstraintsFirst = true), corner = 16.dp)
+    }
+}
+
+/** No lyrics: the cover in the middle with the seek bar right under it, then the song big ("artist · year"); with a
+ *  Canvas, the video in the middle and just the song and the seek bar at the bottom. */
+@Composable
+private fun LandscapeSolo() {
+    val art = !CanvasVideo.cvmode
+    Column(Modifier.fillMaxSize().padding(horizontal = 20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        Box(Modifier.weight(1f).fillMaxWidth().padding(top = 8.dp, bottom = 10.dp), contentAlignment = Alignment.Center) {
+            ArtUnlessCanvas()
+        }
+        Column(Modifier.widthIn(max = 560.dp).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+            if (S.view == "both") BarsView(Modifier.fillMaxWidth().height(40.dp).padding(bottom = 4.dp))
+            if (art) { SeekRow(inline = true); TitleRow(big = true, center = true, year = true) }
+            else { TitleRow(big = true, center = true); Spacer(Modifier.height(4.dp)); SeekRow() }
+        }
+        AnimatedVisibility(!E.uiHidden, enter = showCtl, exit = hideCtl) {
+            Column(Modifier.widthIn(max = 720.dp).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+                NoLyricsNote()
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Box(Modifier.weight(1f)) { Transport(big = false) }
                     Spacer(Modifier.width(16.dp))
@@ -299,6 +333,7 @@ private fun LandscapePhone() {
                 }
             }
         }
+        if (E.uiHidden) Spacer(Modifier.height(10.dp))
     }
 }
 
@@ -404,14 +439,15 @@ private fun MoreButton() {
 }
 
 @Composable
-private fun TitleRow(big: Boolean, center: Boolean = false) {
+private fun TitleRow(big: Boolean, center: Boolean = false, year: Boolean = false) {
     val ver = E.trackVer
     val a = remember { Animatable(1f) }
     LaunchedEffect(ver) { if (!S.low && !E.reduceMotion()) { a.snapTo(0f); a.animateTo(1f, tween(500, easing = FastOutSlowInEasing)) } }
     Row(Modifier.fillMaxWidth().graphicsLayer { alpha = a.value; translationY = (1 - a.value) * 10f * density }, verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f), horizontalAlignment = if (center) Alignment.CenterHorizontally else Alignment.Start) {
             Scrolling(E.title, if (big) 27.sp else 19.sp, FontWeight.Bold, Color.White, (-.3).sp)
-            if (E.artist.isNotEmpty()) Scrolling(E.artist, if (big) 19.sp else 15.sp, FontWeight.Medium, dim)
+            val by = if (year && E.year.isNotEmpty()) listOf(E.artist, E.year).filter { it.isNotEmpty() }.joinToString(" · ") else E.artist
+            if (by.isNotEmpty()) Scrolling(by, if (big) 19.sp else 15.sp, FontWeight.Medium, dim)
         }
         if (E.src == "spotify" && !center) LikeButton()
     }
@@ -522,18 +558,19 @@ private fun PlayButton(size: Dp) {
 
 /** The seek bar: a wave while music plays (as Android's own media controls), the time it would jump to while dragging. */
 @Composable
-private fun SeekRow() {
+private fun SeekRow(inline: Boolean = false) {
     var drag by remember { mutableStateOf<Float?>(null) }
     val glide by animateFloatAsState(E.seekFrac, tween(260, easing = androidx.compose.animation.core.LinearEasing), label = "seek")
     val frac = drag ?: if (kotlin.math.abs(E.seekFrac - glide) > .02f) E.seekFrac else glide   // a jump (seek, new song) isn't glided
     val dur = E.curDur()
-    Column(Modifier.fillMaxWidth()) {
-        ThickSeek(frac, onDrag = { f -> drag = f; E.seeking = true; E.poke() }, onDone = { f -> drag = null; E.seeking = false; E.seekFraction(f) }, enabled = E.src != "none" && dur > 0)
-        Row(Modifier.fillMaxWidth()) {
-            Text(fmtTime(if (drag != null) frac * dur else E.curTime()), fontSize = 14.sp, color = if (drag != null && S.b("xScrub")) Color.White else dim, fontWeight = FontWeight.Medium)
-            Spacer(Modifier.weight(1f))
-            Text(if (drag != null && S.b("xScrub")) "-" + fmtTime(dur - frac * dur) else fmtTime(dur), fontSize = 14.sp, color = dim, fontWeight = FontWeight.Medium)
-        }
+    val bar = @Composable { m: Modifier -> ThickSeek(frac, onDrag = { f -> drag = f; E.seeking = true; E.poke() }, onDone = { f -> drag = null; E.seeking = false; E.seekFraction(f) }, enabled = E.src != "none" && dur > 0, modifier = m) }
+    val now = @Composable { Text(fmtTime(if (drag != null) frac * dur else E.curTime()), fontSize = 14.sp, color = if (drag != null && S.b("xScrub")) Color.White else dim, fontWeight = FontWeight.Medium) }
+    val end = @Composable { Text(if (drag != null && S.b("xScrub")) "-" + fmtTime(dur - frac * dur) else fmtTime(dur), fontSize = 14.sp, color = dim, fontWeight = FontWeight.Medium) }
+    // inline: the times on either side of the bar (under a cover in landscape)
+    if (inline) Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) { now(); Spacer(Modifier.width(12.dp)); bar(Modifier.weight(1f)); Spacer(Modifier.width(12.dp)); end() }
+    else Column(Modifier.fillMaxWidth()) {
+        bar(Modifier)
+        Row(Modifier.fillMaxWidth()) { now(); Spacer(Modifier.weight(1f)); end() }
     }
 }
 
@@ -610,19 +647,24 @@ fun Cover(modifier: Modifier = Modifier) {
  *  wide screen it fills the left side and fades out to the right, as in the web app. The view is there from the start:
  *  the video's first frame (which reveals it) can only be drawn into one. */
 @Composable
-private fun CanvasBackdrop(wide: Boolean) {
+private fun CanvasBackdrop(wide: Boolean, centred: Boolean) {
     val behindLyrics = !wide && E.screen == "lyrics" && !noLyrics()
     val a by animateFloatAsState(if (!CanvasVideo.cvmode) 0f else if (behindLyrics) .25f else 1f, tween(800), label = "canvas")
+    // side by side without lyrics, the video glides to the middle and fades out on both sides (moved, not laid out
+    // again: the video's crop is set for its size)
+    val c by animateFloatAsState(if (centred) 1f else 0f, if (S.low || E.reduceMotion()) tween(0) else tween(700, easing = FastOutSlowInEasing), label = "cvcentre")
     Box((if (wide) Modifier.fillMaxHeight().fillMaxWidth(.68f) else Modifier.fillMaxSize()).alpha(maxOf(a, .01f))
-        .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }.drawWithContent {
+        .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen; if (wide) translationX = size.width * (.16f / .68f) * c }.drawWithContent {
             drawContent()
             val shade = Brush.verticalGradient(0f to Color.Black.copy(alpha = .4f), .2f to Color.Transparent, .55f to Color.Transparent, 1f to Color.Black.copy(alpha = .45f))
             if (wide) {
                 // side by side: the shade fades out with the video (drawn after the fade it stopped in a hard line at the
                 // edge), over a long, eased fade into the blurred Canvas behind
                 drawRect(shade)
-                drawRect(Brush.horizontalGradient(0f to Color.Black, .3f to Color.Black, .45f to Color.Black.copy(alpha = .9f), .6f to Color.Black.copy(alpha = .66f),
-                    .74f to Color.Black.copy(alpha = .38f), .87f to Color.Black.copy(alpha = .14f), 1f to Color.Transparent), blendMode = BlendMode.DstIn)
+                val s = .3f + .4f * c   // where the fade starts: long beside the lyrics, short in the middle
+                drawRect(Brush.horizontalGradient(0f to Color.Black, *Array(6) { i -> (s + (1 - s) * EASE_AT[i]) to Color.Black.copy(alpha = EASE_A[i]) }), blendMode = BlendMode.DstIn)
+                // in the middle, the same fade on the left
+                if (c > 0f) drawRect(Brush.horizontalGradient(*Array(6) { k -> val j = 5 - k; .3f * (1 - EASE_AT[j]) to Color.Black.copy(alpha = 1 - c * (1 - EASE_A[j])) }, 1f to Color.Black), blendMode = BlendMode.DstIn)
             } else {
                 val fade = arrayOf(0f to Color.Black, .45f to Color.Black, .58f to Color.Black.copy(alpha = .85f), .74f to Color.Black.copy(alpha = .5f), .88f to Color.Black.copy(alpha = .18f), 1f to Color.Transparent)
                 drawRect(Brush.verticalGradient(*fade), blendMode = BlendMode.DstIn)
@@ -630,6 +672,9 @@ private fun CanvasBackdrop(wide: Boolean) {
             }
         }) { CanvasVideoView() }
 }
+
+private val EASE_AT = floatArrayOf(0f, .214f, .429f, .629f, .814f, 1f)   // the eased fade's steps (where, how opaque)
+private val EASE_A = floatArrayOf(1f, .9f, .66f, .38f, .14f, 0f)
 
 /** The Canvas video filling its box: sharp, or (Blur the Canvas) drawn at a quarter of the size, blurred there and
  *  stretched back, which is cheap, unlike a full-screen blur every frame. */
@@ -661,6 +706,9 @@ private fun CanvasView() {
 
 /** The lookup is done and found no lyrics (and nothing's wrong with the connection): the cover takes their place. */
 private fun noLyrics() = Lyr.empty && Lyr.lines == 0 && E.problems(false).isEmpty()
+
+/** Side by side with no lyrics (and not the Visualizer): the song alone, in the middle. */
+private fun soloWide() = noLyrics() && E.screen != "viz"
 
 /** Under the big cover: why there are no lyrics, and the one thing to do about it. */
 @Composable

@@ -272,7 +272,8 @@ object Spotify {
         val m = SongMeta(id = it.optString("id"), uri = it.optString("uri"), title = it.optString("name"),
             artist = if (ep) it.optJSONObject("show")?.optString("name") ?: "" else (0 until artists.length()).joinToString(", ") { k -> artists.getJSONObject(k).optString("name") },
             album = if (ep) "" else it.optJSONObject("album")?.optString("name") ?: "", duration = it.optDouble("duration_ms") / 1000,
-            cover = imgs.optJSONObject(0)?.optString("url") ?: "", coverSmall = imgs.optJSONObject(1)?.optString("url") ?: "", isrc = it.optJSONObject("external_ids")?.optString("isrc") ?: "", artistId = if (ep) "" else artists.optJSONObject(0)?.optString("id") ?: "", ep = ep)
+            cover = imgs.optJSONObject(0)?.optString("url") ?: "", coverSmall = imgs.optJSONObject(1)?.optString("url") ?: "", isrc = it.optJSONObject("external_ids")?.optString("isrc") ?: "",
+            year = ((if (ep) it.optString("release_date") else it.optJSONObject("album")?.optString("release_date")) ?: "").take(4).takeIf { y -> y.length == 4 && y.all(Char::isDigit) } ?: "", artistId = if (ep) "" else artists.optJSONObject(0)?.optString("id") ?: "", ep = ep)
         val st = PState(d.optBoolean("is_playing"), d.optDouble("progress_ms", 0.0), it.optDouble("duration_ms"))
         spState = st
         // small differences glide in over ~0.6 s instead of jumping the lyrics; big ones (seek, skip, pause) snap

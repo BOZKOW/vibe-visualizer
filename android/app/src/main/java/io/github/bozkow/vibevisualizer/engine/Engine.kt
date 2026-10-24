@@ -45,6 +45,7 @@ object E {
         internal set
     var title by mutableStateOf("")
     var artist by mutableStateOf("")
+    var year by mutableStateOf("")                 // when the song came out, if known
     var status by mutableStateOf("")               // where the cover came from, "Spotify", "Searching for cover…"
     var trackVer by mutableIntStateOf(0)           // bumps on every new song (the title animates in)
     var coverTok = 0
@@ -164,7 +165,7 @@ object E {
         ask = Ask("Reconnect Spotify?", "$what, Spotify needs one more permission. You’ll log in again in the browser.", listOf(Act("Not now"), Act("Reconnect", pri = true) { spLogin() }))
     }
 
-    fun spIdle() { title = "Nothing playing"; artist = "Play something in Spotify"; status = ""; Lyr.clear(""); CanvasVideo.clear(false); updPlay() }
+    fun spIdle() { title = "Nothing playing"; artist = "Play something in Spotify"; year = ""; status = ""; Lyr.clear(""); CanvasVideo.clear(false); updPlay() }
 
     fun onSpUpdate() { updPlay(); CanvasVideo.syncPlay() }
 
@@ -174,7 +175,7 @@ object E {
         Audio.dropBars()   // the bars drop and grow back with the new song
         val tok = ++coverTok
         CanvasVideo.clear(true)
-        title = m.title; artist = m.artist; status = "Spotify"; trackVer++
+        title = m.title; artist = m.artist; year = m.year; status = "Spotify"; trackVer++
         Vibe.scope.launch {
             // Spotify's cover; once more past the cache if it doesn't load, then its smaller size
             var ok = m.cover.isNotEmpty() && setCover(m.cover, "", tok)
@@ -214,7 +215,7 @@ object E {
         CanvasVideo.clear(false); Audio.dropBars(); resetCover()
         // "03 - Artist - Song (Official Video).mp3" → Song by Artist (Spicy Lyrics Mobile's name cleaner)
         val fn = TrackNameCleaner.clean(name, "")
-        title = fn.title.ifEmpty { Files.clean(name) }; artist = fn.artist; status = ""; trackVer++
+        title = fn.title.ifEmpty { Files.clean(name) }; artist = fn.artist; year = ""; status = ""; trackVer++
         Lyr.loading()
         Vibe.scope.launch {
             val tags = Files.tags(uri)
@@ -223,7 +224,8 @@ object E {
                 val tn = TrackNameCleaner.clean(tags.title ?: name, tags.artist ?: "")
                 title = tn.title.ifEmpty { title }; artist = tn.artist.ifEmpty { artist }
             }
-            val meta = SongMeta(title = title, artist = artist, album = tags.album ?: "", duration = tags.durationMs / 1000.0, file = name)
+            year = tags.year ?: ""
+            val meta = SongMeta(title = title, artist = artist, album = tags.album ?: "", duration = tags.durationMs / 1000.0, file = name, year = year)
             Lyr.load(meta, tok)
             Local.setMeta(title, artist, tags.picture)
             if (tags.picture != null && setCoverBitmap(Images.decode(tags.picture), "Embedded cover", tok)) return@launch

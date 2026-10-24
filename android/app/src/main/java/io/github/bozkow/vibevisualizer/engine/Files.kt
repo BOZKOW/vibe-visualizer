@@ -14,10 +14,11 @@ import kotlinx.coroutines.withContext
 /** Files you pick or share with the app: songs, lyrics files, a cover image, a Canvas video. */
 object Files {
     class Sorted(val audio: List<Uri>, val lyrics: List<Uri>, val images: List<Uri>, val videos: List<Uri>)
-    class Tags(val title: String?, val artist: String?, val album: String?, val durationMs: Long, val picture: ByteArray?)
+    class Tags(val title: String?, val artist: String?, val album: String?, val durationMs: Long, val picture: ByteArray?, val year: String? = null)
 
     private val LYR = Regex("\\.(lrc|ttml|xml|txt)$", RegexOption.IGNORE_CASE)
     private val AUD = Regex("\\.(mp3|wav|ogg|m4a|flac|aac|opus|weba|wma|alac|aiff?)$", RegexOption.IGNORE_CASE)
+    private val YEAR = Regex("(19|20)\\d{2}")
     private val VID = Regex("\\.(mp4|webm|mov|m4v)$", RegexOption.IGNORE_CASE)
 
     fun name(u: Uri): String = runCatching {
@@ -59,7 +60,9 @@ object Files {
             Tags(r.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE)?.trim()?.ifEmpty { null },
                 (r.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST) ?: r.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ALBUMARTIST))?.trim()?.ifEmpty { null },
                 r.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ALBUM)?.trim()?.ifEmpty { null },
-                r.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLongOrNull() ?: 0L, r.embeddedPicture)
+                r.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLongOrNull() ?: 0L, r.embeddedPicture,
+                // the year tag, or the date one ("20240101T000000.000Z")
+                listOf(MediaMetadataRetriever.METADATA_KEY_YEAR, MediaMetadataRetriever.METADATA_KEY_DATE).firstNotNullOfOrNull { k -> r.extractMetadata(k)?.let { YEAR.find(it)?.value } })
         } catch (e: Exception) { Tags(null, null, null, 0, null) }
         finally { runCatching { r.release() } }
     }
