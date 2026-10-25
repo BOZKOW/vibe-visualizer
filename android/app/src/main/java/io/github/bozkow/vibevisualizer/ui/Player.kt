@@ -429,10 +429,11 @@ private fun Header(modifier: Modifier = Modifier) {
 private fun MiniHeader(showCover: Boolean = true) {
     Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 8.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
         if (showCover) {   // with no lyrics the big cover is right below
-            Box(Modifier.size(52.dp).clip(RoundedCornerShape(10.dp)).clickable { E.show("player") }) { CoverArt(Modifier.fillMaxSize(), corner = 10.dp, small = true) }
+            Box(Modifier.size(52.dp).clip(RoundedCornerShape(10.dp))) { CoverArt(Modifier.fillMaxSize(), corner = 10.dp, small = true) }
             Spacer(Modifier.width(12.dp))
         } else Spacer(Modifier.width(8.dp))
-        Column(Modifier.weight(1f).clickable { E.show("player") }) {
+        // not a way back: only the Lyrics button (or Back) leaves the lyrics
+        Column(Modifier.weight(1f)) {
             Text(E.title, style = TextStyle(shadow = textShadow), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
             val st = E.statusLine()
             if (st != null) Text(st, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFFFFD27A), maxLines = 1, overflow = TextOverflow.Ellipsis)
