@@ -51,8 +51,11 @@ fun VibeRoot() {
             awaitEachGesture {   // a touch brings the controls back; while they're hidden, the first tap only does that
                 val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
                 Pop.touched(down.position)   // menus open out of where you touched
-                E.wakeTap = E.uiHidden || E.ambient
-                E.poke()
+                // the seek bar, touched while the controls are hidden, only seeks (Ambient mode always wakes)
+                if (!(E.uiHidden && !E.ambient && Quiet.has(down.position))) {
+                    E.wakeTap = E.uiHidden || E.ambient
+                    E.poke()
+                }
             }
         }) {
             // while Settings or the setup guide cover the screen, the player isn't drawn at all (it would cost every frame)

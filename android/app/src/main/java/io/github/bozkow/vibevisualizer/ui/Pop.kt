@@ -106,6 +106,20 @@ fun AnimatedVisibilityScope.popClip(radius: Dp = 120.dp): Modifier {
     return if (r > 0.5.dp) Modifier.clip(RoundedCornerShape(r)) else Modifier
 }
 
+/** Places where a touch doesn't bring the hidden controls back (the seek bar: touched then, it only seeks). */
+object Quiet {
+    private val areas = HashMap<Any, Rect>()
+    fun has(p: Offset) = areas.values.any { it.contains(p) }
+    fun set(k: Any, r: Rect?) { if (r == null) areas.remove(k) else areas[k] = r }
+}
+
+@Composable
+fun Modifier.quietTouch(): Modifier {
+    val k = remember { Any() }
+    androidx.compose.runtime.DisposableEffect(k) { onDispose { Quiet.set(k, null) } }
+    return onGloballyPositioned { Quiet.set(k, it.boundsInRoot()) }
+}
+
 /** Where a box sits on the screen, for [Pop.origin]. */
 fun Modifier.popBounds(into: (Rect) -> Unit): Modifier = onGloballyPositioned { into(it.boundsInRoot()) }
 

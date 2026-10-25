@@ -588,7 +588,7 @@ private fun SeekRow(inline: Boolean = false) {
     val glide by animateFloatAsState(E.seekFrac, tween(260, easing = androidx.compose.animation.core.LinearEasing), label = "seek")
     val frac = drag ?: if (kotlin.math.abs(E.seekFrac - glide) > .02f) E.seekFrac else glide   // a jump (seek, new song) isn't glided
     val dur = E.curDur()
-    val bar = @Composable { m: Modifier -> ThickSeek(frac, onDrag = { f -> drag = f; E.seeking = true; E.poke() }, onDone = { f -> drag = null; E.seeking = false; E.seekFraction(f) }, enabled = E.src != "none" && dur > 0, modifier = m) }
+    val bar = @Composable { m: Modifier -> ThickSeek(frac, onDrag = { f -> drag = f; E.seekDrag(true) }, onDone = { f -> if (drag == null) E.seekDrag(true); drag = null; E.seekFraction(f); E.seekDrag(false) }, enabled = E.src != "none" && dur > 0, modifier = m.quietTouch()) }
     val now = @Composable { Text(fmtTime(if (drag != null) frac * dur else E.curTime()), fontSize = 14.sp, color = if (drag != null && S.b("xScrub")) Color.White else dim, fontWeight = FontWeight.Medium) }
     val end = @Composable { Text(if (drag != null && S.b("xScrub")) "-" + fmtTime(dur - frac * dur) else fmtTime(dur), fontSize = 14.sp, color = dim, fontWeight = FontWeight.Medium) }
     // inline: the times on either side of the bar (under a cover in landscape)

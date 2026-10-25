@@ -71,6 +71,8 @@ object E {
     var timeText by mutableStateOf("0:00 / 0:00")
     var seekFrac by mutableFloatStateOf(0f)
     var seeking = false
+        private set
+    private var quietSeek = false                  // a seek started while the controls were hidden: they stay hidden
     var fpsText by mutableStateOf("")
     val barsTick = mutableLongStateOf(0)
     val bgTick = mutableLongStateOf(0)
@@ -357,7 +359,14 @@ object E {
     private fun canAmbient() = S.b("aAmbient") && playingState && settingsPage == null && sheet == null && !wizard && !seeking && !inPip && visible
 
     /** The controls may hide: music plays, nothing's open over the player, nobody's dragging the seek bar. */
-    private fun canHide() = playingState && S.str("uiHide") != "never" && settingsPage == null && sheet == null && !wizard && !seeking
+    private fun canHide() = playingState && S.str("uiHide") != "never" && settingsPage == null && sheet == null && !wizard && (!seeking || quietSeek)
+
+    /** The seek bar is dragged (or let go). Touched while the controls are hidden, it only seeks: they stay away. */
+    fun seekDrag(on: Boolean) {
+        if (on && !seeking) quietSeek = uiHidden
+        seeking = on
+        if (quietSeek) activeAt = wall() else poke()
+    }
 
     /** Checked a few times a second (it used to be decided only at a touch, so when the music started later, they never
      *  hid): three seconds untouched while music plays and they go; paused or with something open, they're back. */
