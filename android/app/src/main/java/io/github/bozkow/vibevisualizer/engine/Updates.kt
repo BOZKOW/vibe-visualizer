@@ -54,30 +54,77 @@ object Updates {
 
     private fun points(body: String) = body.lines().map { it.trim() }.filter { it.startsWith("- ") || it.startsWith("* ") }.map { it.drop(2).trim() }.take(20)
 
-    /** The newest app release on GitHub (android-v…, not the old WebView app's). */
+    /** A release of this app, from GitHub's API or its release feed. */
+    private class Rel(val tag: String, val apk: String, val note: Note)
+
+    /** The newest app release on GitHub (android-v…, not the old WebView app's). GitHub's API first (the HTTP cache
+     *  asks it "changed?", which costs nothing when it hasn't); when the API is out of requests for this connection
+     *  (60 an hour without an account, shared by everything on the same Wi-Fi), GitHub's release feed instead, which
+     *  has no such limit. */
     fun checkApp(manual: Boolean) {
         if (manual) appStat = "Checking…"
         Vibe.scope.launch {
             try {
-                val r = Net.fetch("https://api.github.com/repos/$REPO/releases?per_page=50", "github")
-                if (!r.ok) throw Exception(if (r.code == 403 || r.code == 429) "GitHub is busy right now (too many requests from your connection). Try again in a few minutes" else "HTTP ${r.code}")
-                val a = r.jsonArray() ?: JSONArray()
-                // this app's releases; the old WebView app's (0.2-0.7 and its 1.0.0) are titled "old, out of support"
-                val rels = (0 until a.length()).map { a.getJSONObject(it) }.filter { !it.optBoolean("draft") && it.optString("tag_name").startsWith("android-v") }
-                    .filter { !it.optString("name").contains("out of support", ignoreCase = true) }
-                    .sortedByDescending { it.optString("published_at") }
-                notes = rels.take(10).map { note(it) }
+                val rels = fromApi() ?: fromFeed()
+                notes = rels.take(10).map { it.note }
                 val newest = rels.firstOrNull()
                 if (newest == null) { appStat = "Version ${BuildConfig.VERSION_NAME} · no app releases on GitHub yet."; return@launch }
-                val v = newest.optString("tag_name").removePrefix("android-v")
-                val apk = newest.optJSONArray("assets")?.let { as_ -> (0 until as_.length()).map { as_.getJSONObject(it) }.firstOrNull { it.optString("name").endsWith(".apk") }?.optString("browser_download_url") } ?: ""
-                val rel = AppRel(v, newest.optString("tag_name"), apk, note(newest))
+                val v = newest.tag.removePrefix("android-v")
+                val rel = AppRel(v, newest.tag, newest.apk, newest.note)
                 val newer = verCmp(v, mine) > 0
-                latest = if (newer && apk.isNotEmpty()) rel else null
+                latest = if (newer && rel.apk.isNotEmpty()) rel else null
                 appStat = "Version ${BuildConfig.VERSION_NAME}" + if (newer) " · new version $v${if (rel.note.beta) " beta" else ""} is out" else " · the newest"
-                if (newer && apk.isNotEmpty() && (manual || prefs.getString("skip", "") != rel.tag) && E.settingsPage != "help")
+                if (newer && rel.apk.isNotEmpty() && (manual || prefs.getString("skip", "") != rel.tag) && E.settingsPage != "help")
                     E.snack(E.Snack("Version $v is available", "ok", E.Act("Update") { install(rel) }, long = true, onDismiss = { prefs.edit().putString("skip", rel.tag).apply() }))
             } catch (e: Exception) { appStat = "Couldn’t check for updates: " + e.message; if (manual) E.toast("Couldn’t check for updates", "warn") }
+        }
+    }
+
+    /** From GitHub's API; null when it's out of requests for now (the feed answers then). */
+    private suspend fun fromApi(): List<Rel>? {
+        val r = runCatching { Net.fetch("https://api.github.com/repos/$REPO/releases?per_page=50", "github") }.getOrNull() ?: return null
+        if (r.code == 403 || r.code == 429) {
+            limitUntil = r.header("X-RateLimit-Reset")?.toLongOrNull()?.times(1000) ?: 0L
+            return null
+        }
+        if (!r.ok) throw Exception("HTTP ${r.code}")
+        val a = r.jsonArray() ?: JSONArray()
+        // this app's releases; the old WebView app's (0.2-0.7 and its 1.0.0) are titled "old, out of support"
+        return (0 until a.length()).map { a.getJSONObject(it) }.filter { !it.optBoolean("draft") && it.optString("tag_name").startsWith("android-v") }
+            .filter { !it.optString("name").contains("out of support", ignoreCase = true) }
+            .sortedByDescending { it.optString("published_at") }
+            .map { o -> Rel(o.optString("tag_name"), o.optJSONArray("assets")?.let { as_ -> (0 until as_.length()).map { as_.getJSONObject(it) }.firstOrNull { it.optString("name").endsWith(".apk") }?.optString("browser_download_url") } ?: "", note(o)) }
+    }
+
+    private var limitUntil = 0L   // when GitHub's API answers this connection again
+
+    /** From GitHub's release feed (github.com/…/releases.atom): the newest ten releases of any kind, so older app
+     *  releases may be missing; the APK has the name every release gives it. */
+    private suspend fun fromFeed(): List<Rel> {
+        val r = runCatching { Net.fetch("https://github.com/$REPO/releases.atom", "github") }.getOrNull()
+        if (r == null || !r.ok) {
+            val at = if (limitUntil > 0) " until " + java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault()).format(java.util.Date(limitUntil)) else " for a while"
+            throw Exception("GitHub isn’t answering this connection$at (it allows 60 checks an hour without an account)")
+        }
+        return parseFeed(r.text).filter { it.tag.startsWith("android-v") && !it.title.contains("out of support", ignoreCase = true) }
+            .map { f -> Rel(f.tag, "https://github.com/$REPO/releases/download/${f.tag}/vibe-visualizer-android.apk",
+                Note(f.title, f.date, f.points, f.tag, f.title.contains("beta", ignoreCase = true) || f.tag.startsWith("android-v0."))) }
+    }
+
+    internal class FeedRel(val tag: String, val title: String, val date: String, val points: List<String>)
+
+    /** The release feed's entries: each one's tag, title, date and the points of its notes (the list items). */
+    internal fun parseFeed(xml: String): List<FeedRel> {
+        val dot = setOf(RegexOption.DOT_MATCHES_ALL)
+        fun un(x: String) = x.replace("&lt;", "<").replace("&gt;", ">").replace("&quot;", "\"").replace("&#39;", "'").replace("&amp;", "&")
+        return xml.split("<entry>").drop(1).mapNotNull { e ->
+            val tag = Regex("releases/tag/([^\"<]+)").find(e)?.groupValues?.get(1) ?: return@mapNotNull null
+            val title = un(Regex("<title>(.*?)</title>", dot).find(e)?.groupValues?.get(1) ?: tag).trim()
+            val date = Regex("<updated>(.*?)</updated>").find(e)?.groupValues?.get(1) ?: ""
+            val html = un(Regex("<content[^>]*>(.*?)</content>", dot).find(e)?.groupValues?.get(1) ?: "")
+            val points = Regex("<li>(.*?)</li>", dot).findAll(html).map { un(it.groupValues[1].replace(Regex("<[^>]+>"), "")).replace(Regex("\\s+"), " ").trim() }
+                .filter { it.isNotEmpty() }.take(20).toList()
+            FeedRel(tag, title, date, points)
         }
     }
 
@@ -146,13 +193,10 @@ object Updates {
         val last = prefs.getString("ran", "") ?: ""
         prefs.edit().putString("ran", BuildConfig.VERSION_NAME).apply()
         if (last.isEmpty() || last == BuildConfig.VERSION_NAME) return
+        // no request to GitHub here: the notes load when Help & about opens
         Vibe.scope.launch {
             kotlinx.coroutines.delay(1500)
-            runCatching {
-                val r = Net.fetch("https://api.github.com/repos/$REPO/releases/tags/android-v$mine")
-                r.json()?.let(::note) ?: return@launch
-                E.snack(E.Snack("Updated to ${BuildConfig.VERSION_NAME}", "ok", E.Act("What’s new") { E.openSettings("help") }, long = true))
-            }
+            E.snack(E.Snack("Updated to ${BuildConfig.VERSION_NAME}", "ok", E.Act("What’s new") { E.openSettings("help") }, long = true))
         }
     }
 
