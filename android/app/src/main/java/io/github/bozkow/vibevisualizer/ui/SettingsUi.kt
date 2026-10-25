@@ -365,8 +365,22 @@ fun SettingsScreen() {
 
 @Composable
 private fun SearchResults(all: List<Page>, q: String, modifier: Modifier) {
-    val ql = q.trim().lowercase()
-    val hits = all.mapNotNull { p -> val its = p.items.filter { it !is Item.Head && it !is Item.Sub && it.search.lowercase().contains(ql) }; if (its.isEmpty()) null else p to its }
+    // forgiving: any order, half-typed words, a typo or two; each setting also matches by its section and page.
+    // The pages with the closest matches come first, and the closest settings first in each
+    val words = remember(q) { SearchMatch.query(q) }
+    val hits = remember(words) {
+        all.mapNotNull { p ->
+            var section = ""
+            val its = p.items.mapNotNull { it ->
+                when (it) {
+                    is Item.Head -> { section = it.t; null }
+                    is Item.Sub -> { section = it.t; null }
+                    else -> SearchMatch.score(words, it.search, p.name + " " + section)?.let { sc -> it to sc }
+                }
+            }.sortedByDescending { it.second }
+            if (its.isEmpty()) null else Triple(p, its.map { it.first }, its.first().second)
+        }.sortedByDescending { it.third }.map { it.first to it.second }
+    }
     if (hits.isEmpty()) { Text("No setting matches that.", Modifier.padding(24.dp), color = Color.White.copy(alpha = .6f)); return }
     LazyColumn(modifier.navBarsSpace().fadeEdges(20.dp, 28.dp), contentPadding = androidx.compose.foundation.layout.PaddingValues(start = 14.dp, end = 14.dp, top = 8.dp, bottom = 40.dp)) {
         hits.forEach { (p, its) ->
