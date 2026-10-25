@@ -336,7 +336,6 @@ body.idle{cursor:none}
 #play{width:52px;height:52px;background:#fff;color:#111}#play svg{width:24px;height:24px}#play:hover{background:#eee}
 #seekwrap{flex:1 1 200px;display:flex;align-items:center;gap:14px;min-width:0;margin:0 10px}
 #time{font-variant-numeric:tabular-nums;color:var(--dim);font-size:13px;white-space:nowrap}
-#tcur,#tdur{display:none}   /* the times under the timeline (the Stage design) */
 #volwrap{display:flex;align-items:center;gap:8px}
 /* more Spotify controls: only while Spotify is the source */
 body:not([data-src=spotify]) .spx{display:none!important}
@@ -814,136 +813,6 @@ body.low #bar input[type=range]::-webkit-slider-thumb{transition:none}
 body.low #scrubtip{backdrop-filter:none;-webkit-backdrop-filter:none;background:rgba(22,22,38,.9)}body.low #lmsg .skr{animation:none}
 .drow,#pnav .pn,#pnavpill,.prow,select,#psearch,.tin,.f input[type=text],.f input[type=url],.f input[type=password]{border-radius:var(--r-sm)}
 </style>
-<style id="stageui">
-/* ===== Design: Stage (Settings → Appearance → Design): the Android app's look in Spicy Lyrics' Canvas Stage layout.
-   The main screen has no glass: outlined buttons along the top, the song, the timeline and the controls straight on
-   the background; the song's side on the left (the Canvas filling it and feathering into the background), the
-   lyrics on the right. Settings and the panels stay Glass. Every rule needs body.stage, so Glass and Classic never
-   see this sheet, and narrow or short windows keep the regular layout. ===== */
-@media (min-width:761px) and (min-height:521px){
-body.stage{--sw:clamp(300px,30vw,540px);--sfeather:calc(var(--sw)*.45);--dockw:max(var(--sw),470px);--volw:clamp(56px,4.5vw,100px)}
-/* the song's side and the lyrics; the lyrics run to the foot of the page when the dock fits beside them */
-body.stage #stage,body.stage.cvmode #stage{grid-template-columns:var(--sw) minmax(0,1fr);gap:clamp(40px,6vw,120px);padding:96px var(--pad) 70px}
-body.stage #left,body.stage.cvmode #left{justify-content:flex-end;padding-bottom:180px}
-body.stage.cvmode #info{align-items:flex-start;text-align:left}body.stage.cvmode #ttl{transform-origin:left center}
-body.stage #artw,body.stage.cvmode #artw{width:min(100%,calc(100vh - 540px));min-width:min(100%,140px);margin:0;border-radius:22px;box-shadow:0 18px 50px rgba(0,0,0,.45);transition:opacity .9s cubic-bezier(.23,1,.32,1),scale .9s cubic-bezier(.23,1,.32,1),transform .07s ease-out,box-shadow .12s linear}
-/* a Canvas fills the song's side, 75% over the blurred copy behind it, feathering out in eased steps (a straight
-   ramp leaves a line); the cover makes way for it */
-body.stage #cvpane{width:calc(var(--pad) + var(--sw) + var(--sfeather));opacity:0;
-  -webkit-mask-image:linear-gradient(to left,transparent,rgba(0,0,0,.10) calc(var(--sfeather)*.18),rgba(0,0,0,.36) calc(var(--sfeather)*.38),rgba(0,0,0,.85) calc(var(--sfeather)*.72),#000 var(--sfeather));mask-image:linear-gradient(to left,transparent,rgba(0,0,0,.10) calc(var(--sfeather)*.18),rgba(0,0,0,.36) calc(var(--sfeather)*.38),rgba(0,0,0,.85) calc(var(--sfeather)*.72),#000 var(--sfeather))}
-body.stage.cvmode #cvpane{opacity:.75}
-body.stage #cvpane::after{background:linear-gradient(to top,rgba(0,0,0,.5),rgba(0,0,0,.35) 30%,transparent 58%),linear-gradient(to bottom,rgba(0,0,0,.35),transparent 18%)}
-body.stage.cvmode #artw{opacity:0;scale:1.04;pointer-events:none}
-/* no glass on the main screen, as in the Android app: the buttons and chips along the top are outlined (filled
-   softly while on), the controls and the timeline sit straight on the background, the text is white with a soft
-   shadow */
-body.stage #top .ib,body.stage #top .chip,body.stage #seg,body.stage #nextup{background:transparent;border:1px solid rgba(255,255,255,.32);box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none}
-body.stage #top .ib:hover,body.stage #top .chip:hover{background:rgba(255,255,255,.12)}
-body.stage #top .ib.on,body.stage #top #trbtn.on,body.stage #top #rombtn.on,body.stage #top #lowbtn.on{background:rgba(255,255,255,.16)!important;border-color:rgba(255,255,255,.55);color:#fff;box-shadow:none}
-body.stage #top .chip.on{border-color:rgba(255,255,255,.55)}
-body.stage #top #capbtn.on{border-color:#1ed760}body.stage #top #capbtn.bridge{box-shadow:inset 0 0 0 2px #1ed760,0 0 14px -4px #1ed760}
-body.stage #bar.lq:hover,body.stage #bar.lq.press{transform:none}
-body.stage #bar.lq::before,body.stage #bar.lq::after,body.stage #bar>.lqr{display:none}
-body.stage #bar .ib{background:transparent;border:0;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none}
-body.stage #bar .ib:hover{background:rgba(255,255,255,.1)}
-body.stage #bar .ib.on{background:transparent;color:var(--acc)}
-body.stage #bar #play,body.stage #bar #play:hover{background:transparent;color:#fff}
-body.stage #bar input[type=range]::-webkit-slider-runnable-track{background:linear-gradient(90deg,#fff var(--p,0%),rgba(255,255,255,.22) var(--p,0%));box-shadow:none}
-body.stage #bar input[type=range]::-moz-range-track{background:rgba(255,255,255,.22);box-shadow:none}
-body.stage #bar input[type=range]::-moz-range-progress{background:#fff}
-body.stage #bar input[type=range]::-webkit-slider-thumb,body.stage #bar input[type=range]:hover::-webkit-slider-thumb,body.stage #bar input[type=range]:active::-webkit-slider-thumb{border:0;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.35)}
-body.stage #bar input[type=range]::-moz-range-thumb{border:0;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.35)}
-body.stage #ttl,body.stage.cvmode #ttl{color:#fff;text-shadow:0 2px 14px rgba(0,0,0,.45)}
-body.stage #sub,body.stage.cvmode #sub{color:rgba(255,255,255,.68);text-shadow:0 2px 14px rgba(0,0,0,.45)}
-/* the song as the Android app shows it: the cover with 22 px corners and a big soft black shadow (no gloss), the
-   title 27 px bold on one line, the artist 19 px medium. A name too long for its line scrolls by (stageMq), fading
-   at the edges; at rest its first letter is whole: the left fade sits in the margin before it */
-body.stage #artw::before,body.stage #artw::after{display:none}
-body.stage.low #artw{box-shadow:none}
-body.stage #txt{align-self:stretch;min-width:0}
-body.stage #ttl{font-size:27px;font-weight:700;letter-spacing:-.3px;line-height:1.2;white-space:nowrap}
-body.stage #sub{font-size:19px;font-weight:500;line-height:1.25;margin-top:2px;white-space:nowrap}
-body.stage #ttl.mq,body.stage #sub.mq{overflow:hidden;margin:-14px 0 -14px -14px;padding:14px 0 14px 14px;
-  -webkit-mask-image:linear-gradient(90deg,transparent,#000 14px,#000 calc(100% - 28px),transparent);mask-image:linear-gradient(90deg,transparent,#000 14px,#000 calc(100% - 28px),transparent)}
-body.stage #sub.mq{margin-top:-12px}
-body.stage #ttl.mq::after,body.stage #sub.mq::after{content:attr(data-mq);padding-left:var(--mqs,0px)}
-/* the top: round outlined buttons in a row from the left, as the Android app's (44 px, the icon 18); the one that's
-   on is filled softly, the highlight fading in; pressed, they shrink to 90% and spring back. The chips and the view
-   switch are outlined pills as tall */
-body.stage #top{display:flex;justify-content:flex-start;flex-wrap:wrap;gap:10px;padding:26px var(--pad) 22px;background:none}
-body.stage #top .brand{width:44px;height:44px;margin:0;padding:0;justify-content:center;border-radius:50%;border:1px solid rgba(255,255,255,.32)}
-body.stage #top .brand span{display:none}
-body.stage #top .brand:hover{background:rgba(255,255,255,.12)}
-body.stage #top .grp{display:flex;flex-wrap:wrap;gap:10px}
-body.stage #top .ib:not(.gone){width:44px;height:44px}
-body.stage #top .chip{min-height:44px}
-body.stage #seg{height:44px}
-body.stage #segpill{background:rgba(255,255,255,.16);box-shadow:inset 0 0 0 1px rgba(255,255,255,.55)}
-body.stage #seg button.on{color:#fff}
-body.stage #top .ib,body.stage #top .chip,body.stage #top .brand{transition:background .26s,border-color .26s,box-shadow .26s,transform .5s var(--e-spring)}
-body.stage #top .lq:hover{transform:none}
-body.stage #top .lq.press,body.stage #top .brand:active{transform:scale(.9);transition:transform .12s ease-out}
-body.stage #top .lq::before,body.stage #top .lq::after{display:none}
-body.stage #cappanel,body.stage #netpanel{right:auto;left:var(--pad);top:84px;transform-origin:top left}
-/* the dock: under the song, the timeline with the times under it, then like · playback · where it plays and volume */
-body.stage #dock{left:var(--pad);right:auto;width:var(--dockw);bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:none;animation:stagedock .7s .1s var(--e-out) backwards}
-body.stage.uihide #dock{transform:translateY(12px)}
-@keyframes stagedock{from{opacity:0;transform:translateY(16px)}}
-body.stage #bar{display:grid;grid-template-columns:auto minmax(0,1fr) auto minmax(0,1fr) auto minmax(0,1fr) auto minmax(0,1fr) auto;align-items:center;column-gap:2px;row-gap:6px;padding:0;border:0;border-radius:0;background:none;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none}
-body.stage #seekwrap{grid-row:1;grid-column:1/-1;display:grid;grid-template-columns:1fr auto;row-gap:0;margin:0}
-body.stage #seek{grid-column:1/-1;width:100%}
-/* the timeline as the Android app draws it: a 12 px pill with a soft outline, filled white from the left, no thumb
-   (a white cap as thick as the bar rounds off the fill: the fill is drawn 6 px in from each end, so it always stops
-   at the cap's middle), 30 px tall to click or drag */
-body.stage #bar #seek{height:30px}
-body.stage #bar #seek::-webkit-slider-runnable-track{height:12px;border-radius:99px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.22);
-  background:linear-gradient(90deg,#fff var(--p,0%),transparent var(--p,0%)) 6px 0/calc(100% - 12px) 100% no-repeat,linear-gradient(#fff,#fff) 0 0/6px 100% no-repeat,rgba(255,255,255,.14)}
-body.stage #bar #seek::-moz-range-track{height:12px;border-radius:99px;background:rgba(255,255,255,.14);box-shadow:inset 0 0 0 1px rgba(255,255,255,.22)}
-body.stage #bar #seek::-moz-range-progress{height:12px;border-radius:99px;background:#fff}
-body.stage #bar #seek::-webkit-slider-thumb,body.stage #bar #seek:hover::-webkit-slider-thumb,body.stage #bar #seek:active::-webkit-slider-thumb{width:12px;height:12px;margin-top:0;border:0;border-radius:50%;background:#fff;box-shadow:none;transform:none}
-body.stage #bar #seek::-moz-range-thumb{width:12px;height:12px;border:0;border-radius:50%;background:#fff;box-shadow:none}
-body.stage #time{display:none}
-body.stage #tcur,body.stage #tdur{display:block;font-variant-numeric:tabular-nums;color:rgba(255,255,255,.68);text-shadow:0 2px 14px rgba(0,0,0,.45);font-size:14px;font-weight:500}
-body.stage #tdur{justify-self:end}
-/* the transport as in the Android app, on its own row across the dock: shuffle (24 px, the accent colour while on),
-   rewind (56), play / pause (76: a white glyph with no circle; the new one comes in with a quick scale and fade),
-   forward (56), repeat (24), with the phone's rounded glyphs; pressed, they shrink and spring back. Like, where it
-   plays and the volume are on the row under it */
-body.stage #shuf{grid-row:2;grid-column:1}body.stage #prev{grid-row:2;grid-column:3}body.stage #play{grid-row:2;grid-column:5}
-body.stage #next{grid-row:2;grid-column:7}body.stage #rep{grid-row:2;grid-column:9}
-body.stage #bar #shuf,body.stage #bar #rep{width:48px;height:48px;color:#fff}
-body.stage #bar #shuf.on,body.stage #bar #rep.on{color:var(--acc)}
-body.stage #bar #shuf svg,body.stage #bar #rep svg{width:24px;height:24px}
-body.stage #bar #prev,body.stage #bar #next{width:68px;height:68px}body.stage #bar #prev svg,body.stage #bar #next svg{width:56px;height:56px}
-body.stage #bar #play{width:76px;height:76px}body.stage #bar #play svg{width:76px;height:76px}
-body.stage #bar #shuf:hover,body.stage #bar #rep:hover,body.stage #bar #prev:hover,body.stage #bar #next:hover{background:transparent}
-body.stage #prev svg path{d:path("M11 16.07V7.93c0-.81-.91-1.28-1.58-.82l-5.77 4.07c-.56.4-.56 1.24 0 1.63l5.77 4.07c.67.47 1.58 0 1.58-.81zm1.66-3.25l5.77 4.07c.66.47 1.58-.01 1.58-.82V7.93c0-.81-.91-1.28-1.58-.82l-5.77 4.07c-.57.4-.57 1.24 0 1.64z")}
-body.stage #next svg path{d:path("M5.58 16.89l5.77-4.07c.56-.4.56-1.24 0-1.63L5.58 7.11C4.91 6.65 4 7.12 4 7.93v8.14c0 .81.91 1.28 1.58.82zM13 7.93v8.14c0 .81.91 1.28 1.58.82l5.77-4.07c.56-.4.56-1.24 0-1.63l-5.77-4.07c-.67-.47-1.58 0-1.58.81z")}
-body.stage #pi path[d^="M8 5v14"]{d:path("M8 6.82v10.36c0 .79.87 1.27 1.54.84l8.14-5.18c.62-.39.62-1.29 0-1.69L9.54 5.98C8.87 5.55 8 6.03 8 6.82z")}
-body.stage #pi path[d^="M7 5h4"]{d:path("M8 19c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2s-2 .9-2 2v10c0 1.1.9 2 2 2zm6-12v10c0 1.1.9 2 2 2s2-.9 2-2V7c0-1.1-.9-2-2-2s-2 .9-2 2z")}
-body.stage #pi.bump{animation:none}
-body.stage #pi path{transform-box:fill-box;transform-origin:center;animation:stageplay .22s var(--e-out)}   /* a new path each swap, so it runs every time */
-@keyframes stageplay{0%{opacity:0;transform:scale(.7)}70%{opacity:1}100%{opacity:1;transform:none}}
-body.stage #bar .ib{transition:transform .45s var(--e-spring),background .25s,color .22s}
-body.stage #bar .ib.lq:hover{transform:none}
-body.stage #bar .ib.lq.press{transform:scale(.86);transition:transform .12s ease-out}body.stage #bar #play.lq.press{transform:scale(.88)}
-body.stage #bar .ib.lq::before,body.stage #bar .ib.lq::after{display:none}
-body.stage #spx,body.stage:not(.novol) #volwrap:not([hidden]){grid-row:3;grid-column:1/-1;display:flex;align-items:center;gap:2px}
-body.stage #like{margin-right:auto}
-body.stage #volwrap{justify-content:flex-end}
-body.stage #spvol,body.stage #volume{width:var(--volw)}
-body.stage #spvolval,body.stage #volval{display:none}
-body.stage #devpanel{right:auto;left:var(--pad);transform-origin:bottom left}
-/* the lyrics credits in the corner sit under the lyrics, bottom right, on one line where they fit */
-body.stage:not(.credly) #lcredit{left:auto!important;right:var(--pad);bottom:calc(22px + env(safe-area-inset-bottom,0px))!important;max-width:min(44vw,640px)!important;
-  flex-direction:row;flex-wrap:wrap;justify-content:flex-end;column-gap:.7em;row-gap:0;text-align:right}
-}
-/* a narrower window: the round buttons at 40 px, closer together, so they all fit on one row along the top */
-@media (min-width:761px) and (max-width:1199px) and (min-height:521px){body.stage #top{gap:8px;padding:12px 16px 22px}body.stage #top .grp{gap:8px}
-  body.stage #top .ib:not(.gone),body.stage #top .brand{width:40px;height:40px}body.stage #top .chip{min-height:40px}body.stage #seg{height:40px}}
-/* a window too narrow for the dock beside the lyrics (it's wider than the song's side up to 1400 px): the lyrics end above it */
-@media (min-width:761px) and (max-width:1399px) and (min-height:521px){body.stage #stage,body.stage.cvmode #stage{padding-bottom:250px}body.stage #left,body.stage.cvmode #left{padding-bottom:0}}
-</style>
 </head>
 <body data-view="both" data-src="none">
 <div id="bg"><div id="bgimg"></div><canvas class="bl" width="128" height="128"></canvas><canvas class="bl" width="128" height="128"></canvas><canvas class="bl" width="128" height="128"></canvas><canvas id="bgl"></canvas><canvas id="kw"></canvas></div>
@@ -1026,7 +895,7 @@ body.stage:not(.credly) #lcredit{left:auto!important;right:var(--pad);bottom:cal
     <button class="ib" id="play" aria-label="Play or pause"><svg viewBox="0 0 24 24" id="pi"><path d="M8 5v14l11-7z"/></svg></button>
     <button class="ib" id="next" aria-label="Next" title="Next (N)" disabled><svg viewBox="0 0 24 24"><path d="M16 5h2v14h-2zM5 5l9.5 7L5 19z"/></svg></button>
     <button class="ib spx" id="rep" aria-label="Repeat: off" title="Repeat"><svg viewBox="0 0 24 24" id="repi"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></svg></button>
-    <div id="seekwrap"><input type="range" id="seek" min="0" max="1000" value="0" aria-label="Seek"><span id="time">0:00 / 0:00</span><span id="tcur">0:00</span><span id="tdur">0:00</span></div>
+    <div id="seekwrap"><input type="range" id="seek" min="0" max="1000" value="0" aria-label="Seek"><span id="time">0:00 / 0:00</span></div>
     <div id="spx" class="spx">
       <button class="ib" id="like" aria-label="Save to Liked Songs" aria-pressed="false" title="Save to Liked Songs (L)"><svg viewBox="0 0 24 24" id="likei"></svg></button>
       <button class="ib" id="devbtn" aria-label="Spotify devices" aria-haspopup="dialog" title="Choose where Spotify plays"><svg viewBox="0 0 24 24"><path d="M4 6h18V4H4a2 2 0 00-2 2v11H0v3h14v-3H4V6zm19 2h-6a1 1 0 00-1 1v10a1 1 0 001 1h6a1 1 0 001-1V9a1 1 0 00-1-1zm-1 9h-4v-7h4v7z"/></svg></button>
@@ -1045,7 +914,7 @@ body.stage:not(.credly) #lcredit{left:auto!important;right:var(--pad);bottom:cal
   <button class="ib" id="pclose" aria-label="Close settings"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" fill="none"/></svg></button>
 
   <h4>Design</h4>
-  <div class="f" data-k="design"><span class="lb">Design</span><select id="design"><option value="glass">Glass</option><option value="stage">Stage</option><option value="classic">Classic (the original look)</option></select><small class="hint">Glass: frosted glass everywhere, with controls that swell and squish like Liquid Glass. Stage: the Android app’s look in Spicy Lyrics’ Canvas Stage layout: no glass on the main screen, the song on the left (its Canvas filling that side when it has one) with its controls under it, and the lyrics on the right. Classic: the original, simpler look.</small></div>
+  <div class="f" data-k="design"><span class="lb">Design</span><select id="design"><option value="glass">Glass</option><option value="classic">Classic (the original look)</option></select><small class="hint">Glass: frosted glass everywhere, with controls that swell and squish like Liquid Glass. Classic: the original, simpler look.</small></div>
   <div class="f" data-k="uiHide"><span class="lb">Top bar and controls</span><select id="uiHide"><option value="idle">Hide when the mouse is still</option><option value="never">Always visible</option></select><small class="hint">While music plays, the top bar and the bottom bar fade away after a few seconds without movement, and come back when you move the mouse.</small></div>
   <h4>Colors</h4>
   <div class="f" data-k="theme"><span class="lb">Theme</span><select id="theme"><option value="cover">Cover colors</option><option value="aurora">Aurora</option><option value="sunset">Sunset</option><option value="neon">Neon</option><option value="ice">Ice</option><option value="mono">Mono</option><option value="custom">Custom</option></select></div>
@@ -1369,7 +1238,7 @@ const CFGD={spotId:'',canvasUrl:''},OLDCFG=['spicyUrl','spicyHdr','spicyPfx','sp
 const store={get(k){try{return JSON.parse(sessionStorage.getItem(k)||'null')}catch(e){return null}},set(k,v){try{sessionStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
 try{['pulse4','pulse3','pulseLowPerformance','pulse_cfg','pulse_sp','pulse_setup'].forEach(k=>localStorage.removeItem(k))}catch(e){}   // wipe anything older versions kept
 let S=Object.assign({},DEF),C=Object.assign({},CFGD);
-function fontMig(o){if(o&&o.sysFont===true&&!('lfont' in o))S.lfont='system'}   // the old "Use system font" checkbox
+function fontMig(o){if(o&&o.sysFont===true&&!('lfont' in o))S.lfont='system';if(S.design==='stage')S.design='glass'}   // the old "Use system font" checkbox; the Stage design (removed in 1.4.0) opens as Glass
 function applyFont(){['vv','spicy','system'].forEach(f=>body.classList.toggle('lf-'+f,S.lfont===f))}
 {const o=store.get('pulse4')||{};
  for(const k in DEF)if(k in o&&typeof o[k]===typeof DEF[k])S[k]=o[k];
@@ -1470,25 +1339,7 @@ function animAsk(){   // once per browser: say why there are no animations, and 
   notify({key:'anim',kind:'warn',title:'Animations are off',msg:'Your computer asks apps to reduce motion (on Windows: Settings → Accessibility → Visual effects → Animation effects), so Vibe Visualizer’s animations are off.',
     actions:[{label:'Keep them off'},{label:'Turn animations on',pri:true,fn:()=>{S.anim='on';applyAnim();save();syncInputs();refreshReset()}}]});
 }
-function applyDesign(){const c=S.design==='classic';$('glassui').disabled=c;body.classList.toggle('classic',c);body.classList.toggle('stage',S.design==='stage');placeCredit();stageMq()}   // Classic: the glass sheet is switched off; Stage builds on it
-// Stage: a song name too long for its line scrolls by as in the Android app: 2.5 s after it appears, three times at
-// 30 px/s, with a copy a third of the line behind it so each pass ends where it began (none with Low performance or
-// reduced motion: the name rests, faded at the right edge)
-function stageMq(){
-  for(const el of [ttl,sub]){
-    if(el._mq){el._mq.cancel();el._mq=null}
-    if(el.classList.contains('mq')){el.classList.remove('mq');el.removeAttribute('data-mq');el.style.removeProperty('--mqs')}
-    if(!body.classList.contains('stage')||!el.offsetParent)continue;
-    const w=el.clientWidth,tw=el.scrollWidth;if(tw<=w+1)continue;
-    const gap=Math.round(w/3),d=tw+gap,move=d/30*1000;
-    el.dataset.mq=el.textContent;el.style.setProperty('--mqs',gap+'px');el.classList.add('mq');
-    if(!S.low&&!rmOn())el._mq=el.animate([{textIndent:'0px'},{textIndent:-d+'px',offset:move/(move+1200)},{textIndent:-d+'px'}],{duration:move+1200,delay:2500,iterations:3});
-  }
-}
-{let q=0,lw=0;const later=()=>{if(!q)q=requestAnimationFrame(()=>{q=0;stageMq()})};
-  const mo=new MutationObserver(later);[ttl,sub].forEach(el=>mo.observe(el,{childList:true,characterData:true,subtree:true}));
-  new ResizeObserver(es=>{const w=Math.round(es[0].contentRect.width);if(w!==lw){lw=w;if(body.classList.contains('stage'))later()}}).observe($('txt'));
-  document.fonts&&document.fonts.ready.then(later)}
+function applyDesign(){const c=S.design==='classic';$('glassui').disabled=c;body.classList.toggle('classic',c)}   // Classic: the glass sheet is switched off
 function applyLB(){body.classList.toggle('lb',!!S.lblur&&!S.low)}
 // liquid tabs: a highlight stretches over both places like a drop of liquid, then lets go of the old one
 function liquidMove(p,box,axis){
@@ -3782,7 +3633,6 @@ scrubTip($('spvol'),f=>$('spvol').disabled?null:Math.round(f*100)+'%');
 function uiTick(now){
   if(now-lastUi<240)return;lastUi=now;nextUpTick();
   const d=curDur(),t=curTime();$('time').textContent=fmt(t)+' / '+fmt(d);
-  if(body.classList.contains('stage')){$('tcur').textContent=fmt(t);$('tdur').textContent=fmt(d)}
   if(!seeking){const sk=$('seek');sk.value=d?t/d*1000:0;fill(sk)}
 }
 function fsToggle(){try{document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen()}catch(e){toast('Fullscreen is not available here.','warn')}}
@@ -4251,6 +4101,7 @@ $('setcopy').onclick=async()=>{const t=JSON.stringify({vibeVisualizerSettings:1,
 $('setpaste').onclick=async()=>{let t='';try{t=await navigator.clipboard.readText()}catch(e){}if(!/vibeVisualizerSettings/.test(t||''))t=prompt('Paste the settings you copied:')||'';
   let o=null;try{o=JSON.parse(t)}catch(e){}if(!o||!o.vibeVisualizerSettings||!o.S){if(t)toast('That isn’t a copy of Vibe Visualizer’s settings.','warn');return}
   let n=0;for(const k in DEF)if(k in o.S&&typeof o.S[k]===typeof DEF[k]&&k!=='volume'){S[k]=o.S[k];n++}
+  fontMig(o.S);
   if(o.C&&typeof o.C.canvasUrl==='string')C.canvasUrl=o.C.canvasUrl;
   save();saveC();syncInputs();Object.keys(DEF).forEach(onSetting);refreshReset();toast(n+' settings restored.','ok',2500)};
 $('lyrclear').onclick=async()=>{await lcClear();lcache.clear();trCache.clear();lcShow();toast('Stored lyrics cleared. They’re fetched again as songs play.','ok',3000)};
