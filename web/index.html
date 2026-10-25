@@ -826,7 +826,7 @@ body.stage{--sw:clamp(300px,30vw,540px);--sfeather:calc(var(--sw)*.45);--dockw:m
 body.stage #stage,body.stage.cvmode #stage{grid-template-columns:var(--sw) minmax(0,1fr);gap:clamp(40px,6vw,120px);padding:96px var(--pad) 70px}
 body.stage #left,body.stage.cvmode #left{justify-content:flex-end;padding-bottom:180px}
 body.stage.cvmode #info{align-items:flex-start;text-align:left}body.stage.cvmode #ttl{transform-origin:left center}
-body.stage #artw,body.stage.cvmode #artw{width:min(100%,calc(100vh - 540px));min-width:min(100%,140px);margin:0;transition:opacity .9s cubic-bezier(.23,1,.32,1),scale .9s cubic-bezier(.23,1,.32,1),transform .07s ease-out,box-shadow .12s linear}
+body.stage #artw,body.stage.cvmode #artw{width:min(100%,calc(100vh - 540px));min-width:min(100%,140px);margin:0;border-radius:22px;box-shadow:0 18px 50px rgba(0,0,0,.45);transition:opacity .9s cubic-bezier(.23,1,.32,1),scale .9s cubic-bezier(.23,1,.32,1),transform .07s ease-out,box-shadow .12s linear}
 /* a Canvas fills the song's side, 75% over the blurred copy behind it, feathering out in eased steps (a straight
    ramp leaves a line); the cover makes way for it */
 body.stage #cvpane{width:calc(var(--pad) + var(--sw) + var(--sfeather));opacity:0;
@@ -855,6 +855,18 @@ body.stage #bar input[type=range]::-webkit-slider-thumb,body.stage #bar input[ty
 body.stage #bar input[type=range]::-moz-range-thumb{border:0;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.35)}
 body.stage #ttl,body.stage.cvmode #ttl{color:#fff;text-shadow:0 2px 14px rgba(0,0,0,.45)}
 body.stage #sub,body.stage.cvmode #sub{color:rgba(255,255,255,.68);text-shadow:0 2px 14px rgba(0,0,0,.45)}
+/* the song as the Android app shows it: the cover with 22 px corners and a big soft black shadow (no gloss), the
+   title 27 px bold on one line, the artist 19 px medium. A name too long for its line scrolls by (stageMq), fading
+   at the edges; at rest its first letter is whole: the left fade sits in the margin before it */
+body.stage #artw::before,body.stage #artw::after{display:none}
+body.stage.low #artw{box-shadow:none}
+body.stage #txt{align-self:stretch;min-width:0}
+body.stage #ttl{font-size:27px;font-weight:700;letter-spacing:-.3px;line-height:1.2;white-space:nowrap}
+body.stage #sub{font-size:19px;font-weight:500;line-height:1.25;margin-top:2px;white-space:nowrap}
+body.stage #ttl.mq,body.stage #sub.mq{overflow:hidden;margin:-14px 0 -14px -14px;padding:14px 0 14px 14px;
+  -webkit-mask-image:linear-gradient(90deg,transparent,#000 14px,#000 calc(100% - 28px),transparent);mask-image:linear-gradient(90deg,transparent,#000 14px,#000 calc(100% - 28px),transparent)}
+body.stage #sub.mq{margin-top:-12px}
+body.stage #ttl.mq::after,body.stage #sub.mq::after{content:attr(data-mq);padding-left:var(--mqs,0px)}
 /* the top: round outlined buttons in a row from the left, as the Android app's (44 px, the icon 18); the one that's
    on is filled softly, the highlight fading in; pressed, they shrink to 90% and spring back. The chips and the view
    switch are outlined pills as tall */
@@ -1458,7 +1470,25 @@ function animAsk(){   // once per browser: say why there are no animations, and 
   notify({key:'anim',kind:'warn',title:'Animations are off',msg:'Your computer asks apps to reduce motion (on Windows: Settings → Accessibility → Visual effects → Animation effects), so Vibe Visualizer’s animations are off.',
     actions:[{label:'Keep them off'},{label:'Turn animations on',pri:true,fn:()=>{S.anim='on';applyAnim();save();syncInputs();refreshReset()}}]});
 }
-function applyDesign(){const c=S.design==='classic';$('glassui').disabled=c;body.classList.toggle('classic',c);body.classList.toggle('stage',S.design==='stage');placeCredit()}   // Classic: the glass sheet is switched off; Stage builds on it
+function applyDesign(){const c=S.design==='classic';$('glassui').disabled=c;body.classList.toggle('classic',c);body.classList.toggle('stage',S.design==='stage');placeCredit();stageMq()}   // Classic: the glass sheet is switched off; Stage builds on it
+// Stage: a song name too long for its line scrolls by as in the Android app: 2.5 s after it appears, three times at
+// 30 px/s, with a copy a third of the line behind it so each pass ends where it began (none with Low performance or
+// reduced motion: the name rests, faded at the right edge)
+function stageMq(){
+  for(const el of [ttl,sub]){
+    if(el._mq){el._mq.cancel();el._mq=null}
+    if(el.classList.contains('mq')){el.classList.remove('mq');el.removeAttribute('data-mq');el.style.removeProperty('--mqs')}
+    if(!body.classList.contains('stage')||!el.offsetParent)continue;
+    const w=el.clientWidth,tw=el.scrollWidth;if(tw<=w+1)continue;
+    const gap=Math.round(w/3),d=tw+gap,move=d/30*1000;
+    el.dataset.mq=el.textContent;el.style.setProperty('--mqs',gap+'px');el.classList.add('mq');
+    if(!S.low&&!rmOn())el._mq=el.animate([{textIndent:'0px'},{textIndent:-d+'px',offset:move/(move+1200)},{textIndent:-d+'px'}],{duration:move+1200,delay:2500,iterations:3});
+  }
+}
+{let q=0,lw=0;const later=()=>{if(!q)q=requestAnimationFrame(()=>{q=0;stageMq()})};
+  const mo=new MutationObserver(later);[ttl,sub].forEach(el=>mo.observe(el,{childList:true,characterData:true,subtree:true}));
+  new ResizeObserver(es=>{const w=Math.round(es[0].contentRect.width);if(w!==lw){lw=w;if(body.classList.contains('stage'))later()}}).observe($('txt'));
+  document.fonts&&document.fonts.ready.then(later)}
 function applyLB(){body.classList.toggle('lb',!!S.lblur&&!S.low)}
 // liquid tabs: a highlight stretches over both places like a drop of liquid, then lets go of the old one
 function liquidMove(p,box,axis){
