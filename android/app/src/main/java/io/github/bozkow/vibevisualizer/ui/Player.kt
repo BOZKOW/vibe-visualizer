@@ -104,6 +104,7 @@ import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.asComposeRenderEffect
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
@@ -478,17 +479,22 @@ private fun TitleRow(big: Boolean, center: Boolean = false, year: Boolean = fals
     }
 }
 
-/** A name that scrolls when it's too long for its row, fading at the edges then (cut off in a hard line before). */
+/** A name that scrolls when it's too long for its row, fading out at both sides. */
 @Composable
 private fun Scrolling(text: String, size: androidx.compose.ui.unit.TextUnit, weight: FontWeight, color: Color, spacing: androidx.compose.ui.unit.TextUnit = 0.sp) {
     var boxW by remember { androidx.compose.runtime.mutableIntStateOf(0) }
     var textW by remember(text) { androidx.compose.runtime.mutableIntStateOf(0) }
     val over = boxW > 0 && textW > boxW
-    // too long: the left fade sits in the margin before the name (the box reaches 14 dp into it), so at rest the first
-    // letter is whole and only text scrolling past fades out; the right fade shows there's more. A name that fits
-    // isn't moved at all (a centred one would sit off centre)
-    Box(Modifier.onSizeChanged { boxW = it.width }.then(if (over) Modifier.offset(x = (-14).dp).fadeSides(14.dp, 28.dp).padding(start = 14.dp) else Modifier)) {
-        Text(text, Modifier.basicMarquee(iterations = 3, initialDelayMillis = 2500), style = TextStyle(shadow = textShadow),
+    val m = with(androidx.compose.ui.platform.LocalDensity.current) { 20.dp.roundToPx() }
+    // too long: the scrolling reaches 20 dp into the margin on the left, so the name slides on past where it starts and
+    // fades out there instead of being cut in a hard line; at rest it starts where it always does, its first letter
+    // whole. The right edge fades too, showing there's more. A name that fits isn't moved (a centred one would sit
+    // off centre)
+    val scroll = if (over) Modifier.layout { mm, c -> val p = mm.measure(c.copy(minWidth = 0, maxWidth = c.maxWidth + m)); layout(c.maxWidth, p.height) { p.place(-m, 0) } }
+        .fadeSides(20.dp, 28.dp).basicMarquee(iterations = 3, initialDelayMillis = 2500).padding(start = 20.dp)
+        else Modifier.basicMarquee(iterations = 3, initialDelayMillis = 2500)
+    Box(Modifier.onSizeChanged { boxW = it.width }) {
+        Text(text, scroll, style = TextStyle(shadow = textShadow),
             fontSize = size, fontWeight = weight, letterSpacing = spacing, color = color, maxLines = 1, onTextLayout = { textW = it.size.width })
     }
 }
@@ -678,6 +684,15 @@ private fun CanvasBackdrop(wide: Boolean, centred: Boolean) {
     // side by side without lyrics, the video glides to the middle and fades out on both sides (moved, not laid out
     // again: the video's crop is set for its size)
     val c by animateFloatAsState(if (centred) 1f else 0f, if (S.low || E.reduceMotion()) tween(0) else tween(700, easing = FastOutSlowInEasing), label = "cvcentre")
+    // behind the top bar, the song and the controls: the dark gradient, the Canvas blurred there, both or nothing
+    val behind = S.str("cvBehind")
+    val dark = behind == "dark" || behind == "both" || (behind == "blur" && S.low)   // Low performance: no blur, the gradient instead
+    val frost = (behind == "blur" || behind == "both") && !S.low && !S.b("cvBlur")      // the whole Canvas blurred already: nothing to add
+    // the blur reaches up to the song while the controls show, and sinks with them when they hide
+    val sink by animateFloatAsState(if (E.uiHidden) 1f else 0f, tween(600, easing = FastOutSlowInEasing), label = "cvsink")
+    val from = when { wide -> .52f; behindLyrics -> .6f; else -> .5f } + .12f * sink
+    val d = androidx.compose.ui.platform.LocalDensity.current
+    val r = with(d) { (S.i("cvBlurAmt").coerceIn(5, 100) / 100f * 48f).dp.toPx() }
     Box((if (wide) Modifier.fillMaxHeight().fillMaxWidth(.68f) else Modifier.fillMaxSize()).alpha(maxOf(a, .01f))
         .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen; if (wide) translationX = size.width * (.16f / .68f) * c }.drawWithContent {
             drawContent()
@@ -685,7 +700,7 @@ private fun CanvasBackdrop(wide: Boolean, centred: Boolean) {
             if (wide) {
                 // side by side: the shade fades out with the video (drawn after the fade it stopped in a hard line at the
                 // edge), over a long, eased fade into the blurred Canvas behind
-                drawRect(shade)
+                if (dark) drawRect(shade)
                 val s = .3f + .4f * c   // where the fade starts: long beside the lyrics, short in the middle
                 drawRect(Brush.horizontalGradient(0f to Color.Black, *Array(6) { i -> (s + (1 - s) * EASE_AT[i]) to Color.Black.copy(alpha = EASE_A[i]) }), blendMode = BlendMode.DstIn)
                 // in the middle, the same fade on the left
@@ -693,9 +708,23 @@ private fun CanvasBackdrop(wide: Boolean, centred: Boolean) {
             } else {
                 val fade = arrayOf(0f to Color.Black, .45f to Color.Black, .58f to Color.Black.copy(alpha = .85f), .74f to Color.Black.copy(alpha = .5f), .88f to Color.Black.copy(alpha = .18f), 1f to Color.Transparent)
                 drawRect(Brush.verticalGradient(*fade), blendMode = BlendMode.DstIn)
-                drawRect(shade)
+                if (dark) drawRect(shade)
             }
-        }) { CanvasVideoView() }
+        }) {
+        Box(Modifier.fillMaxSize().graphicsLayer { if (frost) renderEffect = frostBands(size.height, r, if (wide) .05f else .09f, from) }) { CanvasVideoView() }
+    }
+}
+
+/** The Canvas frosted where the controls are: a blurred copy of it over the sharp one, shown through a mask that's
+ *  opaque at the top (down to [top], under the top bar), clear in the middle, and opaque again from a little below
+ *  [from] (under the song, the seek bar and the controls), each edge a soft ramp. One blur pass on the GPU. */
+private fun frostBands(h: Float, r: Float, top: Float, from: Float): androidx.compose.ui.graphics.RenderEffect {
+    val blur = android.graphics.RenderEffect.createBlurEffect(r, r, android.graphics.Shader.TileMode.CLAMP)
+    val on = android.graphics.Color.BLACK; val off = android.graphics.Color.TRANSPARENT
+    val mask = android.graphics.RenderEffect.createShaderEffect(android.graphics.LinearGradient(0f, 0f, 0f, maxOf(h, 1f),
+        intArrayOf(on, on, off, off, on, on), floatArrayOf(0f, top, top + .09f, from, minOf(from + .14f, .99f), 1f), android.graphics.Shader.TileMode.CLAMP))
+    val frosted = android.graphics.RenderEffect.createBlendModeEffect(blur, mask, android.graphics.BlendMode.DST_IN)
+    return android.graphics.RenderEffect.createBlendModeEffect(android.graphics.RenderEffect.createOffsetEffect(0f, 0f), frosted, android.graphics.BlendMode.SRC_OVER).asComposeRenderEffect()
 }
 
 private val EASE_AT = floatArrayOf(0f, .214f, .429f, .629f, .814f, 1f)   // the eased fade's steps (where, how opaque)

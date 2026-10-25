@@ -223,7 +223,9 @@ private fun pages(): List<Page> = listOf(
         Item.Sw("cvNoArt", "Hide the cover while a Canvas plays", "Only the Canvas, no cover in front of it."),
         Item.Sw("cvShrink", "Smaller cover while a Canvas plays", "The cover glides to a smaller size in the middle, so more of the Canvas shows around it."),
         Item.Sw("cvBlur", "Blur the Canvas", "The Canvas behind the player, softly blurred."),
-        Item.Sl("cvBlurAmt", "Canvas blur", 5, 100, 5, "How strong, with Blur the Canvas on."),
+        Item.Ch("cvBehind", "Behind the controls", listOf("dark" to "Dark gradient", "blur" to "Blur", "both" to "Blur and dark gradient", "none" to "Nothing"),
+            "With a Canvas: what’s under the top bar, the song, the seek bar, the bars and the controls, so they stay readable. Blur frosts the Canvas there."),
+        Item.Sl("cvBlurAmt", "Canvas blur", 5, 100, 5, "How strong: Blur the Canvas, and Blur behind the controls."),
         Item.Custom("Choose canvas video Canvas endpoint") { CanvasSection() },
     )),
     Page("perf", "Performance", VIcons.bolt, listOf(

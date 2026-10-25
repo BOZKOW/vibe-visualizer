@@ -1,7 +1,11 @@
-Vibe Visualizer for Android 0.1.17 (beta). Android 12 or newer; it installs over 0.1.16 (Settings → Help & about → Update now).
+Vibe Visualizer for Android 0.1.18 (beta). Android 12 or newer; it installs over 0.1.17 (Settings → Help & about → Update now).
+
+### New
+
+- **Behind the controls** (Settings → Spotify & Canvas): with a Canvas playing, choose what's under the top bar, the song, the seek bar, the bars and the controls: the dark gradient (as before), **Blur** (the Canvas itself frosted there, sharp in between; it sinks lower when the controls hide), both, or nothing. How strong the blur is follows the Canvas blur slider. In Low performance mode Blur shows the dark gradient instead
 
 ### Fixes
 
-- While the controls are hidden, touching the seek bar only jumps to that point in the song: the controls stay hidden (a touch anywhere else still brings them back)
+- A song name too long for its row now fades out on both sides while it scrolls: it slides on into the margin on the left and fades there, instead of being cut in a hard line. At rest it starts where it always does, its first letter whole
 
-From 0.1.16: landscape laid out as Spicy Lyrics Mobile's, the home screen widget, Ambient mode, menus that open out of the button you tap, and Spicy Lyrics' Canvas service.
+From 0.1.17: while the controls are hidden, touching the seek bar only seeks.
