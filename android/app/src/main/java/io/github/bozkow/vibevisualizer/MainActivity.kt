@@ -70,6 +70,8 @@ class MainActivity : ComponentActivity() {
         Perms.mic = { done -> if (Audio.permitted()) done(true) else { micDone = done; askMic.launch(Manifest.permission.RECORD_AUDIO) } }
         Perms.notificationAccess = { runCatching { startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)) } }
 
+        // the Spotify app's link let go when the app was last closed: ask Android to bind it again
+        if (SpotifyApp.hasAccess(this)) runCatching { android.service.notification.NotificationListenerService.requestRebind(android.content.ComponentName(this, io.github.bozkow.vibevisualizer.spotify.SessionListener::class.java)) }
         if (savedInstanceState == null) first()
         setContent { VibeRoot() }
         handle(intent)
@@ -227,7 +229,11 @@ class MainActivity : ComponentActivity() {
         return handled || super.onKeyDown(keyCode, event)
     }
 
-    override fun onDestroy() { runCatching { unregisterReceiver(pipReceiver) }; if (E.unlock != null) E.unlock = null; super.onDestroy(); if (isFinishing) CanvasVideo.release() }
+    override fun onDestroy() {
+        runCatching { unregisterReceiver(pipReceiver) }; if (E.unlock != null) E.unlock = null
+        super.onDestroy()
+        if (isFinishing && !isChangingConfigurations) E.quit()   // closed (Recents, or the small window dismissed): everything ends
+    }
 
     companion object { private const val PIP_ACTION = "io.github.bozkow.vibevisualizer.PIP" }
 }

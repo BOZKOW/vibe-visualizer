@@ -709,11 +709,20 @@ private fun CanvasBackdrop(wide: Boolean, centred: Boolean) {
     val from = when { wide -> .52f; behindLyrics -> .6f; else -> .5f } + .12f * sink
     val d = androidx.compose.ui.platform.LocalDensity.current
     val r = with(d) { (S.i("cvBlurAmt").coerceIn(5, 100) / 100f * 48f).dp.toPx() }
+    // the top's blur, shade and softening only while something's up there: the status bar, or a top bar (Now Playing's
+    // hides with the controls; the Lyrics screen's goes in Ambient mode; side by side there's none)
+    val topOn = !S.b("aHideStatus") || when {
+        wide -> false
+        E.screen == "viz" -> true
+        behindLyrics -> !E.ambient
+        else -> !E.uiHidden
+    }
+    val topK by animateFloatAsState(if (topOn) 1f else 0f, tween(500, easing = FastOutSlowInEasing), label = "cvtop")
     Box((if (wide) Modifier.fillMaxHeight().fillMaxWidth(.68f) else Modifier.fillMaxSize()).alpha(maxOf(a, .01f))
         .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen; if (wide) translationX = size.width * (.16f / .68f) * c }.drawWithContent {
             drawContent()
             // as dark at the top (behind the status bar and the top bar) as behind the controls at the bottom
-            val shade = Brush.verticalGradient(0f to Color.Black.copy(alpha = .45f), .22f to Color.Transparent, .55f to Color.Transparent, 1f to Color.Black.copy(alpha = .45f))
+            val shade = Brush.verticalGradient(0f to Color.Black.copy(alpha = .45f * topK), .22f to Color.Transparent, .55f to Color.Transparent, 1f to Color.Black.copy(alpha = .45f))
             if (wide) {
                 // side by side: the shade fades out with the video (drawn after the fade it stopped in a hard line at the
                 // edge), over a long, eased fade into the blurred Canvas behind
@@ -724,23 +733,25 @@ private fun CanvasBackdrop(wide: Boolean, centred: Boolean) {
                 if (c > 0f) drawRect(Brush.horizontalGradient(*Array(6) { k -> val j = 5 - k; .3f * (1 - EASE_AT[j]) to Color.Black.copy(alpha = 1 - c * (1 - EASE_A[j])) }, 1f to Color.Black), blendMode = BlendMode.DstIn)
             } else {
                 // the video softens into the blurred Canvas at the top too, as it does (longer) toward the controls
-                val fade = arrayOf(0f to Color.Black.copy(alpha = .35f), .08f to Color.Black.copy(alpha = .7f), .2f to Color.Black, .45f to Color.Black, .58f to Color.Black.copy(alpha = .85f), .74f to Color.Black.copy(alpha = .5f), .88f to Color.Black.copy(alpha = .18f), 1f to Color.Transparent)
+                val fade = arrayOf(0f to Color.Black.copy(alpha = 1 - .65f * topK), .08f to Color.Black.copy(alpha = 1 - .3f * topK), .2f to Color.Black, .45f to Color.Black, .58f to Color.Black.copy(alpha = .85f), .74f to Color.Black.copy(alpha = .5f), .88f to Color.Black.copy(alpha = .18f), 1f to Color.Transparent)
                 drawRect(Brush.verticalGradient(*fade), blendMode = BlendMode.DstIn)
                 if (dark) drawRect(shade)
             }
         }) {
-        Box(Modifier.fillMaxSize().graphicsLayer { if (frost) renderEffect = frostBands(size.height, r, if (wide) .05f else .09f, from) }) { CanvasVideoView() }
+        Box(Modifier.fillMaxSize().graphicsLayer { if (frost) renderEffect = frostBands(size.height, r, if (wide) .05f else .09f, from, topK) }) { CanvasVideoView() }
     }
 }
 
 /** The Canvas frosted where the controls are: a blurred copy of it over the sharp one, shown through a mask that's
- *  opaque at the top (down to [top], under the top bar), clear in the middle, and opaque again from a little below
- *  [from] (under the song, the seek bar and the controls), each edge a soft ramp. One blur pass on the GPU. */
-private fun frostBands(h: Float, r: Float, top: Float, from: Float): androidx.compose.ui.graphics.RenderEffect {
+ *  opaque at the top (down to [top], under the top bar; [topK] of it, fading while nothing's there), clear in the
+ *  middle, and opaque again from a little below [from] (under the song, the seek bar and the controls), each edge a
+ *  soft ramp. One blur pass on the GPU. */
+private fun frostBands(h: Float, r: Float, top: Float, from: Float, topK: Float): androidx.compose.ui.graphics.RenderEffect {
     val blur = android.graphics.RenderEffect.createBlurEffect(r, r, android.graphics.Shader.TileMode.CLAMP)
     val on = android.graphics.Color.BLACK; val off = android.graphics.Color.TRANSPARENT
+    val up = android.graphics.Color.argb((topK.coerceIn(0f, 1f) * 255).toInt(), 0, 0, 0)   // the top band, only while something's there
     val mask = android.graphics.RenderEffect.createShaderEffect(android.graphics.LinearGradient(0f, 0f, 0f, maxOf(h, 1f),
-        intArrayOf(on, on, off, off, on, on), floatArrayOf(0f, top, top + .09f, from, minOf(from + .14f, .99f), 1f), android.graphics.Shader.TileMode.CLAMP))
+        intArrayOf(up, up, off, off, on, on), floatArrayOf(0f, top, top + .09f, from, minOf(from + .14f, .99f), 1f), android.graphics.Shader.TileMode.CLAMP))
     val frosted = android.graphics.RenderEffect.createBlendModeEffect(blur, mask, android.graphics.BlendMode.DST_IN)
     return android.graphics.RenderEffect.createBlendModeEffect(android.graphics.RenderEffect.createOffsetEffect(0f, 0f), frosted, android.graphics.BlendMode.SRC_OVER).asComposeRenderEffect()
 }

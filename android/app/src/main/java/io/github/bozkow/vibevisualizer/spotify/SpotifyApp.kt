@@ -17,7 +17,9 @@ import io.github.bozkow.vibevisualizer.media.LyricClock
 /** Only here so Android lists Vibe Visualizer under notification access: with it, the app can see the Spotify app's
  *  media session on this phone (what plays, where in the song, and its controls). No notification is read. */
 class SessionListener : NotificationListenerService() {
-    override fun onListenerConnected() { SpotifyApp.refresh(this) }
+    override fun onListenerConnected() { current = this; SpotifyApp.refresh(this) }
+    override fun onListenerDisconnected() { if (current === this) current = null }
+    companion object { var current: SessionListener? = null; private set }
 }
 
 /** The Spotify app on this phone, through its media session: exact timing without asking the Web API, instant

@@ -235,6 +235,7 @@ private fun pages(): List<Page> = listOf(
     Page("perf", "Performance", VIcons.bolt, listOf(
         Item.Head("Performance"),
         Item.Sw("low", "Low performance mode"),
+        Item.Sw("aSaverLow", "Low performance mode with Power saving", "Turns on by itself while the phone’s Power saving is on, and off again when it ends (if it came on that way)."),
         Item.Sw("perfAsk", "Suggest Low performance mode when needed", "Watches how smoothly the app runs while a song plays, and how warm Android says the phone is. If the phone can’t keep up, gets warm, or the battery is low, a card offers to turn Low performance mode on."),
         Item.Ch("fpscap", "Limit frame rate", listOf("0" to "Off (as fast as the screen)", "30" to "30 fps", "60" to "60 fps", "90" to "90 fps", "120" to "120 fps"), "How often the animations redraw. 60 fps by default: more is smoother on a 120 Hz screen but warms the phone up and uses more battery."),
         Item.Ch("anim", "Animations", listOf("system" to "Follow the system setting", "on" to "Always on", "off" to "Off"), "“Follow the system setting” turns the animations off when Android’s Remove animations is on (Settings → Accessibility)."),

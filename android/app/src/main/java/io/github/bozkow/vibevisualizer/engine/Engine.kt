@@ -467,7 +467,8 @@ object E {
             "bars" -> { Audio.setupBands(); Visuals.palDirty = true }
             "bgblur", "bri", "sat" -> { bakeJob?.cancel(); bakeJob = Vibe.scope.launch { delay(150); Visuals.bake(false); Background.applyStill() } }   // once the slider rests
             "bgStyle" -> Background.applyStill()
-            "low" -> { Audio.setupBands(); Visuals.palDirty = true; CanvasVideo.applyMode() }
+            "low" -> { Audio.setupBands(); Visuals.palDirty = true; CanvasVideo.applyMode(); Perf.lowByHand() }   // (Perf sets it back to "auto" when Power saving did it)
+            "aSaverLow" -> if (S.b("aSaverLow")) Perf.saverCheck(force = true)
             "uiHide" -> poke()
             "canvasOn", "cvNoArt" -> {
                 CanvasVideo.applyMode()
@@ -488,13 +489,29 @@ object E {
         barsTick.longValue++
     }
 
+    /* ================= closing the app ================= */
+    private var quitting = false
+    /** The app was closed (swiped away from Recents, or its small window dismissed): your settings are saved, the
+     *  music, the bars' listening, the Canvas and the Spotify app's link stop, and the process ends, instead of going
+     *  on in the background. Android keeps notification access bound to a running app, so that link lets go first
+     *  (it's asked for again when the app opens). */
+    fun quit() {
+        if (quitting) return
+        quitting = true
+        Vibe.settings.flush()
+        runCatching { Spotify.stop() }; runCatching { SpotifyApp.stop() }; runCatching { Audio.stopAll() }; runCatching { CanvasVideo.release() }
+        runCatching { io.github.bozkow.vibevisualizer.spotify.SessionListener.current?.requestUnbind() }
+        runCatching { Vibe.app.stopService(Intent(Vibe.app, io.github.bozkow.vibevisualizer.media.PlaybackService::class.java)) }
+        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({ android.os.Process.killProcess(android.os.Process.myPid()) }, 400)
+    }
+
     /* ================= battery: offer Low performance mode when it's low ================= */
     fun batteryCheck() {
         val bm = Vibe.app.getSystemService(BatteryManager::class.java) ?: return
         val lvl = bm.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY)
         if (!bm.isCharging && lvl in 1..20) Perf.suggest("battery", lvl / 100.0)
         val pm = Vibe.app.getSystemService(PowerManager::class.java)
-        if (pm?.isPowerSaveMode == true && !S.low) Perf.suggest("saver", 0.0)
+        if (pm?.isPowerSaveMode == true && !S.low && !S.b("aSaverLow")) Perf.suggest("saver", 0.0)   // with "With Power saving" on, it's turned on instead
     }
 
     fun shareIntent(text: String) = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, text)

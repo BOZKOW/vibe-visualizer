@@ -1,9 +1,14 @@
-Vibe Visualizer for Android 0.19.5 (beta). Android 12 or newer; it installs over 0.19.4 (Settings → Help & about → Update now).
+Vibe Visualizer for Android 0.19.6 (beta). Android 12 or newer; it installs over 0.19.5 (Settings → Help & about → Update now).
 
 ### Changes
 
-- **The heat warning comes back while the phone stays warm**: after "Not now" it shows again each time the battery gets 1 °C warmer than when you answered, and every 10 minutes while it isn't cooling. While the temperature is dropping (0.2 °C or more over the last minute) it doesn't show at all. Once the phone has cooled down, the next warm spell starts over
-- **Two levels**: yellow "Your phone is getting warm" when Android says it has started slowing itself down because of heat (or will within about 10 seconds), red "Your phone is hot" when it slows down hard
-- **In picture-in-picture too**: the small window shows the warning, and its buttons become Low performance mode, play / pause and Not now while it's there
+- **Low performance mode follows Power saving** (Settings → Performance → Low performance mode with Power saving, on): it turns on by itself when the phone's Power saving comes on, and off again when it ends, if it came on that way (turn it off yourself and it stays off)
+- **Closing the app ends it**: swiped away from Recents (or its small window dismissed), it saves your settings, stops the music, the bars' listening, the Canvas and the Spotify app's link, and quits instead of running on in the background
+- **The top's blur and gradient over a Canvas show only while something's there**: they fade away with Now Playing's controls and come back with them (the status bar, if you keep it, counts)
+- The heat warning comes back at each whole degree above the one the battery was at when you said "Not now" (41.7 °C → at 42.0 °C)
 
-From 0.19.4: update checks work when GitHub says "too many requests".
+### Fixes
+
+- The suggestion to turn on Low performance mode when the battery is low never showed: it does now (once a minute it looks)
+
+From 0.19.5: the heat warning in picture-in-picture, shown again while the phone heats up, red when hot.

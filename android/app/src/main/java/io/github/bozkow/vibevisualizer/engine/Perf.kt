@@ -17,6 +17,7 @@ object Perf {
 
     fun tick(t: Double) {
         if (t - heatAt > 5000 && E.visible && !S.low && S.b("perfAsk")) { heatAt = t; heat(t) }
+        if (t - battAt > 60000 && E.visible) { battAt = t; E.batteryCheck() }   // low battery: once a minute is plenty
         val gap = t - prev; prev = t
         if (S.low || !S.b("perfAsk") || asked || !E.visible || !E.playing() || t < snooze || gap > 1000) { t0 = t; n = 0; slow = 0; secs = 0; bad = 0; sum = 0.0; return }   // only judged while a song plays on screen
         n++; if (gap > 50) slow++   // a frame that took 3+ refreshes at 60 Hz
@@ -46,14 +47,39 @@ object Perf {
         // cooled down for real (not just between two forecasts): the next warm spell may ask again
         if (level == 0) { if (st <= PowerManager.THERMAL_STATUS_LIGHT && (room.isNaN() || room < .75f)) { spell = 0; notNowAt = 0.0; refC = null }; return }
         if (S.low || warn > 0 || dropping) return   // it's cooling: no warning
-        // after "Not now", again while it's still warm: every degree warmer than then, or every 10 minutes while it isn't dropping
-        val again = notNowAt > 0 && ((c != null && refC != null && c >= refC!! + 1) || now() - notNowAt >= 10 * 60000)
+        // after "Not now", again while it's still warm: at each whole degree above the one it was at then (41.7 → at 42.0),
+        // or every 10 minutes while it isn't dropping
+        val again = notNowAt > 0 && ((c != null && refC != null && kotlin.math.floor(c) >= kotlin.math.floor(refC!!) + 1) || now() - notNowAt >= 10 * 60000)
         if (level <= spell && !again) return
         spell = maxOf(spell, level); notNowAt = 0.0
         asked = true; warn = level   // a warning over the whole screen
     }
 
+    private var battAt = 0.0
     private val temps = ArrayDeque<Double>()
+
+    /* ---- Power saving: Low performance mode follows it ---- */
+    private val pp by lazy { Vibe.app.getSharedPreferences("perf", android.content.Context.MODE_PRIVATE) }
+
+    /** The phone's Power saving came on or went off (or the app starts, and compares with how it was): on, Low
+     *  performance mode turns on too; off, it turns off again if it came on that way. Only the change counts, so
+     *  turning Low performance mode off by hand while Power saving is on keeps it off. */
+    fun saverCheck(force: Boolean = false) {
+        val on = runCatching { Vibe.app.getSystemService(PowerManager::class.java)?.isPowerSaveMode }.getOrNull() ?: return
+        val was = pp.getBoolean("saver", false)
+        pp.edit().putBoolean("saver", on).apply()
+        if (!S.b("aSaverLow") || (on == was && !force)) return
+        if (on && !S.low) {
+            S.set("low", true); pp.edit().putBoolean("auto", true).apply()
+            E.toast("Power saving is on, so Low performance mode is too", "ok")
+        } else if (!on && pp.getBoolean("auto", false)) {
+            pp.edit().putBoolean("auto", false).apply()
+            if (S.low) { S.set("low", false); E.toast("Power saving is off, so Low performance mode is off again", "ok") }
+        }
+    }
+
+    /** Low performance mode changed by hand: it isn't Power saving's to turn off any more. */
+    fun lowByHand() { pp.edit().putBoolean("auto", false).apply() }
     private var notNowAt = 0.0          // when the heat warning was last answered "Not now" (0: not in this warm spell)
     private var refC: Double? = null    // the battery's temperature then
 

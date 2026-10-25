@@ -9,5 +9,10 @@ class VibeApp : Application() {
         Vibe.init(this)
         io.github.bozkow.vibevisualizer.spotify.Spotify.connected   // sets up Spotify, which listens to the Spotify app from the start
         io.github.bozkow.vibevisualizer.widget.Widgets.refresh()      // placed home screen widgets follow the music
+        // Low performance mode follows the phone's Power saving (and catches up with a change made while the app was closed)
+        androidx.core.content.ContextCompat.registerReceiver(this, object : android.content.BroadcastReceiver() {
+            override fun onReceive(c: android.content.Context, i: android.content.Intent) = io.github.bozkow.vibevisualizer.engine.Perf.saverCheck()
+        }, android.content.IntentFilter(android.os.PowerManager.ACTION_POWER_SAVE_MODE_CHANGED), androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED)
+        io.github.bozkow.vibevisualizer.engine.Perf.saverCheck()
     }
 }

@@ -42,9 +42,10 @@ class PlaybackService : MediaSessionService() {
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? = session
 
+    /** Swiped away from Recents: the music stops and the app closes (it doesn't play on in the background). */
     override fun onTaskRemoved(rootIntent: Intent?) {
-        val p = session?.player
-        if (p == null || !p.playWhenReady || p.mediaItemCount == 0) { pauseAllPlayersAndStopSelf() }
+        pauseAllPlayersAndStopSelf()
+        io.github.bozkow.vibevisualizer.engine.E.quit()
     }
 
     override fun onDestroy() {

@@ -53,6 +53,7 @@ object Defaults {
         "aAmbient" to false,    // ambient mode: untouched while music plays, the lyrics and the song alone on black
         "aAmbientSec" to "30",  // how long untouched before it dims
         "aPipSize" to 100,      // the lyrics' size in picture-in-picture (%)
+        "aSaverLow" to true,    // Low performance mode while the phone's Power saving is on
         "aWgSize" to "m",       // the home screen widget: lyrics size (s, m, l)
         "aWgSong" to true,      //   the song under the lyrics
         "aWgCtl" to true,       //   play / pause, previous, next
