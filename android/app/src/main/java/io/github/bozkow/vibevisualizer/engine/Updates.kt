@@ -65,7 +65,7 @@ object Updates {
         if (manual) appStat = "Checking…"
         Vibe.scope.launch {
             try {
-                val rels = fromApi() ?: fromFeed()
+                val rels = fromApi() ?: ready(fromFeed())
                 notes = rels.take(10).map { it.note }
                 val newest = rels.firstOrNull()
                 if (newest == null) { appStat = "Version ${BuildConfig.VERSION_NAME} · no app releases on GitHub yet."; return@launch }
@@ -106,9 +106,19 @@ object Updates {
             val at = if (limitUntil > 0) " until " + java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault()).format(java.util.Date(limitUntil)) else " for a while"
             throw Exception("GitHub isn’t answering this connection$at (it allows 60 checks an hour without an account)")
         }
-        return parseFeed(r.text).filter { it.tag.startsWith("android-v") && !it.title.contains("out of support", ignoreCase = true) }
+        // a tag shows in the feed as soon as it's pushed, minutes before its release (and the APK) is there: only releases
+        return parseFeed(r.text).filter { it.tag.startsWith("android-v") && it.title != it.tag && !it.title.contains("out of support", ignoreCase = true) }
             .map { f -> Rel(f.tag, "https://github.com/$REPO/releases/download/${f.tag}/vibe-visualizer-android.apk",
                 Note(f.title, f.date, f.points, f.tag, f.title.contains("beta", ignoreCase = true) || f.tag.startsWith("android-v0."))) }
+    }
+
+    /** The feed's newest releases whose APK is really there (it's uploaded after the release is made). */
+    private suspend fun ready(rels: List<Rel>): List<Rel> {
+        for ((i, r) in rels.take(3).withIndex()) {
+            val ok = runCatching { Net.fetch(r.apk, "github", "HEAD").ok }.getOrDefault(false)
+            if (ok) return rels.drop(i)
+        }
+        return emptyList()
     }
 
     internal class FeedRel(val tag: String, val title: String, val date: String, val points: List<String>)
@@ -154,6 +164,7 @@ object Updates {
                     sid = pi.createSession(params)
                     pi.openSession(sid).use { s ->
                         Net.http.newCall(Request.Builder().url(rel.apk).build()).execute().use { r ->
+                            if (r.code == 404) throw Exception("this version isn’t on GitHub yet: try again in a few minutes")
                             if (!r.isSuccessful) throw Exception("HTTP ${r.code}")
                             val body = r.body; val total = body.contentLength()
                             s.openWrite("vibe-visualizer.apk", 0, total).use { o ->

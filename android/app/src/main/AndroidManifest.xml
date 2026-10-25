@@ -107,6 +107,19 @@
             </intent-filter>
         </service>
 
+        <!-- one widget's settings: opened when it's placed, from its own Settings, or from the app's Settings -->
+        <activity
+            android:name=".widget.WidgetSetupActivity"
+            android:exported="true"
+            android:excludeFromRecents="true"
+            android:label="@string/widget_name"
+            android:taskAffinity=""
+            android:theme="@style/Theme.Vibe">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
+            </intent-filter>
+        </activity>
+
         <!-- the home screen widget: the lyrics with the song and its controls -->
         <receiver
             android:name=".widget.LyricsWidget"

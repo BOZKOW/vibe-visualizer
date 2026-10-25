@@ -257,11 +257,8 @@ private fun pages(): List<Page> = listOf(
         Item.Ch("aAmbientSec", "Dim after", listOf("15" to "15 seconds", "30" to "30 seconds", "60" to "1 minute", "120" to "2 minutes", "300" to "5 minutes"), "How long untouched before Ambient mode dims the screen."),
         Item.Sw("aHaptics", "Haptic feedback", "A light tick on taps and toggles."),
         Item.Sub("Home screen widget"),
-        Item.Txt("Touch and hold your home screen, then Widgets → Vibe Visualizer. It follows the song line by line while the app runs."),
-        Item.Ch("aWgSize", "Lyrics size", listOf("s" to "Small", "m" to "Medium", "l" to "Large")),
-        Item.Sw("aWgSong", "The song", "The cover, the title and the artist under the lyrics."),
-        Item.Sw("aWgCtl", "Controls", "Previous, play / pause and next."),
-        Item.Ch("aWgBg", "Background", listOf("cover" to "Blurred cover", "black" to "Black", "clear" to "None")),
+        Item.Txt("Touch and hold your home screen, then Widgets → Vibe Visualizer. It follows the song line by line while the app runs. Each widget has its own settings: touch and hold it → Settings, or pick it here."),
+        Item.Custom("widget settings lines around romanization translation size song controls progress background darker centred") { WidgetList() },
         Item.Custom("Notification access battery app info permissions") { PhoneLinks() },
     )),
     Page("exp", "Experiments", Icons.Rounded.Science, listOf(
@@ -855,6 +852,24 @@ private fun LazyListScope.cardPages(all: List<Page>, page: String?, wide: Boolea
                         Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, null, Modifier.size(20.dp), tint = Color.White.copy(alpha = .35f))
                     }
                 }
+            }
+        }
+    }
+}
+
+/** The widgets on your home screen, each opening its own settings. */
+@Composable
+private fun WidgetList() {
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    var ids by remember { mutableStateOf(io.github.bozkow.vibevisualizer.widget.Widgets.placed()) }
+    LaunchedEffect(Unit) { while (true) { kotlinx.coroutines.delay(2000); ids = io.github.bozkow.vibevisualizer.widget.Widgets.placed() } }   // placed while you look
+    if (ids.isEmpty()) { Hint("No Vibe Visualizer widget on your home screen yet."); return }
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        ids.forEachIndexed { i, id ->
+            val (w, h) = io.github.bozkow.vibevisualizer.widget.Widgets.sizeDp(id)
+            FilledTonalButton(onClick = { E.haptic(); ctx.startActivity(android.content.Intent(ctx, io.github.bozkow.vibevisualizer.widget.WidgetSetupActivity::class.java)
+                .putExtra(android.appwidget.AppWidgetManager.EXTRA_APPWIDGET_ID, id)) }) {
+                Text(if (ids.size == 1) "Set up the widget" else "Set up widget ${i + 1} (${w}×$h)")
             }
         }
     }

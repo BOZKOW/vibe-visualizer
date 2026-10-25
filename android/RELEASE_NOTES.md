@@ -1,13 +1,11 @@
-Vibe Visualizer for Android 0.19.8 (beta). Android 12 or newer; it installs over 0.19.7 (Settings → Help & about → Update now).
+Vibe Visualizer for Android 0.20.0 (beta). Android 12 or newer; it installs over 0.19.8 (Settings → Help & about → Update now).
 
-### Faster
+### New
 
-- **Song changes show at once** when the Spotify app plays on this phone (with notification access): the new song's name and cover appear the moment it starts, instead of after Spotify's servers name it; the lyrics, the Canvas and the sharper cover follow a moment later without the song animating in twice. The Web API is asked sooner after a change too
-- **Lyrics don't wait for a slow source**: if a source further down your list already has them, they show after 2 seconds instead of waiting for the first source to answer (or time out); if the first one then answers just as well within 8 seconds, its lyrics take over, so your order still decides
+- **Each home screen widget has its own settings** (as in Spicy Lyrics Mobile), with the widget itself as a live preview: how many lines around the one sung now (none to 3), romanization and translation under the line, text size, centred or from the left, the song at the top, the bottom or hidden, no controls, play / pause or previous / play / next, the time and progress bar, and the background (blurred cover, the cover's colour, black or see-through) with how dark it is. Open them by touching and holding the widget → Settings, or in Settings → Phone → Home screen widget. Where the lyrics are from always shows (the sources ask for it). Widgets you already placed keep how they looked
 
 ### Fixes
 
-- **"No lyrics" notes are turned down**: some sources (NetEase, QQ Music, KuGou…) answer an instrumental with a note like 纯音乐，请欣赏 ("pure music, please enjoy"), 暂无歌词 ("no lyrics yet") or "Instrumental" instead of lyrics. These count as not found now, so the next source is asked; ones saved earlier are looked up again
-- Copy debug info says how the app hears about Spotify's song changes, and how often it asks
+- **Update now no longer fails with "HTTP 404"**: when GitHub's API was busy, the app read GitHub's release feed, which lists a new version a few minutes before its download is there. It now offers only versions whose download is ready, and says "try again in a few minutes" if one still isn't
 
-From 0.19.7: landscape keeps clear of the camera hole.
+From 0.19.8: instant song changes from the Spotify app, lyrics that don't wait for a slow source, and "no lyrics" notes turned down.

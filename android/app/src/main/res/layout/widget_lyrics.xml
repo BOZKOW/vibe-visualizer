@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- The home screen widget (widget/LyricsWidget.kt): the lyrics as a picture, the song with the controls, the time -->
+<!-- The home screen widget (widget/LyricsWidget.kt): the lyrics as a picture, the song with the controls (at the top or
+     the bottom, as each widget is set), the time and where the lyrics are from -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_root"
     android:layout_width="match_parent"
@@ -20,23 +21,17 @@
         android:orientation="vertical"
         android:padding="16dp">
 
-        <ImageView
-            android:id="@+id/widget_lines"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"
-            android:scaleType="fitStart" />
-
         <LinearLayout
-            android:id="@+id/widget_song_row"
+            android:id="@+id/widget_trow"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
+            android:layout_marginBottom="10dp"
             android:gravity="center_vertical"
-            android:orientation="horizontal">
+            android:orientation="horizontal"
+            android:visibility="gone">
 
             <ImageView
-                android:id="@+id/widget_cover"
+                android:id="@+id/widget_tcover"
                 android:layout_width="40dp"
                 android:layout_height="40dp"
                 android:layout_marginEnd="10dp"
@@ -45,14 +40,14 @@
                 android:src="@drawable/widget_cover" />
 
             <LinearLayout
-                android:id="@+id/widget_song"
+                android:id="@+id/widget_tsong"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:orientation="vertical">
 
                 <TextView
-                    android:id="@+id/widget_title"
+                    android:id="@+id/widget_ttitle"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:ellipsize="end"
@@ -64,7 +59,7 @@
                     android:textStyle="bold" />
 
                 <TextView
-                    android:id="@+id/widget_artist"
+                    android:id="@+id/widget_tartist"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:ellipsize="end"
@@ -76,7 +71,7 @@
             </LinearLayout>
 
             <ImageView
-                android:id="@+id/widget_prev"
+                android:id="@+id/widget_tprev"
                 android:layout_width="38dp"
                 android:layout_height="38dp"
                 android:background="@drawable/widget_button"
@@ -85,7 +80,7 @@
                 android:src="@drawable/pip_prev" />
 
             <ImageView
-                android:id="@+id/widget_toggle"
+                android:id="@+id/widget_ttoggle"
                 android:layout_width="44dp"
                 android:layout_height="44dp"
                 android:background="@drawable/widget_button"
@@ -94,7 +89,91 @@
                 android:src="@drawable/pip_play" />
 
             <ImageView
-                android:id="@+id/widget_next"
+                android:id="@+id/widget_tnext"
+                android:layout_width="38dp"
+                android:layout_height="38dp"
+                android:background="@drawable/widget_button"
+                android:contentDescription="@string/widget_next"
+                android:padding="8dp"
+                android:src="@drawable/pip_next" />
+        </LinearLayout>
+
+        <ImageView
+            android:id="@+id/widget_lines"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:scaleType="fitCenter" />
+
+        <LinearLayout
+            android:id="@+id/widget_brow"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:visibility="gone">
+
+            <ImageView
+                android:id="@+id/widget_bcover"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginEnd="10dp"
+                android:importantForAccessibility="no"
+                android:scaleType="centerCrop"
+                android:src="@drawable/widget_cover" />
+
+            <LinearLayout
+                android:id="@+id/widget_bsong"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/widget_btitle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:fontFamily="sans-serif"
+                    android:maxLines="1"
+                    android:text="@string/app_name"
+                    android:textColor="#FFFFFFFF"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/widget_bartist"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:fontFamily="sans-serif-medium"
+                    android:maxLines="1"
+                    android:text="@string/widget_preview"
+                    android:textColor="#B3FFFFFF"
+                    android:textSize="12sp" />
+            </LinearLayout>
+
+            <ImageView
+                android:id="@+id/widget_bprev"
+                android:layout_width="38dp"
+                android:layout_height="38dp"
+                android:background="@drawable/widget_button"
+                android:contentDescription="@string/widget_prev"
+                android:padding="8dp"
+                android:src="@drawable/pip_prev" />
+
+            <ImageView
+                android:id="@+id/widget_btoggle"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:background="@drawable/widget_button"
+                android:contentDescription="@string/widget_toggle"
+                android:padding="7dp"
+                android:src="@drawable/pip_play" />
+
+            <ImageView
+                android:id="@+id/widget_bnext"
                 android:layout_width="38dp"
                 android:layout_height="38dp"
                 android:background="@drawable/widget_button"
