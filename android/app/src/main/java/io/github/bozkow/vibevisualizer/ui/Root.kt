@@ -68,7 +68,7 @@ fun VibeRoot() {
             val covered = (!live && setT.currentState && setT.isIdle) || (wizT.currentState && wizT.isIdle)
             val sBlur by animateFloatAsState(if (live && E.settingsPage != null) 1f else 0f, tween(if (E.settingsPage != null) 380 else 260), label = "sblur")
             // Glass: the player blurs behind the sheets
-            val qBlur by animateFloatAsState(if (S.glass && E.sheet != null && !S.low) 22f else 0f, tween(260), label = "qblur")
+            val qBlur by animateFloatAsState(if ((S.glass && E.sheet != null || io.github.bozkow.vibevisualizer.engine.Perf.warn > 0) && !S.low) 22f else 0f, tween(260), label = "qblur")
             if (E.inPip) { BackgroundLayer(); PipCanvas(); PipScreen() }
             else {
                 val b = maxOf(qBlur, 30f * sBlur)
@@ -86,6 +86,7 @@ fun VibeRoot() {
                 AnimatedVisibility(wizT, enter = popIn(wizFrom), exit = popOut(wizFrom)) { Box(popClip()) { SetupWizard() } }
                 Sheets()
                 AskDialog()
+                HeatWarning()
                 Snacks(Modifier.align(Alignment.BottomCenter).navBarsSpace().padding(bottom = 8.dp))
             }
         }

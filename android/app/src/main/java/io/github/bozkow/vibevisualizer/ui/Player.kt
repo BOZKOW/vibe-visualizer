@@ -11,6 +11,8 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.animateFloat
+import kotlinx.coroutines.launch
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -214,7 +216,7 @@ private fun LyricsWithLyrics() {
             Column(Modifier.padding(start = 24.dp, end = 24.dp, bottom = 12.dp)) { TitleRow(big = false); SeekRow() }
         }
         AnimatedVisibility(!hidden, enter = expandVertically(expandFrom = Alignment.Top) + fadeIn(), exit = shrinkVertically(shrinkTowards = Alignment.Top) + fadeOut()) {
-            Column(Modifier.padding(horizontal = 24.dp)) { SeekRow(); Transport(big = false); BottomBar(big = false) }
+            Column(Modifier.padding(horizontal = 24.dp)) { SeekRow(); Transport(big = false, mid = true); BottomBar(big = false, mid = true) }
         }
     }
 }
@@ -235,7 +237,7 @@ private fun VizScreen() {
             BarsView(Modifier.fillMaxWidth().fillMaxHeight(.44f).align(Alignment.BottomCenter).padding(horizontal = 10.dp))
         }
         AnimatedVisibility(!hidden, enter = expandVertically(expandFrom = Alignment.Top) + fadeIn(), exit = shrinkVertically(shrinkTowards = Alignment.Top) + fadeOut()) {
-            Column(Modifier.padding(horizontal = 24.dp)) { SeekRow(); Transport(big = false); BottomBar(big = false) }
+            Column(Modifier.padding(horizontal = 24.dp)) { SeekRow(); Transport(big = false, mid = true); BottomBar(big = false, mid = true) }
         }
     }
 }
@@ -516,16 +518,16 @@ private fun LikeButton() {
 
 /** Shuffle, previous, play / pause (its shape morphs), next, repeat. */
 @Composable
-private fun Transport(big: Boolean) {
+private fun Transport(big: Boolean, mid: Boolean = false) {
     Spotify.version
     val sp = E.src == "spotify"
-    val main = if (big) 56.dp else 42.dp
+    val main = if (big) 56.dp else if (mid) 50.dp else 42.dp
     Row(Modifier.fillMaxWidth().padding(vertical = if (big) 6.dp else 0.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
         if (sp) CtlIcon(Icons.Rounded.Shuffle, "Shuffle", size = 24.dp, enabled = Spotify.spState != null && "toggling_shuffle" !in Spotify.disallows, on = Spotify.shuffle) { Spotify.toggleShuffle() }
         else CtlIcon(if (Local.muted) Icons.AutoMirrored.Rounded.VolumeOff else Icons.AutoMirrored.Rounded.VolumeUp, if (Local.muted) "Unmute" else "Mute", enabled = E.src == "file") { Local.muted = !Local.muted }
-        CtlIcon(Icons.Rounded.FastRewind, "Previous", size = main, enabled = E.src != "none") { E.prev() }
-        PlayButton(if (big) 76.dp else 58.dp)
-        CtlIcon(Icons.Rounded.FastForward, "Next", size = main, enabled = E.canNext()) { E.next() }
+        CtlIcon(Icons.Rounded.FastRewind, "Previous", size = main, enabled = E.src != "none", nudge = -1) { E.prev() }
+        PlayButton(if (big) 76.dp else if (mid) 68.dp else 58.dp)
+        CtlIcon(Icons.Rounded.FastForward, "Next", size = main, enabled = E.canNext(), nudge = 1) { E.next() }
         if (sp) {
             val r = Spotify.repeat
             CtlIcon(if (r == "track") Icons.Rounded.RepeatOne else Icons.Rounded.Repeat, "Repeat: " + when (r) { "context" -> "all"; "track" -> "this song"; else -> "off" },
@@ -536,9 +538,9 @@ private fun Transport(big: Boolean) {
 
 /** Lyrics · where it plays · Visualizer: the music app's bottom row. */
 @Composable
-private fun BottomBar(big: Boolean = true) {
+private fun BottomBar(big: Boolean = true, mid: Boolean = false) {
     val sp = E.src == "spotify"
-    val d = if (big) 54.dp else 44.dp
+    val d = if (big) 54.dp else if (mid) 50.dp else 44.dp
     Row(Modifier.fillMaxWidth().padding(top = if (big) 6.dp else 2.dp, bottom = 4.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
         BarIcon(VIcons.lyrics, "Lyrics", E.screen == "lyrics" && !E.wide || E.wide && E.screen != "viz", d) { E.show(if (E.screen == "lyrics" && !E.wide) "player" else "lyrics") }
         if (sp) BarIcon(Icons.Rounded.Cast, Spotify.device?.let { "Playing on ${it.name}" } ?: "Choose where Spotify plays", false, d) { E.openSheet("devices") }
@@ -562,12 +564,18 @@ private fun BarIcon(icon: ImageVector, desc: String, on: Boolean, d: Dp = 54.dp,
 }
 
 @Composable
-private fun CtlIcon(icon: ImageVector, desc: String, size: Dp = 24.dp, enabled: Boolean = true, on: Boolean = false, onClick: () -> Unit) {
+private fun CtlIcon(icon: ImageVector, desc: String, size: Dp = 24.dp, enabled: Boolean = true, on: Boolean = false, nudge: Int = 0, onClick: () -> Unit) {
     val src = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
     val tint by androidx.compose.animation.animateColorAsState(if (on) MaterialThemeAccent() else Color.White, tween(220), label = "ctlon")   // shuffle / repeat light up softly
-    IconButton(onClick = { E.haptic(); onClick() }, enabled = enabled, interactionSource = src, modifier = Modifier.size(maxOf(48.dp, size + 12.dp)).pressScale(src, .86f).semantics { contentDescription = desc },
+    // previous / next ([nudge] -1 / 1): the arrows slide out the way you skip, fading, and spring back in from the other side
+    val k = remember { Animatable(0f) }
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    IconButton(onClick = {
+        E.haptic(); onClick()
+        if (nudge != 0 && !Pop.calm) scope.launch { k.snapTo(0f); k.animateTo(1f, tween(130, easing = androidx.compose.animation.core.FastOutLinearInEasing)); k.snapTo(-1f); k.animateTo(0f, spring(.62f, 520f)) }
+    }, enabled = enabled, interactionSource = src, modifier = Modifier.size(maxOf(48.dp, size + 12.dp)).pressScale(src, .86f).semantics { contentDescription = desc },
         colors = IconButtonDefaults.iconButtonColors(containerColor = Color.Transparent, contentColor = tint, disabledContentColor = Color.White.copy(alpha = .3f))) {
-        Icon(icon, null, Modifier.size(size))
+        Icon(icon, null, Modifier.size(size).graphicsLayer { val x = k.value; translationX = x * nudge * size.toPx() * .38f; alpha = 1f - kotlin.math.abs(x) * .9f })
     }
 }
 
@@ -582,8 +590,15 @@ private fun PlayButton(size: Dp) {
     val src = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
     Box(Modifier.size(size).pressScale(src, .88f).clip(CircleShape).clickable(src, androidx.compose.material3.ripple()) { E.haptic(); E.toggle() }.semantics { contentDescription = if (playing) "Pause" else "Play" }, contentAlignment = Alignment.Center) {
         // play and pause swap with a quick scale and fade
-        AnimatedContent(playing, transitionSpec = { (fadeIn(tween(160)) + scaleIn(tween(220), initialScale = .7f)) togetherWith (fadeOut(tween(120)) + scaleOut(tween(160), targetScale = .7f)) }, label = "playicon") { p ->
-            Icon(if (p) Icons.Rounded.Pause else Icons.Rounded.PlayArrow, null, Modifier.size(size).graphicsLayer { scaleX = pop.value; scaleY = pop.value }, tint = Color.White)
+        // play and pause swap with a quarter turn, a springy scale and a fade
+        AnimatedContent(playing, transitionSpec = {
+            if (Pop.calm) fadeIn(tween(120)) togetherWith fadeOut(tween(100))
+            else (fadeIn(tween(140)) + scaleIn(spring(.55f, 500f), initialScale = .45f)) togetherWith (fadeOut(tween(110)) + scaleOut(tween(150), targetScale = .45f))
+        }, label = "playicon") { p ->
+            val turn by transition.animateFloat(transitionSpec = { spring(.6f, 420f) }, label = "playturn") { st ->
+                if (Pop.calm) 0f else when (st) { androidx.compose.animation.EnterExitState.PreEnter -> -90f; androidx.compose.animation.EnterExitState.PostExit -> 90f; else -> 0f }
+            }
+            Icon(if (p) Icons.Rounded.Pause else Icons.Rounded.PlayArrow, null, Modifier.size(size).graphicsLayer { scaleX = pop.value; scaleY = pop.value; rotationZ = turn }, tint = Color.White)
         }
     }
 }

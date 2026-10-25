@@ -1,5 +1,21 @@
 package io.github.bozkow.vibevisualizer.ui
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.rounded.DeviceThermostat
+import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.style.TextAlign
+import io.github.bozkow.vibevisualizer.core.S
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -67,4 +83,37 @@ fun AskDialog() {
     // the app's own dialog (Android's can't open out of the button that asked)
     PopDialog(a != null, onDismiss = { E.ask = null }, title = a?.title ?: "", text = a?.msg ?: "",
         confirm = pri?.let { it.label to { E.ask = null; it.fn?.invoke(); Unit } }, dismiss = other?.let { it.label to { E.ask = null; it.fn?.invoke(); Unit } })
+}
+
+/** The phone is getting warm (or hot), as Android says: a warning over the whole screen, the player blurred behind
+ *  it, offering Low performance mode. Back is "Not now". */
+@Composable
+fun HeatWarning() {
+    val w = io.github.bozkow.vibevisualizer.engine.Perf.warn.takeIf { !S.low } ?: 0
+    val vis = androidx.compose.runtime.remember { androidx.compose.animation.core.MutableTransitionState(false) }; vis.targetState = w > 0
+    val last = androidx.compose.runtime.remember { object { var w = 1; var c: Double? = null } }
+    if (w > 0 && last.w != w) { last.w = w }
+    if (w > 0 && !vis.currentState) last.c = io.github.bozkow.vibevisualizer.engine.Perf.batteryC()
+    if (w > 0) androidx.activity.compose.BackHandler { io.github.bozkow.vibevisualizer.engine.Perf.warnDone(false) }
+    if (!vis.currentState && !vis.targetState) return
+    val hot = last.w >= 2
+    androidx.compose.animation.AnimatedVisibility(vis, enter = androidx.compose.animation.EnterTransition.None, exit = androidx.compose.animation.ExitTransition.None) {
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Box(Modifier.fillMaxSize().animateEnterExit(enter = androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(260)), exit = androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(220)))
+                .background(Color.Black.copy(alpha = .62f)).clickable(androidx.compose.runtime.remember { androidx.compose.foundation.interaction.MutableInteractionSource() }, null) {})
+            Column(Modifier.animateEnterExit(enter = popIn(androidx.compose.ui.graphics.TransformOrigin.Center, .6f), exit = popOut(androidx.compose.ui.graphics.TransformOrigin.Center, .8f))
+                .statusBarsSpace().navBarsSpace().padding(32.dp).widthIn(max = 420.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                val tint = if (hot) Color(0xFFFF8A65) else Color(0xFFFFD27A)
+                Box(Modifier.size(96.dp).clip(CircleShape).background(tint.copy(alpha = .16f)), contentAlignment = Alignment.Center) {
+                    Icon(androidx.compose.material.icons.Icons.Rounded.DeviceThermostat, null, Modifier.size(52.dp), tint = tint)
+                }
+                Text(if (hot) "Your phone is hot" else "Your phone is getting warm", Modifier.padding(top = 24.dp), fontSize = 28.sp, fontWeight = FontWeight.ExtraBold, color = Color.White, textAlign = TextAlign.Center)
+                last.c?.let { Text("Battery at " + Math.round(it) + " °C", Modifier.padding(top = 6.dp), fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = tint) }
+                Text("Low performance mode keeps it cooler: the moving background and the live blurs rest, and the app draws fewer frames a second. You can turn it off again in Settings → Performance.",
+                    Modifier.padding(top = 14.dp), fontSize = 15.sp, lineHeight = 21.sp, color = Color.White.copy(alpha = .75f), textAlign = TextAlign.Center)
+                Button(onClick = { E.haptic(); io.github.bozkow.vibevisualizer.engine.Perf.warnDone(true) }, Modifier.padding(top = 28.dp).fillMaxWidth().height(54.dp)) { Text("Turn on Low performance mode", fontSize = 16.sp) }
+                TextButton(onClick = { io.github.bozkow.vibevisualizer.engine.Perf.warnDone(false) }, Modifier.padding(top = 6.dp)) { Text("Not now", fontSize = 15.sp, color = Color.White.copy(alpha = .8f)) }
+            }
+        }
+    }
 }
