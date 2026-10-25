@@ -29,22 +29,28 @@ internal object WidgetPainter {
 
     private class Block(val line: Line, val dist: Int, val parts: List<StaticLayout>, val h: Float)
 
-    fun paint(ls: List<Line>, cur: Int, w: Int, h: Int, d: Float, look: WidgetLook): Bitmap {
+    /** [pos]: where the song is (s), to light every line sung at once; [synced]: the lyrics have timing. */
+    fun paint(ls: List<Line>, cur: Int, pos: Double, synced: Boolean, w: Int, h: Int, d: Float, look: WidgetLook): Bitmap {
         val bmp = Bitmap.createBitmap(w.coerceAtLeast(1), h.coerceAtLeast(1), Bitmap.Config.ARGB_8888)
         val c = Canvas(bmp)
-        val (curSp, aroundSp, noteSp) = look.sizes
+        val (curSp0, aroundSp0, noteSp0) = look.sizes
         val sd = d * Vibe.app.resources.configuration.fontScale
         val duet = ls.any { it.opp }
-        if (ls.isEmpty()) {   // no lyrics: why, dimly
-            val m = Lyr.msg?.msg ?: return bmp
+        if (ls.isEmpty() || !synced) {   // no lyrics: why, dimly; lyrics without timing say so (the widget can't follow them)
+            val m = if (ls.isNotEmpty()) "These lyrics have no timing · open the app to read them" else Lyr.msg?.msg ?: return bmp
+            val aroundSp = aroundSp0
             val sl = StaticLayout.Builder.obtain(m, 0, m.length, text(aroundSp * sd, 600, .55f), w).setMaxLines(2)
                 .setAlignment(if (look.center) Layout.Alignment.ALIGN_CENTER else Layout.Alignment.ALIGN_NORMAL).build()
             c.save(); c.translate(0f, (h - sl.height) / 2f); sl.draw(c); c.restore()
             return bmp
         }
-        val gap = aroundSp * sd * .5f
+        // lines sung at the same time are all lit: every one that has started and hasn't ended yet
+        val on = HashSet<Int>().apply { if (cur >= 0) add(cur) }
+        for (j in 0 until cur) { val l = ls[j]; val e = l.end ?: continue; if (!l.dots && (l.t ?: 0.0) <= pos && e > pos) on.add(j) }
+        var k = 1f   // a short widget makes the lyrics a little smaller before it leaves a line out
+        var curSp = curSp0; var aroundSp = aroundSp0; var noteSp = noteSp0
         fun block(i: Int): Block {
-            val l = ls[i]; val dist = i - cur
+            val l = ls[i]; val dist = if (i in on) 0 else i - cur
             val now = dist == 0
             val fs = (if (now) curSp else aroundSp) * sd
             if (l.dots) return Block(l, dist, emptyList(), fs * 1.2f)
@@ -55,7 +61,7 @@ internal object WidgetPainter {
                 val p = text(size, weight, alpha); if (glow) p.setShadowLayer(size * .45f, 0f, 0f, android.graphics.Color.argb(120, 255, 255, 255))
                 parts.add(StaticLayout.Builder.obtain(t, 0, t.length, p, w).setAlignment(al).setIncludePad(false).setLineSpacing(0f, 1.05f).build())
             }
-            add(l.text, fs, 700, a, now)
+            add(l.text.replace(CUT, "$1\u2060$2"), fs, 700, a, now)   // a cut-off "w—" keeps its dash
             l.bg?.forEach { b -> add(b.text, fs * .72f, 600, a * .75f, false) }
             val note = noteSp * sd
             if (look.rom) (l.rom ?: l.lineRom ?: l.apiRom)?.takeIf { it != l.text }?.let { add(it, note, 600, a * .8f, false) }
@@ -64,11 +70,18 @@ internal object WidgetPainter {
         }
         // the line sung now (before the first one: the first lines, as coming up) and the lines around it
         val first = if (cur >= 0) cur else 0
-        val from = if (cur >= 0) (cur - look.around).coerceAtLeast(0) else 0
+        val from = if (cur >= 0) ((on.minOrNull() ?: cur) - look.around).coerceAtLeast(0) else 0
         val to = (first + look.around + if (cur < 0) 1 else 0).coerceAtMost(ls.lastIndex)
-        val out = (from..to).map { block(it) }.toMutableList()
+        var gap = 0f
+        var out = mutableListOf<Block>()
         fun total() = out.sumOf { it.h.toDouble() }.toFloat() + gap * (out.size - 1).coerceAtLeast(0)
-        // what doesn't fit goes, farthest first (one coming up before one already sung)
+        while (true) {
+            curSp = curSp0 * k; aroundSp = aroundSp0 * k; noteSp = noteSp0 * k; gap = aroundSp * sd * .5f
+            out = (from..to).map { block(it) }.toMutableList()
+            if (total() <= h || k <= .7f) break
+            k -= .1f
+        }
+        // what still doesn't fit goes, farthest first (one coming up before one already sung)
         while (out.size > 1 && total() > h) { val far = out.maxByOrNull { kotlin.math.abs(it.dist) * 2 + (if (it.dist < 0) 1 else 0) }!!; out.remove(far) }
         var y = ((h - total()) / 2f).coerceAtLeast(0f)
         for (b in out) {
@@ -78,6 +91,8 @@ internal object WidgetPainter {
         }
         return bmp
     }
+
+    private val CUT = Regex("(\\p{L})([—–-])(?=\\s|$)")
 
     private fun text(size: Float, weight: Int, alpha: Float) = TextPaint(Paint.ANTI_ALIAS_FLAG or Paint.SUBPIXEL_TEXT_FLAG).apply {
         typeface = face(weight); textSize = size; color = android.graphics.Color.argb((alpha * 255).toInt().coerceIn(0, 255), 255, 255, 255)

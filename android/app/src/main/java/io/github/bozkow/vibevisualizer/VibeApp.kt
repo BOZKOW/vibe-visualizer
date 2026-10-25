@@ -14,5 +14,11 @@ class VibeApp : Application() {
             override fun onReceive(c: android.content.Context, i: android.content.Intent) = io.github.bozkow.vibevisualizer.engine.Perf.saverCheck()
         }, android.content.IntentFilter(android.os.PowerManager.ACTION_POWER_SAVE_MODE_CHANGED), androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED)
         io.github.bozkow.vibevisualizer.engine.Perf.saverCheck()
+        // the widgets' lyrics are drawn for the way the screen is turned: again when it turns
+        registerComponentCallbacks(object : android.content.ComponentCallbacks {
+            private var o = resources.configuration.orientation
+            override fun onConfigurationChanged(c: android.content.res.Configuration) { if (c.orientation != o) { o = c.orientation; io.github.bozkow.vibevisualizer.widget.Widgets.refresh() } }
+            @Deprecated("") override fun onLowMemory() {}
+        })
     }
 }

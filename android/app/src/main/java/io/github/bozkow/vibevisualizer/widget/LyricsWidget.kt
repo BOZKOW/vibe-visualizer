@@ -91,11 +91,14 @@ object Widgets {
         for (id in ids) runCatching { m.updateAppWidget(id, views(id, WidgetLooks.read(id))) }.onFailure { android.util.Log.w("VV-widget", "update: ${it.message}") }
     }
 
-    /** How big widget [id] is (dp): its width in portrait and its height (launchers give the largest then). */
+    /** How big widget [id] is (dp) the way the screen is turned now: launchers give the narrow width and the tall height
+     *  for portrait, the wide width and the short height for landscape. */
     fun sizeDp(id: Int): Pair<Int, Int> {
         val o = AppWidgetManager.getInstance(Vibe.app).getAppWidgetOptions(id)
-        val w = o.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH).takeIf { it > 0 } ?: 320
-        val h = (o.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT).takeIf { it > 0 } ?: o.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT)).takeIf { it > 0 } ?: 180
+        val land = Vibe.app.resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
+        fun get(k: String) = o.getInt(k).takeIf { it > 0 }
+        val w = (if (land) get(AppWidgetManager.OPTION_APPWIDGET_MAX_WIDTH) else null) ?: get(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH) ?: 320
+        val h = (if (land) get(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT) else get(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT)) ?: get(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT) ?: 180
         return w to h
     }
 
@@ -109,16 +112,16 @@ object Widgets {
         val songOn = look.song != "hidden"; val ctlOn = look.controls != "none"
         val rowAt = when { !songOn && !ctlOn -> ""; look.song == "top" -> "t"; else -> "b" }
         val dur = E.curDur(); val pos = E.curTime()
-        val timed = look.progress && dur > 0
+        val timed = look.progress   // kept in its place as the song goes on (no length known yet: 0:00), so nothing jumps
         val credit = creditLine()
-        // the lyrics get what the song row, the time and the credit leave
-        val linesH = hDp - 32 - (if (rowAt.isNotEmpty()) 50 else 0) - (if (timed) 24 else 0) - (if (credit != null) 18 else 0)
-        if (linesH >= 28) {
-            val cur = if (Lyr.lsync) current(Lyr.L, Lyr.lyrT()) else -1
-            v.setViewVisibility(R.id.widget_lines, View.VISIBLE)
-            v.setImageViewBitmap(R.id.widget_lines, WidgetPainter.paint(Lyr.L, cur, ((wDp - 32) * d).toInt(), (linesH * d).toInt(), d, look))
-            v.setContentDescription(R.id.widget_lines, Lyr.L.getOrNull(cur)?.takeIf { !it.dots }?.text ?: "")
-        } else v.setViewVisibility(R.id.widget_lines, View.GONE)
+        // the lyrics get what the song row, the time and the credit leave (the credit's row is kept too); a short widget
+        // makes them smaller instead of leaving them out
+        val linesH = (hDp - 32 - (if (rowAt.isNotEmpty()) 50 else 0) - (if (timed) 24 else 0) - 18).coerceAtLeast(24)
+        val lp = Lyr.lyrT()
+        val cur = if (Lyr.lsync) current(Lyr.L, lp) else -1
+        v.setViewVisibility(R.id.widget_lines, View.VISIBLE)
+        v.setImageViewBitmap(R.id.widget_lines, WidgetPainter.paint(Lyr.L, cur, lp, Lyr.lsync, ((wDp - 32) * d).toInt(), (linesH * d).toInt(), d, look))
+        v.setContentDescription(R.id.widget_lines, Lyr.L.getOrNull(cur)?.takeIf { !it.dots }?.text ?: "")
         // the song and the controls, at the top or the bottom
         for (p in listOf("t", "b")) {
             fun id(n: String): Int = (if (p == "t") TOP else BOTTOM).getValue(n)
@@ -140,12 +143,12 @@ object Widgets {
         // how far the song is: the elapsed time counts by itself
         v.setViewVisibility(R.id.widget_times, if (timed) View.VISIBLE else View.GONE)
         if (timed) {
-            v.setProgressBar(R.id.widget_progress, 1000, (pos / dur * 1000).toInt().coerceIn(0, 1000), false)
+            v.setProgressBar(R.id.widget_progress, 1000, if (dur > 0) (pos / dur * 1000).toInt().coerceIn(0, 1000) else 0, false)
             v.setChronometer(R.id.widget_elapsed, SystemClock.elapsedRealtime() - (pos * 1000).toLong(), null, E.playingState)
             v.setTextViewText(R.id.widget_duration, "%d:%02d".format((dur / 60).toInt(), (dur % 60).toInt()))
         }
         // where the lyrics are from, wherever they show
-        v.setViewVisibility(R.id.widget_credit, if (credit != null) View.VISIBLE else View.GONE)
+        v.setViewVisibility(R.id.widget_credit, if (credit != null) View.VISIBLE else View.INVISIBLE)
         v.setTextViewText(R.id.widget_credit, credit ?: "")
         v.setInt(R.id.widget_credit, "setGravity", if (look.center) android.view.Gravity.CENTER_HORIZONTAL else android.view.Gravity.START)
         // the background: the blurred cover (darkened as set), the cover's colour, black or see-through

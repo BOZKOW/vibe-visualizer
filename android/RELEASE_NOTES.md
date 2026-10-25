@@ -1,11 +1,12 @@
-Vibe Visualizer for Android 0.20.0 (beta). Android 12 or newer; it installs over 0.19.8 (Settings → Help & about → Update now).
+Vibe Visualizer for Android 0.20.1 (beta). Android 12 or newer; it installs over 0.20.0 (Settings → Help & about → Update now).
 
-### New
+### Widget fixes (from Spicy Lyrics Mobile 0.15.1)
 
-- **Each home screen widget has its own settings** (as in Spicy Lyrics Mobile), with the widget itself as a live preview: how many lines around the one sung now (none to 3), romanization and translation under the line, text size, centred or from the left, the song at the top, the bottom or hidden, no controls, play / pause or previous / play / next, the time and progress bar, and the background (blurred cover, the cover's colour, black or see-through) with how dark it is. Open them by touching and holding the widget → Settings, or in Settings → Phone → Home screen widget. Where the lyrics are from always shows (the sources ask for it). Widgets you already placed keep how they looked
+- **The widget keeps its layout**: on smaller widgets the progress bar, the credit and the lines around the current one no longer disappear and come back as the song goes on, and a short widget makes the lyrics a little smaller instead of leaving lines out
+- **Drawn for the way the screen is turned**: the lyrics fit the widget in landscape too, and are drawn again when the screen turns (they could come out tiny)
+- **Lines sung at the same time are lit together**
+- **Lyrics without timing say so** ("open the app to read them") instead of sitting on their first lines
+- A cut-off word like "w—" no longer wraps away from its dash
+- The widget's settings explain that it follows the song while the app runs (closing the app stops it), with a shortcut to the battery settings if it stops updating in the background
 
-### Fixes
-
-- **Update now no longer fails with "HTTP 404"**: when GitHub's API was busy, the app read GitHub's release feed, which lists a new version a few minutes before its download is there. It now offers only versions whose download is ready, and says "try again in a few minutes" if one still isn't
-
-From 0.19.8: instant song changes from the Spotify app, lyrics that don't wait for a slow source, and "no lyrics" notes turned down.
+From 0.20.0: each widget has its own settings, and Update now no longer fails with "HTTP 404".

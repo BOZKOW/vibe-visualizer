@@ -92,6 +92,13 @@ private fun Setup(id: Int, done: (WidgetLook) -> Unit) {
                 Slider(look.dim / 90f, { look = look.copy(dim = Math.round(it * 90 / 5f) * 5) })
             }
             Text("Where the lyrics are from always shows under them: the sources ask for it.", Modifier.padding(top = 14.dp), fontSize = 13.sp, color = Color.White.copy(alpha = .55f))
+            Section("Keeping up")
+            Text("The widget follows the song while the app runs, in the background too (closing the app by swiping it away stops it). If it stops updating while the app is in the background, let the app use the battery without restrictions.",
+                fontSize = 13.sp, lineHeight = 18.sp, color = Color.White.copy(alpha = .65f))
+            val ctx = androidx.compose.ui.platform.LocalContext.current
+            androidx.compose.material3.FilledTonalButton(onClick = {
+                runCatching { ctx.startActivity(Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS, android.net.Uri.fromParts("package", ctx.packageName, null))) }
+            }, Modifier.padding(top = 8.dp)) { Text("Battery settings") }
             Row(Modifier.fillMaxWidth().padding(top = 18.dp, bottom = 28.dp), horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.CenterVertically) {
                 TextButton(onClick = { look = WidgetLook() }) { Text("Reset") }
                 Spacer(Modifier.size(8.dp))
