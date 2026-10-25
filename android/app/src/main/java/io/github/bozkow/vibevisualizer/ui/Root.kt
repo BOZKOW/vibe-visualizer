@@ -69,7 +69,7 @@ fun VibeRoot() {
             val sBlur by animateFloatAsState(if (live && E.settingsPage != null) 1f else 0f, tween(if (E.settingsPage != null) 380 else 260), label = "sblur")
             // Glass: the player blurs behind the sheets
             val qBlur by animateFloatAsState(if ((S.glass && E.sheet != null || io.github.bozkow.vibevisualizer.engine.Perf.warn > 0) && !S.low) 22f else 0f, tween(260), label = "qblur")
-            if (E.inPip) { BackgroundLayer(); PipCanvas(); PipScreen() }
+            if (E.inPip) { BackgroundLayer(); PipCanvas(); PipScreen(); PipHeat() }
             else {
                 val b = maxOf(qBlur, 30f * sBlur)
                 if (!covered) Box(Modifier.fillMaxSize().then(if (b > .1f) Modifier.blur(b.dp) else Modifier)

@@ -76,7 +76,8 @@ class MainActivity : ComponentActivity() {
 
         // keep the screen on while music plays; picture-in-picture follows the music too
         lifecycleScope.launch {
-            snapshotFlow { Triple(E.playingState, S.b("aKeepOn"), S.b("aPip")) }.collect { (pl, keep, pip) ->
+            // (the heat warning changes the picture-in-picture buttons too)
+            snapshotFlow { listOf(E.playingState, S.b("aKeepOn"), S.b("aPip"), io.github.bozkow.vibevisualizer.engine.Perf.warn > 0 && !S.low) }.collect { (pl, keep, pip, _) ->
                 if (pl && keep) window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON) else window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
                 pipParams(pl && pip)
             }
@@ -165,13 +166,20 @@ class MainActivity : ComponentActivity() {
     // the controls on the picture-in-picture window (taps there don't reach the app's own buttons): previous,
     // play / pause (it follows the music), next
     private val pipReceiver = object : android.content.BroadcastReceiver() {
-        override fun onReceive(c: android.content.Context, i: Intent) { when (i.getStringExtra("a")) { "prev" -> E.prev(); "toggle" -> E.toggle(); "next" -> E.next() } }
+        override fun onReceive(c: android.content.Context, i: Intent) { when (i.getStringExtra("a")) {
+            "prev" -> E.prev(); "toggle" -> E.toggle(); "next" -> E.next()
+            "low" -> io.github.bozkow.vibevisualizer.engine.Perf.warnDone(true); "notnow" -> io.github.bozkow.vibevisualizer.engine.Perf.warnDone(false)
+        } }
     }
 
     private fun pipActions(): List<android.app.RemoteAction> {
         fun act(a: String, icon: Int, title: String, req: Int) = android.app.RemoteAction(android.graphics.drawable.Icon.createWithResource(this, icon), title, title,
             android.app.PendingIntent.getBroadcast(this, req, Intent(PIP_ACTION).setPackage(packageName).putExtra("a", a), android.app.PendingIntent.FLAG_IMMUTABLE or android.app.PendingIntent.FLAG_UPDATE_CURRENT))
         val playing = E.playingState
+        // the phone is warm: the window's buttons answer the warning shown in it
+        if (io.github.bozkow.vibevisualizer.engine.Perf.warn > 0 && !S.low) return listOf(act("low", R.drawable.pip_heat, "Turn on Low performance mode", 4),
+            act("toggle", if (playing) R.drawable.pip_pause else R.drawable.pip_play, if (playing) "Pause" else "Play", 2),
+            act("notnow", R.drawable.pip_close, "Not now", 5))
         return listOf(act("prev", R.drawable.pip_prev, "Previous", 1),
             act("toggle", if (playing) R.drawable.pip_pause else R.drawable.pip_play, if (playing) "Pause" else "Play", 2),
             act("next", R.drawable.pip_next, "Next", 3))

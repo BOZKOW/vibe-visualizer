@@ -103,7 +103,7 @@ fun HeatWarning() {
                 .background(Color.Black.copy(alpha = .62f)).clickable(androidx.compose.runtime.remember { androidx.compose.foundation.interaction.MutableInteractionSource() }, null) {})
             Column(Modifier.animateEnterExit(enter = popIn(androidx.compose.ui.graphics.TransformOrigin.Center, .6f), exit = popOut(androidx.compose.ui.graphics.TransformOrigin.Center, .8f))
                 .statusBarsSpace().navBarsSpace().padding(32.dp).widthIn(max = 420.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                val tint = if (hot) Color(0xFFFF8A65) else Color(0xFFFFD27A)
+                val tint = if (hot) Color(0xFFFF5449) else Color(0xFFFFD27A)
                 Box(Modifier.size(96.dp).clip(CircleShape).background(tint.copy(alpha = .16f)), contentAlignment = Alignment.Center) {
                     Icon(androidx.compose.material.icons.Icons.Rounded.DeviceThermostat, null, Modifier.size(52.dp), tint = tint)
                 }
@@ -113,6 +113,25 @@ fun HeatWarning() {
                     Modifier.padding(top = 14.dp), fontSize = 15.sp, lineHeight = 21.sp, color = Color.White.copy(alpha = .75f), textAlign = TextAlign.Center)
                 Button(onClick = { E.haptic(); io.github.bozkow.vibevisualizer.engine.Perf.warnDone(true) }, Modifier.padding(top = 28.dp).fillMaxWidth().height(54.dp)) { Text("Turn on Low performance mode", fontSize = 16.sp) }
                 TextButton(onClick = { io.github.bozkow.vibevisualizer.engine.Perf.warnDone(false) }, Modifier.padding(top = 6.dp)) { Text("Not now", fontSize = 15.sp, color = Color.White.copy(alpha = .8f)) }
+            }
+        }
+    }
+}
+
+/** The heat warning in the picture-in-picture window: taps there reach only the window's own buttons, which offer
+ *  Low performance mode, play / pause and "Not now" while it shows. */
+@Composable
+fun PipHeat() {
+    val w = io.github.bozkow.vibevisualizer.engine.Perf.warn.takeIf { !S.low } ?: 0
+    androidx.compose.animation.AnimatedVisibility(w > 0, enter = androidx.compose.animation.fadeIn(), exit = androidx.compose.animation.fadeOut()) {
+        val tint = if (w >= 2) Color(0xFFFF5449) else Color(0xFFFFD27A)
+        Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = .72f)).padding(10.dp), contentAlignment = Alignment.Center) {
+            androidx.compose.foundation.layout.Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(androidx.compose.material.icons.Icons.Rounded.DeviceThermostat, null, Modifier.size(30.dp), tint = tint)
+                Column(Modifier.padding(start = 8.dp)) {
+                    Text(if (w >= 2) "Your phone is hot" else "Your phone is getting warm", fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, color = Color.White, maxLines = 2)
+                    Text("Low performance mode suggested · tap the window for its buttons", fontSize = 11.sp, color = Color.White.copy(alpha = .75f), maxLines = 2)
+                }
             }
         }
     }
