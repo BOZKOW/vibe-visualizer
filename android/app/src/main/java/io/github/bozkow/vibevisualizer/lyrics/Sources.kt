@@ -35,6 +35,17 @@ object SourceParse {
         return ls.filter { it.dots || (!CREDIT.containsMatchIn(it.text) && Match.key(it.text) !in self) }
     }
 
+    /** "This song has no lyrics" notes some catalogues send instead of lyrics (纯音乐，请欣赏 "pure music, enjoy",
+     *  此歌曲为没有填词的纯音乐 "no words were written", 暂无歌词 "no lyrics yet", "Instrumental"…): only when that's
+     *  all there is (a few short lines), so a song that sings those words keeps its lyrics. */
+    private val NO_LYRICS = Regex("纯音乐|純音樂|没有填词|沒有填詞|暂无歌词|暫無歌詞|暂时没有歌词|没有歌词|沒有歌詞|无歌词|無歌詞|歌词正在制作|歌词制作中|^instrumental$|^nolyrics?$|^nolyricsavailable$|^lyricsnotavailable$|^nolyricsfound$", RegexOption.IGNORE_CASE)
+    fun placeholder(ls: List<Line>): Boolean {
+        val real = ls.filter { !it.dots }.map { it.text.trim() }.filter { it.isNotEmpty() }
+        if (real.isEmpty() || real.size > 4) return false
+        val t = real.joinToString("").replace(Regex("[\\s\\p{P}\\p{S}]+"), "")
+        return t.length <= 40 && NO_LYRICS.containsMatchIn(t)
+    }
+
     /** A word-synced or line-synced catalogue answer as lyrics, without its credit lines. */
     fun catalogue(ls: List<Line>, sync: Boolean, name: String, source: String, title: String, artist: String): LyricsResult? {
         val clean = withoutCredits(ls, title, artist)

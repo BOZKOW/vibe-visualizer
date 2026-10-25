@@ -672,7 +672,7 @@ fun Cover(modifier: Modifier = Modifier) {
     var cur by remember { mutableStateOf(Visuals.cover?.asImageBitmap()) }
     var prev by remember { mutableStateOf<ImageBitmap?>(null) }
     val k = remember { Animatable(1f) }
-    val calm = S.low || E.reduceMotion()
+    val calm = S.low || E.reduceMotion() || Visuals.quietVer == ver
     LaunchedEffect(ver) {
         val nb = Visuals.cover?.asImageBitmap()
         if (nb === cur) return@LaunchedEffect

@@ -377,11 +377,12 @@ object Lyr {
         cur = Cur(m, key, skip)
         if (!fresh) {
             if (order[0] == "local") { val r = runCatching { fromLocal(m) }.getOrNull(); if (tok != E.coverTok) return; if (r != null) { r.prov = "local"; note("local", "found"); apply(r); return } }   // your own file wins, also over saved lyrics
-            lcache[key]?.let { r -> note(r.prov ?: "?", "from memory"); apply(r); return }
+            lcache[key]?.takeIf { !SourceParse.placeholder(it.lines) }?.let { r -> note(r.prov ?: "?", "from memory"); apply(r); return }
             val saved = LyricsCache.get(key); if (tok != E.coverTok) return
-            when (saved) {
-                is LyricsCache.Got.Hit -> { lcache[key] = saved.r; note(saved.r.prov ?: "?", "saved on this device"); apply(saved.r); return }
-                is LyricsCache.Got.Miss -> { note("—", "saved: no lyrics"); clear("No lyrics for this song", "None of your sources had it lately.", "none", listOf(E.Act("Look again") { clearSong() })); return }
+            when {
+                // a "no lyrics" note saved before it was told apart: looked up again
+                saved is LyricsCache.Got.Hit && !SourceParse.placeholder(saved.r.lines) -> { lcache[key] = saved.r; note(saved.r.prov ?: "?", "saved on this device"); apply(saved.r); return }
+                saved is LyricsCache.Got.Miss -> { note("—", "saved: no lyrics"); clear("No lyrics for this song", "None of your sources had it lately.", "none", listOf(E.Act("Look again") { clearSong() })); return }
                 else -> {}
             }
         }
@@ -393,16 +394,31 @@ object Lyr {
         // better-timed one that lands in the next few seconds replaces it.
         class Got(val r: LyricsResult?, val e: Exception?, val ms: Long)
         val asks = HashMap<String, Deferred<Got>>()
+        val done = HashMap<String, Got>()        // answers in so far, in any order
         var best: LyricsResult? = null
+        var shown: LyricsResult? = null          // on screen now (an early answer, or the best so far)
+        val place = order.withIndex().associate { it.value to it.index }
+        fun usable(r: LyricsResult?) = r != null && r.lines.any { !it.dots } && !SourceParse.placeholder(r.lines)
         fun canBeat(p: String) = best.let { b -> b == null || rank(b) == 0 || (rank(b) == 1 && p in WORDY) }
         val resting = order.associateWith { ladder(it).openUntil(wall()) }
         coroutineScope {
             fun ask(p: String): Deferred<Got> = asks.getOrPut(p) { async {
                 val a = now()
-                try { Got(fetchFrom(p, m), null, (now() - a).toLong()) }
+                val g = try { Got(fetchFrom(p, m), null, (now() - a).toLong()) }
                 catch (e: kotlinx.coroutines.CancellationException) { throw e }
                 catch (e: Exception) { Got(null, e, (now() - a).toLong()) }
+                done[p] = g; g
             } }
+            // a slow source above shouldn't hold back lyrics that are already here: after 2 s the best answer in so far
+            // shows (better timed first, then your order); a source above it that answers as well within 8 s takes over
+            launch {
+                delay(2000)
+                while (shown == null && tok == E.coverTok) {
+                    val pick = done.entries.filter { usable(it.value.r) }.maxWithOrNull(compareBy<Map.Entry<String, Got>> { rank(it.value.r!!) }.thenByDescending { place[it.key] ?: 99 })
+                    if (pick != null) { val r = pick.value.r!!; r.prov = pick.key; shown = r; note(pick.key, "shown early, while a source above it answers"); apply(r); break }
+                    delay(200)
+                }
+            }
             fun fanOut() { for (q in order) if (resting[q] == null && canBeat(q) && best.let { it == null || rank(it) < 2 }) ask(q) }
             var fanned = false
             for (p in order) {
@@ -424,6 +440,7 @@ object Lyr {
                         errs.add(PROVS.getValue(p).name + ": " + (g.e.message ?: "error"))
                         if (p != "local") ladder(p).failure(wall())
                     }
+                    r != null && SourceParse.placeholder(r.lines) -> { ladder(p).success(); note(p, "not found (only a “no lyrics” note)", g.ms) }
                     r != null && r.lines.any { !it.dots } -> {
                         ladder(p).success()
                         r.prov = p
@@ -433,7 +450,11 @@ object Lyr {
                         if (better) {
                             best = r
                             if (skipS.isEmpty()) { lcache[key] = r; LyricsCache.put(key, r); refreshCounts() }
-                            if (b == null || now() - t0 < 8000) apply(r)   // a late upgrade waits for the next time the song plays
+                            // on screen unless an early answer is there that this doesn't beat: better timed, or as well timed
+                            // from higher in your order, within 8 s (a late upgrade waits for the next time the song plays)
+                            val s = shown
+                            val beats = s == null || (s !== r && now() - t0 < 8000 && (rank(r) > rank(s) || (rank(r) == rank(s) && (place[p] ?: 99) < (place[s.prov ?: ""] ?: 99))))
+                            if (beats) { shown = r; apply(r) }
                             if (tok != E.coverTok) break
                         }
                     }
@@ -689,6 +710,7 @@ object Lyr {
         "song: " + (cur?.m?.let { it.artist + " – " + it.title + (Spotify.spId?.let { id -> " ($id)" } ?: "") } ?: "—"),
         "lyrics: " + (if (L.isNotEmpty()) (if (lsync) "synced" else "not synced") + " from " + (PROVS[prov() ?: ""]?.name ?: "?") else "none") + " · offset ${S.loff} ms · this song ${songOffMs} ms · ${Outputs.route.label} ${Outputs.offMs} ms" + (if (Outputs.here(E.src)) "" else " (not playing here)"),
         "cover: " + E.coverNote.ifEmpty { "—" },
+        "song changes: " + (if (E.src == "spotify") Spotify.paceNote() else "—"),
         "camera cutout: " + io.github.bozkow.vibevisualizer.ui.cutoutNote(E.activity?.window?.decorView),
         "last lookup: " + (lookupLog.joinToString("; ") { it.p + " " + it.st + (it.ms?.let { m -> " ${m}ms" } ?: "") }.ifEmpty { "—" }),
         "sources: " + S.str("lprov"),

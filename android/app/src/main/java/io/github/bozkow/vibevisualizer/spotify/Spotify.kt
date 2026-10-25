@@ -325,7 +325,14 @@ object Spotify {
     }
 
     /** A new song started in the Spotify app. */
-    fun onAppTrack() { if (E.src == "spotify" && S.b("aSession")) catchUp() }
+    fun onAppTrack() {
+        if (E.src != "spotify" || !S.b("aSession")) return
+        if (!appTiming()) E.onAppSong(SpotifyApp.title, SpotifyApp.artist, SpotifyApp.artFor(SpotifyApp.title, SpotifyApp.durMs.toDouble()))   // shown at once
+        catchUp()
+    }
+
+    /** How the app hears about Spotify's songs, for the debug info. */
+    fun paceNote() = (if (SpotifyApp.connected.value && S.b("aSession")) "the Spotify app on this phone tells it at once" else "it asks Spotify") + " · every ${paceNow() / 1000} s"
 
     private var catchJob: Job? = null
     private var lastCatch = 0L
@@ -335,7 +342,7 @@ object Spotify {
         catchJob?.cancel()
         catchJob = Vibe.scope.launch {
             for (k in 0 until 4) {
-                delay(if (k == 0) 250 else 900)
+                delay(if (k == 0) 120 else 700)
                 if (E.src != "spotify" || wall() < backoff) return@launch
                 poll(); delay(700)
                 if (appTiming()) return@launch   // caught up

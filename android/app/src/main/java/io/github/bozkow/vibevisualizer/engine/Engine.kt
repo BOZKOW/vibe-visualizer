@@ -174,16 +174,34 @@ object E {
 
     fun onSpUpdate() { updPlay(); CanvasVideo.syncPlay() }
 
+    /** The Spotify app on this phone changed song: its name and cover show at once, without waiting for the Web API
+     *  to name it (which brings its id, and with it the lyrics and the Canvas, a moment later). */
+    private var appShown = ""; private var appArt = false
+    fun onAppSong(t: String, a: String, art: android.graphics.Bitmap?) {
+        if (t.isEmpty() || t == title || src != "spotify") return
+        val tok = ++coverTok
+        Audio.dropBars(); CanvasVideo.clear(true); Lyr.loading()
+        title = t; artist = a; year = ""; status = "Spotify"; trackVer++
+        appShown = t
+        appArt = art != null && setCoverBitmap(art, "From the Spotify app", tok)
+        if (!appArt) resetCover()
+    }
+
     fun onSpTrack(m: SongMeta) {
         curArtistId = m.artistId
         Spotify.likeCheck(m)
-        Audio.dropBars()   // the bars drop and grow back with the new song
+        // already showing from the Spotify app: no second drop of the bars, no title animating in again, and the cover
+        // only gets sharper
+        val same = appShown.isNotEmpty() && appShown == SpotifyApp.title && SpotifyApp.matches(m.title, m.duration * 1000)
+        val quiet = same && appArt
+        appShown = ""; appArt = false
+        if (!same) Audio.dropBars()   // the bars drop and grow back with the new song
         val tok = ++coverTok
         CanvasVideo.clear(true)
-        title = m.title; artist = m.artist; year = m.year; status = "Spotify"; trackVer++
+        title = m.title; artist = m.artist; year = m.year; status = "Spotify"; if (!same) trackVer++
         Vibe.scope.launch {
             // Spotify's cover; once more past the cache if it doesn't load, then its smaller size
-            var ok = m.cover.isNotEmpty() && setCover(m.cover, "", tok)
+            var ok = m.cover.isNotEmpty() && setCover(m.cover, "", tok, quiet = quiet)
             if (!ok && tok == coverTok && m.cover.isNotEmpty()) { delay(500); ok = setCover(m.cover, "", tok, fresh = true) }
             if (!ok && tok == coverTok && m.coverSmall.isNotEmpty()) ok = setCover(m.coverSmall, "", tok, fresh = true)
             if (tok == coverTok) coverNote = if (ok) "from Spotify" else if (m.cover.isEmpty()) "Spotify gave none" else "Spotify’s didn’t load: " + Images.lastError
@@ -248,17 +266,17 @@ object E {
 
     /* ================= cover pipeline ================= */
 
-    suspend fun setCover(url: String, label: String, tok: Int, fresh: Boolean = false): Boolean {
+    suspend fun setCover(url: String, label: String, tok: Int, fresh: Boolean = false, quiet: Boolean = false): Boolean {
         val bm = Images.load(url, fresh = fresh) ?: return false
-        return setCoverBitmap(bm, label, tok)
+        return setCoverBitmap(bm, label, tok, quiet)
     }
 
     /** Where this song's cover came from, or why none did (Settings → Help & about → debug info). */
     var coverNote = ""; private set
 
-    fun setCoverBitmap(bm: android.graphics.Bitmap?, label: String, tok: Int): Boolean {
+    fun setCoverBitmap(bm: android.graphics.Bitmap?, label: String, tok: Int, quiet: Boolean = false): Boolean {
         if (bm == null || tok != coverTok) return false
-        Visuals.setCover(bm)
+        Visuals.setCover(bm, quiet)
         if (label.isNotEmpty() || src != "spotify") status = label
         if (S.bgStyle != "dynamic") Background.applyStill()
         return true

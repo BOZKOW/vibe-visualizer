@@ -106,8 +106,11 @@ object Visuals {
         return raw to bar
     }
 
-    fun setCover(img: Bitmap?) {
+    var quietVer = -1; private set   // a cover that changes without its animation (the same picture, sharper)
+
+    fun setCover(img: Bitmap?, quiet: Boolean = false) {
         cover = img
+        if (quiet) quietVer = coverVer + 1
         if (img != null) runCatching { extract(img) }.onSuccess { (r, b) -> rawCols = r; barCols = b }.onFailure { rawCols = DEF_COLS; barCols = DEF_COLS }
         else { rawCols = DEF_COLS; barCols = DEF_COLS }
         palDirty = true
