@@ -36,6 +36,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.statusBarsIgnoringVisibility
 import androidx.compose.foundation.layout.navigationBarsIgnoringVisibility
 import androidx.compose.ui.draw.clip
@@ -161,3 +162,31 @@ val pillShape = RoundedCornerShape(50)
 val cardShape = RoundedCornerShape(24.dp)
 fun circle() = CircleShape
 @Suppress("unused") private val keepTheme = MaterialTheme
+
+/** What the camera cutout takes, per side: the larger of the room Android reports as safe and where the hole
+ *  actually is, with a little air beside it, on the left and right (a phone on its side). Some phones report less
+ *  than the hole takes there. The top and bottom are Android's (the status bar covers the hole in portrait). */
+@Composable
+fun cutoutInsets(): androidx.compose.foundation.layout.WindowInsets {
+    val d = androidx.compose.ui.platform.LocalDensity.current
+    val dir = androidx.compose.ui.platform.LocalLayoutDirection.current
+    val base = WindowInsets.displayCutout   // read here: a rotation recomposes this
+    var l = base.getLeft(d, dir); val t = base.getTop(d); var r = base.getRight(d, dir); val b = base.getBottom(d)
+    val v = androidx.compose.ui.platform.LocalView.current
+    val w = v.width; val h = v.height
+    if (w > 0 && h > 0) {
+        val air = with(d) { 8.dp.roundToPx() }
+        v.rootWindowInsets?.displayCutout?.boundingRects?.forEach { rc ->
+            val toL = rc.left; val toR = w - rc.right
+            if (minOf(toL, toR) > minOf(rc.top, h - rc.bottom)) return@forEach   // at the top or bottom
+            if (toL <= toR) l = maxOf(l, rc.right + air) else r = maxOf(r, w - rc.left + air)
+        }
+    }
+    return androidx.compose.foundation.layout.WindowInsets(l, t, r, b)
+}
+
+/** The cutout as Android reports it and where it is, for the debug info. */
+fun cutoutNote(v: android.view.View?): String {
+    val c = v?.rootWindowInsets?.displayCutout ?: return "none"
+    return "safe L${c.safeInsetLeft} T${c.safeInsetTop} R${c.safeInsetRight} B${c.safeInsetBottom} · holes " + c.boundingRects.joinToString { "${it.left},${it.top}-${it.right},${it.bottom}" } + " · window ${v.width}×${v.height}"
+}

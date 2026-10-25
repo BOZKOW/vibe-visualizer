@@ -314,7 +314,7 @@ fun SettingsScreen() {
         // contentColor: on Glass's see-through surface the text and icons defaulted to black
         // over the player blurred live (VibeRoot draws it), or the design's own background in Low performance mode
         Surface(Modifier.fillMaxSize(), color = if (S.glass || SettingsUi.live) Color.Transparent else MaterialTheme.colorScheme.surfaceContainerLowest, contentColor = Color.White) {
-            Row(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.statusBarsIgnoringVisibility.union(WindowInsets.displayCutout).only(WindowInsetsSides.Top)).windowInsetsPadding(WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal))) {
+            Row(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.statusBarsIgnoringVisibility.union(WindowInsets.displayCutout).only(WindowInsetsSides.Top)).windowInsetsPadding(cutoutInsets().only(WindowInsetsSides.Horizontal))) {
                 @Composable fun ListPane(m: Modifier) {
                     Column(m) {
                         Row(Modifier.fillMaxWidth().padding(start = 8.dp, end = 8.dp, top = 10.dp, bottom = 2.dp), verticalAlignment = Alignment.CenterVertically) {

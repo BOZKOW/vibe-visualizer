@@ -689,6 +689,7 @@ object Lyr {
         "song: " + (cur?.m?.let { it.artist + " – " + it.title + (Spotify.spId?.let { id -> " ($id)" } ?: "") } ?: "—"),
         "lyrics: " + (if (L.isNotEmpty()) (if (lsync) "synced" else "not synced") + " from " + (PROVS[prov() ?: ""]?.name ?: "?") else "none") + " · offset ${S.loff} ms · this song ${songOffMs} ms · ${Outputs.route.label} ${Outputs.offMs} ms" + (if (Outputs.here(E.src)) "" else " (not playing here)"),
         "cover: " + E.coverNote.ifEmpty { "—" },
+        "camera cutout: " + io.github.bozkow.vibevisualizer.ui.cutoutNote(E.activity?.window?.decorView),
         "last lookup: " + (lookupLog.joinToString("; ") { it.p + " " + it.st + (it.ms?.let { m -> " ${m}ms" } ?: "") }.ifEmpty { "—" }),
         "sources: " + S.str("lprov"),
         "problems: " + E.problems(false).joinToString("; ") { it.t },
