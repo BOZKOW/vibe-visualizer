@@ -52,6 +52,15 @@ object Defaults {
         "aLock" to false,       // show over the lock screen
         "aAmbient" to false,    // ambient mode: untouched while music plays, the lyrics and the song alone on black
         "aAmbientSec" to "30",  // how long untouched before it dims
+        "aAmbClock" to true,    //   what it shows, as an always-on display: the clock and date
+        "aAmbBattery" to true,  //   the battery
+        "aAmbCover" to true,    //   the cover
+        "aAmbSong" to true,     //   the song's name
+        "aAmbLyrics" to true,   //   the lyrics
+        "aAmbBars" to false,    //   the bars
+        "aAmbBg" to "black",    //   black, or the player dimmed (dim)
+        "aAmbBright" to 10,     //   the screen at most this bright (%)
+        "aAmbShift" to true,    //   drifts a little every minute (OLED burn-in)
         "aPipSize" to 100,      // the lyrics' size in picture-in-picture (%)
         "aSaverLow" to true,    // Low performance mode while the phone's Power saving is on
         // the player screen

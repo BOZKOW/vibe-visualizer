@@ -93,7 +93,7 @@ class MainActivity : ComponentActivity() {
         // Ambient mode: the screen no brighter than 10% (and never brighter than it was)
         lifecycleScope.launch { snapshotFlow { E.ambient }.collect { on ->
             val sys = runCatching { Settings.System.getInt(contentResolver, Settings.System.SCREEN_BRIGHTNESS) / 255f }.getOrDefault(1f)
-            window.attributes = window.attributes.apply { screenBrightness = if (on) minOf(sys, .1f) else WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE }
+            window.attributes = window.attributes.apply { screenBrightness = if (on) minOf(sys, S.i("aAmbBright").coerceIn(3, 60) / 100f) else WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE }
         } }
         lifecycleScope.launch { snapshotFlow { S.b("aHideStatus") to S.b("aHideNav") }.collect { bars() } }
         lifecycleScope.launch { snapshotFlow { S.str("fpscap") to S.low }.collect { (c, low) -> refreshRate(if (low) 60f else c.toFloatOrNull() ?: 0f) } }

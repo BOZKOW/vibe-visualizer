@@ -158,6 +158,8 @@ fun PlayerScreen() {
         AmbientBlack()
         // clear of the bars and of the camera hole (where it really is: on its side some phones report less room)
         val pad = Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.statusBarsIgnoringVisibility.union(WindowInsets.navigationBarsIgnoringVisibility).union(cutoutInsets()).only(WindowInsetsSides.Vertical + WindowInsetsSides.Horizontal))
+        // Ambient mode: its own screen, as a phone's always-on display
+        if (E.ambient) { Box(pad) { AmbientScreen() }; return@BoxWithConstraints }
         when {
             E.src == "none" -> Box(pad) { EmptyState() }
             wide -> Box(pad) { WideLayout() }
@@ -334,7 +336,8 @@ private fun Modifier.ambientOut(): Modifier {
 /** Ambient mode's black, over the background and the Canvas, under the lyrics and the song. */
 @Composable
 private fun AmbientBlack() {
-    val k by animateFloatAsState(if (E.ambient) 1f else 0f, tween(if (E.ambient) 1500 else 300), label = "ambblack")
+    // black, or the player behind dimmed right down (Settings → Player screen → Ambient mode → Background)
+    val k by animateFloatAsState(if (E.ambient) (if (S.str("aAmbBg") == "dim") .78f else 1f) else 0f, tween(if (E.ambient) 1500 else 300), label = "ambblack")
     if (k > 0f) Box(Modifier.fillMaxSize().graphicsLayer { alpha = k }.background(Color.Black))
 }
 

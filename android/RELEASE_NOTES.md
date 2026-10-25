@@ -1,19 +1,7 @@
-Vibe Visualizer for Android 0.21.0 (beta). Android 12 or newer; it installs over 0.20.1 (Settings → Help & about → Update now).
+Vibe Visualizer for Android 0.22.0 (beta). Android 12 or newer; it installs over 0.21.0 (Settings → Help & about → Update now).
 
-### Settings, sorted out
+### New
 
-- **Every page says what's on it**, right under its name in the list, so nothing hides in plain sight
-- **New pages, one kind of thing each**: Look (design, colours, background) · Player screen · Canvas · Visualizer · Lyrics · Lyrics timing · Translation · Spotify & your music · Server & connection · Small window & widget · Performance & battery · Experiments · Help & about
-- Where things went: the Canvas, its blur and what's behind the controls are on **Canvas**; Ambient mode, the lock screen, keeping the screen on and hiding the status and navigation bars are on **Player screen**; your server and Spicy Lyrics' status are on **Server & connection**; Copy debug info and the lyrics cache are on **Help & about**; picture-in-picture and the widgets are on **Small window & widget**; the lyrics' offset and desync fix are on **Lyrics timing**
+- **Ambient mode is an always-on display now** (Settings → Player screen → Ambient mode): left untouched while music plays, the screen dims to what you pick: the clock and date, the battery, the cover, the song's name, the lyrics (going on in the middle) and the bars, on black or over the player dimmed right down. How bright it gets is yours to set, and everything drifts a few pixels every minute so nothing stays lit on the same spot (it protects OLED screens from burn-in; you can turn that off). On its side, the clock and the song sit on the left and the lyrics on the right. Any touch brings everything back
 
-### New settings (Player screen)
-
-- How long until the controls hide (2, 3, 5 or 10 seconds)
-- The like button beside a Spotify song, on or off
-- The song name's size (small, medium, large), and whether long names scroll or end in "…"
-- The seek bar: thin, normal or thick
-- How round the cover's corners are
-
-Everything starts as it was; your settings stay.
-
-From 0.20.1: Spicy Lyrics Mobile 0.15.1's widget fixes.
+From 0.21.0: Settings sorted into clearer pages (each says what's on it), and new Player screen settings.
