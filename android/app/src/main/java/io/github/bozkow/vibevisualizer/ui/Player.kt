@@ -475,11 +475,12 @@ private fun TitleRow(big: Boolean, center: Boolean = false, year: Boolean = fals
     LaunchedEffect(ver) { if (!S.low && !E.reduceMotion()) { a.snapTo(0f); a.animateTo(1f, tween(500, easing = FastOutSlowInEasing)) } }
     Row(Modifier.fillMaxWidth().graphicsLayer { alpha = a.value; translationY = (1 - a.value) * 10f * density }, verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f), horizontalAlignment = if (center) Alignment.CenterHorizontally else Alignment.Start) {
-            Scrolling(E.title, if (big) 27.sp else 19.sp, FontWeight.Bold, Color.White, (-.3).sp)
+            val k = when (S.str("aTitle")) { "s" -> .85f; "l" -> 1.18f; else -> 1f }   // Settings → Player screen → Song name size
+            Scrolling(E.title, (if (big) 27f else 19f).times(k).sp, FontWeight.Bold, Color.White, (-.3).sp)
             val by = if (year && E.year.isNotEmpty()) listOf(E.artist, E.year).filter { it.isNotEmpty() }.joinToString(" · ") else E.artist
-            if (by.isNotEmpty()) Scrolling(by, if (big) 19.sp else 15.sp, FontWeight.Medium, dim)
+            if (by.isNotEmpty()) Scrolling(by, (if (big) 19f else 15f).times(k).sp, FontWeight.Medium, dim)
         }
-        if (E.src == "spotify" && !center) LikeButton()
+        if (E.src == "spotify" && !center && S.b("aLike")) LikeButton()
     }
 }
 
@@ -489,6 +490,10 @@ private fun Scrolling(text: String, size: androidx.compose.ui.unit.TextUnit, wei
     var boxW by remember { androidx.compose.runtime.mutableIntStateOf(0) }
     var textW by remember(text) { androidx.compose.runtime.mutableIntStateOf(0) }
     val over = boxW > 0 && textW > boxW
+    if (!S.b("aMarquee")) {   // Settings → Player screen → Scroll long names, off: it ends in "…"
+        Text(text, style = TextStyle(shadow = textShadow), fontSize = size, fontWeight = weight, letterSpacing = spacing, color = color, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        return
+    }
     val m = with(androidx.compose.ui.platform.LocalDensity.current) { 20.dp.roundToPx() }
     // too long: the scrolling reaches 20 dp into the margin on the left, so the name slides on past where it starts and
     // fades out there instead of being cut in a hard line; at rest it starts where it always does, its first letter
@@ -611,7 +616,8 @@ private fun SeekRow(inline: Boolean = false) {
     val glide by animateFloatAsState(E.seekFrac, tween(260, easing = androidx.compose.animation.core.LinearEasing), label = "seek")
     val frac = drag ?: if (kotlin.math.abs(E.seekFrac - glide) > .02f) E.seekFrac else glide   // a jump (seek, new song) isn't glided
     val dur = E.curDur()
-    val bar = @Composable { m: Modifier -> ThickSeek(frac, onDrag = { f -> drag = f; E.seekDrag(true) }, onDone = { f -> if (drag == null) E.seekDrag(true); drag = null; E.seekFraction(f); E.seekDrag(false) }, enabled = E.src != "none" && dur > 0, modifier = m.quietTouch()) }
+    val thick = when (S.str("aSeek")) { "thin" -> 6.dp; "thick" -> 18.dp; else -> 12.dp }   // Settings → Player screen → Seek bar
+    val bar = @Composable { m: Modifier -> ThickSeek(frac, thick = thick, onDrag = { f -> drag = f; E.seekDrag(true) }, onDone = { f -> if (drag == null) E.seekDrag(true); drag = null; E.seekFraction(f); E.seekDrag(false) }, enabled = E.src != "none" && dur > 0, modifier = m.quietTouch()) }
     val now = @Composable { Text(fmtTime(if (drag != null) frac * dur else E.curTime()), fontSize = 14.sp, color = if (drag != null && S.b("xScrub")) Color.White else dim, fontWeight = FontWeight.Medium) }
     val end = @Composable { Text(if (drag != null && S.b("xScrub")) "-" + fmtTime(dur - frac * dur) else fmtTime(dur), fontSize = 14.sp, color = dim, fontWeight = FontWeight.Medium) }
     // inline: the times on either side of the bar (under a cover in landscape)
@@ -659,7 +665,7 @@ private fun Modifier.canvasShrink(): Modifier {
 /** The cover, in its frame (the Canvas plays behind the player, not in here). */
 @Composable
 fun CoverArt(modifier: Modifier, corner: Dp, small: Boolean = false) {
-    val shape = RoundedCornerShape(corner)
+    val shape = RoundedCornerShape(corner * (S.i("aCoverR").coerceIn(0, 40) / 22f))   // Settings → Player screen → Cover corners (22: as designed)
     Box(modifier.then(if (small) Modifier else Modifier.shadow(24.dp, shape, ambientColor = Color.Black, spotColor = Color.Black)).clip(shape).background(Color.White.copy(alpha = .08f))) {
         Cover(Modifier.fillMaxSize())
     }

@@ -109,7 +109,7 @@ fun HeatWarning() {
                 }
                 Text(if (hot) "Your phone is hot" else "Your phone is getting warm", Modifier.padding(top = 24.dp), fontSize = 28.sp, fontWeight = FontWeight.ExtraBold, color = Color.White, textAlign = TextAlign.Center)
                 last.c?.let { Text("Battery at " + Math.round(it) + " °C", Modifier.padding(top = 6.dp), fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = tint) }
-                Text("Low performance mode keeps it cooler: the moving background and the live blurs rest, and the app draws fewer frames a second. You can turn it off again in Settings → Performance.",
+                Text("Low performance mode keeps it cooler: the moving background and the live blurs rest, and the app draws fewer frames a second. You can turn it off again in Settings → Performance & battery.",
                     Modifier.padding(top = 14.dp), fontSize = 15.sp, lineHeight = 21.sp, color = Color.White.copy(alpha = .75f), textAlign = TextAlign.Center)
                 Button(onClick = { E.haptic(); io.github.bozkow.vibevisualizer.engine.Perf.warnDone(true) }, Modifier.padding(top = 28.dp).fillMaxWidth().height(54.dp)) { Text("Turn on Low performance mode", fontSize = 16.sp) }
                 TextButton(onClick = { io.github.bozkow.vibevisualizer.engine.Perf.warnDone(false) }, Modifier.padding(top = 6.dp)) { Text("Not now", fontSize = 15.sp, color = Color.White.copy(alpha = .8f)) }

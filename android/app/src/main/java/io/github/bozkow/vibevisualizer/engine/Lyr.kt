@@ -135,7 +135,7 @@ object Lyr {
     }
     fun setProv(list: List<PItem>) { S.set("lprov", list.joinToString(",") { it.k + ":" + (if (it.on) 1 else 0) }); lcache.clear() }
 
-    private fun server(path: String): String = Server.url(path) ?: throw SkipError("needs your server (Settings → Help & about → Server)")
+    private fun server(path: String): String = Server.url(path) ?: throw SkipError("needs your server (Settings → Server & connection)")
 
     private fun dbg(m: String) { if (BuildConfig.DEBUG) android.util.Log.d("VV-lyrics", m) }
 
@@ -691,7 +691,7 @@ object Lyr {
             else SongMeta(id = "0VjIjW4GlUZAMYd2vXMi3b", title = "Blinding Lights", artist = "The Weeknd", duration = 200.0)
         Vibe.scope.launch {
             try { val r = fromSpicy(m); out(if (r != null && r.lines.isNotEmpty()) "Working · ${r.lines.size} lines for “${m.title}” (" + (if (r.sync) "synced" else "not synced") + ")." else "Connected, but Spicy Lyrics has nothing for “${m.title}”.") }
-            catch (e: SkipError) { out(if (e.message?.contains("key") == true) "No API key on your server yet (see below)." else "Needs your server: set it in Settings → Help & about.") }
+            catch (e: SkipError) { out(if (e.message?.contains("key") == true) "No API key on your server yet (see below)." else "Needs your server: set it in Settings → Server & connection.") }
             catch (e: Exception) { out("Failed: " + e.message) }
         }
     }

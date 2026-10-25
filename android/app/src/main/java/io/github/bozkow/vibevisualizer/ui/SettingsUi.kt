@@ -62,6 +62,11 @@ import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material.icons.rounded.KeyboardArrowUp
 import androidx.compose.material.icons.rounded.Palette
+import androidx.compose.material.icons.rounded.PlayCircle
+import androidx.compose.material.icons.rounded.Movie
+import androidx.compose.material.icons.rounded.Timer
+import androidx.compose.material.icons.rounded.Dns
+import androidx.compose.material.icons.rounded.PictureInPictureAlt
 import androidx.compose.material.icons.rounded.PhoneAndroid
 import androidx.compose.material.icons.rounded.Restore
 import androidx.compose.material.icons.rounded.Science
@@ -138,131 +143,158 @@ sealed class Item(val search: String) {
     class Txt(val t: String) : Item(t)
     class Custom(text: String, val c: @Composable () -> Unit) : Item(text)
 }
-class Page(val id: String, val name: String, val icon: ImageVector, val items: List<Item>)
+/** A page of Settings: [sub] says what's on it (under its name in the list), [group] which card it's in there. */
+class Page(val id: String, val name: String, val icon: ImageVector, val items: List<Item>, val sub: String = "", val group: Int = 0)
 
 private val pct: (Int) -> String = { "$it%" }
 
 private fun pages(): List<Page> = listOf(
-    Page("look", "Appearance", Icons.Rounded.Palette, listOf(
-        Item.Head("Design"),
+    Page("look", "Look", Icons.Rounded.Palette, listOf(
+        Item.Sub("Design"),
         Item.Ch("aDesign", "Design", listOf("android" to "Android", "glass" to "Glass"), "Android: Material You, with the colors of the cover. Glass: frosted glass over your cover: Settings, the panels and the sheets let the blurred cover show through."),
-        Item.Ch("uiHide", "Controls while music plays", listOf("idle" to "Hide after a few seconds", "never" to "Always visible"), "While music plays untouched, the controls slide away after a few seconds on every screen (the song and the seek bar stay on Now Playing); a tap brings them back."),
-        Item.Head("Colors"),
+        Item.Sub("Colours"),
         Item.Ch("theme", "Theme", listOf("cover" to "Cover colors", "aurora" to "Aurora", "sunset" to "Sunset", "neon" to "Neon", "ice" to "Ice", "mono" to "Mono", "custom" to "Custom")),
         Item.Custom("Custom colors") { CustomColors() },
-        Item.Head("Background"),
+        Item.Sub("Background"),
         Item.Ch("bgStyle", "Background", listOf("dynamic" to "Dynamic (animated cover)", "artist" to "Artist image", "cover" to "Cover art", "color" to "Color", "none" to "None"), "Artist image needs Spotify; other songs use the cover art."),
-        Item.Sl("bgblur", "Blur", 0, 100), Item.Sl("bri", "Brightness", 20, 140), Item.Sl("sat", "Saturation", 0, 300),
+        Item.Sl("bgblur", "Blur", 0, 100),
+        Item.Sl("bri", "Brightness", 20, 140),
+        Item.Sl("sat", "Saturation", 0, 300),
         Item.Sl("bgspeed", "Motion speed (0 = still)", 0, 300, fmt = { if (it == 0) "Still" else String.format("%.2g×", it / 100.0) }),
-        Item.Head("Cover"),
+    ), sub = "Design, colours, background", group = 0),
+    Page("player", "Player screen", Icons.Rounded.PlayCircle, listOf(
+        Item.Sub("Controls"),
+        Item.Ch("uiHide", "Controls while music plays", listOf("idle" to "Hide after a few seconds", "never" to "Always visible"), "While music plays untouched, the controls slide away after a few seconds on every screen (the song and the seek bar stay on Now Playing); a tap brings them back."),
+        Item.Ch("aHideSec", "Hide them after", listOf("2" to "2 seconds", "3" to "3 seconds", "5" to "5 seconds", "10" to "10 seconds"), "How long untouched while music plays."),
+        Item.Sw("volshow", "Volume slider"),
+        Item.Sw("aLike", "Like button", "The heart beside a Spotify song’s name, to save it to your Liked Songs."),
+        Item.Sub("Song name and seek bar"),
+        Item.Ch("aTitle", "Song name size", listOf("s" to "Small", "m" to "Medium", "l" to "Large")),
+        Item.Sw("aMarquee", "Scroll long names", "A song name too long for its row scrolls through, fading at the sides. Off, it ends in “…”."),
+        Item.Ch("aSeek", "Seek bar", listOf("thin" to "Thin", "normal" to "Normal", "thick" to "Thick")),
+        Item.Sub("Cover"),
+        Item.Sl("aCoverR", "Cover corners", 0, 40, 2, "How round the cover’s corners are (0: square).", fmt = { if (it == 0) "Square" else "$it" }),
         Item.Sw("online", "Search cover online for your own files"),
         Item.Custom("Choose cover image") { Buttons("Choose cover image…" to { FilePicker.image?.invoke() }) },
-    )),
+        Item.Sub("Screen"),
+        Item.Sw("aKeepOn", "Keep the screen on while music plays"),
+        Item.Sw("aAmbient", "Ambient mode", "Left untouched while music plays, the screen dims to the lyrics and the song on black. Over the big cover or a song without lyrics, just the song. Any touch brings everything back."),
+        Item.Ch("aAmbientSec", "Dim after", listOf("15" to "15 seconds", "30" to "30 seconds", "60" to "1 minute", "120" to "2 minutes", "300" to "5 minutes"), "How long untouched before Ambient mode dims the screen."),
+        Item.Sw("aLock", "Show over the lock screen", "The player shows on the lock screen while it’s open (Keep the screen on, docked in a stand). Settings and the other menus ask you to unlock first."),
+        Item.Sw("aHideStatus", "Hide the status bar", "The bar with the time and notifications at the top. Swipe down from the top to see it for a moment."),
+        Item.Sw("aHideNav", "Hide the navigation bar", "The gesture bar or buttons at the bottom. Swipe up from the bottom to see it for a moment."),
+        Item.Sw("aHaptics", "Haptic feedback", "A light tick on taps and toggles."),
+    ), sub = "Controls, song name, seek bar, cover, Ambient mode, lock screen, status and navigation bars", group = 0),
+    Page("canvas", "Canvas", Icons.Rounded.Movie, listOf(
+        Item.Sw("canvasOn", "Canvas", "Spotify’s short looping video plays as the background behind the player (found by your server, or Spicy Lyrics’ Canvas service)."),
+        Item.Sw("cvNoArt", "Hide the cover while a Canvas plays", "Only the Canvas, no cover in front of it."),
+        Item.Sw("cvShrink", "Smaller cover while a Canvas plays", "The cover glides to a smaller size in the middle, so more of the Canvas shows around it."),
+        Item.Sub("Blur"),
+        Item.Sw("cvBlur", "Blur the Canvas", "The Canvas behind the player, softly blurred."),
+        Item.Ch("cvBehind", "Behind the controls", listOf("dark" to "Dark gradient", "blur" to "Blur", "both" to "Blur and dark gradient", "none" to "Nothing"),
+            "With a Canvas: what’s under the top bar, the song, the seek bar, the bars and the controls, so they stay readable. Blur frosts the Canvas there."),
+        Item.Sl("cvBlurAmt", "Canvas blur", 5, 100, 5, "How strong: Blur the Canvas, and Blur behind the controls."),
+        Item.Sub("Where it comes from"),
+        Item.Sw("cvSpicy", "Spicy Lyrics’ Canvas service", "When your server has no Canvas for a Spotify song (or no server is set), its Spotify ID goes to Spicy Lyrics’ Canvas service (spicylyrics.org), which asks Spotify. Nothing else is sent. Unofficial: it may stop working."),
+        Item.Custom("Choose canvas video Canvas endpoint") { CanvasSection() },
+    ), sub = "Video background, blur, what’s behind the controls", group = 0),
     Page("viz", "Visualizer", VIcons.bars, listOf(
-        Item.Head("Visualizer"),
+        Item.Sub("What the bars hear"),
         Item.Custom("Audio for the bars phone sound microphone") { AudioChoice() },
-        Item.Custom("Bars in every view under the cover and the lyrics") { SwitchRow("Bars in every view", "Under the cover and the lyrics too, not only on the Visualizer screen.", S.view == "both") { S.set("view", if (it) "both" else "lyrics") } },
         Item.Sw("bridge", "Vibe Bridge", "Bars from the device that plays the music, through your server: it hears everything that device plays, the Spotify app included."),
         Item.Custom("bridge status") { Hint(if (!S.b("bridge")) "Off." else if (Audio.bridgeOn) "Connected through your server" + (Audio.bridge.device.takeIf { it.isNotEmpty() }?.let { " · listening to $it" } ?: "") + "." else "Not connected. Start Vibe Bridge with --server ${Server.base?.removePrefix("https://") ?: "<your server>"} on the device that plays the music.") },
+        Item.Sub("Where"),
+        Item.Custom("Bars in every view under the cover and the lyrics") { SwitchRow("Bars in every view", "Under the cover and the lyrics too, not only on the Visualizer screen.", S.view == "both") { S.set("view", if (it) "both" else "lyrics") } },
+        Item.Sub("Movement"),
         Item.Sw("auto", "Auto sensitivity"),
-        Item.Sl("boost", "Sensitivity / boost", 30, 300), Item.Sl("resp", "Smoothness (low = snappier)", 0, 100), Item.Sl("blur", "Motion blur", 0, 90),
-        Item.Sl("bars", "Bar count", 24, 128, fmt = { "$it" }), Item.Sl("gap", "Bar gap", 0, 70),
-        Item.Sw("glow", "Glow"), Item.Sw("round", "Rounded bars"),
-    )),
+        Item.Sl("boost", "Sensitivity / boost", 30, 300),
+        Item.Sl("resp", "Smoothness (low = snappier)", 0, 100),
+        Item.Sl("blur", "Motion blur", 0, 90),
+        Item.Sub("Look"),
+        Item.Sl("bars", "Bar count", 24, 128, fmt = { "$it" }),
+        Item.Sl("gap", "Bar gap", 0, 70),
+        Item.Sw("glow", "Glow"),
+        Item.Sw("round", "Rounded bars"),
+    ), sub = "What the bars hear, Vibe Bridge, where and how they look", group = 0),
     Page("lyrics", "Lyrics", VIcons.lyrics, listOf(
-        Item.Head("Lyrics"),
+        Item.Sub("Sources"),
         Item.Custom("Sources, in priority order Spicy Lyrics LRCLIB NetEase AMLL Spotify your lyrics files") { Sources() },
-        Item.Custom("Lyrics timing earlier later this song this output resync") { Buttons("Lyrics timing…" to { E.settingsPage = null; E.sheet = "timing" }) },
-        Item.Sl("loff", "Timing offset (ms)", -3000, 3000, 50, "Lyrics behind the music? Raise it. Lyrics timing (above) also has this song’s and this output’s own.", fmt = { (if (it > 0) "+" else "") + it + " ms" }),
-        Item.Ch("lDesync", "Desync detection", listOf("ask" to "Ask before fixing", "auto" to "Fix automatically", "off" to "Off"), "Listens to the music and checks that the singing lines up with the lyrics. Needs real sound for the bars (phone sound, Vibe Bridge, the microphone or your own file). A fix only applies to the song playing."),
-        Item.Custom("desync status") { if (Desync.stat.isNotEmpty()) Hint(Desync.stat) },
-        Item.Sl("lsize", "Text size", 70, 150), Item.Sw("lblur", "Blur inactive lines"),
-        Item.Ch("credPos", "Lyrics credits", listOf("corner" to "Bottom-left corner", "lyrics" to "Under the lyrics"), "The provider, maker and uploader are always shown while lyrics are on screen (required by Spicy Lyrics)."),
-        Item.Sub("Style"),
+        Item.Sw("lnotice", "No lyrics notice", "Say so when a song has no lyrics."),
+        Item.Sub("Text"),
+        Item.Sl("lsize", "Text size", 70, 150),
         Item.Ch("lfont", "Lyrics font", listOf("vv" to "Vibe Visualizer", "spicy" to "Spicy Lyrics", "system" to "System font"), "Spicy Lyrics: the display cut Spicy Lyrics shows lyrics in."),
+        Item.Sw("lblur", "Blur inactive lines"),
+        Item.Sub("Style"),
         Item.Sw("lsimple", "Simple lyrics mode", "Drop the extra effects: words only fill, without growing, lifting or glowing."),
         Item.Sw("ljoin", "Join split words", "Show a word sung in syllables as one word, when its parts line up evenly. From Spicy Lyrics 6.4.50."),
         Item.Sw("lminimal", "Minimal lyrics mode", "Hide lines that have already been sung."),
         Item.Sw("lhover", "Highlight on press", "Show a soft box behind a line while your finger is on it."),
         Item.Sw("lduet", "Duet line padding", "Indent each singer’s lines toward their side, so duets read as two columns."),
         Item.Sw("lbgBr", "Background vocals in brackets", "Show background vocals as (like this), as Spicy Lyrics Mobile can."),
-        Item.Sw("lcredLast", "Credits follow the last singer", "With credits under the lyrics: when a song ends on a line sung from the right, the credits move to the right too."),
         Item.Sub("Scrolling"),
         Item.Sw("lsmooth", "Smooth scrolling", "Glide from line to line instead of jumping."),
         Item.Sw("learly", "Early scroll", "Start scrolling to the next line just before it’s sung."),
         Item.Sl("learlyMs", "Early scroll time (ms)", 0, 800, 10, "How far ahead of the line the scroll starts.", fmt = { "$it ms" }),
-        Item.Sw("lseekFade", "Seek fade-in compensation", "Tapping a line starts Spotify 300 ms before it, so its fade-in doesn’t clip the first word."),
-        Item.Sub("Interface"),
-        Item.Sw("lnotice", "No lyrics notice", "Say so when a song has no lyrics."),
-        Item.Sw("volshow", "Volume slider"),
-        Item.Head("Your lyrics files"),
+        Item.Sub("Credits"),
+        Item.Ch("credPos", "Lyrics credits", listOf("corner" to "Bottom-left corner", "lyrics" to "Under the lyrics"), "The provider, maker and uploader are always shown while lyrics are on screen (required by Spicy Lyrics)."),
+        Item.Sw("lcredLast", "Credits follow the last singer", "With credits under the lyrics: when a song ends on a line sung from the right, the credits move to the right too."),
+        Item.Sub("Your lyrics files"),
         Item.Custom("Add lyrics files use a file for this song remove all") { MyFiles() },
-        Item.Head("Spicy Lyrics"),
-        Item.Custom("Spicy Lyrics status test connection API key") { SpicyStatus() },
-    )),
+    ), sub = "Sources, size, font, style, scrolling, credits, your lyrics files", group = 1),
+    Page("timing", "Lyrics timing", Icons.Rounded.Timer, listOf(
+        Item.Custom("Lyrics timing earlier later this song this output resync") { Buttons("Lyrics timing…" to { E.settingsPage = null; E.sheet = "timing" }) },
+        Item.Sl("loff", "Timing offset (ms)", -3000, 3000, 50, "Lyrics behind the music? Raise it. Lyrics timing (above) also has this song’s and this output’s own.", fmt = { (if (it > 0) "+" else "") + it + " ms" }),
+        Item.Ch("lDesync", "Desync detection", listOf("ask" to "Ask before fixing", "auto" to "Fix automatically", "off" to "Off"), "Listens to the music and checks that the singing lines up with the lyrics. Needs real sound for the bars (phone sound, Vibe Bridge, the microphone or your own file). A fix only applies to the song playing."),
+        Item.Custom("desync status") { if (Desync.stat.isNotEmpty()) Hint(Desync.stat) },
+        Item.Sw("lseekFade", "Seek fade-in compensation", "Tapping a line starts Spotify 300 ms before it, so its fade-in doesn’t clip the first word."),
+    ), sub = "Offset, this song’s and this output’s timing, the desync fix", group = 1),
     Page("tr", "Translation", VIcons.translate, listOf(
-        Item.Head("Translation & romanization"),
+        Item.Sub("Romanization"),
         Item.Ch("romMode", "Romanization (Japanese, Korean, Chinese, Russian…)", listOf("replace" to "Instead of the original line", "below" to "Below the original line", "off" to "Off")),
+        Item.Sub("Translation"),
         Item.Sw("tr", "Translate lyrics"),
         Item.Ch("trTo", "Translate into", LANGS),
         Item.Custom("Don’t translate lines in") { SkipLangs() },
         Item.Ch("aTrSvc", "Translation service", listOf("google" to "Google Translate (free)", "deepl" to "DeepL (your API key)", "libre" to "LibreTranslate", "openai" to "AI · OpenAI-compatible", "gemini" to "AI · Gemini")),
         Item.Custom("translation service key address model DeepL LibreTranslate OpenAI OpenRouter Groq Gemini") { TrService() },
         Item.Txt("Lines already in the language you translate into are never translated. The lyric lines go to the service you pick. Japanese, Chinese, Korean, Cyrillic and Greek are romanized on the phone first; Google fills in what it can’t do."),
-    )),
-    Page("cache", "Lyrics cache", Icons.Rounded.Storage, listOf(
-        Item.Head("Lyrics cache"),
-        Item.Custom("Last lookup try another source copy debug info") { LookupLog() },
-        Item.Custom("Clear this song’s cache clear stored lyrics reset this song’s lyrics") { CacheButtons() },
-    )),
-    Page("spotify", "Spotify & Canvas", VIcons.spotify, listOf(
-        Item.Head("Spotify"),
+    ), sub = "Romanization, translation and the service it uses", group = 1),
+    Page("spotify", "Spotify & your music", VIcons.spotify, listOf(
+        Item.Sub("Spotify"),
         Item.Custom("Client ID redirect URI connect disconnect") { SpotifySection() },
         Item.Sub("The Spotify app on this phone"),
         Item.Sw("aSession", "Exact timing and controls from the Spotify app", "When the Spotify app on this phone plays, the lyrics follow its player exactly, song changes show at once, fewer requests go to Spotify, and play, pause, skip and seek work without Premium."),
         Item.Custom("notification access") { SessionStatus() },
-        Item.Head("Canvas"),
-        Item.Sw("canvasOn", "Canvas", "Spotify’s short looping video plays as the background behind the player (found by your server, or Spicy Lyrics’ Canvas service)."),
-        Item.Sw("cvSpicy", "Spicy Lyrics’ Canvas service", "When your server has no Canvas for a Spotify song (or no server is set), its Spotify ID goes to Spicy Lyrics’ Canvas service (spicylyrics.org), which asks Spotify. Nothing else is sent. Unofficial: it may stop working."),
-        Item.Sw("cvNoArt", "Hide the cover while a Canvas plays", "Only the Canvas, no cover in front of it."),
-        Item.Sw("cvShrink", "Smaller cover while a Canvas plays", "The cover glides to a smaller size in the middle, so more of the Canvas shows around it."),
-        Item.Sw("cvBlur", "Blur the Canvas", "The Canvas behind the player, softly blurred."),
-        Item.Ch("cvBehind", "Behind the controls", listOf("dark" to "Dark gradient", "blur" to "Blur", "both" to "Blur and dark gradient", "none" to "Nothing"),
-            "With a Canvas: what’s under the top bar, the song, the seek bar, the bars and the controls, so they stay readable. Blur frosts the Canvas there."),
-        Item.Sl("cvBlurAmt", "Canvas blur", 5, 100, 5, "How strong: Blur the Canvas, and Blur behind the controls."),
-        Item.Custom("Choose canvas video Canvas endpoint") { CanvasSection() },
-    )),
-    Page("perf", "Performance", VIcons.bolt, listOf(
-        Item.Head("Performance"),
-        Item.Sw("low", "Low performance mode"),
-        Item.Sw("aSaverLow", "Low performance mode with Power saving", "Turns on by itself while the phone’s Power saving is on, and off again when it ends (if it came on that way)."),
-        Item.Sw("perfAsk", "Suggest Low performance mode when needed", "Watches how smoothly the app runs while a song plays, and how warm Android says the phone is. If the phone can’t keep up, gets warm, or the battery is low, a card offers to turn Low performance mode on."),
-        Item.Ch("fpscap", "Limit frame rate", listOf("0" to "Off (as fast as the screen)", "30" to "30 fps", "60" to "60 fps", "90" to "90 fps", "120" to "120 fps"), "How often the animations redraw. 60 fps by default: more is smoother on a 120 Hz screen but warms the phone up and uses more battery."),
-        Item.Ch("anim", "Animations", listOf("system" to "Follow the system setting", "on" to "Always on", "off" to "Off"), "“Follow the system setting” turns the animations off when Android’s Remove animations is on (Settings → Accessibility)."),
-        Item.Sw("fps", "Show FPS"),
-        Item.Custom("Reset all settings") { Buttons("Reset all settings" to { Vibe.settings.resetAll(); E.toast("Settings reset", "ok") }) },
-    )),
-    Page("android", "Phone", Icons.Rounded.PhoneAndroid, listOf(
-        Item.Head("Phone"),
         Item.Sub("Your music"),
         Item.Custom("Play songs from your phone use Spotify connect choose where Spotify plays devices") { YourMusic() },
-        Item.Sub("This phone"),
-        Item.Sw("aKeepOn", "Keep the screen on while music plays"),
+    ), sub = "Spotify account, the Spotify app on this phone, songs from your phone", group = 2),
+    Page("server", "Server & connection", Icons.Rounded.Dns, listOf(
+        Item.Sub("Your server"),
+        Item.Custom("Your server address Tailscale") { ServerField() },
+        Item.Custom("Connection check your server ping") { if (Server.set) Buttons("Check the connection" to { E.settingsPage = null; Ping.open = true; Ping.kick(); E.sheet = "net" }) },
+        Item.Sub("Spicy Lyrics"),
+        Item.Custom("Spicy Lyrics status test connection API key") { SpicyStatus() },
+        Item.Sub("Your server’s web app"),
+        Item.Custom("server web app update") { ServerUpdates() },
+    ), sub = "Your server, the connection check, Spicy Lyrics, the server’s web app", group = 2),
+    Page("small", "Small window & widget", Icons.Rounded.PictureInPictureAlt, listOf(
+        Item.Sub("Picture-in-picture"),
         Item.Sw("aPip", "Picture-in-picture", "Leaving the app while music plays keeps the lyrics in a small window over your other apps."),
         Item.Sl("aPipSize", "Lyrics size in picture-in-picture", 60, 200, 10, "The small window’s own size, so big lyrics on the full screen don’t leave one word per row there."),
-        Item.Sw("aHideStatus", "Hide the status bar", "The bar with the time and notifications at the top. Swipe down from the top to see it for a moment."),
-        Item.Sw("aHideNav", "Hide the navigation bar", "The gesture bar or buttons at the bottom. Swipe up from the bottom to see it for a moment."),
-        Item.Sw("aLock", "Show over the lock screen", "The player shows on the lock screen while it’s open (Keep the screen on, docked in a stand). Settings and the other menus ask you to unlock first."),
-        Item.Sw("aAmbient", "Ambient mode", "Left untouched while music plays, the screen dims to the lyrics and the song on black. Over the big cover or a song without lyrics, just the song. Any touch brings everything back."),
-        Item.Ch("aAmbientSec", "Dim after", listOf("15" to "15 seconds", "30" to "30 seconds", "60" to "1 minute", "120" to "2 minutes", "300" to "5 minutes"), "How long untouched before Ambient mode dims the screen."),
-        Item.Sw("aHaptics", "Haptic feedback", "A light tick on taps and toggles."),
         Item.Sub("Home screen widget"),
         Item.Txt("Touch and hold your home screen, then Widgets → Vibe Visualizer. It follows the song line by line while the app runs. Each widget has its own settings: touch and hold it → Settings, or pick it here."),
         Item.Custom("widget settings lines around romanization translation size song controls progress background darker centred") { WidgetList() },
-        Item.Custom("Notification access battery app info permissions") { PhoneLinks() },
-    )),
+    ), sub = "Picture-in-picture, home screen widgets", group = 2),
+    Page("perf", "Performance & battery", VIcons.bolt, listOf(
+        Item.Sw("low", "Low performance mode"),
+        Item.Sw("aSaverLow", "Low performance mode with Power saving", "Turns on by itself while the phone’s Power saving is on, and off again when it ends (if it came on that way)."),
+        Item.Sw("perfAsk", "Suggest Low performance mode when needed", "Watches how smoothly the app runs while a song plays, and how warm Android says the phone is. If the phone can’t keep up, gets warm, or the battery is low, a card offers to turn Low performance mode on."),
+        Item.Sub("Smoothness"),
+        Item.Ch("fpscap", "Limit frame rate", listOf("0" to "Off (as fast as the screen)", "30" to "30 fps", "60" to "60 fps", "90" to "90 fps", "120" to "120 fps"), "How often the animations redraw. 60 fps by default: more is smoother on a 120 Hz screen but warms the phone up and uses more battery."),
+        Item.Ch("anim", "Animations", listOf("system" to "Follow the system setting", "on" to "Always on", "off" to "Off"), "“Follow the system setting” turns the animations off when Android’s Remove animations is on (Settings → Accessibility)."),
+        Item.Sw("fps", "Show FPS"),
+    ), sub = "Low performance mode, Power saving, the heat warning, frame rate, animations", group = 3),
     Page("exp", "Experiments", Icons.Rounded.Science, listOf(
-        Item.Head("Experiments"),
         Item.Txt("Ideas being tried out. They may change, or go away, in a later version."),
         Item.Sw("xRefCred", "Refined credits", "With credits under the lyrics: quiet text right below the last line: the songwriters, then the source. Dim until the last line is sung. From Spicy Lyrics 6.4.50."),
         Item.Sw("xScrub", "Scrub preview", "Dragging the progress bar shows the time it would jump to. From Spicy Lyrics 6.4.50."),
@@ -271,24 +303,26 @@ private fun pages(): List<Page> = listOf(
         Item.Sw("xBgPop", "Background vocal pop-out", "Background vocals stay tucked under their line until it’s sung, then slide out while the lines below make room. Only with Simple lyrics and Refreshed simple lyrics on. From Spicy Lyrics 6.4.70."),
         Item.Sw("xRefSimple", "Refreshed simple lyrics mode", "In Simple lyrics mode, the sung part fades in behind one soft edge, words float up as they’re sung, and the letters of a short held word swell, spread, lift and glow. From Spicy Lyrics 6.4.50."),
         Item.Sw("xFocus", "Focus mode", "The line being sung is sharp in the middle and stays until it’s sung to the end. The next line flies in from the bottom 200 ms before it’s sung; finished lines fly up and disappear."),
-    )),
+    ), sub = "Ideas being tried out", group = 3),
     Page("help", "Help & about", Icons.AutoMirrored.Rounded.Help, listOf(
-        Item.Head("Help"),
-        Item.Sub("Your server"),
-        Item.Custom("Your server address Tailscale") { ServerField() },
-        Item.Custom("Connection check your server ping") { if (Server.set) Buttons("Check the connection" to { E.settingsPage = null; Ping.open = true; Ping.kick(); E.sheet = "net" }) },
         Item.Sub("App updates"),
         Item.Custom("Updates check for updates update now release notes") { AppUpdates() },
-        Item.Sub("Your server’s web app"),
-        Item.Custom("server web app update") { ServerUpdates() },
+        Item.Sub("Debug info and lyrics cache"),
+        Item.Custom("Last lookup try another source copy debug info") { LookupLog() },
+        Item.Custom("Clear this song’s cache clear stored lyrics reset this song’s lyrics") { CacheButtons() },
         Item.Sub("Error log"),
         Item.Custom("Error log show errors clear") { ErrorLog() },
         Item.Sub("Back up settings"),
         Item.Custom("Copy my settings paste settings") { Backup() },
+        Item.Sub("This phone"),
+        Item.Custom("Notification access battery app info permissions") { PhoneLinks() },
+        Item.Sub("Start over"),
         Item.Custom("Open setup guide forget this device") { Buttons("Open setup guide" to { E.settingsPage = null; E.wizard = true }, "Forget this device" to { E.ask = E.Ask("Forget this device?", "Deletes everything Vibe Visualizer saved for this phone: settings, the Spotify login, saved lyrics and your lyrics files, here and on your server.",
             listOf(E.Act("Cancel"), E.Act("Forget", pri = true) { Sync.forget { E.settingsPage = null; E.wizard = true } })) }) },
+        Item.Custom("Reset all settings") { Buttons("Reset all settings" to { Vibe.settings.resetAll(); E.toast("Settings reset", "ok") }) },
+        Item.Sub("About"),
         Item.Custom("About license AGPL Spicy Lyrics unofficial source code") { About() },
-    )),
+    ), sub = "Updates, debug info, error log, backup, reset, about", group = 3),
 )
 
 /** Settings: categories (with a search box), each a page; two panes on a wide screen. */
@@ -834,9 +868,10 @@ private fun LazyListScope.cardItems(items: List<Item>) {
     }
 }
 
-/** Settings' pages in three cards: each with its icon on a soft tile and an arrow, as Android's own settings. */
+/** Settings' pages in four cards (how it looks, the lyrics, music and connections, the app): each with its icon
+ *  on a soft tile, what's on it, and an arrow, as Android's own settings. */
 private fun LazyListScope.cardPages(all: List<Page>, page: String?, wide: Boolean, pick: (String) -> Unit) {
-    listOf(all.take(4), all.drop(4).take(4), all.drop(8)).filter { it.isNotEmpty() }.forEachIndexed { gi, g ->
+    all.groupBy { it.group }.toSortedMap().values.forEachIndexed { gi, g ->
         item(key = "g$gi") {
             CardGroup {
                 g.forEachIndexed { i, p ->
@@ -848,7 +883,11 @@ private fun LazyListScope.cardPages(all: List<Page>, page: String?, wide: Boolea
                             Icon(p.icon, null, Modifier.size(20.dp), tint = Color.White.copy(alpha = .92f))
                         }
                         Spacer(Modifier.width(14.dp))
-                        Text(p.name, Modifier.weight(1f), fontSize = 16.sp, fontWeight = FontWeight.Medium, color = Color.White)
+                        // what's on the page, so a setting isn't hidden in plain sight
+                        Column(Modifier.weight(1f)) {
+                            Text(p.name, fontSize = 16.sp, fontWeight = FontWeight.Medium, color = Color.White)
+                            if (p.sub.isNotEmpty()) Text(p.sub, fontSize = 13.sp, lineHeight = 17.sp, color = Color.White.copy(alpha = .58f), maxLines = 2, overflow = TextOverflow.Ellipsis)
+                        }
                         Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, null, Modifier.size(20.dp), tint = Color.White.copy(alpha = .35f))
                     }
                 }

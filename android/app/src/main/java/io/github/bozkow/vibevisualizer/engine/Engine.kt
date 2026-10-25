@@ -393,7 +393,7 @@ object E {
         if (!ambient && amb && wall() - activeAt > (S.str("aAmbientSec").toIntOrNull() ?: 30) * 1000L) { ambient = true; CanvasVideo.syncPlay() }   // the Canvas rests
         else if (ambient && !amb) { ambient = false; CanvasVideo.syncPlay() }
         val can = canHide() || ambient
-        if (!uiHidden && can && wall() - activeAt > 3000) uiHidden = true
+        if (!uiHidden && can && wall() - activeAt > (S.str("aHideSec").toIntOrNull() ?: 3) * 1000L) uiHidden = true
         else if (uiHidden && !can) uiHidden = false
     }
 

@@ -54,6 +54,13 @@ object Defaults {
         "aAmbientSec" to "30",  // how long untouched before it dims
         "aPipSize" to 100,      // the lyrics' size in picture-in-picture (%)
         "aSaverLow" to true,    // Low performance mode while the phone's Power saving is on
+        // the player screen
+        "aHideSec" to "3",      //   seconds untouched before the controls hide
+        "aLike" to true,        //   the heart beside a Spotify song
+        "aTitle" to "m",        //   the song name's size: s, m, l
+        "aMarquee" to true,     //   long names scroll
+        "aSeek" to "normal",    //   the seek bar: thin, normal, thick
+        "aCoverR" to 22,        //   the cover's corners (dp)
         "aWgSize" to "m",       // the home screen widget: lyrics size (s, m, l)
         "aWgSong" to true,      //   the song under the lyrics
         "aWgCtl" to true,       //   play / pause, previous, next

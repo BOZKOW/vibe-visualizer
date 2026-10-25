@@ -162,7 +162,7 @@ private fun AudioSheet() {
     val b = Audio.bridge
     Hint(when {
         !S.b("bridge") -> "Off."
-        !Server.set -> "Needs your server (Settings → Help & about → Server)."
+        !Server.set -> "Needs your server (Settings → Server & connection)."
         Audio.bridgeOn -> "Connected through your server" + (if (b.device.isNotEmpty()) " · listening to ${b.device}" else "") + "."
         else -> "Not connected. On the device that plays the music, start Vibe Bridge with:  vibe-bridge --server ${Server.base?.removePrefix("https://")}  (see the README)."
     })
