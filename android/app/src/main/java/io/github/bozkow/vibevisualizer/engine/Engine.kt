@@ -380,7 +380,7 @@ object E {
     }
 
     fun show(s: String) { if (screen != s) { screen = s; haptic() }; poke() }
-    fun lyricsVisible() = inPip || ((wide || screen == "lyrics") && settingsPage == null && !wizard)
+    fun lyricsVisible() = inPip || ((wide || screen == "lyrics") && (settingsPage == null || !S.low) && !wizard)   // they go on behind Settings' blur
     fun goHome() { settingsPage = null; screen = "player" }
 
     /** Settings, on [page], or on the list of pages to pick from ("" while it's open on the list). */

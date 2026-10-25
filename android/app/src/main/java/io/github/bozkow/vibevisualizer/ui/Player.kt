@@ -697,7 +697,8 @@ private fun CanvasBackdrop(wide: Boolean, centred: Boolean) {
     Box((if (wide) Modifier.fillMaxHeight().fillMaxWidth(.68f) else Modifier.fillMaxSize()).alpha(maxOf(a, .01f))
         .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen; if (wide) translationX = size.width * (.16f / .68f) * c }.drawWithContent {
             drawContent()
-            val shade = Brush.verticalGradient(0f to Color.Black.copy(alpha = .4f), .2f to Color.Transparent, .55f to Color.Transparent, 1f to Color.Black.copy(alpha = .45f))
+            // as dark at the top (behind the status bar and the top bar) as behind the controls at the bottom
+            val shade = Brush.verticalGradient(0f to Color.Black.copy(alpha = .45f), .22f to Color.Transparent, .55f to Color.Transparent, 1f to Color.Black.copy(alpha = .45f))
             if (wide) {
                 // side by side: the shade fades out with the video (drawn after the fade it stopped in a hard line at the
                 // edge), over a long, eased fade into the blurred Canvas behind
@@ -707,7 +708,8 @@ private fun CanvasBackdrop(wide: Boolean, centred: Boolean) {
                 // in the middle, the same fade on the left
                 if (c > 0f) drawRect(Brush.horizontalGradient(*Array(6) { k -> val j = 5 - k; .3f * (1 - EASE_AT[j]) to Color.Black.copy(alpha = 1 - c * (1 - EASE_A[j])) }, 1f to Color.Black), blendMode = BlendMode.DstIn)
             } else {
-                val fade = arrayOf(0f to Color.Black, .45f to Color.Black, .58f to Color.Black.copy(alpha = .85f), .74f to Color.Black.copy(alpha = .5f), .88f to Color.Black.copy(alpha = .18f), 1f to Color.Transparent)
+                // the video softens into the blurred Canvas at the top too, as it does (longer) toward the controls
+                val fade = arrayOf(0f to Color.Black.copy(alpha = .35f), .08f to Color.Black.copy(alpha = .7f), .2f to Color.Black, .45f to Color.Black, .58f to Color.Black.copy(alpha = .85f), .74f to Color.Black.copy(alpha = .5f), .88f to Color.Black.copy(alpha = .18f), 1f to Color.Transparent)
                 drawRect(Brush.verticalGradient(*fade), blendMode = BlendMode.DstIn)
                 if (dark) drawRect(shade)
             }

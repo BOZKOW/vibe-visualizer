@@ -122,7 +122,11 @@ import io.github.bozkow.vibevisualizer.spotify.Spotify
 import io.github.bozkow.vibevisualizer.spotify.SpotifyApp
 import kotlinx.coroutines.launch
 
-object SettingsUi { var last = "look" }
+object SettingsUi {
+    var last = "look"
+    /** Settings over the player blurred live; in Low performance mode they cover it instead. */
+    val live get() = !S.low
+}
 
 /* ---- the settings, declared once: shown in their pages, and found by the search box ---- */
 sealed class Item(val search: String) {
@@ -305,9 +309,10 @@ fun SettingsScreen() {
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val wide = maxWidth >= 720.dp
         BackHandler { if (q.isNotEmpty()) q = "" else if (!wide && page != null && E.settingsPage == null) page = null else if (!wide && page != null) { page = null } else E.settingsPage = null }
-        if (S.glass) GlassBackdrop()   // Glass: the blurred cover shows through
+        if (S.glass && !SettingsUi.live) GlassBackdrop()   // Glass in Low performance mode: the blurred cover shows through
         // contentColor: on Glass's see-through surface the text and icons defaulted to black
-        Surface(Modifier.fillMaxSize(), color = if (S.glass) Color.Transparent else MaterialTheme.colorScheme.surfaceContainerLowest, contentColor = Color.White) {
+        // over the player blurred live (VibeRoot draws it), or the design's own background in Low performance mode
+        Surface(Modifier.fillMaxSize(), color = if (S.glass || SettingsUi.live) Color.Transparent else MaterialTheme.colorScheme.surfaceContainerLowest, contentColor = Color.White) {
             Row(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.statusBarsIgnoringVisibility.union(WindowInsets.displayCutout).only(WindowInsetsSides.Top)).windowInsetsPadding(WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal))) {
                 @Composable fun ListPane(m: Modifier) {
                     Column(m) {
