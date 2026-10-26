@@ -1,8 +1,8 @@
-Vibe Visualizer for Android 0.22.4 (beta). Android 12 or newer; it installs over 0.22.3 (Settings → Help & about → Update now).
+Vibe Visualizer for Android 0.22.5 (beta). Android 12 or newer; it installs over 0.22.4 (Settings → Help & about → Update now).
 
 ### Fixes
 
-- **Refined credits no longer sit on the lyrics in Focus mode** (in picture-in-picture too): Focus mode brings the lines in from the bottom, where the credits were pinned the whole song. Now the small corner credits show while the song plays, and the refined ones fade in when the last line has been sung, in the middle where the lines were. Without Focus mode they stay right under the last line
-- Picture-in-picture shows where the lyrics are from, in one small line under them
+- **Settings run smoothly again**: they're back to how they were before the live blur (0.19.2), which made them stutter however it was trimmed. In Glass they sit over the blurred cover, in Android over their own background, and the player isn't drawn behind them; they still open out of the button you tap. The player picks up where it is when you close them (the music plays on)
+- The widget list in Settings no longer redraws every 2 seconds
 
-From 0.22.3: the live blur under Settings stays smooth, and the corner credits name the songwriters.
+From 0.22.4: refined credits wait for the end in Focus mode, and picture-in-picture names the lyrics' source.

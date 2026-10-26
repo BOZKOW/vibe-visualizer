@@ -127,11 +127,7 @@ import io.github.bozkow.vibevisualizer.spotify.Spotify
 import io.github.bozkow.vibevisualizer.spotify.SpotifyApp
 import kotlinx.coroutines.launch
 
-object SettingsUi {
-    var last = "look"
-    /** Settings over the player blurred live; in Low performance mode they cover it instead. */
-    val live get() = !S.low
-}
+object SettingsUi { var last = "look" }
 
 /* ---- the settings, declared once: shown in their pages, and found by the search box ---- */
 sealed class Item(val search: String) {
@@ -351,10 +347,10 @@ fun SettingsScreen() {
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val wide = maxWidth >= 720.dp
         BackHandler { if (q.isNotEmpty()) q = "" else if (!wide && page != null && E.settingsPage == null) page = null else if (!wide && page != null) { page = null } else E.settingsPage = null }
-        if (S.glass && !SettingsUi.live) GlassBackdrop()   // Glass in Low performance mode: the blurred cover shows through
+        if (S.glass) GlassBackdrop()   // Glass: the blurred cover shows through
         // contentColor: on Glass's see-through surface the text and icons defaulted to black
         // over the player blurred live (VibeRoot draws it), or the design's own background in Low performance mode
-        Surface(Modifier.fillMaxSize(), color = if (S.glass || SettingsUi.live) Color.Transparent else MaterialTheme.colorScheme.surfaceContainerLowest, contentColor = Color.White) {
+        Surface(Modifier.fillMaxSize(), color = if (S.glass) Color.Transparent else MaterialTheme.colorScheme.surfaceContainerLowest, contentColor = Color.White) {
             Row(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.statusBarsIgnoringVisibility.union(WindowInsets.displayCutout).only(WindowInsetsSides.Top)).windowInsetsPadding(cutoutInsets().only(WindowInsetsSides.Horizontal))) {
                 @Composable fun ListPane(m: Modifier) {
                     Column(m) {
@@ -911,7 +907,7 @@ private fun LazyListScope.cardPages(all: List<Page>, page: String?, wide: Boolea
 private fun WidgetList() {
     val ctx = androidx.compose.ui.platform.LocalContext.current
     var ids by remember { mutableStateOf(io.github.bozkow.vibevisualizer.widget.Widgets.placed()) }
-    LaunchedEffect(Unit) { while (true) { kotlinx.coroutines.delay(2000); ids = io.github.bozkow.vibevisualizer.widget.Widgets.placed() } }   // placed while you look
+    LaunchedEffect(Unit) { while (true) { kotlinx.coroutines.delay(2000); val n = io.github.bozkow.vibevisualizer.widget.Widgets.placed(); if (!n.contentEquals(ids)) ids = n } }   // placed while you look
     if (ids.isEmpty()) { Hint("No Vibe Visualizer widget on your home screen yet."); return }
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         ids.forEachIndexed { i, id ->

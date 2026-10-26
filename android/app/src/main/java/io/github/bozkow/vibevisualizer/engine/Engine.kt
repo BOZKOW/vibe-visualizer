@@ -398,7 +398,7 @@ object E {
     }
 
     fun show(s: String) { if (screen != s) { screen = s; haptic() }; poke() }
-    fun lyricsVisible() = inPip || (ambient && S.b("aAmbLyrics")) || ((wide || screen == "lyrics") && (settingsPage == null || !S.low) && !wizard)   // on under Settings' blur   // they go on behind Settings' blur
+    fun lyricsVisible() = inPip || (ambient && S.b("aAmbLyrics")) || ((wide || screen == "lyrics") && settingsPage == null && !wizard)   // they go on behind Settings' blur
     fun goHome() { settingsPage = null; screen = "player" }
 
     /** Settings, on [page], or on the list of pages to pick from ("" while it's open on the list). */
@@ -427,10 +427,9 @@ object E {
         fAcc = min(fAcc - iv, iv)
         val dt = min(t - (if (last == 0.0) t else last), 50.0); last = t
         if (wall() - secAt >= 1000) { secAt = wall(); sec.intValue++ }
-        // Settings over the player: it goes on moving under their live blur, but about 20 times a second instead of the
-        // screen's rate. Each change there means blurring the whole screen again: at 120 a second Settings crawled,
-        // and under that much blur 20 looks the same
-        val under = settingsPage != null && !S.low
+        // Settings over the player (it isn't drawn then): what it would show is worked out about 20 times a second,
+        // not at the screen's rate, so Settings get the phone to themselves
+        val under = settingsPage != null
         slowDt += dt
         val step = !under || t - slowAt >= 50
         Audio.sample(dt, t); Audio.beatTick(t, dt)
