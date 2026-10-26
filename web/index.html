@@ -2498,8 +2498,8 @@ function creditNodes(c,full){
     a.append('@'+x.username);
     if(x.avatar&&/^https:\/\//.test(x.avatar)){const im=document.createElement('img');im.src=x.avatar;im.alt='';im.loading='lazy';im.referrerPolicy='no-referrer';im.onerror=()=>im.remove();a.appendChild(im)}
     return a};
+  if(c.writers&&c.writers.length)row('cwrit','Written by: '+c.writers.join(', '));   // the songwriters first, as in Spicy Lyrics
   if(c.source==='file'){row('cprov',dim('From your file: '+c.name));return box}
-  if(full&&c.writers&&c.writers.length)row('cwrit','Written by: '+c.writers.join(', '));
   const name=c.source?(PROVIDERS[c.source]||c.source):'Unknown';
   if(c.source==='lrclib'){const a=document.createElement('a');a.href='https://lrclib.net';a.target='_blank';a.rel='noopener noreferrer';a.textContent=name;row('cprov','Provided by: ',a)}
   else row('cprov','Provided by: '+name+(c.via?' ('+c.via+')':''));
