@@ -252,7 +252,7 @@ body.uihide:not(.xfocus)[data-view=both].credly #lcredit{bottom:calc(26% + 24px 
 #ly .lcr a{color:rgba(255,255,255,.7);text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:.18em;text-decoration-color:rgba(255,255,255,.35)}#ly .lcr a:hover{color:#fff;text-decoration-color:#fff}
 #ly .lcr .sep{margin:0 .45em}#ly .lcr img{width:1.15em;height:1.15em;border-radius:50%;vertical-align:-.2em;margin-right:.3em;opacity:.85}
 body.credr #ly .lcr{margin-left:auto;text-align:right}body.xfocus #ly .lcr{display:none}
-body.credly.credvis #lcredit{opacity:0;pointer-events:none}   /* the credits under the last line are in view: the pinned line steps back */
+body.credvis #lcredit{opacity:0;pointer-events:none}   /* the credits under the last line are in view: the small line (in the corner or under the lyrics) steps back */
 #lcredit{transition:opacity .4s}body.credly #lcredit{transition:opacity .4s,bottom .55s var(--e-out)}
 /* scrub preview (Spicy Lyrics 6.4.50 'scrubPreview'): the time or level a click would set */
 #scrubtip{position:fixed;z-index:21;pointer-events:none;padding:4px 9px;border-radius:9px;font-size:12px;font-weight:700;font-variant-numeric:tabular-nums;color:#fff;
@@ -1022,7 +1022,7 @@ body.low #scrubtip{backdrop-filter:none;-webkit-backdrop-filter:none;background:
 
   <h4>Experiments</h4>
   <p class="hint">Ideas being tried out. They may change, or go away, in a later version.</p>
-  <div class="f chk" data-k="xRefCred"><label><input type="checkbox" id="xRefCred"> Refined credits<small>With credits under the lyrics: quiet text right below the last line, no box: the songwriters, then the source; community lyrics name who made and uploaded them. Dim until the last line is sung. (While that spot is scrolled away, the small credit line stays under the lyrics.) From Spicy Lyrics 6.4.50.</small></label></div>
+  <div class="f chk" data-k="xRefCred"><label><input type="checkbox" id="xRefCred"> Refined credits<small>Quiet text right below the last line, no box: the songwriters, then the source; community lyrics name who made and uploaded them. Dim until the last line is sung. The small credit line (in the corner or under the lyrics) stays until this comes into view. From Spicy Lyrics 6.4.50.</small></label></div>
   <div class="f chk" data-k="xScrub"><label><input type="checkbox" id="xScrub"> Scrub preview<small>Hovering or dragging the progress bar shows the time a click would jump to, and the volume bar shows the level it would set. From Spicy Lyrics 6.4.50.</small></label></div>
   <div class="f chk" data-k="xSkeleton"><label><input type="checkbox" id="xSkeleton"> Lyrics loading skeleton<small>While lyrics load, faint placeholder lines and a small “Loading lyrics” label instead of the big message. From Spicy Lyrics 6.4.0.</small></label></div>
   <div class="f chk" data-k="xKeep"><label><input type="checkbox" id="xKeep"> Keep overlapping lines<small>In Minimal lyrics mode, a line that ends while one above it is still being sung (overlapping lines, background vocals) stays on screen, dimmed, instead of disappearing early. From Spicy Lyrics 6.4.50.</small></label></div>
@@ -2516,7 +2516,7 @@ function renderCredit(){
   const old=ly.querySelector('.lcr');if(old)old.remove();body.classList.remove('credvis');
   if(!L.length||!c){el.hidden=true;return}
   el.appendChild(creditNodes(c,false));el.hidden=false;
-  if(S.xRefCred&&S.credPos==='lyrics')refinedCredits(c);
+  if(S.xRefCred)refinedCredits(c);
 }
 // Refined credits (Spicy Lyrics 6.4.50): songwriters, then the source on a quieter second line, right after the last line.
 // The small pinned credit stays on screen until this block scrolls into view (the Spicy Lyrics terms want attribution
