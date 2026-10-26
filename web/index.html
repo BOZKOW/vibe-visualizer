@@ -246,9 +246,9 @@ body.uihide:not(.xfocus)[data-view=both].credly #lcredit{bottom:calc(26% + 24px 
 @keyframes skel{0%{background-position:100% 0;opacity:.7}50%{opacity:1}100%{background-position:-100% 0;opacity:.7}}
 #lmsg .lmact{display:flex;gap:8px;margin-top:6px;pointer-events:auto}
 /* refined credits (Spicy Lyrics 6.4.50 'refinedCredits'): quiet type right under the last line, no box */
-#ly .lcr{display:flex;flex-direction:column;gap:.3em;max-width:min(100%,46em);margin-top:1.1em;padding-bottom:.6em;font-size:calc(clamp(13px,1.05vw,16px)*var(--ls));line-height:1.35;font-weight:600;color:rgba(255,255,255,.7);opacity:.55;transform:translateY(.35em);transition:opacity .6s var(--e-out),transform .6s var(--e-out)}
+#ly .lcr{display:flex;flex-direction:column;gap:.3em;max-width:min(100%,46em);margin-top:.75em;padding-bottom:.6em;font-size:calc(clamp(13px,1.05vw,16px)*var(--ls));line-height:1.35;font-weight:600;color:rgba(255,255,255,.7);opacity:.55;transform:translateY(.35em);transition:opacity .6s var(--e-out),transform .6s var(--e-out)}
 #ly.allsung .lcr,#lyr.st #ly .lcr{opacity:1;transform:none}
-#ly .lcr .l2{font-size:.86em;font-weight:500;color:rgba(255,255,255,.55)}
+#ly .lcr .l2{font-size:.86em;font-weight:500;color:rgba(255,255,255,.55)}#ly .lcr .lab{color:rgba(255,255,255,.55)}   /* labels quieter than the names, as in Spicy Lyrics */
 #ly .lcr a{color:rgba(255,255,255,.7);text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:.18em;text-decoration-color:rgba(255,255,255,.35)}#ly .lcr a:hover{color:#fff;text-decoration-color:#fff}
 #ly .lcr .sep{margin:0 .45em}#ly .lcr img{width:1.15em;height:1.15em;border-radius:50%;vertical-align:-.2em;margin-right:.3em;opacity:.85}
 body.credr #ly .lcr{margin-left:auto;text-align:right}body.xfocus #ly .lcr{display:none}
@@ -2525,7 +2525,7 @@ let lcrObs=null;
 function refinedCredits(c){
   const box=document.createElement('div');box.className='lcr';
   const line=(cls)=>{const d=document.createElement('div');if(cls)d.className=cls;box.appendChild(d);return d};
-  if(c.writers&&c.writers.length)line('').textContent='Written by '+c.writers.join(', ');
+  if(c.writers&&c.writers.length){const w=line(''),lab=document.createElement('span');lab.className='lab';lab.textContent='Written by';w.append(lab,' '+c.writers.join(', '))}
   const l2=line('l2');
   const who=x=>{const u=profileUrl(x),a=document.createElement(u?'a':'span');if(u){a.href=u;a.target='_blank';a.rel='noopener noreferrer'}
     if(x.avatar&&/^https:\/\//.test(x.avatar)){const im=document.createElement('img');im.src=x.avatar;im.alt='';im.referrerPolicy='no-referrer';im.onerror=()=>im.remove();a.appendChild(im)}
