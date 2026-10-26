@@ -1,8 +1,7 @@
-Vibe Visualizer for Android 0.22.1 (beta). Android 12 or newer; it installs over 0.22.0 (Settings → Help & about → Update now).
+Vibe Visualizer for Android 0.22.2 (beta). Android 12 or newer; it installs over 0.22.1 (Settings → Help & about → Update now).
 
 ### Fixes
 
-- **Settings are smooth again**: since 0.19.2 the player went on moving under Settings' blur (the lyrics, the bars, the background, the Canvas, the seek bar and a scrolling song name), so the whole screen was blurred again every frame and Settings crawled. Now the player holds still under the blur while Settings are open, and goes on the moment you close them (the music plays on the whole time)
-- **Refined credits work**: they're the credits right under the last line (dim until it's sung, scrolled into view as the song ends), so they did nothing while the credits were set to the bottom-left corner. Turning them on now puts the credits under the lyrics, and picking "Under the lyrics" turns them on
+- **Scrub preview works** (Settings → Experiments): while you drag the seek bar, a bubble above your finger shows the time you'd jump to (and the times under the bar say the same), and the volume slider shows the level it sets. Before, the setting only changed the times' colour. Off, there's no bubble and the times show where the song really is until you let go
 
-From 0.22.0: Ambient mode as an always-on display.
+From 0.22.1: Settings smooth again, and Refined credits work.

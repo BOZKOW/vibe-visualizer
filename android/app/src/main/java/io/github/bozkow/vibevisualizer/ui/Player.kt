@@ -116,6 +116,9 @@ import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.graphics.BlurEffect
 import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.foundation.interaction.collectIsDraggedAsState
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import kotlin.math.roundToInt
 import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.ui.semantics.contentDescription
@@ -620,14 +623,44 @@ private fun SeekRow(inline: Boolean = false) {
     val frac = drag ?: if (kotlin.math.abs(E.seekFrac - glide) > .02f) E.seekFrac else glide   // a jump (seek, new song) isn't glided
     val dur = E.curDur()
     val thick = when (S.str("aSeek")) { "thin" -> 6.dp; "thick" -> 18.dp; else -> 12.dp }   // Settings → Player screen → Seek bar
-    val bar = @Composable { m: Modifier -> ThickSeek(frac, thick = thick, onDrag = { f -> drag = f; E.seekDrag(true) }, onDone = { f -> if (drag == null) E.seekDrag(true); drag = null; E.seekFraction(f); E.seekDrag(false) }, enabled = E.src != "none" && dur > 0, modifier = m.quietTouch()) }
-    val now = @Composable { Text(fmtTime(if (drag != null) frac * dur else E.curTime()), fontSize = 14.sp, color = if (drag != null && S.b("xScrub")) Color.White else dim, fontWeight = FontWeight.Medium) }
-    val end = @Composable { Text(if (drag != null && S.b("xScrub")) "-" + fmtTime(dur - frac * dur) else fmtTime(dur), fontSize = 14.sp, color = dim, fontWeight = FontWeight.Medium) }
+    // Scrub preview (Experiments): while you drag, a bubble above your finger with the time you'd jump to, and the
+    // times say the same; off, they show where the song really is until you let go
+    val scrub = S.b("xScrub")
+    val bar = @Composable { m: Modifier ->
+        Box(m) {
+            ThickSeek(frac, thick = thick, onDrag = { f -> drag = f; E.seekDrag(true) }, onDone = { f -> if (drag == null) E.seekDrag(true); drag = null; E.seekFraction(f); E.seekDrag(false) }, enabled = E.src != "none" && dur > 0, modifier = Modifier.quietTouch())
+            if (scrub) ScrubTip(drag != null, frac, fmtTime(frac * dur))
+        }
+    }
+    val now = @Composable { Text(fmtTime(if (drag != null && scrub) frac * dur else E.curTime()), fontSize = 14.sp, color = if (drag != null && scrub) Color.White else dim, fontWeight = FontWeight.Medium) }
+    val end = @Composable { Text(if (drag != null && scrub) "-" + fmtTime(dur - frac * dur) else fmtTime(dur), fontSize = 14.sp, color = dim, fontWeight = FontWeight.Medium) }
     // inline: the times on either side of the bar (under a cover in landscape)
     if (inline) Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) { now(); Spacer(Modifier.width(12.dp)); bar(Modifier.weight(1f)); Spacer(Modifier.width(12.dp)); end() }
     else Column(Modifier.fillMaxWidth()) {
         bar(Modifier)
         Row(Modifier.fillMaxWidth()) { now(); Spacer(Modifier.weight(1f)); end() }
+    }
+}
+
+/** Scrub preview (Spicy Lyrics 6.4.50): while a bar is dragged, a small bubble above the finger with what letting go
+ *  would set (the time on the seek bar, the level on the volume), kept inside the bar's width. Takes no room. */
+@Composable
+private fun ScrubTip(show: Boolean, f: Float, text: String, inset: Dp = 0.dp) {
+    val k by animateFloatAsState(if (show) 1f else 0f, tween(if (show) 140 else 220), label = "scrubtip")
+    val last = remember { object { var f = 0f; var t = "" } }
+    if (show) { last.f = f; last.t = text }
+    if (k <= 0f) return
+    Box(Modifier.fillMaxWidth().layout { m, c ->
+        val p = m.measure(c.copy(minWidth = 0, minHeight = 0))
+        layout(c.maxWidth, 0) {
+            val ins = inset.roundToPx(); val track = (c.maxWidth - 2 * ins).coerceAtLeast(1)
+            val x = (ins + last.f * track - p.width / 2f).roundToInt().coerceIn(0, maxOf(0, c.maxWidth - p.width))
+            p.place(x, -p.height - 4.dp.roundToPx())
+        }
+    }) {
+        Text(last.t, Modifier.graphicsLayer { alpha = k; val s = .8f + .2f * k; scaleX = s; scaleY = s; transformOrigin = TransformOrigin(.5f, 1f); translationY = (1 - k) * 6.dp.toPx() }
+            .clip(RoundedCornerShape(10.dp)).background(Color.White).padding(horizontal = 10.dp, vertical = 4.dp),
+            color = Color(0xFF111116), fontSize = 14.sp, fontWeight = FontWeight.Bold)
     }
 }
 
@@ -637,11 +670,16 @@ private fun VolumeRow() {
     val dev = Spotify.device
     val canVol = !sp || (dev != null && dev.supportsVolume && dev.volume != null)
     val v = if (sp) (dev?.volume ?: 0) else S.i("volume")
+    val src = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+    val dragged by src.collectIsDraggedAsState(); val pressed by src.collectIsPressedAsState()
     Row(Modifier.fillMaxWidth().height(40.dp), verticalAlignment = Alignment.CenterVertically) {
         Icon(Icons.AutoMirrored.Rounded.VolumeDown, null, Modifier.size(20.dp), tint = Color.White.copy(alpha = if (canVol) .7f else .3f))
-        Slider(value = v / 100f, onValueChange = { f -> val x = (f * 100).toInt(); if (sp) Spotify.setVolume(x) else S.set("volume", x); E.poke() }, enabled = canVol,
-            modifier = Modifier.weight(1f).padding(horizontal = 6.dp).semantics { contentDescription = if (sp) "Spotify volume" else "Volume" },
-            colors = SliderDefaults.colors(thumbColor = Color.White, activeTrackColor = Color.White, inactiveTrackColor = Color.White.copy(alpha = .22f), disabledInactiveTrackColor = Color.White.copy(alpha = .1f)))
+        Box(Modifier.weight(1f).padding(horizontal = 6.dp)) {
+            Slider(value = v / 100f, onValueChange = { f -> val x = (f * 100).toInt(); if (sp) Spotify.setVolume(x) else S.set("volume", x); E.poke() }, enabled = canVol, interactionSource = src,
+                modifier = Modifier.fillMaxWidth().semantics { contentDescription = if (sp) "Spotify volume" else "Volume" },
+                colors = SliderDefaults.colors(thumbColor = Color.White, activeTrackColor = Color.White, inactiveTrackColor = Color.White.copy(alpha = .22f), disabledInactiveTrackColor = Color.White.copy(alpha = .1f)))
+            if (S.b("xScrub")) ScrubTip(canVol && (dragged || pressed), v / 100f, "$v%", inset = 10.dp)   // the level it sets
+        }
         Icon(Icons.AutoMirrored.Rounded.VolumeUp, null, Modifier.size(20.dp), tint = Color.White.copy(alpha = if (canVol) .7f else .3f))
     }
 }
