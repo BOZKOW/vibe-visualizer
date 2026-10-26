@@ -234,6 +234,9 @@ private fun Who(x: Person, prefix: String) {
 fun CornerCredits(c: Credit, modifier: Modifier = Modifier, alignEnd: Boolean = false) {
     Column(modifier, verticalArrangement = Arrangement.spacedBy(3.dp), horizontalAlignment = if (alignEnd) Alignment.End else Alignment.Start) {
         if (c.source == "file") { Text("From your file: " + c.name, color = Color.White.copy(alpha = .7f), fontSize = 12.sp, fontWeight = FontWeight.SemiBold); return@Column }
+        // the songwriters first, as under the lyrics (when the source names them)
+        if (c.writers.isNotEmpty()) Text("Written by " + c.writers.joinToString(", "), color = Color.White.copy(alpha = .7f), fontSize = 12.sp, fontWeight = FontWeight.SemiBold,
+            maxLines = 2, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, textAlign = if (alignEnd) TextAlign.End else TextAlign.Start)
         val name = c.source?.let { Lyr.PROVIDERS[it] ?: it } ?: "Unknown"
         Row {
             Text("Provided by: ", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)

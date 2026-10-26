@@ -146,7 +146,7 @@ object CanvasVideo {
     fun syncPlay() {
         val p = player ?: return
         if (url == null || !S.canvasOn) return
-        if ((E.playing() || E.src == "none") && E.visible && !E.ambient && E.settingsPage == null) p.play() else p.pause()   // still under Settings' blur
+        if ((E.playing() || E.src == "none") && E.visible && !E.ambient) p.play() else p.pause()
     }
 
     fun onBackground() { player?.pause() }

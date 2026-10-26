@@ -619,7 +619,7 @@ private fun PlayButton(size: Dp) {
 @Composable
 private fun SeekRow(inline: Boolean = false) {
     var drag by remember { mutableStateOf<Float?>(null) }
-    val glide by animateFloatAsState(E.seekFrac, tween(260, easing = androidx.compose.animation.core.LinearEasing), label = "seek")
+    val glide by animateFloatAsState(E.seekFrac, if (E.settingsPage != null) androidx.compose.animation.core.snap() else tween(260, easing = androidx.compose.animation.core.LinearEasing), label = "seek")   // under Settings' blur it steps (a glide re-blurs the screen every frame)
     val frac = drag ?: if (kotlin.math.abs(E.seekFrac - glide) > .02f) E.seekFrac else glide   // a jump (seek, new song) isn't glided
     val dur = E.curDur()
     val thick = when (S.str("aSeek")) { "thin" -> 6.dp; "thick" -> 18.dp; else -> 12.dp }   // Settings → Player screen → Seek bar

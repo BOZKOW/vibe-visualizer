@@ -398,7 +398,7 @@ object E {
     }
 
     fun show(s: String) { if (screen != s) { screen = s; haptic() }; poke() }
-    fun lyricsVisible() = inPip || (ambient && S.b("aAmbLyrics")) || ((wide || screen == "lyrics") && settingsPage == null && !wizard)   // they go on behind Settings' blur
+    fun lyricsVisible() = inPip || (ambient && S.b("aAmbLyrics")) || ((wide || screen == "lyrics") && (settingsPage == null || !S.low) && !wizard)   // on under Settings' blur   // they go on behind Settings' blur
     fun goHome() { settingsPage = null; screen = "player" }
 
     /** Settings, on [page], or on the list of pages to pick from ("" while it's open on the list). */
@@ -427,13 +427,14 @@ object E {
         fAcc = min(fAcc - iv, iv)
         val dt = min(t - (if (last == 0.0) t else last), 50.0); last = t
         if (wall() - secAt >= 1000) { secAt = wall(); sec.intValue++ }
-        // Settings over the player: it holds still under the blur (the bars, the background, the lyrics, the Canvas and
-        // the seek bar moving there had the whole screen blurred again every frame, and Settings crawled)
-        val frozen = settingsPage != null
-        if (frozen != wasFrozen) { wasFrozen = frozen; CanvasVideo.syncPlay() }
+        // Settings over the player: it goes on moving under their live blur, but about 20 times a second instead of the
+        // screen's rate. Each change there means blurring the whole screen again: at 120 a second Settings crawled,
+        // and under that much blur 20 looks the same
+        val under = settingsPage != null && !S.low
+        slowDt += dt
+        val step = !under || t - slowAt >= 50
         Audio.sample(dt, t); Audio.beatTick(t, dt)
-        if (!frozen) Background.tick(t, dt)
-        Lyr.tick(t)
+        if (step) { slowAt = t; Background.tick(t, slowDt); slowDt = 0.0; Lyr.tick(t) }
         Desync.tick(t)
         uiTick(t)
         if (Visuals.palDirty) Visuals.buildPal()
@@ -441,12 +442,12 @@ object E {
         CanvasVideo.frame(t)
         val pl = playing()
         val active = pl || Audio.mxv > .003f || Audio.idleK > .005f || palMoving
-        if ((active || wasActive) && !frozen) barsTick.longValue++
+        if ((active || wasActive) && step) barsTick.longValue++
         wasActive = active
         if (S.b("fps")) { fc++; if (t - ft > 500) { fpsText = "${Math.round(fc * 1000 / (t - ft))} fps"; fc = 0; ft = t } }
     }
 
-    private var wasFrozen = false
+    private var slowAt = 0.0; private var slowDt = 0.0
 
     private fun uiTick(t: Double) {
         if (t - lastUi < 240) return
@@ -455,7 +456,7 @@ object E {
         val d = curDur(); val c = curTime()
         val tt = fmtTime(c) + " / " + fmtTime(d)
         if (tt != timeText) timeText = tt
-        if (!seeking && settingsPage == null) seekFrac = if (d > 0) (c / d).toFloat().coerceIn(0f, 1f) else 0f
+        if (!seeking) seekFrac = if (d > 0) (c / d).toFloat().coerceIn(0f, 1f) else 0f
         if (src == "file") Local.tickSession()
         hideTick()
     }
