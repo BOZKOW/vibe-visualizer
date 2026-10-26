@@ -398,7 +398,7 @@ object E {
     }
 
     fun show(s: String) { if (screen != s) { screen = s; haptic() }; poke() }
-    fun lyricsVisible() = inPip || (ambient && S.b("aAmbLyrics")) || ((wide || screen == "lyrics") && (settingsPage == null || !S.low) && !wizard)   // they go on behind Settings' blur
+    fun lyricsVisible() = inPip || (ambient && S.b("aAmbLyrics")) || ((wide || screen == "lyrics") && settingsPage == null && !wizard)   // they go on behind Settings' blur
     fun goHome() { settingsPage = null; screen = "player" }
 
     /** Settings, on [page], or on the list of pages to pick from ("" while it's open on the list). */
@@ -427,8 +427,12 @@ object E {
         fAcc = min(fAcc - iv, iv)
         val dt = min(t - (if (last == 0.0) t else last), 50.0); last = t
         if (wall() - secAt >= 1000) { secAt = wall(); sec.intValue++ }
+        // Settings over the player: it holds still under the blur (the bars, the background, the lyrics, the Canvas and
+        // the seek bar moving there had the whole screen blurred again every frame, and Settings crawled)
+        val frozen = settingsPage != null
+        if (frozen != wasFrozen) { wasFrozen = frozen; CanvasVideo.syncPlay() }
         Audio.sample(dt, t); Audio.beatTick(t, dt)
-        Background.tick(t, dt)
+        if (!frozen) Background.tick(t, dt)
         Lyr.tick(t)
         Desync.tick(t)
         uiTick(t)
@@ -437,10 +441,12 @@ object E {
         CanvasVideo.frame(t)
         val pl = playing()
         val active = pl || Audio.mxv > .003f || Audio.idleK > .005f || palMoving
-        if (active || wasActive) barsTick.longValue++
+        if ((active || wasActive) && !frozen) barsTick.longValue++
         wasActive = active
         if (S.b("fps")) { fc++; if (t - ft > 500) { fpsText = "${Math.round(fc * 1000 / (t - ft))} fps"; fc = 0; ft = t } }
     }
+
+    private var wasFrozen = false
 
     private fun uiTick(t: Double) {
         if (t - lastUi < 240) return
@@ -449,7 +455,7 @@ object E {
         val d = curDur(); val c = curTime()
         val tt = fmtTime(c) + " / " + fmtTime(d)
         if (tt != timeText) timeText = tt
-        if (!seeking) seekFrac = if (d > 0) (c / d).toFloat().coerceIn(0f, 1f) else 0f
+        if (!seeking && settingsPage == null) seekFrac = if (d > 0) (c / d).toFloat().coerceIn(0f, 1f) else 0f
         if (src == "file") Local.tickSession()
         hideTick()
     }
@@ -487,6 +493,10 @@ object E {
             "bgStyle" -> Background.applyStill()
             "low" -> { Audio.setupBands(); Visuals.palDirty = true; CanvasVideo.applyMode(); Perf.lowByHand() }   // (Perf sets it back to "auto" when Power saving did it)
             "aSaverLow" -> if (S.b("aSaverLow")) Perf.saverCheck(force = true)
+            // Refined credits are the credits under the lyrics: turning one on turns on the other (they did nothing
+            // with the credits in the corner)
+            "xRefCred" -> { if (S.b("xRefCred") && S.credPos != "lyrics") S.set("credPos", "lyrics"); Lyr.relayout() }
+            "credPos" -> { if (S.credPos == "lyrics" && !S.b("xRefCred")) S.set("xRefCred", true); Lyr.relayout() }
             "uiHide" -> poke()
             "canvasOn", "cvNoArt" -> {
                 CanvasVideo.applyMode()

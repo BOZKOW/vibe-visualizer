@@ -503,8 +503,8 @@ private fun Scrolling(text: String, size: androidx.compose.ui.unit.TextUnit, wei
     // whole. The right edge fades too, showing there's more. A name that fits isn't moved (a centred one would sit
     // off centre)
     val scroll = if (over) Modifier.layout { mm, c -> val p = mm.measure(c.copy(minWidth = 0, maxWidth = c.maxWidth + m)); layout(c.maxWidth, p.height) { p.place(-m, 0) } }
-        .fadeSides(20.dp, 28.dp).basicMarquee(iterations = 3, initialDelayMillis = 2500).padding(start = 20.dp)
-        else Modifier.basicMarquee(iterations = 3, initialDelayMillis = 2500)
+        .fadeSides(20.dp, 28.dp).basicMarquee(iterations = if (E.settingsPage == null) 3 else 0, initialDelayMillis = 2500).padding(start = 20.dp)
+        else Modifier.basicMarquee(iterations = if (E.settingsPage == null) 3 else 0, initialDelayMillis = 2500)
     Box(Modifier.onSizeChanged { boxW = it.width }) {
         Text(text, scroll, style = TextStyle(shadow = textShadow),
             fontSize = size, fontWeight = weight, letterSpacing = spacing, color = color, maxLines = 1, onTextLayout = { textW = it.size.width })

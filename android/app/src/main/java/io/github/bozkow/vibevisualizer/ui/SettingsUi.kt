@@ -306,7 +306,7 @@ private fun pages(): List<Page> = listOf(
     ), sub = "Low performance mode, Power saving, the heat warning, frame rate, animations", group = 3),
     Page("exp", "Experiments", Icons.Rounded.Science, listOf(
         Item.Txt("Ideas being tried out. They may change, or go away, in a later version."),
-        Item.Sw("xRefCred", "Refined credits", "With credits under the lyrics: quiet text right below the last line: the songwriters, then the source. Dim until the last line is sung. From Spicy Lyrics 6.4.50."),
+        Item.Sw("xRefCred", "Refined credits", "Quiet credits right below the last line: the songwriters, then the source, dim until the last line is sung, scrolled into view as the song ends. Turning it on moves the credits under the lyrics (Lyrics → Credits); off, they go back to the corner. From Spicy Lyrics 6.4.50."),
         Item.Sw("xScrub", "Scrub preview", "Dragging the progress bar shows the time it would jump to. From Spicy Lyrics 6.4.50."),
         Item.Sw("xSkeleton", "Lyrics loading skeleton", "While lyrics load, faint placeholder lines and a small “Loading lyrics” label instead of the big message. From Spicy Lyrics 6.4.0."),
         Item.Sw("xKeep", "Keep overlapping lines", "In Minimal lyrics mode, a line that ends while one above it is still being sung stays on screen, dimmed. From Spicy Lyrics 6.4.50."),
