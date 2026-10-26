@@ -42,6 +42,8 @@ import androidx.compose.foundation.layout.navigationBarsIgnoringVisibility
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.drawscope.scale
+import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.CornerRadius
@@ -189,4 +191,28 @@ fun cutoutInsets(): androidx.compose.foundation.layout.WindowInsets {
 fun cutoutNote(v: android.view.View?): String {
     val c = v?.rootWindowInsets?.displayCutout ?: return "none"
     return "safe L${c.safeInsetLeft} T${c.safeInsetTop} R${c.safeInsetRight} B${c.safeInsetBottom} · holes " + c.boundingRects.joinToString { "${it.left},${it.top}-${it.right},${it.bottom}" } + " · window ${v.width}×${v.height}"
+}
+
+/** A blur that costs little, for a layer over the whole screen: what's under it is drawn into a picture an eighth of
+ *  the size, blurred there and stretched back up (a heavy blur looks the same, with ~60 times fewer pixels to blur;
+ *  blurring the full screen every frame made Settings stutter). [k] 0..1 fades it in over the sharp picture, [dim]
+ *  darkens it. */
+@Composable
+fun Modifier.cheapBlur(k: Float, radius: Dp, dim: Float = 0f): Modifier {
+    val layer = androidx.compose.ui.graphics.rememberGraphicsLayer()
+    val r = with(androidx.compose.ui.platform.LocalDensity.current) { radius.toPx() } / 8f
+    if (k <= 0f) return this
+    return this.drawWithContent {
+        if (k < 1f) drawContent()   // the sharp picture under it while it fades in
+        val f = 8f
+        val sw = (size.width / f).toInt().coerceAtLeast(1); val sh = (size.height / f).toInt().coerceAtLeast(1)
+        layer.record(androidx.compose.ui.unit.IntSize(sw, sh)) {
+            scale(1f / f, 1f / f, pivot = Offset.Zero) { this@drawWithContent.drawContent() }
+        }
+        val rr = (r * k).coerceAtLeast(.5f)
+        layer.renderEffect = androidx.compose.ui.graphics.BlurEffect(rr, rr, androidx.compose.ui.graphics.TileMode.Clamp)
+        layer.alpha = k
+        scale(f, f, pivot = Offset.Zero) { drawLayer(layer) }
+        if (dim > 0f) drawRect(Color.Black.copy(alpha = dim * k))
+    }
 }

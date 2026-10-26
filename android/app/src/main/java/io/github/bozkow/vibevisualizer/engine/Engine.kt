@@ -444,7 +444,7 @@ object E {
     }
 
     fun show(s: String) { if (screen != s) { screen = s; haptic() }; poke() }
-    fun lyricsVisible() = inPip || (ambient && S.b("aAmbLyrics")) || ((wide || screen == "lyrics") && settingsPage == null && !wizard)   // they go on behind Settings' blur
+    fun lyricsVisible() = inPip || (ambient && S.b("aAmbLyrics")) || ((wide || screen == "lyrics") && (settingsPage == null || !S.low) && !wizard)   // they go on under Settings' blur   // they go on behind Settings' blur
     fun goHome() { settingsPage = null; screen = "player" }
 
     /** Settings, on [page], or on the list of pages to pick from ("" while it's open on the list). */
@@ -473,11 +473,11 @@ object E {
         fAcc = min(fAcc - iv, iv)
         val dt = min(t - (if (last == 0.0) t else last), 50.0); last = t
         if (wall() - secAt >= 1000) { secAt = wall(); sec.intValue++ }
-        // Settings over the player (it isn't drawn then): what it would show is worked out about 20 times a second,
-        // not at the screen's rate, so Settings get the phone to themselves
+        // Settings over the player: it goes on under their blur about 30 times a second, not at the screen's rate,
+        // so Settings get most of the phone
         val under = settingsPage != null
         slowDt += dt
-        val step = !under || t - slowAt >= 50
+        val step = !under || t - slowAt >= 33
         Audio.sample(dt, t); Audio.beatTick(t, dt)
         if (step) { slowAt = t; Background.tick(t, slowDt); slowDt = 0.0; Lyr.tick(t) }
         Desync.tick(t)

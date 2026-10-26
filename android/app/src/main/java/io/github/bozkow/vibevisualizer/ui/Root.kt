@@ -61,13 +61,16 @@ fun VibeRoot() {
             // while Settings or the setup guide cover the screen, the player isn't drawn at all (it would cost every frame)
             val setT = remember { MutableTransitionState(false) }; setT.targetState = E.settingsPage != null
             val wizT = remember { MutableTransitionState(false) }; wizT.targetState = E.wizard
-            // (a live blur of the player behind Settings made them stutter, however it was trimmed: they cover it again)
-            val covered = (setT.currentState && setT.isIdle) || (wizT.currentState && wizT.isIdle)
-            // Glass: the player blurs behind the sheets
-            val qBlur by animateFloatAsState(if ((S.glass && E.sheet != null || io.github.bozkow.vibevisualizer.engine.Perf.warn > 0) && !S.low) 22f else 0f, tween(260), label = "qblur")
+            // Settings sit over the player as a blurred layer, live (Low performance mode: they cover it, and it isn't
+            // drawn); the blur is drawn at an eighth of the size, which keeps them smooth
+            val live = SettingsUi.live
+            val covered = (!live && setT.currentState && setT.isIdle) || (wizT.currentState && wizT.isIdle)
+            val sK by animateFloatAsState(if (live && E.settingsPage != null) 1f else 0f, tween(if (E.settingsPage != null) 320 else 240), label = "sblur")
+            // Glass: the player blurs behind the sheets (and behind the heat warning)
+            val qK by animateFloatAsState(if ((S.glass && E.sheet != null || io.github.bozkow.vibevisualizer.engine.Perf.warn > 0) && !S.low) 1f else 0f, tween(260), label = "qblur")
             if (E.inPip) { BackgroundLayer(); PipCanvas(); PipScreen(); PipHeat() }
             else {
-                if (!covered) Box(Modifier.fillMaxSize().then(if (qBlur > .1f) Modifier.blur(qBlur.dp) else Modifier)) { BackgroundLayer(); PlayerScreen() }
+                if (!covered) Box(Modifier.fillMaxSize().cheapBlur(maxOf(sK, qK), if (sK >= qK) 32.dp else 22.dp, .4f * sK)) { BackgroundLayer(); PlayerScreen() }
                 if (S.b("fps")) Text(E.fpsText, Modifier.align(Alignment.TopEnd).statusBarsSpace().padding(top = 60.dp, end = 12.dp), fontFamily = FontFamily.Monospace, fontSize = 12.sp, color = Color.White.copy(alpha = .7f))
                 // Ambient mode: the waking touch only wakes (nothing under it is tapped or seeked)
                 if (E.ambient) Box(Modifier.fillMaxSize().pointerInput(Unit) {
