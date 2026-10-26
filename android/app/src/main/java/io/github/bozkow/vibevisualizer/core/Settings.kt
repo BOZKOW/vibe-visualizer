@@ -63,6 +63,7 @@ object Defaults {
         "aAmbShift" to true,    //   drifts a little every minute (OLED burn-in)
         "aPipSize" to 100,      // the lyrics' size in picture-in-picture (%)
         "aSaverLow" to true,    // Low performance mode while the phone's Power saving is on
+        "aOtherApps" to true,   // follow other music apps (YouTube Music, SoundCloud…) through their media sessions
         // the player screen
         "aHideSec" to "3",      //   seconds untouched before the controls hide
         "aLike" to true,        //   the heart beside a Spotify song

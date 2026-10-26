@@ -141,7 +141,7 @@ class MainActivity : ComponentActivity() {
         if (!isInPictureInPictureMode) { E.onVisible(false); CanvasVideo.onBackground() }
         Vibe.settings.flush()
     }
-    override fun onResume() { super.onResume(); SpotifyApp.refresh(this); Background.resume(); Updates.showConfirm() }
+    override fun onResume() { super.onResume(); SpotifyApp.refresh(this); io.github.bozkow.vibevisualizer.media.MediaApps.refresh(this); Background.resume(); Updates.showConfirm() }
 
     /** Settings → Phone: the status bar (with the notifications) and the navigation bar hidden or shown. Hidden, a swipe
      *  from the edge brings them back for a moment. */

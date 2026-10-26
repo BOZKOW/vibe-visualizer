@@ -27,6 +27,7 @@ import io.github.bozkow.vibevisualizer.lyrics.SongMeta
 import io.github.bozkow.vibevisualizer.lyrics.Match
 import io.github.bozkow.vibevisualizer.lyrics.firstArtist
 import io.github.bozkow.vibevisualizer.media.Local
+import io.github.bozkow.vibevisualizer.media.MediaApps
 import io.github.bozkow.vibevisualizer.spotify.Spotify
 import io.github.bozkow.vibevisualizer.spotify.SpotifyApp
 import kotlinx.coroutines.Job
@@ -41,7 +42,7 @@ import kotlin.math.min
 /** The app's state and its frame loop: what plays, the clock, the bars, the background, notices and problems. */
 object E {
     /* ---- what plays ---- */
-    var src by mutableStateOf("none")            // none | file | spotify
+    var src by mutableStateOf("none")            // none | file | spotify | media (another music app on this phone)
         internal set
     var title by mutableStateOf("")
     var artist by mutableStateOf("")
@@ -139,14 +140,15 @@ object E {
     }
 
     /* ---- the clock ---- */
-    fun playing(): Boolean = when (src) { "file" -> Local.playing(); "spotify" -> Spotify.spPlaying(); else -> false }
+    fun playing(): Boolean = when (src) { "file" -> Local.playing(); "spotify" -> Spotify.spPlaying(); "media" -> MediaApps.playing; else -> false }
     internal var clockOverride: Double? = null      // screenshot tests: a fixed point in the song
     fun curTime(): Double = clockOverride ?: when (src) {
         "spotify" -> min(Spotify.curMs(), Spotify.durationMs()) / 1000
         "file" -> Local.positionMs() / 1000
+        "media" -> (MediaApps.positionMs() ?: 0.0) / 1000
         else -> 0.0
     }
-    fun curDur(): Double = when (src) { "spotify" -> Spotify.durationMs() / 1000; "file" -> Local.durationMs() / 1000; else -> 0.0 }
+    fun curDur(): Double = when (src) { "spotify" -> Spotify.durationMs() / 1000; "file" -> Local.durationMs() / 1000; "media" -> MediaApps.durMs / 1000.0; else -> 0.0 }
 
     fun reduceMotion(): Boolean = S.str("anim") == "off" || (S.str("anim") != "on" && systemAnimOff())
     private fun systemAnimOff() = runCatching { Settings.Global.getFloat(Vibe.app.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) == 0f }.getOrDefault(false)
@@ -158,8 +160,50 @@ object E {
             if (!Spotify.connected) { spLogin(); return }
             if (src == "spotify") return
             Local.pause(); src = "spotify"; Spotify.start()
+        } else if (s == "media") {
+            if (src == "media") return
+            Spotify.stop(); Local.pause(); src = "media"; onMediaTrack(force = true)
         } else { Spotify.stop(); src = s }
         updPlay(); poke()
+    }
+
+    /* ---- another music app (YouTube Music, SoundCloud…) ---- */
+
+    /** Another music app started playing: followed, unless something here already plays (your files, or Spotify). */
+    fun onMediaState() {
+        if (src == "media") { updPlay(); poke(); if (MediaApps.connected.value.not()) { title = "Nothing playing"; artist = "Play something in a music app"; resetCover(); Lyr.clear("") }; return }
+        if (!S.b("aOtherApps") || !MediaApps.playing || MediaApps.title.isEmpty()) return
+        val busy = (src == "file" && Local.playing()) || (src == "spotify" && Spotify.spPlaying())
+        if (!busy) setSource("media")
+    }
+
+    /** A new song in the app followed: its name (cleaned of "(Official Video)" and the like), its cover (or one
+     *  found online), and its lyrics found by name and length. No Canvas: that needs a Spotify song. */
+    fun onMediaTrack(force: Boolean = false) {
+        if (src != "media") return
+        val t0 = MediaApps.title; if (t0.isEmpty()) return
+        val tn = TrackNameCleaner.clean(t0, MediaApps.artist)
+        val nt = tn.title.ifEmpty { t0 }; val na = tn.artist.ifEmpty { MediaApps.artist }
+        if (!force && nt == title && na == artist) return
+        curArtistId = ""
+        val tok = ++coverTok
+        CanvasVideo.clear(false); Audio.dropBars()
+        title = nt; artist = na; year = ""; status = ""; trackVer++
+        val meta = SongMeta(title = nt, artist = na, album = MediaApps.album, duration = MediaApps.durMs / 1000.0)
+        Lyr.load(meta, tok)
+        mediaArt = setCoverBitmap(MediaApps.cover(), "From " + MediaApps.appName(), tok)
+        if (!mediaArt) {
+            resetCover()
+            if (S.b("online")) Vibe.scope.launch { status = "Searching for cover…"; if (!findCover(meta, tok) && tok == coverTok) status = "No cover found · using default" }
+        }
+        updPlay()
+    }
+    private var mediaArt = false
+
+    /** The app's details changed without a new song: its cover often comes a moment after the name. */
+    fun onMediaMeta() {
+        if (src != "media" || mediaArt) return
+        MediaApps.cover()?.let { mediaArt = setCoverBitmap(it, "From " + MediaApps.appName(), coverTok, quiet = false) }
     }
 
     fun netKick() = Ping.kick()
@@ -338,19 +382,21 @@ object E {
         when (src) {
             "spotify" -> Spotify.toggle()
             "file" -> Local.toggle()
+            "media" -> if (MediaApps.playing) MediaApps.pause() else MediaApps.play()
             else -> FilePicker.pickAudio()
         }
     }
 
-    fun prev() { haptic(); if (src == "spotify") Spotify.previous() else if (src == "file") Local.previous() }
-    fun next() { haptic(); if (src == "spotify") Spotify.next() else if (src == "file") Local.next() }
-    fun canNext() = src == "spotify" || (src == "file" && Local.hasNext())
+    fun prev() { haptic(); when (src) { "spotify" -> Spotify.previous(); "file" -> Local.previous(); "media" -> MediaApps.previous() } }
+    fun next() { haptic(); when (src) { "spotify" -> Spotify.next(); "file" -> Local.next(); "media" -> MediaApps.next() } }
+    fun canNext() = src == "spotify" || src == "media" || (src == "file" && Local.hasNext())
 
     /** Jump to a time (seconds) in whatever is playing; used by the lyrics. */
     fun seekTo(sec: Double): Boolean {
         val s = max(0.0, sec)
         if (src == "file" && Local.durationMs() > 0) { Local.seek((s * 1000).toLong()); return true }
         if (src == "spotify" && (Spotify.spState != null || Spotify.appTiming())) { Spotify.seek((s * 1000).toLong()); return true }
+        if (src == "media" && MediaApps.durMs > 0) { MediaApps.seek((s * 1000).toLong()); return true }
         return false
     }
 
@@ -469,7 +515,7 @@ object E {
         visible = v
         Audio.applyCapture()
         if (v) {
-            SpotifyApp.refresh(Vibe.app)
+            SpotifyApp.refresh(Vibe.app); MediaApps.refresh(Vibe.app)
             if (src == "spotify") Spotify.poll()
             Spotify.loginCheck()
             Ping.kick()

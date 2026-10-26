@@ -662,7 +662,7 @@ object Lyr {
         resyncing = true; spinAt = wall()
         Vibe.scope.launch {
             try {
-                val moved = if (E.src == "spotify") Spotify.resync() else null
+                val moved = if (E.src == "spotify") Spotify.resync() else { if (E.src == "media") io.github.bozkow.vibevisualizer.media.MediaApps.resync(); null }
                 val undo = lAdj != 0.0; lAdj = 0.0; Desync.reset(true)
                 view.restAll()
                 E.toast(if (moved == null || abs(moved) < 40) "In sync" else "Moved " + String.format("%.2f", abs(moved) / 1000) + " s " + if (moved > 0) "ahead" else "back", "ok")
@@ -710,7 +710,7 @@ object Lyr {
         "song: " + (cur?.m?.let { it.artist + " – " + it.title + (Spotify.spId?.let { id -> " ($id)" } ?: "") } ?: "—"),
         "lyrics: " + (if (L.isNotEmpty()) (if (lsync) "synced" else "not synced") + " from " + (PROVS[prov() ?: ""]?.name ?: "?") else "none") + " · offset ${S.loff} ms · this song ${songOffMs} ms · ${Outputs.route.label} ${Outputs.offMs} ms" + (if (Outputs.here(E.src)) "" else " (not playing here)"),
         "cover: " + E.coverNote.ifEmpty { "—" },
-        "song changes: " + (if (E.src == "spotify") Spotify.paceNote() else "—"),
+        "song changes: " + (when (E.src) { "spotify" -> Spotify.paceNote(); "media" -> "follows " + io.github.bozkow.vibevisualizer.media.MediaApps.appName() + " (" + io.github.bozkow.vibevisualizer.media.MediaApps.pkg + ")"; else -> "—" }),
         "camera cutout: " + io.github.bozkow.vibevisualizer.ui.cutoutNote(E.activity?.window?.decorView),
         "last lookup: " + (lookupLog.joinToString("; ") { it.p + " " + it.st + (it.ms?.let { m -> " ${m}ms" } ?: "") }.ifEmpty { "—" }),
         "sources: " + S.str("lprov"),

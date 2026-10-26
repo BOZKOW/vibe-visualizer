@@ -265,7 +265,7 @@ private fun pages(): List<Page> = listOf(
         Item.Custom("translation service key address model DeepL LibreTranslate OpenAI OpenRouter Groq Gemini") { TrService() },
         Item.Txt("Lines already in the language you translate into are never translated. The lyric lines go to the service you pick. Japanese, Chinese, Korean, Cyrillic and Greek are romanized on the phone first; Google fills in what it can’t do."),
     ), sub = "Romanization, translation and the service it uses", group = 1),
-    Page("spotify", "Spotify & your music", VIcons.spotify, listOf(
+    Page("spotify", "Music apps & Spotify", VIcons.spotify, listOf(
         Item.Sub("Spotify"),
         Item.Custom("Client ID redirect URI connect disconnect") { SpotifySection() },
         Item.Sub("The Spotify app on this phone"),
@@ -273,7 +273,10 @@ private fun pages(): List<Page> = listOf(
         Item.Custom("notification access") { SessionStatus() },
         Item.Sub("Your music"),
         Item.Custom("Play songs from your phone use Spotify connect choose where Spotify plays devices") { YourMusic() },
-    ), sub = "Spotify account, the Spotify app on this phone, songs from your phone", group = 2),
+        Item.Sub("Other music apps"),
+        Item.Sw("aOtherApps", "Follow other music apps", "When YouTube Music, SoundCloud, Apple Music, Deezer, TIDAL, Amazon Music, Poweramp or another music app plays, the app follows it: the song, its cover, the lyrics (found by name and length) and its controls. Something playing here or in Spotify comes first. Without a Spotify login, the Spotify app is followed this way too."),
+        Item.Custom("other music apps YouTube Music SoundCloud notification access status") { OtherAppsStatus() },
+    ), sub = "Spotify account, other music apps (YouTube Music, SoundCloud…), songs from your phone", group = 2),
     Page("server", "Server & connection", Icons.Rounded.Dns, listOf(
         Item.Sub("Your server"),
         Item.Custom("Your server address Tailscale") { ServerField() },
@@ -917,5 +920,22 @@ private fun WidgetList() {
                 Text(if (ids.size == 1) "Set up the widget" else "Set up widget ${i + 1} (${w}×$h)")
             }
         }
+    }
+}
+
+/** Which other music app is followed now, or why none is. */
+@Composable
+private fun OtherAppsStatus() {
+    LaunchedEffect(Unit) { io.github.bozkow.vibevisualizer.media.MediaApps.refresh(Vibe.app) }
+    val m = io.github.bozkow.vibevisualizer.media.MediaApps
+    Column {
+        Text(when {
+            !S.b("aOtherApps") -> "Off."
+            !SpotifyApp.access.value -> "Needs notification access (no notification is read; it only lets the app see the music apps' players)."
+            E.src == "media" -> "✓ Following " + m.appName() + (if (m.title.isNotEmpty()) ": " + m.title else "")
+            m.connected.value -> "Sees " + m.appName() + ". It's followed when it plays (and nothing plays here or in Spotify)."
+            else -> "Allowed. It follows a music app as soon as one plays."
+        }, fontSize = 13.5.sp, color = Color.White)
+        if (S.b("aOtherApps") && !SpotifyApp.access.value) Buttons("Open notification access" to { Perms.notificationAccess() })
     }
 }

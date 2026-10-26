@@ -1,8 +1,8 @@
-Vibe Visualizer for Android 0.22.5 (beta). Android 12 or newer; it installs over 0.22.4 (Settings → Help & about → Update now).
+Vibe Visualizer for Android 0.23.0 (beta). Android 12 or newer; it installs over 0.22.5 (Settings → Help & about → Update now).
 
-### Fixes
+### New
 
-- **Settings run smoothly again**: they're back to how they were before the live blur (0.19.2), which made them stutter however it was trimmed. In Glass they sit over the blurred cover, in Android over their own background, and the player isn't drawn behind them; they still open out of the button you tap. The player picks up where it is when you close them (the music plays on)
-- The widget list in Settings no longer redraws every 2 seconds
+- **Other music apps**: YouTube Music, SoundCloud, Apple Music, Deezer, TIDAL, Amazon Music, Poweramp, Samsung Music and the rest. When one of them plays, the app follows it: the song (its name cleaned of "(Official Video)" and the like), its cover (or one found online), the lyrics found by name and length, the seek bar with exact timing, and play / pause, previous, next and seek from here. The header says "Playing from YouTube Music". Something playing here or in Spotify comes first, and the Spotify app playing again takes over. Without a Spotify login, the Spotify app is followed this way too. It uses the notification access the Spotify app's link already has (no notification is read). Settings → Music apps & Spotify → Other music apps
+- Lyrics from sources that need a Spotify song (Spicy Lyrics, Spotify's own) and Canvas aren't there for other apps; LRCLIB, NetEase, Unison, LRCMux, AMLL and the rest are
 
-From 0.22.4: refined credits wait for the end in Focus mode, and picture-in-picture names the lyrics' source.
+From 0.22.5: Settings run smoothly again.

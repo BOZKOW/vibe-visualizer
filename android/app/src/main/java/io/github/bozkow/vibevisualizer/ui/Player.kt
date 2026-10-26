@@ -394,7 +394,7 @@ private fun EmptyState() {
         AppLogo(96.dp)
         Spacer(Modifier.height(20.dp))
         Text("Nothing playing", fontSize = 26.sp, fontWeight = FontWeight.ExtraBold, color = Color.White)
-        Text("Play a song from your phone, or connect Spotify to follow what you’re listening to, with its cover, Canvas and lyrics.",
+        Text("Play a song from your phone, connect Spotify, or play something in YouTube Music, SoundCloud or another music app: the app follows it, with its cover and lyrics.",
             Modifier.padding(top = 8.dp).widthIn(max = 420.dp), fontSize = 15.sp, color = dim, textAlign = TextAlign.Center)
         Spacer(Modifier.height(22.dp))
         Button(onClick = { E.haptic(); FilePicker.pickAudio() }, Modifier.fillMaxWidth().widthIn(max = 360.dp).height(52.dp)) { Text("Play songs from your phone", fontSize = 15.sp) }
@@ -420,7 +420,7 @@ private fun Header(modifier: Modifier = Modifier) {
     E.sec.intValue
     val sp = E.src == "spotify"
     val status = if (Updates.downloading) "Downloading the update · " + (Updates.progress * 100).toInt() + "%" else E.statusLine()
-    val top = when (E.src) { "spotify" -> "PLAYING FROM SPOTIFY"; "file" -> "PLAYING ON THIS PHONE"; else -> "VIBE VISUALIZER" }
+    val top = when (E.src) { "spotify" -> "PLAYING FROM SPOTIFY"; "file" -> "PLAYING ON THIS PHONE"; "media" -> "PLAYING FROM " + io.github.bozkow.vibevisualizer.media.MediaApps.appName().uppercase(); else -> "VIBE VISUALIZER" }
     val sub = status ?: when (E.src) { "spotify" -> Spotify.device?.name?.let { "on $it" } ?: if (Spotify.meta == null) "Nothing playing" else ""; "file" -> Local.position(); else -> "" }
     Row(modifier.fillMaxWidth().height(56.dp), verticalAlignment = Alignment.CenterVertically) {
         Box(Modifier.size(48.dp), contentAlignment = Alignment.Center) { if (E.screen != "player" && !E.wide && E.src != "none") ScreenBack() }

@@ -62,6 +62,7 @@ object Outputs {
     fun here(src: String): Boolean = when (src) {
         "file" -> true
         "spotify" -> Spotify.appTiming() && SpotifyApp.local
+        "media" -> MediaApps.local
         else -> false
     }
 

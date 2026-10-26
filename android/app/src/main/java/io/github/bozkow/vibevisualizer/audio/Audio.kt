@@ -129,15 +129,15 @@ object Audio {
             if (S.b("auto")) { peak += (mx - peak) * (1 - exp(-dt / (if (mx > peak) 50 else 2500))).toFloat(); gain = min(8f, .8f / max(peak, .1f)) }
             gain *= boost
             for (i in 0 until N) { val v = min(raw[i] * gain, 1.1f); vals[i] += (v - vals[i]) * (if (v > vals[i]) aA else aR).toFloat() }
-        } else if (E.src == "spotify" && Spotify.spPlaying()) {
-            val s = t / 1000   // ambient motion: the Spotify app's sound isn't heard
+        } else if (E.playing() && E.src != "file") {
+            val s = t / 1000   // ambient motion: the music app's sound isn't heard
             for (i in 0 until N) {
                 val x = i.toDouble() / N
                 val v = ((.12 + .5 * (1 - x * .75)) * (.55 + .45 * sin(s * 1.7 + i * .42)) * (.6 + .4 * sin(s * .6 + i * .17 + 1.3)) * boost).toFloat()
                 vals[i] += (v - vals[i]) * aA.toFloat()
             }
         } else { val d = exp(-dt / 180).toFloat(); for (i in 0 until N) vals[i] *= d }
-        val idle = if (live) silentFor > 900 else !(E.src == "spotify" && Spotify.spPlaying())
+        val idle = if (live) silentFor > 900 else !(E.playing() && E.src != "file")
         if (!live) silentFor = 0.0
         idleK += ((if (idle) 1f else 0f) - idleK) * (1 - exp(-dt / (if (idle) 700 else 200))).toFloat()
         idleWave(dt, t)
@@ -186,7 +186,7 @@ object Audio {
             micLive() -> "Microphone" to "Bars follow: the microphone (the sound in the room)."
             phoneLive() -> "Phone sound" to "Bars follow: everything this phone plays, the Spotify app included."
             bridgeLive() -> "Vibe Bridge" to ("Bars follow: Vibe Bridge through your server" + (if (bridge.device.isNotEmpty()) " · listening to ${bridge.device}" else "") + ".")
-            E.src == "spotify" && Spotify.spPlaying() -> "Ambient" to when {
+            E.playing() && E.src != "file" -> "Ambient" to when {
                 playsHere() && phone.running -> "Bars follow: a gentle ambient motion until Phone sound hears the Spotify app on this phone."
                 playsHere() || !phone.running -> "Bars follow: a gentle ambient motion (Spotify’s audio can’t be read). Allow “Phone sound” for real bars from the Spotify app on this phone."
                 else -> "Bars follow: a gentle ambient motion. The music plays on another device; Vibe Bridge there gives real bars."

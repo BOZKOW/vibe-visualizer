@@ -320,6 +320,7 @@ object Spotify {
 
     /** The Spotify app played, paused or seeked. If its song isn't the one the Web API last named (a skip), ask now. */
     fun onAppState() {
+        if (E.src == "media" && connected && S.b("aSession") && SpotifyApp.playing) { E.setSource("spotify"); return }   // back from another music app
         if (appTiming()) { isPlaying = SpotifyApp.playing; E.onSpUpdate(); return }
         if (E.src == "spotify" && S.b("aSession") && SpotifyApp.connected.value && SpotifyApp.title.isNotEmpty() && wall() - lastCatch > 5000) catchUp()
     }
