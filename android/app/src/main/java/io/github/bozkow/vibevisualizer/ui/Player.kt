@@ -687,7 +687,9 @@ private fun VolumeRow() {
 @Composable
 private fun LyricsCredits() {
     val c = Lyr.credit
-    val show = c != null && Lyr.lines > 0 && (S.credPos == "corner" || !S.b("xRefCred"))
+    // in the corner, unless Refined credits are under the lyrics; in Focus mode those only come at the end, so the corner
+    // ones show until then (where the lyrics are from is always on screen)
+    val show = c != null && Lyr.lines > 0 && (S.credPos == "corner" || !S.b("xRefCred") || (S.xFocus && Lyr.lsync && !Lyr.view.allsung))
     AnimatedVisibility(show, enter = fadeIn(tween(600)), exit = fadeOut()) {
         if (c != null) CornerCredits(c, Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 6.dp), alignEnd = S.credPos == "lyrics" && S.b("lcredLast") && Lyr.L.lastOrNull { !it.dots }?.opp == true)
     }

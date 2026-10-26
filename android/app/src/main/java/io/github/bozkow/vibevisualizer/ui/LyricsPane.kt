@@ -142,10 +142,12 @@ fun LyricsPane(modifier: Modifier = Modifier, areaHeightPx: Float = 0f, compact:
             if (n > 0 && S.credPos == "lyrics" && S.b("xRefCred")) {
                 val c = Lyr.credit
                 if (c != null) {
-                    val a by animateFloatAsState(if (view.allsung || view.isStatic) 1f else .55f, tween(600), label = "lcr")
-                    // Focus mode shows only the line being sung, in the middle: the credits sit at the foot of the lyrics
-                    // (they went to the corner before, whatever was picked)
-                    Box(Modifier.fillMaxWidth().then(if (S.xFocus) Modifier.align(Alignment.BottomStart) else Modifier.offset { IntOffset(0, view.creditsY.roundToInt()) })
+                    // Focus mode: the lines fly in from the bottom and away at the top, so the credits wait for the end (the
+                    // corner ones show meanwhile) and then come in the middle, where the lines were; pinned to the foot
+                    // they sat on the lines flying in there
+                    val focus = S.xFocus && !view.isStatic
+                    val a by animateFloatAsState(if (focus) (if (view.allsung) 1f else 0f) else if (view.allsung || view.isStatic) 1f else .55f, tween(600), label = "lcr")
+                    if (a > 0f) Box(Modifier.fillMaxWidth().then(if (focus) Modifier.align(Alignment.CenterStart) else Modifier.offset { IntOffset(0, view.creditsY.roundToInt()) })
                         .padding(start = padStart.dp, end = padEnd.dp).alpha(a)) {
                         RefinedCredits(c, view.lineCount() > 0 && Lyr.L.lastOrNull { !it.dots }?.opp == true && S.b("lcredLast"))
                     }

@@ -97,7 +97,15 @@ fun VibeRoot() {
 @Composable
 private fun PipScreen() {
     Column(Modifier.fillMaxSize()) {
-        if (Lyr.lines > 0) LyricsPane(Modifier.fillMaxWidth().weight(1f), compact = true, padStart = 12f, padEnd = 12f)
+        if (Lyr.lines > 0) {
+            LyricsPane(Modifier.fillMaxWidth().weight(1f), compact = true, padStart = 12f, padEnd = 12f)
+            // where the lyrics are from, in one small line (the window has no corner for the credits)
+            Lyr.credit?.let { c ->
+                val who = when (c.source) { "spicy_lyrics" -> (c.maker ?: c.uploader)?.let { " · @" + it.username }; "unison" -> c.uploader?.let { " · " + it.username }; else -> null }
+                val from = if (c.source == "file") "From your file" else (c.source?.let { Lyr.PROVIDERS[it] ?: it } ?: "") + (who ?: "")
+                if (from.isNotEmpty()) Text(from, Modifier.padding(horizontal = 12.dp), fontSize = 9.sp, fontWeight = FontWeight.SemiBold, color = Color.White.copy(alpha = .55f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+        }
         else Box(Modifier.fillMaxWidth().weight(1f).padding(12.dp), contentAlignment = Alignment.CenterStart) {
             Column {
                 Text(E.title, fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, color = Color.White, maxLines = 2, overflow = TextOverflow.Ellipsis)
