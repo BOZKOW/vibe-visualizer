@@ -448,7 +448,7 @@ def gh_get(url, raw=False):
 # lyrics"). Only commits that change web/ count as its updates and its release notes; the Android and Mac apps
 # have their own releases and notes.
 VER_RE = re.compile(r"^(\d+\.\d+\.\d+):\s*(.*)$", re.S)
-APP_TITLE = re.compile(r"^(Android|macOS|Mac app|Update Info\.plist)\b")
+APP_TITLE = re.compile(r"^(Android|macOS|Mac app|Update Info\.plist|Windows app)\b")
 
 
 def versioned(v):
@@ -566,7 +566,7 @@ apps_cache = {"at": 0, "v": None}
 
 
 def apps_latest():
-    """The newest release of the macOS app, by when it was published: version, notes and download link.
+    """The newest release of the macOS and the Windows app, by when it was published: version, notes and download link.
     One GitHub request, kept for 30 minutes."""
     if apps_cache["v"] is not None and time.time() - apps_cache["at"] < 1800:
         return apps_cache["v"]
@@ -574,7 +574,7 @@ def apps_latest():
     try:
         rels = [r for r in gh_get("https://api.github.com/repos/%s/releases?per_page=50" % UPDATE_REPO) if not r.get("draft")]
         rels.sort(key=lambda r: r.get("published_at") or "", reverse=True)
-        for kind, prefix, ext in (("macos", "macos-v", ".dmg"),):
+        for kind, prefix, ext in (("macos", "macos-v", ".dmg"), ("windows", "windows-v", ".exe")):
             r = next((r for r in rels if r.get("tag_name", "").startswith(prefix)), None)
             if not r:
                 out[kind] = {}
@@ -582,7 +582,7 @@ def apps_latest():
             dl = next((a["browser_download_url"] for a in r.get("assets", []) if a["name"].endswith(ext)), "")
             out[kind] = {"tag": r["tag_name"], "version": r["tag_name"][len(prefix):], "title": r.get("name") or r["tag_name"],
                          "date": r.get("published_at") or "", "beta": bool(r.get("prerelease")), "url": r.get("html_url", ""),
-                         "dmg": dl, "file": dl,
+                         ext[1:]: dl, "file": dl,
                          "points": [l.strip()[2:].strip() for l in (r.get("body") or "").splitlines()
                                     if l.strip().startswith(("- ", "* "))][:20]}
     except Exception as e:
@@ -911,7 +911,7 @@ async def handle(reader, writer):
                 recent = await asyncio.to_thread(recent_notes)
                 apps = await asyncio.to_thread(apps_latest)
                 status, out = 200, {"installed": cur, "latest": latest, "notes": notes, "recent": recent,
-                                    "macos": apps.get("macos", {}),
+                                    "macos": apps.get("macos", {}), "windows": apps.get("windows", {}),
                                     "can_update": web_dir_writable(), "repo": UPDATE_REPO}
             elif method != "POST":
                 status, out = 405, {"error": "use POST"}

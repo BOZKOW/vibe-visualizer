@@ -25,10 +25,11 @@ updates are shared.
 | Any computer or phone | The web app in a browser, installable as an app (Chrome, Edge, Safari) | Open `https://NAME.ts.net` |
 | Android phone or tablet | [Android app](https://github.com/BOZKOW/vibe-visualizer-android): a native app, using your server for lyrics and Canvas | `vibe-visualizer-android.apk` on [its own Releases page](https://github.com/BOZKOW/vibe-visualizer-android/releases) (beta) |
 | Mac | [macOS app](#macos-app): your server in its own window | `Vibe-Visualizer-macOS.dmg` on the [Releases page](../../releases) (beta) |
+| Windows PC | [Windows app](#windows-app): your server in its own window | `Vibe-Visualizer-Windows.exe` on the [Releases page](../../releases) (beta) |
 | Windows and Linux (the computer that plays the music) | [Vibe Bridge](#vibe-bridge-bars-from-the-spotify-app): the bars follow everything it plays | `vibe-bridge-…` on the [Releases page](../../releases) |
 
-The macOS app only shows your server: the page itself updates with the server (*Settings → Help & about → Update
-now*), and the app tells you there when a new version of the app itself is out.
+The macOS and Windows apps only show your server: the page itself updates with the server (*Settings → Help & about →
+Update now*), and the app tells you there when a new version of the app itself is out.
 
 On Android there's a native [Android app](#android-app) (beta), in its own repository: [BOZKOW/vibe-visualizer-android](https://github.com/BOZKOW/vibe-visualizer-android).
 
@@ -44,6 +45,7 @@ On Android there's a native [Android app](#android-app) (beta), in its own repos
 - [Using it on Windows](#using-it-on-windows)
 - [Android app](#android-app) (beta)
 - [macOS app](#macos-app)
+- [Windows app](#windows-app) (beta)
 - [Third-party services](#third-party-services)
 - [Privacy](#privacy)
 - [Keyboard shortcuts](#keyboard-shortcuts)
@@ -158,8 +160,8 @@ your devices ──Tailscale HTTPS──▶ tailscale serve ──▶ 127.0.0.1:
                                                                                    └─ updates from GitHub (web/)
 ```
 
-The macOS app opens the same address as a browser does and only adds what a browser can't: logging in to Spotify
-through your browser and a window of its own.
+The macOS and Windows apps open the same address as a browser does and only add what a browser can't: logging in to
+Spotify through your browser and a window of their own.
 
 ## Setup
 
@@ -389,7 +391,9 @@ already does. Changes to the helper itself still need `git pull && docker compos
 
 ## Using it on Windows
 
-- **Install as an app:** open your `https://…ts.net/` address in Edge or Chrome and choose *Install Vibe Visualizer*
+- **The Windows app:** `Vibe-Visualizer-Windows.exe` gives Vibe Visualizer a window of its own; see
+  [Windows app](#windows-app).
+- **Or install it from the browser:** open your `https://…ts.net/` address in Edge or Chrome and choose *Install Vibe Visualizer*
   (in Edge: *⋯ → Apps → Install this site as an app*). It gets its own window, Start menu entry and taskbar icon.
 - **Bars for the Spotify app:** press the microphone button, choose *Share all computer sound*, pick
   **Entire screen** and turn on **Also share system audio**. That carries everything Windows plays, including the
@@ -432,6 +436,32 @@ itself; keep Tailscale connected on the Mac if your server is reached through yo
   `macos/VibeVisualizer.xcodeproj` in Xcode and build the `VibeVisualizer` scheme; `bash macos/package-dmg.sh` turns the
   Release build into a `.dmg`. GitHub Actions builds the `.dmg` on every change (a workflow artifact) and publishes it
   when a tag like `macos-v0.1.0` is pushed.
+
+## Windows app
+
+**Vibe Visualizer for Windows** (Windows 10 or 11, beta) opens your Vibe Visualizer server in its own window, as the
+macOS app does: lyrics, Canvas, your settings and updates all come from the server. It's one small program with
+nothing to install, showing the page with WebView2, the Edge engine Windows already has. It doesn't run the server
+itself; keep Tailscale connected on the PC if your server is reached through your tailnet.
+
+- **Get it:** download `Vibe-Visualizer-Windows.exe` from the [Releases page](../../releases), put it where you like
+  (pin it to Start or the taskbar) and run it. It isn't signed yet, so the first time Windows may say *Windows
+  protected your PC*: choose *More info*, then *Run anyway*.
+- **First start:** type your server's address (`https://NAME.ts.net`). Change it later in *Settings → Help & about →
+  Windows app → Change server address*, or from the window menu (right-click the title bar). The app keeps its own
+  browser data (in `%LOCALAPPDATA%\Vibe Visualizer`), separate from Edge and Chrome.
+- **Spotify login** opens in your default browser, as in the macOS app. Spotify comes back to your server's address,
+  and the page there has an **Open Vibe Visualizer** button that takes the login back to the app (the app registers
+  `vibevisualizer://` links for this each time it starts).
+- **Bars from the Spotify app:** run [Vibe Bridge](#vibe-bridge-bars-from-the-spotify-app) on the same PC.
+- **Full screen** (the page's `F` key) fills the monitor; `Esc` gives the window back. **Reload** is `F5`, or in the
+  window menu.
+- **Updates:** *Settings → Help & about → Windows app* shows the app's version and, when a newer one is out, what
+  changed and a download button. Put the new `.exe` in place of the old one.
+- **Building it yourself:** the app is in `windows/` (C# on the .NET Framework 4.8 that Windows comes with, and
+  Microsoft's WebView2, whose libraries are built into the `.exe`). On Windows, `dotnet build
+  windows/VibeVisualizer.csproj -c Release` builds it. GitHub Actions builds it on every change (a workflow artifact)
+  and publishes it when a tag like `windows-v0.1.0` is pushed.
 
 ## Third-party services
 

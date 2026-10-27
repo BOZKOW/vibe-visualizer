@@ -1916,12 +1916,13 @@ let SP=store.get('pulse_sp')||{};
 const spSave=()=>{store.set('pulse_sp',SP);pushPrefs()};
 const b64u=b=>btoa(String.fromCharCode(...new Uint8Array(b))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
 const MAC=window.VVMac||null;
+const WIN=window.VVWin||null;   // inside the Windows app (windows/): the Mac app's hooks, and its server address page
 // Spotify always comes back to this page's own address (the one registered for the computer). The Mac app logs in in the
 // browser: there this page sees the app's login (state "a.…") and hands it to the app with a button, which browsers
 // always let through (a redirect straight to the app's own address is often blocked silently)
 const redirectUri=()=>location.protocol==='http:'||location.protocol==='https:'?location.origin+location.pathname:'';
 const lsGet=k=>{try{return localStorage.getItem(k)}catch(e){return null}},lsSet=(k,v)=>{try{v==null?localStorage.removeItem(k):localStorage.setItem(k,v)}catch(e){}};
-const APP_IN=!!MAC;
+const APP_IN=!!(MAC||WIN);
 const appBounce=(()=>{const q=new URLSearchParams(location.search);return !APP_IN&&/^a\./.test(q.get('state')||'')&&(q.has('code')||q.has('error'))?q:null})();
 // back in the app without a login (Spotify stopped on its own account page, or the browser was closed): say why and
 // offer again, or logging in inside the app instead
@@ -3971,17 +3972,17 @@ const helpOpen=()=>$('panel').classList.contains('open')&&pageNow==='help';   //
 // the Mac app itself: its version against the newest app release on GitHub (only the app, not the page, which
 // comes from your server)
 const verCmp=(a,b)=>{const p=x=>String(x||'').split(/[.-]/).map(n=>parseInt(n,10)||0);const A=p(a),B=p(b);for(let i=0;i<Math.max(A.length,B.length);i++){if((A[i]||0)!==(B[i]||0))return(A[i]||0)-(B[i]||0)}return 0};
-const APPK=MAC?'macos':'';   // inside the Mac app: its own updates are shown too
+const APPK=MAC?'macos':WIN?'windows':'';   // inside the Mac or Windows app: its own updates are shown too
 function appUpdate(v){
-  if(!APPK)return;const r=v&&v[APPK],app=MAC,file=r&&(r.apk||r.dmg||r.file);let mine='';try{mine=app.version()}catch(e){}
+  if(!APPK)return;const r=v&&v[APPK],app=MAC||WIN,file=r&&(r.apk||r.dmg||r.file);let mine='';try{mine=app.version()}catch(e){}
   const st=$('andstat'),go=$('andget'),newer=!!(r&&r.version&&verCmp(r.version,mine)>0);
   st.textContent='App version '+(mine||'?')+(r&&r.version?(newer?' · new version '+r.version+(r.beta?' beta':'')+' is out':' · the newest'):'');
-  go.hidden=!newer||!file;if(newer)go.textContent='Download '+(MAC?'Mac app ':'app ')+r.version;
+  go.hidden=!newer||!file;if(newer)go.textContent='Download '+(MAC?'Mac app ':WIN?'Windows app ':'app ')+r.version;
   const get=()=>{location.href=file};   // opens in the browser, which downloads it; open the file to install over this one
   go.onclick=get;
   showNotes(r&&r.points&&r.points.length?[{title:r.title||('App '+r.version),date:r.date,points:r.points,sha:r.tag}]:[],$('andnotes'),{fresh:new Set(newer?[r.tag]:[]),open:1,none:' '});
-  const key='vv_macskip';let skip='';try{skip=localStorage.getItem(key)||''}catch(e){}
-  if(newer&&file&&skip!==r.tag&&!helpOpen())notify({key:'appupd',kind:'ok',title:'New '+(MAC?'Mac ':'')+'app version '+r.version+(r.beta?' beta':''),sub:'You have '+(mine||'an older one'),list:(r.points||[]).slice(0,5),
+  const key=WIN?'vv_winskip':'vv_macskip';let skip='';try{skip=localStorage.getItem(key)||''}catch(e){}
+  if(newer&&file&&skip!==r.tag&&!helpOpen())notify({key:'appupd',kind:'ok',title:'New '+(MAC?'Mac ':WIN?'Windows ':'')+'app version '+r.version+(r.beta?' beta':''),sub:'You have '+(mine||'an older one'),list:(r.points||[]).slice(0,5),
     actions:[{label:'Later',fn:()=>{try{localStorage.setItem(key,r.tag)}catch(e){}}},{label:'Download',pri:true,fn:get}]});
 }
 async function checkUpdate(manual){
@@ -4063,6 +4064,9 @@ $('brand').onclick=goHome;
 if(MAC){body.classList.add('mac');$('andbox').hidden=false;$('apphead').textContent='Mac app';$('andsrv').hidden=true;
   $('apphint').textContent='The app opens your server, so this page updates with the server. Only the app itself (rarely) needs a new .dmg from the GitHub Releases page. The server address is changed with the gear button in the app’s window.';
   try{$('andstat').textContent='App version '+(MAC.version?MAC.version():'?')}catch(e){}}
+if(WIN){body.classList.add('win');$('andbox').hidden=false;$('apphead').textContent='Windows app';$('andsrv').onclick=()=>WIN.server();
+  $('apphint').textContent='The app opens your server, so this page updates with the server. Only the app itself (rarely) needs a new .exe from the GitHub Releases page: download it and put it in place of the old one.';
+  try{$('andstat').textContent='App version '+(WIN.version?WIN.version():'?')}catch(e){}}
 
 $('brand').onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();goHome()}};
 $('hback').onclick=leaveHome;
@@ -4084,7 +4088,7 @@ $('lcsong').onclick=async()=>{const c=songNow();if(!c)return;lcache.delete(c.key
 $('lcreset').onclick=()=>{const c=songNow();if(!c)return;lcache.delete(c.key);toast('Lyrics reset.','ok',1800);loadLyrics(c.m,coverTok)};
 $('lyother').onclick=lyOther;
 function debugInfo(){
-  let appv='';try{appv=MAC&&MAC.version?'Mac '+MAC.version():'browser'}catch(e){}
+  let appv='';try{appv=MAC&&MAC.version?'Mac '+MAC.version():WIN&&WIN.version?'Windows '+WIN.version():'browser'}catch(e){}
   const v=updInfo&&updInfo.installed;
   return ['Vibe Visualizer debug info',
     'page: '+(v?(v.version?v.version+' · ':'')+v.sha.slice(0,7)+' ('+v.date+')':'unknown')+' · app: '+appv,
