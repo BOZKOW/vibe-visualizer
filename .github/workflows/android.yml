@@ -32,9 +32,13 @@ jobs:
       - name: Build
         env:
           VV_KS_PASS: ${{ secrets.ANDROID_KEYSTORE_PASS }}
-          VV_VERSION_CODE: ${{ github.run_number }}
         run: |
-          case "$GITHUB_REF_NAME" in android-v*) export VV_VERSION_NAME="${GITHUB_REF_NAME#android-v}";; *) export VV_VERSION_NAME="1.0.$GITHUB_RUN_NUMBER-dev";; esac
+          # the build number from the version (0.24.0 → 124000), as the app's own repository does
+          case "$GITHUB_REF_NAME" in
+            android-v*) export VV_VERSION_NAME="${GITHUB_REF_NAME#android-v}"
+              IFS=. read -r MA MI PA <<< "${VV_VERSION_NAME%%-*}"; export VV_VERSION_CODE=$((100000 + MA * 1000000 + MI * 1000 + ${PA:-0}));;
+            *) export VV_VERSION_NAME="1.0.$GITHUB_RUN_NUMBER-dev"; export VV_VERSION_CODE=100000;;
+          esac
           echo "VV_VER=$VV_VERSION_NAME" >> "$GITHUB_ENV"
           cd android && ./gradlew testDebugUnitTest assembleRelease --no-daemon --stacktrace   # the unit tests first: a failing one stops the release
           mkdir -p ../out && cp app/build/outputs/apk/release/app-release.apk ../out/vibe-visualizer-android.apk

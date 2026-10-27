@@ -28,7 +28,7 @@ import org.json.JSONObject
 /** Updates: this app's new versions from the GitHub Releases page (installed through Android's installer, which asks
  *  you first), and the web app on your server (Settings → Help & about), as in the web app. */
 object Updates {
-    const val REPO = "BOZKOW/vibe-visualizer"
+    const val REPO = "BOZKOW/vibe-visualizer-android"   // the Android app's own repository (it was in BOZKOW/vibe-visualizer until 0.23)
     private val prefs by lazy { Vibe.app.getSharedPreferences("updates", Context.MODE_PRIVATE) }
 
     class Note(val title: String, val date: String, val points: List<String>, val tag: String, val beta: Boolean)

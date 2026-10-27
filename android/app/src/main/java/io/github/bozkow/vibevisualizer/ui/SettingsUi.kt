@@ -822,7 +822,7 @@ private fun About() {
         HorizontalDivider(color = Color.White.copy(alpha = .1f))
         Text("Vibe Visualizer for Android " + io.github.bozkow.vibevisualizer.BuildConfig.VERSION_NAME, Modifier.padding(top = 12.dp), fontWeight = FontWeight.Bold, color = Color.White)
         Hint("Vibe Visualizer is free software under the GNU AGPL-3.0. Its lyrics animation is ported from Spicy Lyrics by Spikerko and contributors. Vibe Visualizer is an unofficial project, not made by or affiliated with Spicy Lyrics. Inter font by Rasmus Andersson (OFL). Japanese readings by kuromoji (Apache 2.0).")
-        Row { TextButton(onClick = { openUrl("https://github.com/BOZKOW/vibe-visualizer") }) { Text("Source code") }; TextButton(onClick = { openUrl("https://www.gnu.org/licenses/agpl-3.0.html") }) { Text("License") }; TextButton(onClick = { openUrl("https://github.com/Spikerko/spicy-lyrics") }) { Text("Spicy Lyrics") } }
+        Row { TextButton(onClick = { openUrl("https://github.com/BOZKOW/vibe-visualizer-android") }) { Text("Source code") }; TextButton(onClick = { openUrl("https://www.gnu.org/licenses/agpl-3.0.html") }) { Text("License") }; TextButton(onClick = { openUrl("https://github.com/Spikerko/spicy-lyrics") }) { Text("Spicy Lyrics") } }
     }
     @Suppress("unused") val keep = listOf(Defaults, Net)
 }

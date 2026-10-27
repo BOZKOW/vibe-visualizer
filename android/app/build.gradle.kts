@@ -15,8 +15,9 @@ android {
         applicationId = "io.github.bozkow.vibevisualizer"
         minSdk = 31
         targetSdk = 36
-        // the old WebView app used small build numbers: this one always counts above them
-        versionCode = 10000 + (System.getenv("VV_VERSION_CODE") ?: "0").toInt()
+        // from the version (CI works it out: 0.24.0 is 124000), so it always counts up, above the old WebView app's
+        // small numbers and the builds made in the main repository (10000 + their build number)
+        versionCode = (System.getenv("VV_VERSION_CODE") ?: "100000").toInt()
         versionName = System.getenv("VV_VERSION_NAME") ?: "1.0.0-dev"
     }
 
