@@ -11,6 +11,10 @@ prefs/
 __pycache__/
 macos/build/
 macos/out/
+windows/bin/
+windows/obj/
+windows/build/
+windows/out/
 
 # local notes for Claude Code: kept on this computer only
 CLAUDE.md
