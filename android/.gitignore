@@ -1,9 +1,0 @@
-# local build output and machine-specific paths
-.gradle/
-.kotlin/
-build/
-app/build/
-local.properties
-*.iml
-.idea/
-captures/
