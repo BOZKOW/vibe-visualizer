@@ -487,7 +487,7 @@ Click any lyric line to jump to it.
 ## Credits
 
 Made by [BOZKOW](https://github.com/BOZKOW), built together with [Claude Code](https://claude.com/claude-code)
-(Anthropic's Claude Opus). The macOS app was made by Nikki Honzulů.
+(Anthropic's Claude Opus). The macOS app was made by [Nikki Honzulů](https://github.com/NikkiHonzulu).
 
 The "Spicy Lyrics" lyrics font option uses [Inter](https://rsms.me/inter/) by Rasmus Andersson (SIL Open Font License
 1.1, `web/InterVariable-LICENSE.txt`), or the device's own San Francisco font on Apple devices.
