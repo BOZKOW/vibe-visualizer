@@ -23,14 +23,14 @@ updates are shared.
 | On | Use | Get it |
 | --- | --- | --- |
 | Any computer or phone | The web app in a browser, installable as an app (Chrome, Edge, Safari) | Open `https://NAME.ts.net` |
-| Android phone or tablet | [Android app](#android-app): a native app, using your server for lyrics and Canvas | `vibe-visualizer-android.apk` on the [Releases page](../../releases) (beta) |
+| Android phone or tablet | [Android app](https://github.com/BOZKOW/vibe-visualizer-android): a native app, using your server for lyrics and Canvas | `vibe-visualizer-android.apk` on [its own Releases page](https://github.com/BOZKOW/vibe-visualizer-android/releases) (beta) |
 | Mac | [macOS app](#macos-app): your server in its own window | `Vibe-Visualizer-macOS.dmg` on the [Releases page](../../releases) (beta) |
 | Windows and Linux (the computer that plays the music) | [Vibe Bridge](#vibe-bridge-bars-from-the-spotify-app): the bars follow everything it plays | `vibe-bridge-…` on the [Releases page](../../releases) |
 
 The macOS app only shows your server: the page itself updates with the server (*Settings → Help & about → Update
 now*), and the app tells you there when a new version of the app itself is out.
 
-On Android there's a native [Android app](#android-app) (beta): `vibe-visualizer-android.apk` on the Releases page.
+On Android there's a native [Android app](#android-app) (beta), in its own repository: [BOZKOW/vibe-visualizer-android](https://github.com/BOZKOW/vibe-visualizer-android).
 
 ## Contents
 
@@ -398,39 +398,14 @@ already does. Changes to the helper itself still need `git pull && docker compos
 
 ## Android app
 
-**Vibe Visualizer for Android** (Android 12 or newer, beta) is a native app (Kotlin, Jetpack Compose, Material 3
-Expressive), not the web page in a browser. It has the web app's player, lyrics, visualizer, settings and Spotify
-features, and uses your server (over Tailscale) only for what needs it: Spicy Lyrics, Spotify's own lyrics and Canvas,
-and NetEase. Without a server, LRCLIB, AMLL, Unison, LRCMux, lrc.red, KuGou, QQ Music, Kuwo and your own lyrics files
-still work (the three Chinese catalogues are off until you turn them on).
+**Vibe Visualizer for Android** (Android 12 or newer, beta) is a native app (Kotlin, Jetpack Compose), not the web
+page in a browser. It lives in its own repository, **[BOZKOW/vibe-visualizer-android](https://github.com/BOZKOW/vibe-visualizer-android)**, with its install
+steps, what it does, its credits and its releases: `vibe-visualizer-android.apk` on
+[its Releases page](https://github.com/BOZKOW/vibe-visualizer-android/releases). It updates itself from there (*Settings → Help & about → Update now*).
 
-1. Download `vibe-visualizer-android.apk` from the newest *Vibe Visualizer for Android* release on the
-   [Releases page](../../releases) on the phone and open it (allow installing from your browser when Android asks).
-   If you still have the old app (0.2 to 0.7 and its 1.0.0, marked "old, out of support"), uninstall it first.
-2. The setup guide asks for your server's address (`NAME.your-tailnet.ts.net`). Keep Tailscale connected on the
-   phone; if the server can't be found, turn off Android's Private DNS (it hides Tailscale names).
-3. Spotify logs in with the same Client ID and Redirect URI as the web app: Spotify comes back to your server's page,
-   which hands the login to the app.
-
-What it adds on a phone:
-- **Phone sound**: the bars follow everything the phone plays, the Spotify app included (Android's Visualizer; it
-  needs the microphone permission, and nothing is recorded or sent).
-- **The Spotify app on the phone** (optional, with notification access): exact lyrics timing from its player, song
-  changes at once, far fewer Web API requests, and play/pause/skip/seek without Premium.
-- Lyrics timing kept per audio output: Bluetooth headphones, a car or a speaker keep their own, used whenever they
-  play (*Lyrics timing* in the ⋮ menu).
-- Faster lyrics: the first source asks alone, then the rest at once; word-synced lyrics win over line-synced ones
-  (as Spicy Lyrics Mobile looks them up), and a source that keeps failing rests a while.
-- Your own songs keep playing in the background, with media controls on the lock screen and Bluetooth.
-- Picture-in-picture lyrics, keep the screen on while music plays, haptics, app shortcuts, and keyboard shortcuts with
-  a keyboard (DeX, tablets).
-- Two designs (*Settings → Appearance → Design*): Android (Material You, with the cover's colors) or Glass (frosted
-  glass over the blurred cover in Settings, the panels and the sheets).
-- Updates from inside the app (*Settings → Help & about*), installed through Android's installer.
-
-The app keeps its own settings on the phone; *Settings → Help & about → Back up settings* copies them to paste into the
-web app or another device, and back. It's built by `.github/workflows/android.yml`; releases are published on
-`android-v*` tags with `android/RELEASE_NOTES.md` as their notes.
+It uses your server (set up as in [Setup](#setup), reached over Tailscale) for Spicy Lyrics, Spotify's own lyrics,
+Canvas and NetEase, and its settings can be copied to the web app and back (*Settings → Help & about → Back up
+settings*). Versions up to 0.23.1 were built here and are still on this repository's [Releases page](../../releases).
 
 ## macOS app
 
@@ -518,11 +493,8 @@ The "Spicy Lyrics" lyrics font option uses [Inter](https://rsms.me/inter/) by Ra
 1.1, `web/InterVariable-LICENSE.txt`), or the device's own San Francisco font on Apple devices.
 
 Background vocals in brackets and a song's own lyrics delay come from
-[Spicy Lyrics Mobile](https://github.com/spicylyrics/mobile) by TheX24 (AGPL-3.0). The Android app also takes from it
-the lyric clock that reads the Spotify app's position reports, the timing kept per audio output, the lookup order
-(the first source alone, then the rest at once, better timing winning), the back-off for failing sources, the
-cleaning of file names and the Unison and LRCMux sources; its LRCMux source is itself adapted from Lyrica's lrcmux
-adapter (MIT).
+[Spicy Lyrics Mobile](https://github.com/spicylyrics/mobile) by TheX24 (AGPL-3.0). What the Android app takes from it
+is credited in [its repository](https://github.com/BOZKOW/vibe-visualizer-android#credits).
 
 The moving background is drawn with [Kawarp](https://github.com/better-lyrics/kawarp) (MIT, from the Better Lyrics
 project), as Spicy Lyrics does: a WebGL Kawase blur with a slow liquid warp.
