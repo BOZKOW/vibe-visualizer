@@ -15,27 +15,27 @@ namespace VibeVisualizer
     /// <summary>The window: your server's page, or the app's own page asking for the server's address (or saying it
     /// can't be reached). Spotify's login and every link open in the browser, as in the Mac app; the login comes back
     /// through vibevisualizer://callback.</summary>
-    sealed class MainForm : Form
+    sealed class AppWindow : Form
     {
         static readonly Color Background = Color.FromArgb(7, 7, 12);
 
         readonly WebView2 web = new WebView2 { Dock = DockStyle.Fill };
-        string server = Settings.Server;   // https://…/, or "" before it's set
+        string server = AppSettings.Server;   // https://…/, or "" before it's set
         string pending;                    // a login that came back before the page was ready
         bool ready, onOwnPage, full;
         FormWindowState preState;          // before full screen
         Rectangle preBounds;
 
-        public MainForm(string link)
+        public AppWindow(string link)
         {
             pending = link;
             Text = "Vibe Visualizer";
-            using (var ico = typeof(MainForm).Assembly.GetManifestResourceStream("app.ico")) Icon = new Icon(ico);   // every size, sharp at any scaling
+            using (var ico = typeof(AppWindow).Assembly.GetManifestResourceStream("app.ico")) Icon = new Icon(ico);   // every size, sharp at any scaling
             BackColor = Background;
             web.DefaultBackgroundColor = Background;
             Controls.Add(web);
             RestoreWindow();
-            Shown += async (s, e) => { Handoff.Listen(l => BeginInvoke((Action)(() => Arrived(l)))); await Start(); };
+            Shown += async (s, e) => { SingleWindow.Listen(l => BeginInvoke((Action)(() => Arrived(l)))); await Start(); };
             FormClosing += (s, e) => SaveWindow();
         }
 
@@ -43,8 +43,8 @@ namespace VibeVisualizer
         {
             try
             {
-                CoreWebView2Environment.SetLoaderDllFolderPath(Embedded.LoaderFolder());
-                var env = await CoreWebView2Environment.CreateAsync(null, Path.Combine(Settings.DataDir, "WebView2"));
+                CoreWebView2Environment.SetLoaderDllFolderPath(EmbeddedLibraries.LoaderFolder());
+                var env = await CoreWebView2Environment.CreateAsync(null, Path.Combine(AppSettings.DataDir, "WebView2"));
                 await web.EnsureCoreWebView2Async(env);
             }
             catch (WebView2RuntimeNotFoundException)
@@ -89,10 +89,10 @@ namespace VibeVisualizer
 
         void Go(string url) => web.CoreWebView2.Navigate(url);
 
-        void ShowSetup(bool first) => web.CoreWebView2.NavigateToString(Pages.Setup(first, server));
+        void ShowSetup(bool first) => web.CoreWebView2.NavigateToString(BuiltInPages.Setup(first, server));
 
         void ShowError(string message) =>
-            web.CoreWebView2.NavigateToString(Pages.Error(Uri.TryCreate(server, UriKind.Absolute, out var u) ? u.Host : server, message));
+            web.CoreWebView2.NavigateToString(BuiltInPages.Error(Uri.TryCreate(server, UriKind.Absolute, out var u) ? u.Host : server, message));
 
         /// <summary>A link from a second start, or one the page opened. The Spotify login goes to the page, which
         /// finishes it from its address as after a login in the browser. The window comes to the front either way.</summary>
@@ -149,10 +149,10 @@ namespace VibeVisualizer
             if (m == "vv:retry" || m == "vv:cancel") Go(server);
             else if (m.StartsWith("vv:connect:"))
             {
-                string address = Settings.Normalize(m.Substring("vv:connect:".Length), out string error);
+                string address = AppSettings.Normalize(m.Substring("vv:connect:".Length), out string error);
                 if (address == null) { _ = web.CoreWebView2.ExecuteScriptAsync("bad(" + Js(error) + ")"); return; }
                 server = address;
-                Settings.Server = address;
+                AppSettings.Server = address;
                 Go(address);
             }
         }
@@ -201,7 +201,7 @@ namespace VibeVisualizer
         {
             float k = DeviceDpi / 96f;
             MinimumSize = new Size((int)(760 * k), (int)(520 * k));
-            int[] p = Settings.Window.Split(',').Select(x => int.TryParse(x, out int v) ? v : int.MinValue).ToArray();
+            int[] p = AppSettings.Window.Split(',').Select(x => int.TryParse(x, out int v) ? v : int.MinValue).ToArray();
             if (p.Length == 5 && !p.Contains(int.MinValue))
             {
                 var r = new Rectangle(p[0], p[1], p[2], p[3]);
@@ -222,7 +222,7 @@ namespace VibeVisualizer
         {
             var b = full ? preBounds : WindowState == FormWindowState.Normal ? Bounds : RestoreBounds;
             bool max = full ? preState == FormWindowState.Maximized : WindowState == FormWindowState.Maximized;
-            Settings.Window = string.Join(",", b.X, b.Y, b.Width, b.Height, max ? 1 : 0);
+            AppSettings.Window = string.Join(",", b.X, b.Y, b.Width, b.Height, max ? 1 : 0);
         }
 
         /// <summary>A JavaScript string literal.</summary>

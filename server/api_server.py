@@ -1,4 +1,4 @@
-"""Vibe Visualizer server helper.
+"""Vibe Visualizer's API server (the helper): everything the app asks for under /api/.
 
 Keeps a hidden Spotify web player open (headless Chromium), borrows the access
 and client tokens it creates, and asks Spotify's own "canvas" GraphQL query for
@@ -13,7 +13,7 @@ GET /blyrics, /qq, /kugou ?title=&artist=&album=&duration=  ->  Better Lyrics (i
                                         Kugou (unofficial) lyrics, the last two as Spicy Lyrics-style JSON
 GET/PUT/DELETE /prefs              ->  per-device Vibe Visualizer preferences, keyed by the device's Tailscale IP
 GET  /version                      ->  installed web app version, the newest one on GitHub, release notes, recent
-                                        changes and the newest macOS app release
+                                        changes and the newest macOS and Windows app releases
 POST /report, GET /report, DELETE /report  ->  error reports from the app, kept on this server (errors.jsonl in PREFS_DIR)
 WS   /bridge/push, /bridge/listen  ->  relay for Vibe Bridge: a bridge pushes its bar data, the app's pages listen
 POST /update                       ->  download the newest web app files from GitHub into WEB_DIR
@@ -38,7 +38,7 @@ lyrics_cache = {}      # in memory only: track id -> (status, body, expires)
 UPDATE_REPO = os.environ.get("UPDATE_REPO", "BOZKOW/vibe-visualizer")
 UPDATE_BRANCH = os.environ.get("UPDATE_BRANCH", "main")
 WEB_DIR = os.environ.get("WEB_DIR", "/www")
-WEB_FILES = ["index.html", "sw.js", "manifest.webmanifest", "logo.svg", "icon-192.png", "icon-512.png",
+WEB_FILES = ["index.html", "service-worker.js", "manifest.webmanifest", "logo.svg", "icon-192.png", "icon-512.png",
              "icon-maskable-512.png", "apple-touch-icon.png",
              "InterVariable.woff2", "InterVariable-LICENSE.txt"]
 ID_RE = re.compile(r"^[0-9A-Za-z]{22}$")

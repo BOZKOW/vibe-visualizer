@@ -152,7 +152,7 @@ The integration follows the [Spicy Lyrics Terms](https://developers.spicylyrics.
 
 ```
 your devices ──Tailscale HTTPS──▶ tailscale serve ──▶ 127.0.0.1:8095  nginx (web/index.html)
-                                                                     └─ /api/* ─▶ helper (server/helper.py)
+                                                                     └─ /api/* ─▶ helper (server/api_server.py)
                                                                                    ├─ Spicy Lyrics API (secret key)
                                                                                    ├─ per-device settings and error log (prefs/)
                                                                                    ├─ Spotify lyrics and Canvas (optional)

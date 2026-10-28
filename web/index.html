@@ -4120,7 +4120,7 @@ $('forget').onclick=async()=>{
 };
 
 // installable app: register the service worker when served over HTTPS (not when opened as a local file)
-if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{});
+if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('service-worker.js').catch(()=>{});
 
 /* ================= ping meter ================= */
 const NET={};   // service -> {ms, status, at}

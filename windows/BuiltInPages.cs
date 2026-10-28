@@ -4,7 +4,7 @@ namespace VibeVisualizer
 {
     /// <summary>The app's own pages, drawn like the Mac app's: asking for the server's address, and saying it can't be
     /// reached. They talk to the window with postMessage ("vv:connect:…", "vv:cancel", "vv:retry", "vv:server").</summary>
-    static class Pages
+    static class BuiltInPages
     {
         const string Style = @"<style>
 :root{color-scheme:dark}*{box-sizing:border-box}html,body{height:100%;margin:0}
