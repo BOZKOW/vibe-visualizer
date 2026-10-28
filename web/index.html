@@ -253,7 +253,7 @@ body.uihide:not(.xfocus)[data-view=both].credly #lcredit{bottom:calc(26% + 24px 
 #ly .lcr .sep{margin:0 .45em}#ly .lcr img{width:1.15em;height:1.15em;border-radius:50%;vertical-align:-.2em;margin-right:.3em;opacity:.85}
 body.credr #ly .lcr{margin-left:auto;text-align:right}body.xfocus #ly .lcr{display:none}
 body.credvis #lcredit{opacity:0;pointer-events:none}   /* the credits under the last line are in view: the small line (in the corner or under the lyrics) steps back */
-#lcredit{transition:opacity .4s}body.credly #lcredit{transition:opacity .4s,bottom .55s var(--e-out)}
+#lcredit{transition:opacity .4s,bottom .35s var(--e-out)}body.credly #lcredit{transition:opacity .4s,bottom .55s var(--e-out)}   /* the fade, and the glide when they move */
 /* scrub preview (Spicy Lyrics 6.4.50 'scrubPreview'): the time or level a click would set */
 #scrubtip{position:fixed;z-index:21;pointer-events:none;padding:4px 9px;border-radius:9px;font-size:12px;font-weight:700;font-variant-numeric:tabular-nums;color:#fff;
   background:rgba(20,20,32,.75);border:1px solid rgba(255,255,255,.2);box-shadow:0 6px 18px rgba(0,0,0,.35);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);transform:translate(-50%,-100%) scale(.7);transform-origin:50% 100%;opacity:0;transition:opacity .15s,transform .3s var(--e-spring)}
@@ -1362,7 +1362,7 @@ function applyLow(){
 }
 $('lowbtn').onclick=()=>{S.low=!S.low;applyLow();save();refreshReset();bump($('lowbtn'));toast(S.low?'Low performance mode on':'Low performance mode off','ok',1800)};
 // little press-and-bounce when a toggle changes
-function bump(el){el.classList.remove('bump');void el.offsetWidth;el.classList.add('bump')}
+function bump(el){el.classList.remove('bump');void el.getBoundingClientRect();el.classList.add('bump')}   // getBoundingClientRect: SVGs (the play icon) have no offsetWidth to restart the animation with
 let lastRom='replace';
 // on/off buttons say clearly which they are: solid white when on, with the state in the tooltip too
 function tog(id,on,name,key){const b=$(id);b.classList.toggle('on',on);b.setAttribute('aria-pressed',on);b.title=name+(key?' ('+key+')':'')+' · '+(on?'on':'off')}
