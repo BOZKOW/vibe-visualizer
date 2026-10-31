@@ -44,7 +44,7 @@ On Android there's a native [Android app](#android-app) (beta), in its own repos
 - [Using it on Linux](#using-it-on-linux)
 - [Using it on Windows](#using-it-on-windows)
 - [Android app](#android-app) (beta)
-- [macOS app](#macos-app)
+- [macOS app](#macos-app) (beta)
 - [Windows app](#windows-app) (beta)
 - [Third-party services](#third-party-services)
 - [Privacy](#privacy)
