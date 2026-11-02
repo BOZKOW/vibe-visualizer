@@ -1,3 +1,5 @@
+<h1 align="center">⚠️ CURRENTLY BROKEN, WORKING ON ISSUES ⚠️</h1>
+
 <p align="center"><img src="web/logo.svg" width="96" alt="Vibe Visualizer logo"></p>
 
 # Vibe Visualizer
