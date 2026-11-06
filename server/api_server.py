@@ -32,8 +32,10 @@ PREFS_DIR = os.environ.get("PREFS_DIR", "/prefs")
 TS_NETS = [ipaddress.ip_network("100.64.0.0/10"), ipaddress.ip_network("fd7a:115c:a1e0::/48")]
 SPICY_KEY_FILE = os.environ.get("SPICY_KEY_FILE", "/config/spicy_key")
 SPICY_API = "https://api.spicylyrics.org/v1/lyrics/"
+SPICY_SEARCH_API = "https://api.spicylyrics.org/v1/tracks/search"
 SPICY_TTL, SPICY_MISS_TTL = 7 * 86400, 6 * 3600   # API terms: anything stored must be refetched or dropped within 30 days
 lyrics_cache = {}      # in memory only: track id -> (status, body, expires)
+search_cache = {}      # in memory only: (title, artist, album, seconds) -> (Spotify id or "", expires)
 # updates: the web app files are downloaded from this GitHub repository into WEB_DIR (the folder nginx serves)
 UPDATE_REPO = os.environ.get("UPDATE_REPO", "BOZKOW/vibe-visualizer")
 UPDATE_BRANCH = os.environ.get("UPDATE_BRANCH", "main")
@@ -42,6 +44,9 @@ WEB_FILES = ["index.html", "service-worker.js", "manifest.webmanifest", "logo.sv
              "icon-maskable-512.png", "apple-touch-icon.png",
              "InterVariable.woff2", "InterVariable-LICENSE.txt"]
 ID_RE = re.compile(r"^[0-9A-Za-z]{22}$")
+# the other ids Spicy Lyrics' /v1/lyrics takes (2026-11-05): a recording's ISRC, an Apple Music track id
+ISRC_RE = re.compile(r"^[A-Za-z]{2}[0-9A-Za-z]{3}[0-9]{7}$")
+APPLE_ID_RE = re.compile(r"^[0-9]{6,12}$")
 SPWEB_RE = re.compile(r"^/spweb/(me(/[A-Za-z0-9_/-]*)?|artists/[0-9A-Za-z]{22}|tracks/[0-9A-Za-z]{22}|search)$")
 HASH_RE = re.compile(r'"canvas","query","([0-9a-f]{64})"')
 
@@ -189,7 +194,66 @@ async def spicy_lyrics(track_id):
     return status, body if body is not None else {"error": "HTTP %d" % status}
 
 
-extra_cache = {}       # in memory only: ("spotify"|"netease"|"blyrics"|"qq"|"kugou", key) -> (status, body, expires)
+def spicy_search_fetch(query, key):
+    req = urllib.request.Request(SPICY_SEARCH_API + "?" + urllib.parse.urlencode(query), headers={
+        "Authorization": "Bearer " + key, "Accept": "application/json", "User-Agent": "VibeVisualizer/1.0 (self-hosted, single user)"})
+    try:
+        with urllib.request.urlopen(req, timeout=20) as r:
+            return r.status, json.loads(r.read() or b"null")
+    except urllib.error.HTTPError as e:
+        try:
+            body = json.loads(e.read() or b"null")
+        except ValueError:
+            body = None
+        return e.code, body
+
+
+def pick_match(results, dur):
+    """The search result to trust: the first Spicy Lyrics calls exact (title and artist, not another version), and, when
+    the song's length is known, no more than 5 s off it (another cut of a song has other timings). None otherwise."""
+    for r in results or []:
+        if not isinstance(r, dict) or r.get("tier") != "exact" or not r.get("id"):
+            continue
+        d = r.get("duration")
+        if dur > 0 and isinstance(d, (int, float)) and d > 0 and abs(d - dur) > 5:
+            continue
+        return r["id"]
+    return None
+
+
+async def spicy_find(title, artist, album, dur):
+    """A song that isn't from Spotify, found by name on Spicy Lyrics: (status, Spotify id or "" for no sure match)."""
+    k = (title.lower(), artist.lower(), album.lower(), round(dur))
+    c = search_cache.get(k)
+    if c and c[1] > time.time():
+        return 200, c[0]
+    key = spicy_key()
+    if not key:
+        return 503, None
+    query = {"title": title, "limit": "5"}
+    if artist:
+        query["artist"] = artist
+    if album:
+        query["album"] = album
+    if dur > 0:
+        query["duration"] = "%.3f" % dur
+    t0 = time.time()
+    status, body = await asyncio.to_thread(spicy_search_fetch, query, key)
+    timing["spicy_search"] = {"ms": int((time.time() - t0) * 1000), "status": status, "at": time.time()}
+    if status != 200:
+        return status, None
+    found = pick_match(((body or {}).get("Body") or {}).get("results"), dur) or ""
+    now = time.time()
+    for kk in [kk for kk, v in search_cache.items() if v[1] <= now]:
+        search_cache.pop(kk, None)
+    search_cache[k] = (found, now + (SPICY_TTL if found else SPICY_MISS_TTL))
+    if len(search_cache) > 2000:
+        for kk in sorted(search_cache, key=lambda kk: search_cache[kk][1])[:500]:
+            search_cache.pop(kk, None)
+    return 200, found
+
+
+extra_cache = {}     # in memory only: ("spotify"|"netease"|"blyrics"|"qq"|"kugou", key) -> (status, body, expires)
 
 
 def cached(kind, key):
@@ -862,13 +926,32 @@ async def handle(reader, writer):
             ip = client_ip(headers)
             status, out = prefs(method, ip, body) if ip else (403, {"error": "open Vibe Visualizer through its Tailscale HTTPS address to save preferences"})
         elif route.endswith("/lyrics"):
-            tid = params.get("id", "")
+            # by id: Spotify's, a recording's ISRC or an Apple Music id; a song from elsewhere without one is found by
+            # its title, artist, album and length on Spicy Lyrics' search (only a match it calls exact)
+            tid = params.get("id", "").strip()
+            title = params.get("title", "").strip()[:200]
             if not client_ip(headers):
                 status, out = 403, {"error": "only for Vibe Visualizer on your tailnet"}
-            elif not ID_RE.match(tid):
-                status, out = 400, {"error": "id must be a 22-character Spotify track id"}
-            else:
+            elif ID_RE.match(tid) or APPLE_ID_RE.match(tid):
                 status, out = await spicy_lyrics(tid)
+            elif ISRC_RE.match(tid):
+                status, out = await spicy_lyrics(tid.upper())
+            elif not tid and title:
+                try:
+                    dur = float(params.get("duration") or 0)
+                except ValueError:
+                    dur = 0
+                st, found = await spicy_find(title, params.get("artist", "").strip()[:200], params.get("album", "").strip()[:200], dur)
+                if st == 503 and found is None and not spicy_key():
+                    status, out = 503, {"error": "no Spicy Lyrics key on the server", "code": "no_key"}
+                elif st != 200:
+                    status, out = st, {"error": "Spicy Lyrics search: HTTP %d" % st}
+                elif not found:
+                    status, out = 404, {"error": "no sure match on Spicy Lyrics"}
+                else:
+                    status, out = await spicy_lyrics(found)
+            else:
+                status, out = 400, {"error": "id must be a Spotify track id, an ISRC or an Apple Music id, or give a title"}
         elif route.endswith(("/spotify-lyrics", "/netease", "/blyrics", "/qq", "/kugou")):
             if not client_ip(headers):
                 status, out = 403, {"error": "only for Vibe Visualizer on your tailnet"}
